@@ -223,7 +223,7 @@ export default function Home() {
         </div>
       ) : (
         <form ref={form} name="Scouting Form" onSubmit={generateQRCode}>
-          <Header headerName={"JORMUNSCOUTR"} />
+          <Header headerName={"JÖRMUNSCOUTR"} />
           <div className={styles.allMatchInfo}>
             <div className={styles.MatchInfo}>
               <TextInput 
@@ -410,6 +410,7 @@ export default function Home() {
 
               <div className={styles.PostMatch}>
                 <Header headerName={"Post-Match"}/>
+                <SubHeader subHeaderName={"Intake"}/>
                 <div className={styles.Intake}>
                   <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
                   <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
