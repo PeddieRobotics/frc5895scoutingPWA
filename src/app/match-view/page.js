@@ -340,9 +340,9 @@ function AllianceButtons({t1, t2, t3, colors}) {
 
   function AllianceDisplay({teams, opponents, colors}) {
     //calc alliance espm breakdown
-    const auto = (teams[0]?.auto || 0) + (teams[1]?.auto || 0) + (teams[2]?.auto || 0);
-    const tele = (teams[0]?.tele || 0) + (teams[1]?.tele || 0) + (teams[2]?.tele || 0);
-    const end = (teams[0]?.end || 0) + (teams[1]?.end || 0) + (teams[2]?.end || 0);
+    const auto = (teams[0]?.last3Auto || 0) + (teams[1]?.last3Auto || 0) + (teams[2]?.last3Auto || 0);
+    const tele = (teams[0]?.last3Tele || 0) + (teams[1]?.last3Tele || 0) + (teams[2]?.last3Tele || 0);
+    const end = (teams[0]?.last3End || 0) + (teams[1]?.last3End || 0) + (teams[2]?.last3End || 0);
 
     console.log(auto)
     console.log(tele)
@@ -396,8 +396,7 @@ function AllianceButtons({t1, t2, t3, colors}) {
 
     return <div className={styles.lightBorderBox}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{background: colors[0]}} className={styles.EPABox}>{Math.round(10*(auto + tele + end)/10)}</div>
-        <div className={styles.EPABreakdown}>
+      <div style={{background: colors[0]}} className={styles.EPABox}>{Math.round(10*auto)/10 + Math.round(10*tele)/10 + Math.round(10*end)/10}</div>        <div className={styles.EPABreakdown}>
           <div style={{background: colors[1]}}>A: {Math.round(10*auto)/10}</div>
           <div style={{background: colors[1]}}>T: {Math.round(10*tele)/10}</div>
           <div style={{background: colors[1]}}>E: {Math.round(10*end)/10}</div>
@@ -431,14 +430,14 @@ function AllianceButtons({t1, t2, t3, colors}) {
       <h1 style={{color: colors[3]}}>{teamData.team}</h1>
       <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{background: colors[0]}} className={styles.EPABox}>
-          {Math.round(10*(teamData.auto + teamData.tele + teamData.end))/10}
-        </div>
-        <div className={styles.EPABreakdown}>
-          <div style={{background: colors[2]}}>A: {Math.round(10*teamData.auto)/10}</div>
-          <div style={{background: colors[2]}}>T: {Math.round(10*teamData.tele)/10}</div>
-          <div style={{background: colors[2]}}>E: {Math.round(10*teamData.end)/10}</div>
-        </div>
+      <div style={{background: colors[0]}} className={styles.EPABox}>
+        {Math.round(10 * teamData.last3EPA) / 10}
+      </div>
+      <div className={styles.EPABreakdown}>
+        <div style={{background: colors[2]}}>A: {Math.round(10 * teamData.last3Auto) / 10}</div>
+        <div style={{background: colors[2]}}>T: {Math.round(10 * teamData.last3Tele) / 10}</div>
+        <div style={{background: colors[2]}}>E: {Math.round(10 * teamData.last3End) / 10}</div>
+      </div>
       </div>
       <div className={styles.barchartContainer}>
         <h2>Average Piece Placement</h2>
