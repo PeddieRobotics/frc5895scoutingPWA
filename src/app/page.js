@@ -292,10 +292,25 @@ export default function Home() {
                 <div className={styles.Processor}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
-                    <NumericInput visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
-                    <NumericInput visibleName={"Fail"} internalName={"autoprocessorfail"}/>
+                    <NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
+                    <NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autoprocessorfail"}/>
                   </div>
                 </div>
+
+                <div className={styles.Net}>
+                <SubHeader subHeaderName={"Net"} />
+                <div className={styles.HBox}>
+                <NumericInput 
+                      visibleName={"Success"}
+                      pieceType={"Success"}
+                      internalName={"autonetsuccess"}/>
+                    <NumericInput 
+                      visibleName={"Fail"}
+                      pieceType={"Fail"}
+                      internalName={"autonetfail"}/>
+                </div>
+              </div>
+
               </div>
 
               <div className={styles.Auto}>
@@ -341,11 +356,29 @@ export default function Home() {
                 <div className={styles.Processor}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
-                    <NumericInput visibleName={"Success"} internalName={"teleprocessorsuccess"}/>
-                    <NumericInput visibleName={"Fail"} internalName={"teleprocessorfail"}/>
+                    <NumericInput visibleName={"Success"} pieceType={"Success"} internalName={"teleprocessorsuccess"}/>
+                    <NumericInput visibleName={"Fail"} pieceType={"Fail"}  internalName={"teleprocessorfail"}/>
                   </div>
                 </div>
+
+                <div className={styles.Net}>
+                <SubHeader subHeaderName={"Net"} />
+                <div className={styles.HBox}>
+                <NumericInput 
+                      visibleName={"Success"}
+                      pieceType={"Success"}
+                      internalName={"telenetsuccess"}/>
+                    <NumericInput 
+                      visibleName={"Fail"}
+                      pieceType={"Fail"}
+                      internalName={"telenetfail"}/>
+                </div>
               </div>
+
+              
+              </div>
+
+
 
               <div className={styles.Endgame}>
                 <Header headerName={"Endgame"}/>
