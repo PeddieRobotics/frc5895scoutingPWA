@@ -311,6 +311,11 @@ export default function Home() {
                 </div>
               </div>
 
+              <CommentBox
+                  visibleName={"General Comments"}
+                  internalName={"generalcomments"}
+              />
+
               </div>
 
               <div className={styles.Auto}>
@@ -375,7 +380,7 @@ export default function Home() {
                 </div>
               </div>
 
-              
+
               </div>
 
 
@@ -390,7 +395,6 @@ export default function Home() {
                 <div className={styles.Intake}>
                   <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
                   <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
-                  <Checkbox visibleName={"Lollipop"} internalName={"lollipop"}/>
                   <Checkbox visibleName={"Algae Ground"} internalName={"algaegrndintake"}/>
                   <Checkbox visibleName={"Algae High Reef"} internalName={"algaehighreefintake"}/>
                   <Checkbox visibleName={"Algae Low Reef"} internalName={"algaelowreefintake"}/>
@@ -417,10 +421,7 @@ export default function Home() {
                     internalName={"defensecomments"}
                   />
                 )}
-                <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-                />
+                
               </div>
             </>
           )}
