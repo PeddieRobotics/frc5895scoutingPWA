@@ -237,7 +237,7 @@ export default function Home() {
       let Match = document.querySelector("input[name='match']").value;
       let newProfile = { 
         scoutname: ScoutName, 
-        scoutteam: ScoutTeam, 
+        scoutteam: 5895, 
         match: Number(Match)+1,
         matchType: matchType 
       };
@@ -323,12 +323,7 @@ export default function Home() {
             internalName={"scoutname"} 
             defaultValue={scoutProfile?.scoutname || ""}
           />
-          <TextInput 
-            visibleName={"Team #:"} 
-            internalName={"scoutteam"} 
-            defaultValue={scoutProfile?.scoutteam || ""}
-            type={"number"}
-          />
+          
           <TextInput
             visibleName={"Team Scouted:"}
             internalName={"team"}
@@ -543,20 +538,7 @@ export default function Home() {
                 </div>
               </div>
               <div className={styles.HumanPlayer}>
-              <SubHeader subHeaderName={"Human Player"}/>
-              <Checkbox visibleName={"Human Player From Team?"} internalName={"humanplayer"} changeListener={onHumanPlayerChange}/>
-              { humanplayer &&
-                <div className={styles.HBox}>
-                  <NumericInput 
-                    visibleName={"Success"}
-                    pieceType={"Success"}
-                    internalName={"hpsuccess"}/>
-                  <NumericInput 
-                    visibleName={"Fail"}
-                    pieceType={"Fail"}
-                    internalName={"hpfail"}/>
-                </div>
-              }
+             
               </div>
             <div className={styles.Endgame}>
               <Header headerName={"Endgame"}/>
@@ -565,33 +547,7 @@ export default function Home() {
             <div className={styles.PostMatch}>
               <br></br>
               <Header headerName={"Post-Match"}/>
-                <div className={styles.Qual}>
-                  <Qualitative                   
-                    visibleName={"Coral Speed"}
-                    internalName={"coralspeed"}
-                    description={"Coral Speed"}/>
-                  <Qualitative                   
-                    visibleName={"Processor Speed"}
-                    internalName={"processorspeed"}
-                    description={"Processor Speed"}/>
-                  <Qualitative                   
-                    visibleName={"Net Speed"}
-                    internalName={"netspeed"}
-                    description={"Net Speed"}/>
-                  <Qualitative                   
-                    visibleName={"Algae Removal Speed"}
-                    internalName={"algaeremovalspeed"}
-                    description={"Algae Removal Speed"}/>
-                  <Qualitative                   
-                    visibleName={"Climb Speed"}
-                    internalName={"climbspeed"}
-                    description={"Climb Speed"}/>
-                  <Qualitative
-                    visibleName={"Cage Hazard"}
-                    internalName={"cagehazard"}
-                    description={"Cage Hazard"}
-                    symbol={"ⵔ"}/>
-                </div>
+               
               <br></br>
               <span className={styles.subsubheading}>Intake</span>
               <hr className={styles.subsubheading}></hr>
@@ -604,10 +560,7 @@ export default function Home() {
                   visibleName={"Coral Station"}
                   internalName={"coralstationintake"}
                 />
-                <Checkbox
-                  visibleName={"Lollipop"}
-                  internalName={"lollipop"}
-                />
+                
                 <Checkbox
                   visibleName={"Algae Ground"}
                   internalName={"algaegrndintake"}
