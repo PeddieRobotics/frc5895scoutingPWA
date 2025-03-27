@@ -11,7 +11,7 @@ export async function GET() {
 
 
     // fetch team name from blue alliance api, commented our for now while testing getting from the backend
-    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025caph/teams`, {
+    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025njski/teams`, {
       headers: {
         "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
         "Accept": "application/json"
@@ -45,6 +45,7 @@ export async function GET() {
     
 
     calculateAverages(responseObject, rows);
+    calculateLast3EPA(responseObject, rows);
 
     return NextResponse.json(responseObject, { status: 200 });
   } catch (error) {
@@ -174,4 +175,37 @@ function calculateAverages(responseObject, rows) {
     teamData.qualitative.aggression = average(teamData.qualitative.aggression, count);
     teamData.qualitative.cagehazard = average(teamData.qualitative.cagehazard, count);
   }
+
+  function calculateLast3EPA(responseObject, rows) {
+    Object.keys(responseObject).forEach(team => {
+      const teamRows = rows
+        .filter(r => String(r.team) === String(team) && !r.noshow)
+        .map(r => ({
+          ...r,
+          auto: calcAuto(r),
+          tele: calcTele(r),
+          end: calcEnd(r),
+          epa: calcAuto(r) + calcTele(r) + calcEnd(r),
+        }))
+        .sort((a, b) => a.match - b.match); // assuming `match` column exists
+  
+      const last3 = teamRows.slice(-3);
+  
+      const avg = (arr, field) => {
+        if (arr.length === 0) return 0;
+        const sum = arr.reduce((sum, r) => sum + (r[field] || 0), 0);
+        return Math.round((sum / arr.length) * 10) / 10;
+      };
+  
+      responseObject[team].last3Auto = avg(last3, "auto");
+      responseObject[team].last3Tele = avg(last3, "tele");
+      responseObject[team].last3End = avg(last3, "end");
+      responseObject[team].last3EPA = avg(last3, "epa");
+    });
+  }
+
+
+
+
+
 }
