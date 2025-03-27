@@ -318,7 +318,7 @@ export default function Home() {
                     internalName={"autoalgaeremoved"}
                   />
                 </div>
-                <div className={styles.Processor}>
+                <div className={styles.Coral}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
                     <NumericInput 
@@ -373,7 +373,7 @@ export default function Home() {
                     internalName={"telealgaeremoved"}
                   />
                 </div>
-                <div className={styles.Processor}>
+                <div className={styles.Coral}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
                     <NumericInput 
