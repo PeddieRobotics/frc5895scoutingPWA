@@ -33,13 +33,13 @@ function calcAuto(record) {
         case 1:
             endgamePoints = 2; // Parked
             break;
-        case 2:
+        case 3:
             endgamePoints = 6; // Shallow Dock
             break;
-        case 3:
+        case 4:
             endgamePoints = 12; // Deep Dock
             break;
-        case 4:
+        case 2:
             endgamePoints = 2; // Failed Attempt
             break;
         default:
