@@ -8,7 +8,6 @@ import Checkbox from "./form-components/Checkbox";
 import CommentBox from "./form-components/CommentBox";
 import EndPlacement from "./form-components/EndPlacement";
 import SubHeader from "./form-components/SubHeader";
-import MatchType from "./form-components/MatchType";
 import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
@@ -18,7 +17,6 @@ export default function Home() {
   const [noShow, setNoShow] = useState(false);
   const [breakdown, setBreakdown] = useState(false);
   const [defense, setDefense] = useState(false);
-  const [matchType, setMatchType] = useState("2");
   const [scoutProfile, setScoutProfile] = useState(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [formData, setFormData] = useState(null);
@@ -33,7 +31,6 @@ export default function Home() {
       if (savedProfile) {
         const profileData = JSON.parse(savedProfile)
         setScoutProfile(profileData);
-        setMatchType(profileData.matchType || "2")
       }
     }
   }, []);
@@ -140,10 +137,6 @@ export default function Home() {
     setDefense(e.target.checked);
   }
 
-  function handleMatchTypeChange(value){
-    setMatchType(value);
-  };
-
   async function generateQRCode(e) {
     e.preventDefault();
     
@@ -156,7 +149,7 @@ export default function Home() {
       breakdowncomments: null, 
       defensecomments: null, 
       generalcomments: null,
-      scoutteam: "5895" // Hardcoded team number
+      scoutteam: "5895"
     };
     
     [...new FormData(form.current).entries()].forEach(([name, value]) => {
@@ -171,31 +164,12 @@ export default function Home() {
       }
     });
 
-    data.breakdown = undefined;
-    data.defense = undefined;
-
     let preMatchInputs = document.querySelectorAll(".preMatchInput");
     for (let preMatchInput of preMatchInputs) {
       if(preMatchInput.value == "" || preMatchInput.value <= "0") {
         alert("Invalid Pre-Match Data!");
         return; 
       } 
-    }
-
-    if (matchType == 2) {
-      try {
-        const response = await fetch(`/api/get-valid-team?team=${data.team}&match=${data.match}`)
-        if (!response.ok) throw new Error('Validation failed');
-        const validationData = await response.json();
-        
-        if (!validationData.valid) {
-          alert("Invalid Team and Match Combination!");
-          return;
-        }
-      } catch (error) {
-        alert("Error validating team and match.");
-        return;
-      }
     }
 
     data.timestamp = new Date().toISOString();
@@ -209,7 +183,6 @@ export default function Home() {
         scoutname: data.scoutname, 
         scoutteam: "5895",
         match: Number(data.match)+1,
-        matchType: matchType 
       };
       setScoutProfile(newProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
@@ -221,7 +194,6 @@ export default function Home() {
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
-    setMatchType("2");
     setFormData(null);
 
     new JSConfetti().addConfetti({
@@ -267,7 +239,6 @@ export default function Home() {
                 type={"number"}
               />
             </div>
-            <MatchType onMatchTypeChange={handleMatchTypeChange} defaultValue={matchType}/>
             <Checkbox
               visibleName={"No Show"}
               internalName={"noshow"}
@@ -291,44 +262,38 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[4,3,2,1].map(level => (
-                        <tr key={`auto-l${level}`}>
-                          <td><h2>L{level}</h2></td>
-                          <td>
-                            <NumericInput 
-                              pieceType={"Success"}
-                              internalName={`autol${level}success`}
-                            />
-                          </td>
-                          <td>
-                            <NumericInput 
-                              pieceType={"Fail"}
-                              internalName={`autol${level}fail`}
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      <tr>
+                        <td><h2>L4</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L3</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L2</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L1</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
                 <div className={styles.AlgaeRemoved}>
                   <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
-                  <NumericInput 
-                    pieceType={"Counter"}
-                    internalName={"autoalgaeremoved"}
-                  />
+                  <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
                 </div>
-                <div className={styles.Coral}>
+                <div className={styles.Processor}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
-                    <NumericInput 
-                      visibleName={"Success"}
-                      internalName={"autoprocessorsuccess"}
-                    />
-                    <NumericInput 
-                      visibleName={"Fail"}
-                      internalName={"autoprocessorfail"}
-                    />
+                    <NumericInput visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
+                    <NumericInput visibleName={"Fail"} internalName={"autoprocessorfail"}/>
                   </div>
                 </div>
               </div>
@@ -346,51 +311,40 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[4,3,2,1].map(level => (
-                        <tr key={`tele-l${level}`}>
-                          <td><h2>L{level}</h2></td>
-                          <td>
-                            <NumericInput 
-                              pieceType={"Success"}
-                              internalName={`telel${level}success`}
-                            />
-                          </td>
-                          <td>
-                            <NumericInput 
-                              pieceType={"Fail"}
-                              internalName={`telel${level}fail`}
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      <tr>
+                        <td><h2>L4</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L3</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L2</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L1</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
                 <div className={styles.AlgaeRemoved}>
                   <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
-                  <NumericInput 
-                    pieceType={"Counter"}
-                    internalName={"telealgaeremoved"}
-                  />
+                  <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
                 </div>
-                <div className={styles.Coral}>
+                <div className={styles.Processor}>
                   <SubHeader subHeaderName={"Processor"} />
                   <div className={styles.HBox}>
-                    <NumericInput 
-                      visibleName={"Success"}
-                      internalName={"teleprocessorsuccess"}
-                    />
-                    <NumericInput 
-                      visibleName={"Fail"}
-                      internalName={"teleprocessorfail"}
-                    />
+                    <NumericInput visibleName={"Success"} internalName={"teleprocessorsuccess"}/>
+                    <NumericInput visibleName={"Fail"} internalName={"teleprocessorfail"}/>
                   </div>
                 </div>
-
-                <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-                />
               </div>
 
               <div className={styles.Endgame}>
@@ -400,6 +354,14 @@ export default function Home() {
 
               <div className={styles.PostMatch}>
                 <Header headerName={"Post-Match"}/>
+                <div className={styles.Intake}>
+                  <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
+                  <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
+                  <Checkbox visibleName={"Lollipop"} internalName={"lollipop"}/>
+                  <Checkbox visibleName={"Algae Ground"} internalName={"algaegrndintake"}/>
+                  <Checkbox visibleName={"Algae High Reef"} internalName={"algaehighreefintake"}/>
+                  <Checkbox visibleName={"Algae Low Reef"} internalName={"algaelowreefintake"}/>
+                </div>
                 <Checkbox 
                   visibleName={"Broke down?"} 
                   internalName={"breakdown"} 
@@ -422,6 +384,10 @@ export default function Home() {
                     internalName={"defensecomments"}
                   />
                 )}
+                <CommentBox
+                  visibleName={"General Comments"}
+                  internalName={"generalcomments"}
+                />
               </div>
             </>
           )}
