@@ -6,8 +6,17 @@ import NavBar from './form-components/NavBar.js'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Team 2485 Analytics App',
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  title: 'Team 5895 Analytics App',
   description: 'For scouting and analysis of the FIRST game.',
+
+  appleWebApp: {
+    capable: true,
+    title: 'Scout App',
+    statusBarStyle: 'black-translucent'
+  },
+
 }
 
 export default function RootLayout({ children }) {

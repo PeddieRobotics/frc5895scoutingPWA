@@ -22,8 +22,12 @@ export default function Home() {
   const [formData, setFormData] = useState(null);
   const [qrCodeDataURL1, setQrCodeDataURL1] = useState("");
   const [qrCodeDataURL2, setQrCodeDataURL2] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
+
 
   const form = useRef();
+
+  
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
