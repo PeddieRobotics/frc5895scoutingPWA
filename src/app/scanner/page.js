@@ -94,8 +94,8 @@ export default function Scanner() {
         <div className={styles.Results}>
           {results.map((result, index) => (
             <div key={index} className={styles.ResultCard}>
-              <h3>Team {result.data?.team || 'N/A'}</h3>
-              <p>Match: {result.data?.match || 'N/A'}</p>
+              <h3>Team {result.team || 'N/A'}</h3>
+              <p>Match: {result.match || 'N/A'}</p>
               {/* Fixed status display */}
               <p>Status: {result.success ? '✅ Success' : '❌ Failed'}</p>
             </div>
