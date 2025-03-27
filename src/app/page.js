@@ -311,10 +311,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-              />
+              
 
               </div>
 
@@ -380,6 +377,23 @@ export default function Home() {
                 </div>
               </div>
 
+              <CommentBox
+                  visibleName={"General Comments"}
+                  internalName={"generalcomments"}
+              />
+
+              <Checkbox 
+                  visibleName={"Playing Defense?"} 
+                  internalName={"defense"} 
+                  changeListener={onDefenseChange}
+                />
+                {defense && (
+                  <CommentBox
+                    visibleName={"Defense Elaboration"}
+                    internalName={"defensecomments"}
+                  />
+                )}    
+
 
               </div>
 
@@ -410,17 +424,7 @@ export default function Home() {
                     internalName={"breakdowncomments"}
                   />
                 )}
-                <Checkbox 
-                  visibleName={"Played Defense?"} 
-                  internalName={"defense"} 
-                  changeListener={onDefenseChange}
-                />
-                {defense && (
-                  <CommentBox
-                    visibleName={"Defense Elaboration"}
-                    internalName={"defensecomments"}
-                  />
-                )}
+               
                 
               </div>
             </>
