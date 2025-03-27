@@ -11,7 +11,6 @@ export default function Scanner() {
 
   const processData = async (data) => {
     try {
-      // Handle both form types
       const entries = data.formType === 'tripleQualitative' 
         ? data.teams 
         : [data];
@@ -23,8 +22,13 @@ export default function Scanner() {
           body: JSON.stringify(entry)
         });
         
-        if (!response.ok) throw new Error('Upload failed');
-        return response.json();
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Upload failed');
+        }
+        
+        const responseData = await response.json();
+        return { success: true, data: responseData };
       });
 
       const results = await Promise.all(uploadPromises);
@@ -42,7 +46,7 @@ export default function Scanner() {
     if (!inputText.trim()) return;
     
     setUploadStatus("Processing...");
-    setResults([]);
+ 
 
     try {
       // Decode Base58
@@ -62,6 +66,7 @@ export default function Scanner() {
     }
   };
 
+  
   return (
     <div className={styles.MainDiv}>
       <h2>QR Scanner</h2>
@@ -91,6 +96,7 @@ export default function Scanner() {
             <div key={index} className={styles.ResultCard}>
               <h3>Team {result.data?.team || 'N/A'}</h3>
               <p>Match: {result.data?.match || 'N/A'}</p>
+              {/* Fixed status display */}
               <p>Status: {result.success ? '✅ Success' : '❌ Failed'}</p>
             </div>
           ))}
