@@ -377,3 +377,84 @@ hr.subsubheading {
   margin: 10px;
   min-width: 200px;
 }
+
+/* Add this to your existing CSS */
+.QRCodeOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(11, 35, 59, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.QRCodeContainer {
+  max-width: 100%;
+  text-align: center;
+}
+
+.QRCodeRow {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.QRCodeImage {
+  max-width: 90vw;
+  height: auto;
+  aspect-ratio: 1/1;
+  border: 2px solid #bd9748;
+  border-radius: 10px;
+}
+
+.QRCloseButton {
+  background-color: #bd9748;
+  color: #0b233b;
+  padding: 15px 30px;
+  border-radius: 5px;
+  border: 1px solid #ffa200;
+  font-size: 20px;
+  margin-top: 20px;
+  cursor: pointer;
+  width: 200px;
+}
+
+.QRCloseButton:hover {
+  background-color: #fcec91;
+}
+
+@media (min-width: 768px) {
+  .QRCodeRow {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .QRCodeImage {
+    width: 40vh;
+  }
+}
+
+/* Adjust submit button for mobile */
+button[type="submit"] {
+  white-space: nowrap;
+  padding: 10px 20px;
+  width: 90%;
+  max-width: 300px;
+  font-size: 24px;
+}
+
+@media (max-width: 480px) {
+  button[type="submit"] {
+    font-size: 20px;
+    padding: 10px 15px;
+  }
+  
+  .MainDiv {
+    padding: 5px 15px;
+  }
+}
