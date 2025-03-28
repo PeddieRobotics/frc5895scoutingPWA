@@ -471,29 +471,3 @@ hr.subsubheading {
   }
 }
 
-/* Add to your CSS module */
-@media screen and (max-width: 767px) {
-  input[type="text"],
-  input[type="number"],
-  textarea {
-    font-size: 16px !important;
-    transform: scale(1);
-    transform-origin: left top;
-    min-height: 44px; /* Minimum touch target size */
-  }
-
-  /* Prevent iOS zoom */
-  select:focus,
-  textarea:focus,
-  input:focus {
-    font-size: 16px !important;
-  }
-}
-
-/* Add this to your existing input styles */
-.MainDiv input,
-.MainDiv textarea {
-  transform: perspective(1px) translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
