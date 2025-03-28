@@ -434,7 +434,7 @@ export default function Home() {
               </div>
             </>
           )}
-          <button id="submit" type="submit"  className={styles.submitButton}>GENERATE QR CODE</button>
+          <button id="submit" type="submit" >GENERATE QR CODE</button>
         </form>
       )}
     </div>
