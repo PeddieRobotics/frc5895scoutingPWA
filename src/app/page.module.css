@@ -440,21 +440,22 @@ hr.subsubheading {
 }
 
 /* Adjust submit button for mobile */
-button[type="submit"] {
+.submitButton {
+  background-color: #bd9748;
+  height: 50px;
+  width: 300px;
+  border-radius: 5px;
+  border: 1px solid #ffa200;
+  font-size: 30px;
   white-space: nowrap;
   padding: 10px 20px;
   width: 90%;
   max-width: 300px;
-  font-size: 24px;
 }
 
 @media (max-width: 480px) {
-  button[type="submit"] {
+  .submitButton {
     font-size: 20px;
     padding: 10px 15px;
-  }
-  
-  .MainDiv {
-    padding: 5px 15px;
   }
 }
