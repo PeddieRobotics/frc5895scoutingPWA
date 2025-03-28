@@ -385,16 +385,22 @@ hr.subsubheading {
   left: 0;
   right: 0;
   bottom: 0;
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   background: rgba(11, 35, 59, 0.95);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to allow overflow */
   padding: 20px;
 }
 
 .QRCodeContainer {
   max-width: 100%;
   text-align: center;
+  min-height: 100vh; /* Ensure container can scroll */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .QRCodeRow {
@@ -454,8 +460,13 @@ hr.subsubheading {
 }
 
 @media (max-width: 480px) {
-  .submitButton {
-    font-size: 20px;
-    padding: 10px 15px;
+  .MainDiv {
+    padding: 5px 15px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .QRCodeContainer {
+    padding: 20px 0;
   }
 }
