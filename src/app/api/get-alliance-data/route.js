@@ -42,6 +42,34 @@ export async function GET() {
         }
       }
     });
+
+    function calculateLast3EPA(responseObject, rows) {
+      Object.keys(responseObject).forEach(team => {
+        const teamRows = rows
+          .filter(r => String(r.team) === String(team) && !r.noshow)
+          .map(r => ({
+            ...r,
+            auto: calcAuto(r),
+            tele: calcTele(r),
+            end: calcEnd(r),
+            epa: calcAuto(r) + calcTele(r) + calcEnd(r),
+          }))
+          .sort((a, b) => a.match - b.match); // assuming `match` column exists
+    
+        const last3 = teamRows.slice(-3);
+    
+        const avg = (arr, field) => {
+          if (arr.length === 0) return 0;
+          const sum = arr.reduce((sum, r) => sum + (r[field] || 0), 0);
+          return Math.round((sum / arr.length) * 10) / 10;
+        };
+    
+        responseObject[team].last3Auto = avg(last3, "auto");
+        responseObject[team].last3Tele = avg(last3, "tele");
+        responseObject[team].last3End = avg(last3, "end");
+        responseObject[team].last3EPA = avg(last3, "epa");
+      });
+    }
     
 
     calculateAverages(responseObject, rows);
@@ -176,33 +204,7 @@ function calculateAverages(responseObject, rows) {
     teamData.qualitative.cagehazard = average(teamData.qualitative.cagehazard, count);
   }
 
-  function calculateLast3EPA(responseObject, rows) {
-    Object.keys(responseObject).forEach(team => {
-      const teamRows = rows
-        .filter(r => String(r.team) === String(team) && !r.noshow)
-        .map(r => ({
-          ...r,
-          auto: calcAuto(r),
-          tele: calcTele(r),
-          end: calcEnd(r),
-          epa: calcAuto(r) + calcTele(r) + calcEnd(r),
-        }))
-        .sort((a, b) => a.match - b.match); // assuming `match` column exists
-  
-      const last3 = teamRows.slice(-3);
-  
-      const avg = (arr, field) => {
-        if (arr.length === 0) return 0;
-        const sum = arr.reduce((sum, r) => sum + (r[field] || 0), 0);
-        return Math.round((sum / arr.length) * 10) / 10;
-      };
-  
-      responseObject[team].last3Auto = avg(last3, "auto");
-      responseObject[team].last3Tele = avg(last3, "tele");
-      responseObject[team].last3End = avg(last3, "end");
-      responseObject[team].last3EPA = avg(last3, "epa");
-    });
-  }
+ 
 
 
 
