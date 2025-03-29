@@ -59,9 +59,9 @@ export default function Home() {
       (data.teleprocessorfail || 0);
   
     const climbStatus = data.stageplacement || -1;
-    const parked = climbStatus === 0 ? "TRUE" : "FALSE";
-    const shallowClimb = climbStatus === 1 ? "TRUE" : "FALSE";
-    const deepClimb = climbStatus === 2 ? "TRUE" : "FALSE";
+    const parked = climbStatus === 2 ? "TRUE" : "FALSE";
+    const shallowClimb = climbStatus === 3 ? "TRUE" : "FALSE";
+    const deepClimb = climbStatus === 4 ? "TRUE" : "FALSE";
   
     const notes = [
       data.breakdowncomments,
