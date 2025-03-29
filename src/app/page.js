@@ -197,10 +197,7 @@ export default function Home() {
   
   const handleQRClose = () => {
     setShowQRCode(false);
-    setNoShow(false);
-    setBreakdown(false);
-    setDefense(false);
-    setFormData(null);
+   
 
     new JSConfetti().addConfetti({
       emojis: ['🐠', '🐡', '🦀', '🪸'],
@@ -209,6 +206,13 @@ export default function Home() {
       confettiNumber: 100,
     });
   };
+
+  const formReset = () => {
+    setNoShow(false);
+    setBreakdown(false);
+    setDefense(false);
+    setFormData(null);
+  }
 
   return (
     <div className={styles.MainDiv}>
@@ -437,6 +441,7 @@ export default function Home() {
             </>
           )}
           <button id="submit" type="submit">GENERATE QR CODE</button>
+          <button  onClick={handleQRClose}  className={styles.QRCloseButton}>RESET FORM</button>
         </form>
       )}
     </div>
