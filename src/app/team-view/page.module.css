@@ -234,7 +234,7 @@
 .barGraphContainer {
     margin-bottom: 20px;
     border-bottom: 4px solid lightgray;
-    padding-bottom: 10px;
+    padding: 10px;
     margin-top: -10px;
 }
 

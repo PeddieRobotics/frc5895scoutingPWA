@@ -13,9 +13,18 @@ export const metadata = {
 
   appleWebApp: {
     capable: true,
-    title: 'Scout App',
-    statusBarStyle: 'black-translucent'
+    title: 'Jormunscoutr',
+    statusBarStyle: 'black'
   },
+
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    minimumScale: 1,
+    maximumScale: 1,
+    userScalable: 'no',
+    viewportFit: 'cover'
+  }
 
 }
 

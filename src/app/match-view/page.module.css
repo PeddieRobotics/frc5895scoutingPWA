@@ -265,6 +265,7 @@
     height: 300px;
     margin: auto;
     margin-bottom: -30px;
+    padding: 10px;
 }
 .barchartContainer svg {
     transform: translateX(-20px);

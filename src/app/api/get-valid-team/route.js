@@ -18,7 +18,7 @@ export async function GET(request) {
     try {
         // Fetch match data from The Blue Alliance API
         const response = await fetch(
-            `https://www.thebluealliance.com/api/v3/event/2025nkski/matches/simple`,
+            `https://www.thebluealliance.com/api/v3/event/2025njski/matches/simple`,
             {
                 headers: {
                     "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
@@ -35,7 +35,7 @@ export async function GET(request) {
 
         // Filter for the specific match and team
         const teamKey = `frc${team}`;
-        const matchKey = `2025nkski_qm${match}`;
+        const matchKey = `2025njski_qm${match}`;
 
         const validMatch = matches.find(match => {
             // Check if this is the correct match

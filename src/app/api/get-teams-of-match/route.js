@@ -17,8 +17,7 @@ export async function GET(request) {
   
   try {
     const response = await fetch(
-      `https://www.thebluealliance.com/api/v3/event/2025caph/matches/simple`,
-      {
+        `https://www.thebluealliance.com/api/v3/event/2025njski/matches/simple`,       {
         headers: {
           "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
           "Accept": "application/json"
@@ -43,15 +42,23 @@ export async function GET(request) {
 
     if (matchArr.length === 1) {
       const match = matchArr[0];
-      return NextResponse.json({
-        // Blue alliance lists teams with "frc" prefix, so we remove it
-        team1: parseInt(match.alliances.blue.team_keys[0].replace('frc', '')),
-        team2: parseInt(match.alliances.blue.team_keys[1].replace('frc', '')),
-        team3: parseInt(match.alliances.blue.team_keys[2].replace('frc', '')),
-        team4: parseInt(match.alliances.red.team_keys[0].replace('frc', '')),
-        team5: parseInt(match.alliances.red.team_keys[1].replace('frc', '')),
-        team6: parseInt(match.alliances.red.team_keys[2].replace('frc', '')),
-      }, { status: 200 });
+      // Make sure we have alliances data before trying to access it
+      if (match.alliances && match.alliances.blue && match.alliances.red) {
+        return NextResponse.json({
+          // Blue alliance lists teams with "frc" prefix, so we remove it
+          team1: parseInt(match.alliances.blue.team_keys[0].replace('frc', '')),
+          team2: parseInt(match.alliances.blue.team_keys[1].replace('frc', '')),
+          team3: parseInt(match.alliances.blue.team_keys[2].replace('frc', '')),
+          team4: parseInt(match.alliances.red.team_keys[0].replace('frc', '')),
+          team5: parseInt(match.alliances.red.team_keys[1].replace('frc', '')),
+          team6: parseInt(match.alliances.red.team_keys[2].replace('frc', '')),
+        }, { status: 200 });
+      } else {
+        return NextResponse.json(
+          { message: "Match found but alliance data is incomplete" },
+          { status: 200 }
+        );
+      }
     } else {
       return NextResponse.json(
         { message: "Failed to find match" },
