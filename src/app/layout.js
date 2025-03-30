@@ -9,7 +9,7 @@ export const metadata = {
   manifest: '/manifest.json',
   themeColor: '#000000',
   title: 'Team 5895 Analytics App',
-  description: 'For scouting and analysis of the FIRST game.',
+  description: 'For scouting and analysis of the FIRST game!',
 
   appleWebApp: {
     capable: true,
