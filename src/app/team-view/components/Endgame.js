@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { VictoryPie } from "victory";
@@ -16,7 +15,7 @@ export default function Endgame({ data, color }) {
       padding={100}
       data={data}
       colorScale={color}
-      labels={({ datum }) => `${datum.x}: ${Math.round(datum.y)}%`}
+      labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : ""}
     />
   );
 }
