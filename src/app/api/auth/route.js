@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  return new NextResponse('Auth Required.', {
+  console.log('Auth API route hit');
+  return new NextResponse('Authentication Required', {
     status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Secure Area"' }
+    headers: {
+      'WWW-Authenticate': 'Basic realm="Secure Area"',
+      'Content-Type': 'text/plain'
+    }
   });
 }
 
