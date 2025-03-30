@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import styles from "./page.module.css";
@@ -12,6 +12,7 @@ import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
+import { toast, Toaster } from 'react-hot-toast';
 
 export default function Home() {
   const [noShow, setNoShow] = useState(false);
@@ -19,15 +20,16 @@ export default function Home() {
   const [defense, setDefense] = useState(false);
   const [scoutProfile, setScoutProfile] = useState(null);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [formData, setFormData] = useState(null);
   const [qrCodeDataURL1, setQrCodeDataURL1] = useState("");
   const [qrCodeDataURL2, setQrCodeDataURL2] = useState("");
   const [isOnline, setIsOnline] = useState(true);
-
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [submissionResult, setSubmissionResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useRef();
-
-  
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -36,6 +38,16 @@ export default function Home() {
         const profileData = JSON.parse(savedProfile)
         setScoutProfile(profileData);
       }
+      
+      // Check online status
+      setIsOnline(navigator.onLine);
+      window.addEventListener('online', () => setIsOnline(true));
+      window.addEventListener('offline', () => setIsOnline(false));
+      
+      return () => {
+        window.removeEventListener('online', () => setIsOnline(true));
+        window.removeEventListener('offline', () => setIsOnline(false));
+      };
     }
   }, []);
 
@@ -143,9 +155,15 @@ export default function Home() {
     setDefense(e.target.checked);
   }
 
-  async function generateQRCode(e) {
-    e.preventDefault();
+  async function processFormData(e) {
+    if (e) e.preventDefault();
     
+    if (!form.current) {
+      console.error("Form reference is missing");
+      return null;
+    }
+    
+    // Initialize with default values
     let data = {
       noshow: false, 
       leave: false, 
@@ -155,53 +173,190 @@ export default function Home() {
       breakdowncomments: null, 
       defensecomments: null, 
       generalcomments: null,
-      scoutteam: "5895"
+      scoutteam: "5895",
+      // Explicitly include all form fields with defaults
+      autol1success: 0, autol1fail: 0,
+      autol2success: 0, autol2fail: 0,
+      autol3success: 0, autol3fail: 0,
+      autol4success: 0, autol4fail: 0,
+      autoprocessorsuccess: 0, autoprocessorfail: 0,
+      autonetsuccess: 0, autonetfail: 0,
+      autoalgaeremoved: 0,
+      telel1success: 0, telel1fail: 0,
+      telel2success: 0, telel2fail: 0,
+      telel3success: 0, telel3fail: 0,
+      telel4success: 0, telel4fail: 0,
+      teleprocessorsuccess: 0, teleprocessorfail: 0,
+      telenetsuccess: 0, telenetfail: 0,
+      telealgaeremoved: 0,
+      coralgrndintake: false,
+      coralstationintake: false,
+      algaegrndintake: false,
+      algaehighreefintake: false,
+      algaelowreefintake: false
     };
     
-    [...new FormData(form.current).entries()].forEach(([name, value]) => {
-      if (value == 'on') {
-        data[name] = true;
-      } else {
-        if (!isNaN(value) && value != "") {
-          data[name] = +value;
+    try {
+      // Get all form elements
+      const formElements = form.current.elements;
+      for (let i = 0; i < formElements.length; i++) {
+        const element = formElements[i];
+        
+        // Skip buttons and elements without a name
+        if (!element.name || element.tagName === 'BUTTON') continue;
+        
+        console.log(`Processing form element: ${element.name}, type: ${element.type}, value: ${element.value}`);
+        
+        if (element.type === 'checkbox') {
+          data[element.name] = element.checked;
+        } else if (element.type === 'radio') {
+          if (element.checked) {
+            data[element.name] = parseInt(element.value) || element.value;
+          }
+        } else if (element.type === 'number' || element.type === 'tel') {
+          // Convert to number if not empty
+          data[element.name] = element.value !== '' ? Number(element.value) : 0;
+        } else if (element.type === 'textarea') {
+          // For comment boxes
+          data[element.name] = element.value.trim() || null;
         } else {
-          data[name] = value;
+          data[element.name] = element.value || null;
         }
       }
-    });
+      
+      // Directly check for stageplacement radio buttons
+      const stagePlacementRadios = form.current.querySelectorAll('input[name="stageplacement"]');
+      for (let radio of stagePlacementRadios) {
+        if (radio.checked) {
+          data.stageplacement = parseInt(radio.value);
+          break;
+        }
+      }
+      
+      // Ensure comments are captured
+      const commentBoxes = form.current.querySelectorAll('textarea');
+      commentBoxes.forEach(box => {
+        if (box.name && box.value.trim()) {
+          data[box.name] = box.value.trim();
+        }
+      });
+    } catch (err) {
+      console.error("Error processing form data:", err);
+    }
 
+    // Validate pre-match data
     let preMatchInputs = document.querySelectorAll(".preMatchInput");
     for (let preMatchInput of preMatchInputs) {
       if(preMatchInput.value == "" || preMatchInput.value <= "0") {
         alert("Invalid Pre-Match Data!");
-        return; 
+        return null; 
       } 
     }
 
     data.timestamp = new Date().toISOString();
     data.id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
+    console.log("Processed form data:", data);
+    return data;
+  }
+  
+  async function generateQRCode(e) {
+    // Important: Prevent default but DO NOT reset the form
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const data = await processFormData(e);
+    if (!data) return;
+    
+    // Store form data without touching the form
     setFormData(data);
     setShowQRCode(true);
+  }
+  
+  async function handleSubmitOnline(e) {
+    // Just prevent default and process form data
+    if (e) e.preventDefault();
     
-    if (typeof document !== 'undefined')  {
+    const data = await processFormData(e);
+    if (!data) return;
+    
+    // Store form data without modifying form state
+    setFormData(data);
+    setShowSubmitDialog(true);
+  }
+  
+  const submitDataOnline = async () => {
+    try {
+      // Create a copy of the form data to submit
+      const submissionData = { ...formData };
+      
+      // Close the dialog first to prevent any UI issues
+      setShowSubmitDialog(false);
+      
+      // Show loading indicator
+      toast.info("Submitting data...");
+      
+      // Make the API call
+      const response = await fetch("/api/add-match-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      // Show success message
+      toast.success("Data submitted successfully!");
+      
+      // Update scout profile with submitted match
+      updateScoutProfile(submissionData);
+      
+      return true;
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      toast.error("Failed to submit data. Please try again.");
+      return false;
+    }
+  };
+  
+  const handleQRClose = () => {
+    setShowQRCode(false);
+    
+    // Update profile after QR code is generated and closed
+    if (formData && typeof document !== 'undefined') {
       const newProfile = { 
-        scoutname: data.scoutname, 
+        scoutname: formData.scoutname, 
         scoutteam: "5895",
-        match: Number(data.match)+1,
+        match: Number(formData.match)+1,
       };
       setScoutProfile(newProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
     }
-  }
-  
-  const handleQRClose = () => {
-    setShowQRCode(false);
+    
+    // Only reset the form after successfully generating and viewing QR code
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
+    
+    // Clear form fields, but this happens AFTER the QR code is viewed
+    // so no data is lost in the process
+    if (form.current) {
+      form.current.reset();
+      // After resetting, restore the scout profile values
+      setTimeout(() => initializeForm(), 0);
+    }
+    
+    // Clear other states
     setFormData(null);
-
+    setSubmissionResult(null);
+    setUploadStatus("");
+    
     new JSConfetti().addConfetti({
       emojis: ['🐠', '🐡', '🦀', '🪸'],
       emojiSize: 100,
@@ -209,9 +364,107 @@ export default function Home() {
       confettiNumber: 100,
     });
   };
+  
+  const handleSubmitClose = () => {
+    setShowSubmitDialog(false);
+    
+    if (submissionResult?.success) {
+      // Only reset the form after successful submission
+      setNoShow(false);
+      setBreakdown(false);
+      setDefense(false);
+      
+      // Clear form fields, but this happens AFTER the form is successfully submitted
+      if (form.current) {
+        form.current.reset();
+        // After resetting, restore the scout profile values
+        setTimeout(() => initializeForm(), 0);
+      }
+      
+      // Clear other states
+      setFormData(null);
+      setSubmissionResult(null);
+      setUploadStatus("");
+      
+      new JSConfetti().addConfetti({
+        emojis: ['🐠', '🐡', '🦀', '🪸'],
+        emojiSize: 100,
+        confettiRadius: 3,
+        confettiNumber: 100,
+      });
+    }
+  };
+  
+  const handleCancelSubmit = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Just hide the dialog without touching any form data
+    setShowSubmitDialog(false);
+  };
+  
+  // Add a proper form initialization function that runs only once
+  // This should be the ONLY place other than resetForm() that 
+  // directly modifies form elements
+  const initializeForm = useCallback(() => {
+    if (form.current && scoutProfile) {
+      if (scoutProfile.scoutname) {
+        const scoutNameInput = form.current.querySelector('input[name="scoutname"]');
+        if (scoutNameInput) scoutNameInput.value = scoutProfile.scoutname;
+      }
+      
+      if (scoutProfile.match) {
+        const matchInput = form.current.querySelector('input[name="match"]');
+        if (matchInput) matchInput.value = scoutProfile.match;
+      }
+    }
+  }, [scoutProfile]);
+
+  // Add useEffect to initialize form values when profile changes
+  useEffect(() => {
+    initializeForm();
+  }, [scoutProfile, initializeForm]);
+
+  // Make the button click handlers completely safe
+  const handleOnlineSubmitClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    handleSubmitOnline(e);
+  };
+  
+  const handleQRButtonClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    generateQRCode(e);
+  };
+
+  // Helper function to update scout profile after successful submission
+  const updateScoutProfile = (submittedData) => {
+    if (typeof window !== 'undefined' && submittedData) {
+      // Create new profile with incremented match number
+      const newProfile = {
+        scoutname: submittedData.scoutname || scoutProfile.scoutname,
+        scoutteam: "5895",
+        match: Number(submittedData.match) + 1,
+      };
+      
+      // Update state and local storage
+      setScoutProfile(newProfile);
+      localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+    }
+  };
 
   return (
     <div className={styles.MainDiv}>
+      <Toaster position="top-center" />
       {showQRCode ? (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
@@ -223,8 +476,143 @@ export default function Home() {
             <button onClick={handleQRClose} className={styles.QRCloseButton}>Done</button>
           </div>
         </div>
+      ) : showSubmitDialog ? (
+        <div className={styles.QRCodeOverlay}>
+          <div className={styles.QRCodeContainer}>
+            <h2>Submit Form Data Online</h2>
+            
+            {!submissionResult ? (
+              <>
+                <div className={styles.SubmitSummary}>
+                  <h3>Data Summary</h3>
+                  <div className={styles.SummaryMainDetails}>
+                    <p><strong>Team:</strong> {formData?.team}</p>
+                    <p><strong>Match:</strong> {formData?.match}</p>
+                    <p><strong>Scout:</strong> {formData?.scoutname}</p>
+                    <p><strong>No Show:</strong> {formData?.noshow ? "Yes" : "No"}</p>
+                  </div>
+                  
+                  {formData && !formData.noshow && (
+                    <>
+                      <div className={styles.SummarySection}>
+                        <h4>Auto</h4>
+                        <p><strong>Leave:</strong> {formData.leave ? "Yes" : "No"}</p>
+                        <p><strong>Coral:</strong></p>
+                        <ul className={styles.SummaryList}>
+                          <li>L1: {formData.autol1success || 0} success, {formData.autol1fail || 0} fail</li>
+                          <li>L2: {formData.autol2success || 0} success, {formData.autol2fail || 0} fail</li>
+                          <li>L3: {formData.autol3success || 0} success, {formData.autol3fail || 0} fail</li>
+                          <li>L4: {formData.autol4success || 0} success, {formData.autol4fail || 0} fail</li>
+                        </ul>
+                        <p><strong>Algae Removed:</strong> {formData.autoalgaeremoved || 0}</p>
+                        <p><strong>Processor:</strong> {formData.autoprocessorsuccess || 0} success, {formData.autoprocessorfail || 0} fail</p>
+                        <p><strong>Net:</strong> {formData.autonetsuccess || 0} success, {formData.autonetfail || 0} fail</p>
+                      </div>
+                      
+                      <div className={styles.SummarySection}>
+                        <h4>Tele</h4>
+                        <p><strong>Coral:</strong></p>
+                        <ul className={styles.SummaryList}>
+                          <li>L1: {formData.telel1success || 0} success, {formData.telel1fail || 0} fail</li>
+                          <li>L2: {formData.telel2success || 0} success, {formData.telel2fail || 0} fail</li>
+                          <li>L3: {formData.telel3success || 0} success, {formData.telel3fail || 0} fail</li>
+                          <li>L4: {formData.telel4success || 0} success, {formData.telel4fail || 0} fail</li>
+                        </ul>
+                        <p><strong>Algae Removed:</strong> {formData.telealgaeremoved || 0}</p>
+                        <p><strong>Processor:</strong> {formData.teleprocessorsuccess || 0} success, {formData.teleprocessorfail || 0} fail</p>
+                        <p><strong>Net:</strong> {formData.telenetsuccess || 0} success, {formData.telenetfail || 0} fail</p>
+                        <p><strong>Playing Defense:</strong> {formData.defense ? "Yes" : "No"}</p>
+                      </div>
+                      
+                      <div className={styles.SummarySection}>
+                        <h4>Endgame</h4>
+                        <p><strong>Stage Placement:</strong> {
+                          formData.stageplacement === 2 ? "Parked" : 
+                          formData.stageplacement === 3 ? "Shallow Water" : 
+                          formData.stageplacement === 4 ? "Deep Water" : "None"
+                        }</p>
+                      </div>
+                      
+                      <div className={styles.SummarySection}>
+                        <h4>Intake Capabilities</h4>
+                        <ul className={styles.SummaryList}>
+                          <li><strong>Coral Ground:</strong> {formData.coralgrndintake ? "Yes" : "No"}</li>
+                          <li><strong>Coral Station:</strong> {formData.coralstationintake ? "Yes" : "No"}</li>
+                          <li><strong>Algae Ground:</strong> {formData.algaegrndintake ? "Yes" : "No"}</li>
+                          <li><strong>Algae High Reef:</strong> {formData.algaehighreefintake ? "Yes" : "No"}</li>
+                          <li><strong>Algae Low Reef:</strong> {formData.algaelowreefintake ? "Yes" : "No"}</li>
+                        </ul>
+                      </div>
+                      
+                      <div className={styles.SummarySection}>
+                        <h4>Comments</h4>
+                        {formData.generalcomments && (
+                          <div className={styles.CommentBlock}>
+                            <strong>General:</strong> {formData.generalcomments}
+                          </div>
+                        )}
+                        
+                        {formData.breakdown && formData.breakdowncomments && (
+                          <div className={styles.CommentBlock}>
+                            <strong>Breakdown:</strong> {formData.breakdowncomments}
+                          </div>
+                        )}
+                        
+                        {formData.defense && formData.defensecomments && (
+                          <div className={styles.CommentBlock}>
+                            <strong>Defense:</strong> {formData.defensecomments}
+                          </div>
+                        )}
+                        
+                        {!formData.generalcomments && !formData.breakdowncomments && !formData.defensecomments && (
+                          <p>No comments provided</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className={styles.SubmitConfirm}>
+                  <p>Are you sure you want to submit this data?</p>
+                  <div className={styles.SubmitButtons}>
+                    <button 
+                      onClick={submitDataOnline} 
+                      className={styles.SubmitButton} 
+                      disabled={!isOnline || isSubmitting}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit"}
+                    </button>
+                    <button 
+                      onClick={handleCancelSubmit} 
+                      className={styles.CancelButton}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={styles.SubmitResults}>
+                <h3 className={submissionResult.success ? styles.SuccessText : styles.ErrorText}>
+                  {submissionResult.success ? "Submission Successful!" : "Submission Failed"}
+                </h3>
+                <p>{uploadStatus}</p>
+                <button onClick={handleSubmitClose} className={styles.QRCloseButton}>
+                  {submissionResult.success ? "Done" : "Close"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
-        <form ref={form} name="Scouting Form" onSubmit={generateQRCode}>
+        <form 
+          ref={form} 
+          name="Scouting Form" 
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
+        >
           <Header headerName={"JÖRMUNSCOUTR"} />
           <div className={styles.allMatchInfo}>
             <div className={styles.MatchInfo}>
@@ -232,17 +620,20 @@ export default function Home() {
                 visibleName={"Scout Name:"} 
                 internalName={"scoutname"} 
                 defaultValue={scoutProfile?.scoutname || ""}
+                className="preMatchInput"
               />
               <TextInput
                 visibleName={"Team Scouted:"}
                 internalName={"team"}
                 type={"number"}
+                className="preMatchInput"
               />
               <TextInput 
                 visibleName={"Match #:"} 
                 internalName={"match"} 
                 defaultValue={scoutProfile?.match || ""}
                 type={"number"}
+                className="preMatchInput"
               />
             </div>
             <Checkbox
@@ -436,7 +827,25 @@ export default function Home() {
               </div>
             </>
           )}
-          <button id="submit" type="submit">GENERATE QR CODE</button>
+          <div className={styles.SubmitButtons}>
+            <button 
+              id="qrbutton" 
+              type="button" 
+              onClick={handleQRButtonClick} 
+              className={styles.QRButton}
+            >
+              GENERATE QR CODE
+            </button>
+            <button 
+              id="onlinesubmit" 
+              type="button" 
+              onClick={handleOnlineSubmitClick} 
+              className={styles.OnlineSubmitButton} 
+              disabled={!isOnline}
+            >
+              {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
+            </button>
+          </div>
         </form>
       )}
     </div>

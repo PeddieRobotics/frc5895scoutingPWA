@@ -8,3 +8,9 @@
     font-size: 30px;
     width: 200px;
 }
+
+.subHeader hr {
+    width: 180px;
+    min-width: 180px;
+    margin: 0 auto;
+}

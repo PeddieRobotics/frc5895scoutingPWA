@@ -107,22 +107,47 @@
   .HBox input {
     width: 60px;
   }
-  .MainDiv button[type=submit] {
+  
+  .SubmitButtons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .QRButton, .OnlineSubmitButton {
     background-color: #bd9748;
     height: 50px;
     width: 300px;
     border-radius: 5px;
     border: 1px solid #ffa200;
     font-size: 30px;
-    left: 50%;
-    position: relative;
-    transform: translateX(-50%);
+    cursor: pointer;
   }
-
-  .MainDiv button[type=submit]:hover {
+  
+  .QRButton:hover, .OnlineSubmitButton:hover {
     background-color: #fcec91;
   }
   
+  .OnlineSubmitButton {
+    background-color: #1a9e8c; /* Teal color for online submission */
+    border: 1px solid #12766c;
+    color: white;
+  }
+  
+  .OnlineSubmitButton:hover {
+    background-color: #25c4b0;
+  }
+  
+  .OnlineSubmitButton:disabled {
+    background-color: #666;
+    border-color: #444;
+    cursor: not-allowed;
+    color: #aaa;
+  }
+
   .MainDiv button, .MainDiv input {
     font-family: 'Belleza', sans-serif;
   }
@@ -180,6 +205,28 @@ hr.subsubheading {
     border-color: rgb(184, 0, 0);
 }
 
+.QRCodeOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(11, 35, 59, 0.95); /* Match with the main background color */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.QRCodeContainer {
+  background: #0b233b;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 900px;
+  border: 2px solid #bd9748;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
 
 .QRCodeRow {
   display: flex;
@@ -190,18 +237,137 @@ hr.subsubheading {
 }
 
 .QRCodeImage {
-  width: 100%;
-  height: 100%;
+  width: 45%;
+  max-width: 400px;
   border: 2px solid #bd9748;
   border-radius: 10px;
+}
+
+.QRCloseButton, .SubmitButton, .CancelButton {
+  background-color: #bd9748;
+  color: #0b233b;
+  padding: 10px 30px;
+  border-radius: 5px;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  margin: 0 10px;
+  min-width: 120px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.SubmitButton:hover {
+  background-color: #fcec91;
+}
+
+.CancelButton {
+  background-color: #666;
+  color: white;
+}
+
+.CancelButton:hover {
+  background-color: #999;
+}
+
+.SubmitSummary {
+  background: rgba(189, 151, 72, 0.1);
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  border: 1px solid #bd9748;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.SubmitSummary h3 {
+  margin-top: 0;
+  color: #bd9748;
+  border-bottom: 1px solid #bd9748;
+  padding-bottom: 10px;
+}
+
+.SubmitSummary p {
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.SubmitSummary strong {
+  color: #fcec91;
+}
+
+.SummarySection {
+  margin: 10px 0;
+  background: rgba(11, 35, 59, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 3px solid #bd9748;
+}
+
+.SummarySection h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #fcec91;
+  border-bottom: 1px dashed rgba(189, 151, 72, 0.5);
+  padding-bottom: 5px;
+}
+
+.SubmitConfirm {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.SubmitConfirm p {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.SubmitConfirm .SubmitButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.SubmitResults {
+  text-align: center;
+  padding: 20px;
+}
+
+.SuccessText {
+  color: #4CAF50;
+}
+
+.ErrorText {
+  color: #F44336;
 }
 
 @media (max-width: 900px) {
   .QRCodeRow {
     flex-direction: column;
+    align-items: center;
+  }
+  
+  .QRCodeImage {
+    width: 90%;
+    max-width: 300px;
+    margin: 10px 0;
+  }
+  
+  .SubmitButtons {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .QRButton, .OnlineSubmitButton {
+    width: 100%;
+    max-width: 300px;
   }
 }
-
 
 .viewToggle {
   display: flex;
@@ -264,6 +430,9 @@ hr.subsubheading {
 /* Form spacing adjustments */
 .PostMatch {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Alliance Toggle */
@@ -376,4 +545,74 @@ hr.subsubheading {
 :not(.qualPage) .Qualitative {
   margin: 10px;
   min-width: 200px;
+}
+
+.SummaryMainDetails {
+  background: rgba(189, 151, 72, 0.15);
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.SummaryList {
+  margin: 5px 0 10px 20px;
+  padding-left: 10px;
+}
+
+.SummaryList li {
+  margin-bottom: 5px;
+}
+
+.CommentBlock {
+  background: rgba(11, 35, 59, 0.8);
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border-left: 3px solid #fcec91;
+}
+
+.CommentBlock strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #fcec91;
+}
+
+.Auto, .Endgame, .PostMatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Target the hr tag directly through the header class */
+.header hr {
+  min-width: 400px !important;
+  width: 60% !important;
+  margin: 0 auto !important;
+}
+
+/* Make sure subheaders stay the right size */
+.subHeader hr {
+  width: 180px !important;
+  min-width: 180px !important;
+  margin: 0 auto !important;
+}
+
+/* Fix submit buttons centering */
+.SubmitConfirm .SubmitButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+/* Make sure buttons have the same height */
+.SubmitButton, .CancelButton {
+  height: 50px !important;
+  min-height: 50px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 120px;
 }

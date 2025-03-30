@@ -5,3 +5,9 @@
     margin-bottom: 10px;
     font-size: 45px;
 }
+
+.header hr {
+    min-width: 400px;
+    width: 60%;
+    margin: 0 auto;
+}
