@@ -333,8 +333,15 @@ hr.subsubheading {
 }
 
 .SubmitResults {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   padding: 20px;
+}
+
+.SubmitResults button {
+  margin-top: 20px;
 }
 
 .SuccessText {
@@ -618,4 +625,63 @@ hr.subsubheading {
   padding: 10px 30px !important;
   margin: 0 10px !important;
   box-sizing: border-box !important;
+}
+
+.AuthForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.FormGroup {
+  margin-bottom: 1rem;
+}
+
+.FormGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.FormInput {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.ErrorText {
+  color: #e74c3c;
+  font-weight: bold;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.SuccessText {
+  color: #2ecc71;
+  font-weight: bold;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.LoginSubheader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.AuthButtonsContainer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.SubmitButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }

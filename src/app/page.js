@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSearchParams } from 'next/navigation';
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import styles from "./page.module.css";
@@ -8,6 +9,7 @@ import Checkbox from "./form-components/Checkbox";
 import CommentBox from "./form-components/CommentBox";
 import EndPlacement from "./form-components/EndPlacement";
 import SubHeader from "./form-components/SubHeader";
+import AuthDialog from "./form-components/AuthDialog";
 import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
@@ -28,7 +30,12 @@ export default function Home() {
   const [uploadStatus, setUploadStatus] = useState("");
   const [submissionResult, setSubmissionResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authCredentials, setAuthCredentials] = useState(null);
+  const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
+  
+  const searchParams = useSearchParams();
   const form = useRef();
 
   useEffect(() => {
@@ -59,12 +66,45 @@ export default function Home() {
       window.addEventListener('online', () => setIsOnline(true));
       window.addEventListener('offline', () => setIsOnline(false));
       
+      // Check for stored auth credentials
+      const storedCredentials = sessionStorage.getItem('auth_credentials');
+      if (storedCredentials) {
+        setAuthCredentials(storedCredentials);
+        
+        // Also set it as a cookie if not already set
+        if (!document.cookie.includes('auth_credentials')) {
+          document.cookie = `auth_credentials=${storedCredentials}; path=/; max-age=86400; SameSite=Strict`;
+        }
+      }
+      
+      // Check if auth is required from URL parameter
+      const authRequired = searchParams.get('authRequired');
+      if (authRequired === 'true') {
+        const redirect = searchParams.get('redirect');
+        
+        // If we already have credentials, redirect immediately
+        if (storedCredentials && redirect) {
+          window.location.href = redirect;
+          return;
+        }
+        
+        // Otherwise show auth dialog
+        if (!storedCredentials) {
+          setShowAuthDialog(true);
+          
+          // Store the redirect target if provided
+          if (redirect) {
+            setAuthRedirectTarget(redirect);
+          }
+        }
+      }
+      
       return () => {
         window.removeEventListener('online', () => setIsOnline(true));
         window.removeEventListener('offline', () => setIsOnline(false));
       };
     }
-  }, []);
+  }, [searchParams]);
 
   const generateTabSeparatedString = (data) => {
     const boolToSheets = (value) => value ? "TRUE" : "FALSE";
@@ -307,12 +347,25 @@ export default function Home() {
     // This doesn't affect the actual form or any UI state
     setFormData(data);
     
-    // Show the dialog overlay
+    // If we don't have authentication credentials, show auth dialog first
+    if (!authCredentials) {
+      setShowAuthDialog(true);
+      return;
+    }
+    
+    // Show the submission dialog overlay
     setShowSubmitDialog(true);
   }
   
   const submitDataOnline = async () => {
     try {
+      // If no auth credentials, show auth dialog
+      if (!authCredentials) {
+        setShowSubmitDialog(false);
+        setShowAuthDialog(true);
+        return;
+      }
+      
       // Create a copy of the form data to submit
       const submissionData = { ...formData };
       
@@ -320,16 +373,27 @@ export default function Home() {
       setIsSubmitting(true);
       const toastId = toast.loading("Submitting data...");
       
-      // Make the API call
+      // Make the API call with authentication
       const response = await fetch("/api/add-match-data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Basic ${authCredentials}`
         },
         body: JSON.stringify(submissionData),
       });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          // Authentication failed, clear credentials and show auth dialog
+          sessionStorage.removeItem('auth_credentials');
+          document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
+          setAuthCredentials(null);
+          setShowSubmitDialog(false);
+          setShowAuthDialog(true);
+          setAuthError("Your session has expired. Please log in again.");
+          throw new Error("Authentication failed");
+        }
         throw new Error(`Error: ${response.status}`);
       }
       
@@ -380,8 +444,10 @@ export default function Home() {
       console.error("Error submitting data:", error);
       // Dismiss loading toast and show error message
       toast.dismiss();
-      toast.error("Failed to submit data. Please try again.");
-      setSubmissionResult({ success: false });
+      if (error.message !== "Authentication failed") {
+        toast.error("Failed to submit data. Please try again.");
+        setSubmissionResult({ success: false });
+      }
       setIsSubmitting(false);
       return false;
     }
@@ -583,6 +649,29 @@ export default function Home() {
     }
   };
 
+  // Handle authentication success
+  const handleAuthSuccess = (credentials) => {
+    setAuthCredentials(credentials);
+    setShowAuthDialog(false);
+    
+    // If we have a redirect target, navigate to it after authentication
+    if (authRedirectTarget) {
+      window.location.href = authRedirectTarget;
+      return;
+    }
+    
+    // Otherwise, continue with showing the submit dialog if we were in that flow
+    if (formData) {
+      setShowSubmitDialog(true);
+    }
+  };
+
+  // Handle auth dialog close
+  const handleAuthClose = () => {
+    setShowAuthDialog(false);
+    setAuthError("");
+  };
+
   return (
     <div className={styles.MainDiv}>
       <Toaster position="top-center" />
@@ -596,7 +685,7 @@ export default function Home() {
           e.stopPropagation();
           return false;
         }}
-        style={{ display: (showQRCode || showSubmitDialog) ? 'none' : 'block' }}
+        style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
       >
         <Header headerName={"JÖRMUNSCOUTR"} />
         <div className={styles.allMatchInfo}>
@@ -980,6 +1069,14 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Auth Dialog */}
+      <AuthDialog 
+        isOpen={showAuthDialog} 
+        onClose={handleAuthClose}
+        onLogin={handleAuthSuccess}
+        errorMessage={authError}
+      />
     </div>
   );
 }
