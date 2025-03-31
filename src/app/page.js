@@ -644,6 +644,16 @@ export default function Home() {
   const handleAuthClose = () => {
     setShowAuthDialog(false);
     setAuthError("");
+    
+    // Clear the redirect target when canceling
+    setAuthRedirectTarget(null);
+    
+    // Clear URL parameters when canceling auth
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.search = ''; // Remove all query parameters
+      window.history.replaceState({}, '', url);
+    }
   };
 
   return (
