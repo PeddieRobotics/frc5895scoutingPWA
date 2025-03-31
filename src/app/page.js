@@ -144,6 +144,7 @@ export default function Home() {
   }, [formData]);
 
   function onNoShowChange(e) {
+    console.log(`NoShow checkbox changed to: ${e.target.checked}`);
     setNoShow(e.target.checked);
   }
 
@@ -276,14 +277,18 @@ export default function Home() {
   }
   
   async function handleSubmitOnline(e) {
-    // Just prevent default and process form data
+    // Prevent default form submission behavior
     if (e) e.preventDefault();
     
+    // Process the form data without modifying the form's state
     const data = await processFormData(e);
     if (!data) return;
     
-    // Store form data without modifying form state
+    // Store form data as a snapshot for the summary dialog only
+    // This doesn't affect the actual form or any UI state
     setFormData(data);
+    
+    // Show the dialog overlay
     setShowSubmitDialog(true);
   }
   
@@ -292,10 +297,8 @@ export default function Home() {
       // Create a copy of the form data to submit
       const submissionData = { ...formData };
       
-      // Close the dialog first to prevent any UI issues
-      setShowSubmitDialog(false);
-      
       // Show loading indicator
+      setIsSubmitting(true);
       toast.info("Submitting data...");
       
       // Make the API call
@@ -317,10 +320,47 @@ export default function Home() {
       // Update scout profile with submitted match
       updateScoutProfile(submissionData);
       
+      // Set submission result first
+      setSubmissionResult({ success: true });
+      
+      // Only reset form state and fields AFTER successful submission
+      setNoShow(false);
+      setBreakdown(false);
+      setDefense(false);
+      
+      // Clear form fields only after successful submission
+      if (form.current) {
+        form.current.reset();
+        // After resetting, restore the scout profile values
+        setTimeout(() => initializeForm(), 0);
+      }
+      
+      // Indicate successful submission and hide dialog after a small delay
+      setTimeout(() => {
+        setShowSubmitDialog(false);
+        
+        // Show confetti
+        new JSConfetti().addConfetti({
+          emojis: ['🐠', '🐡', '🦀', '🪸'],
+          emojiSize: 100,
+          confettiRadius: 3,
+          confettiNumber: 100,
+        });
+        
+        // Clear temporary states after hiding the dialog
+        setFormData(null);
+        setSubmissionResult(null);
+        setUploadStatus("");
+        setIsSubmitting(false);
+      }, 1500);
+      
       return true;
     } catch (error) {
+      // Error handling - don't modify the form, just show the error
       console.error("Error submitting data:", error);
       toast.error("Failed to submit data. Please try again.");
+      setSubmissionResult({ success: false });
+      setIsSubmitting(false);
       return false;
     }
   };
@@ -366,32 +406,14 @@ export default function Home() {
   };
   
   const handleSubmitClose = () => {
+    // Just hide the dialog - when submissionResult is set to success, 
+    // the submitDataOnline function already handles the form reset
     setShowSubmitDialog(false);
     
-    if (submissionResult?.success) {
-      // Only reset the form after successful submission
-      setNoShow(false);
-      setBreakdown(false);
-      setDefense(false);
-      
-      // Clear form fields, but this happens AFTER the form is successfully submitted
-      if (form.current) {
-        form.current.reset();
-        // After resetting, restore the scout profile values
-        setTimeout(() => initializeForm(), 0);
-      }
-      
-      // Clear other states
-      setFormData(null);
+    // If submission failed, clear the result so they can try again
+    if (submissionResult && !submissionResult.success) {
       setSubmissionResult(null);
-      setUploadStatus("");
-      
-      new JSConfetti().addConfetti({
-        emojis: ['🐠', '🐡', '🦀', '🪸'],
-        emojiSize: 100,
-        confettiRadius: 3,
-        confettiNumber: 100,
-      });
+      setIsSubmitting(false);
     }
   };
   
@@ -401,8 +423,12 @@ export default function Home() {
       e.stopPropagation();
     }
     
-    // Just hide the dialog without touching any form data
+    // ONLY hide the confirmation dialog without affecting any form data or state
+    // This preserves all user input when canceling the submission
     setShowSubmitDialog(false);
+    
+    // No need to reset any UI states since we didn't modify them when showing the dialog
+    // No need to call form.reset() since we want to keep all user input intact
   };
   
   // Add a proper form initialization function that runs only once
@@ -465,7 +491,255 @@ export default function Home() {
   return (
     <div className={styles.MainDiv}>
       <Toaster position="top-center" />
-      {showQRCode ? (
+      
+      {/* Always render the form - don't conditionally render it, just conditionally hide it */}
+      <form 
+        ref={form} 
+        name="Scouting Form" 
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
+        style={{ display: (showQRCode || showSubmitDialog) ? 'none' : 'block' }}
+      >
+        <Header headerName={"JÖRMUNSCOUTR"} />
+        <div className={styles.allMatchInfo}>
+          <div className={styles.MatchInfo}>
+            <TextInput 
+              visibleName={"Scout Name:"} 
+              internalName={"scoutname"} 
+              defaultValue={scoutProfile?.scoutname || ""}
+              className="preMatchInput"
+            />
+            <TextInput
+              visibleName={"Team Scouted:"}
+              internalName={"team"}
+              type={"number"}
+              className="preMatchInput"
+            />
+            <TextInput 
+              visibleName={"Match #:"} 
+              internalName={"match"} 
+              defaultValue={scoutProfile?.match || ""}
+              type={"number"}
+              className="preMatchInput"
+            />
+          </div>
+          <Checkbox
+            visibleName={"No Show"}
+            internalName={"noshow"}
+            changeListener={onNoShowChange}
+          />
+        </div>
+
+        {!noShow && (
+          <>
+            <div className={styles.Auto}>
+              <Header headerName={"Auto"}/>
+              <Checkbox visibleName={"Leave"} internalName={"leave"} />
+              <div className={styles.Coral}>
+                <SubHeader subHeaderName={"Coral"}/>
+                <table className={styles.Table}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><h2>L4</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L3</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L2</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L1</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.AlgaeRemoved}>
+                <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
+                <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
+              </div>
+              <div className={styles.Processor}>
+                <SubHeader subHeaderName={"Processor"} />
+                <div className={styles.HBox}>
+                  <NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
+                  <NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autoprocessorfail"}/>
+                </div>
+              </div>
+
+              <div className={styles.Net}>
+              <SubHeader subHeaderName={"Net"} />
+              <div className={styles.HBox}>
+              <NumericInput 
+                    visibleName={"Success"}
+                    pieceType={"Success"}
+                    internalName={"autonetsuccess"}/>
+                  <NumericInput 
+                    visibleName={"Fail"}
+                    pieceType={"Fail"}
+                    internalName={"autonetfail"}/>
+              </div>
+            </div>
+
+            
+
+            </div>
+
+            <div className={styles.Auto}>
+              <Header headerName={"Tele"}/>
+              <div className={styles.Coral}>
+                <SubHeader subHeaderName={"Coral"}/>
+                <table className={styles.Table}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><h2>L4</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L3</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L2</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
+                    </tr>
+                    <tr>
+                      <td><h2>L1</h2></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.AlgaeRemoved}>
+                <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
+                <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
+              </div>
+              <div className={styles.Processor}>
+                <SubHeader subHeaderName={"Processor"} />
+                <div className={styles.HBox}>
+                  <NumericInput visibleName={"Success"} pieceType={"Success"} internalName={"teleprocessorsuccess"}/>
+                  <NumericInput visibleName={"Fail"} pieceType={"Fail"}  internalName={"teleprocessorfail"}/>
+                </div>
+              </div>
+
+              <div className={styles.Net}>
+              <SubHeader subHeaderName={"Net"} />
+              <div className={styles.HBox}>
+              <NumericInput 
+                    visibleName={"Success"}
+                    pieceType={"Success"}
+                    internalName={"telenetsuccess"}/>
+                  <NumericInput 
+                    visibleName={"Fail"}
+                    pieceType={"Fail"}
+                    internalName={"telenetfail"}/>
+              </div>
+            </div>
+
+            <CommentBox
+                visibleName={"General Comments"}
+                internalName={"generalcomments"}
+            />
+
+            <Checkbox 
+                visibleName={"Playing Defense?"} 
+                internalName={"defense"} 
+                changeListener={onDefenseChange}
+              />
+              {defense && (
+                <CommentBox
+                  visibleName={"Defense Elaboration"}
+                  internalName={"defensecomments"}
+                />
+              )}    
+
+
+            </div>
+
+
+
+            <div className={styles.Endgame}>
+              <Header headerName={"Endgame"}/>
+              <EndPlacement/>
+            </div>
+
+            <div className={styles.PostMatch}>
+              <Header headerName={"Post-Match"}/>
+              <SubHeader subHeaderName={"Intake"}/>
+              <div className={styles.Intake}>
+                <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
+                <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
+                <Checkbox visibleName={"Algae Ground"} internalName={"algaegrndintake"}/>
+                <Checkbox visibleName={"Algae High Reef"} internalName={"algaehighreefintake"}/>
+                <Checkbox visibleName={"Algae Low Reef"} internalName={"algaelowreefintake"}/>
+              </div>
+              <Checkbox 
+                visibleName={"Broke down?"} 
+                internalName={"breakdown"} 
+                changeListener={onBreakdownChange} 
+              />
+              {breakdown && (
+                <CommentBox
+                  visibleName={"Breakdown Elaboration"}
+                  internalName={"breakdowncomments"}
+                />
+              )}
+             
+              
+            </div>
+          </>
+        )}
+        <div className={styles.SubmitButtons}>
+          <button 
+            id="qrbutton" 
+            type="button" 
+            onClick={handleQRButtonClick} 
+            className={styles.QRButton}
+          >
+            GENERATE QR CODE
+          </button>
+          <button 
+            id="onlinesubmit" 
+            type="button" 
+            onClick={handleOnlineSubmitClick} 
+            className={styles.OnlineSubmitButton} 
+            disabled={!isOnline}
+          >
+            {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
+          </button>
+        </div>
+      </form>
+
+      {/* QR Code Overlay */}
+      {showQRCode && (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
             <h2>Scan QR Codes to Submit Form Data</h2>
@@ -476,7 +750,10 @@ export default function Home() {
             <button onClick={handleQRClose} className={styles.QRCloseButton}>Done</button>
           </div>
         </div>
-      ) : showSubmitDialog ? (
+      )}
+
+      {/* Submit Dialog Overlay */}
+      {showSubmitDialog && (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
             <h2>Submit Form Data Online</h2>
@@ -603,250 +880,6 @@ export default function Home() {
             )}
           </div>
         </div>
-      ) : (
-        <form 
-          ref={form} 
-          name="Scouting Form" 
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-          }}
-        >
-          <Header headerName={"JÖRMUNSCOUTR"} />
-          <div className={styles.allMatchInfo}>
-            <div className={styles.MatchInfo}>
-              <TextInput 
-                visibleName={"Scout Name:"} 
-                internalName={"scoutname"} 
-                defaultValue={scoutProfile?.scoutname || ""}
-                className="preMatchInput"
-              />
-              <TextInput
-                visibleName={"Team Scouted:"}
-                internalName={"team"}
-                type={"number"}
-                className="preMatchInput"
-              />
-              <TextInput 
-                visibleName={"Match #:"} 
-                internalName={"match"} 
-                defaultValue={scoutProfile?.match || ""}
-                type={"number"}
-                className="preMatchInput"
-              />
-            </div>
-            <Checkbox
-              visibleName={"No Show"}
-              internalName={"noshow"}
-              changeListener={onNoShowChange}
-            />
-          </div>
-
-          {!noShow && (
-            <>
-              <div className={styles.Auto}>
-                <Header headerName={"Auto"}/>
-                <Checkbox visibleName={"Leave"} internalName={"leave"} />
-                <div className={styles.Coral}>
-                  <SubHeader subHeaderName={"Coral"}/>
-                  <table className={styles.Table}>
-                    <thead>
-                      <tr>
-                        <th></th>
-                        <th>Success</th>
-                        <th>Fail</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><h2>L4</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L3</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L2</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L1</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className={styles.AlgaeRemoved}>
-                  <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
-                  <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
-                </div>
-                <div className={styles.Processor}>
-                  <SubHeader subHeaderName={"Processor"} />
-                  <div className={styles.HBox}>
-                    <NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
-                    <NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autoprocessorfail"}/>
-                  </div>
-                </div>
-
-                <div className={styles.Net}>
-                <SubHeader subHeaderName={"Net"} />
-                <div className={styles.HBox}>
-                <NumericInput 
-                      visibleName={"Success"}
-                      pieceType={"Success"}
-                      internalName={"autonetsuccess"}/>
-                    <NumericInput 
-                      visibleName={"Fail"}
-                      pieceType={"Fail"}
-                      internalName={"autonetfail"}/>
-                </div>
-              </div>
-
-              
-
-              </div>
-
-              <div className={styles.Auto}>
-                <Header headerName={"Tele"}/>
-                <div className={styles.Coral}>
-                  <SubHeader subHeaderName={"Coral"}/>
-                  <table className={styles.Table}>
-                    <thead>
-                      <tr>
-                        <th></th>
-                        <th>Success</th>
-                        <th>Fail</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><h2>L4</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L3</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L2</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
-                      </tr>
-                      <tr>
-                        <td><h2>L1</h2></td>
-                        <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
-                        <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className={styles.AlgaeRemoved}>
-                  <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
-                  <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
-                </div>
-                <div className={styles.Processor}>
-                  <SubHeader subHeaderName={"Processor"} />
-                  <div className={styles.HBox}>
-                    <NumericInput visibleName={"Success"} pieceType={"Success"} internalName={"teleprocessorsuccess"}/>
-                    <NumericInput visibleName={"Fail"} pieceType={"Fail"}  internalName={"teleprocessorfail"}/>
-                  </div>
-                </div>
-
-                <div className={styles.Net}>
-                <SubHeader subHeaderName={"Net"} />
-                <div className={styles.HBox}>
-                <NumericInput 
-                      visibleName={"Success"}
-                      pieceType={"Success"}
-                      internalName={"telenetsuccess"}/>
-                    <NumericInput 
-                      visibleName={"Fail"}
-                      pieceType={"Fail"}
-                      internalName={"telenetfail"}/>
-                </div>
-              </div>
-
-              <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-              />
-
-              <Checkbox 
-                  visibleName={"Playing Defense?"} 
-                  internalName={"defense"} 
-                  changeListener={onDefenseChange}
-                />
-                {defense && (
-                  <CommentBox
-                    visibleName={"Defense Elaboration"}
-                    internalName={"defensecomments"}
-                  />
-                )}    
-
-
-              </div>
-
-
-
-              <div className={styles.Endgame}>
-                <Header headerName={"Endgame"}/>
-                <EndPlacement/>
-              </div>
-
-              <div className={styles.PostMatch}>
-                <Header headerName={"Post-Match"}/>
-                <SubHeader subHeaderName={"Intake"}/>
-                <div className={styles.Intake}>
-                  <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
-                  <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
-                  <Checkbox visibleName={"Algae Ground"} internalName={"algaegrndintake"}/>
-                  <Checkbox visibleName={"Algae High Reef"} internalName={"algaehighreefintake"}/>
-                  <Checkbox visibleName={"Algae Low Reef"} internalName={"algaelowreefintake"}/>
-                </div>
-                <Checkbox 
-                  visibleName={"Broke down?"} 
-                  internalName={"breakdown"} 
-                  changeListener={onBreakdownChange} 
-                />
-                {breakdown && (
-                  <CommentBox
-                    visibleName={"Breakdown Elaboration"}
-                    internalName={"breakdowncomments"}
-                  />
-                )}
-               
-                
-              </div>
-            </>
-          )}
-          <div className={styles.SubmitButtons}>
-            <button 
-              id="qrbutton" 
-              type="button" 
-              onClick={handleQRButtonClick} 
-              className={styles.QRButton}
-            >
-              GENERATE QR CODE
-            </button>
-            <button 
-              id="onlinesubmit" 
-              type="button" 
-              onClick={handleOnlineSubmitClick} 
-              className={styles.OnlineSubmitButton} 
-              disabled={!isOnline}
-            >
-              {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
-            </button>
-          </div>
-        </form>
       )}
     </div>
   );

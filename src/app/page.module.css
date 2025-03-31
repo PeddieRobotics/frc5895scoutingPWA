@@ -254,7 +254,7 @@ hr.subsubheading {
   margin: 0 10px;
   min-width: 120px;
   height: 50px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
 }
@@ -611,8 +611,11 @@ hr.subsubheading {
 .SubmitButton, .CancelButton {
   height: 50px !important;
   min-height: 50px !important;
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   min-width: 120px;
+  padding: 10px 30px !important;
+  margin: 0 10px !important;
+  box-sizing: border-box !important;
 }
