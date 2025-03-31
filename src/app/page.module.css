@@ -48,9 +48,9 @@
 .Table {
   width: 100%;
   max-width: 350px;
-  table-layout: fixed;
   margin: 0 auto;
-  border-collapse: collapse;
+  margin-top: 10px;
+  table-layout: fixed;
 }
 
 .Table th:first-child, 
@@ -66,18 +66,23 @@
 }
 
 .Table td h2 {
-  padding: 5px 0;
+  padding: 0;
   margin: 0;
   text-align: right;
-  font-size: 20px;
+  font-size: 28px;
   white-space: nowrap;
   font-weight: bold;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 45px;
+  line-height: 1;
 }
 
 .Table td {
-  text-align: center; 
-  padding: 5px;
   vertical-align: middle;
+  text-align: center;
+  padding: 0;
 }
 
 .Table th {
@@ -90,7 +95,14 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  text-align: center;
 }
+
+.AlgaeRemoved input {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
 .Processor {
   display: flex;
   flex-direction: column;
@@ -652,6 +664,7 @@ hr.subsubheading {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  margin-bottom: 10px;
 }
 
 /* Target the hr tag directly through the header class */
@@ -842,194 +855,127 @@ hr.subsubheading {
   }
 }
 
-/* Show Success/Fail headers only for Coral tables, hide for others */
+/* Show Success/Fail headers only for Coral tables */
 .Table thead {
-  display: none;
+  display: table-header-group;
 }
 
-/* Make Table rows more compact */
-.Table tr {
-  height: 45px;
+.Table thead th {
+  font-weight: normal;
+  color: #bd9748;
+  padding: 0 0 5px 0;
+  text-align: center;
+  font-size: 22px;
 }
 
-/* Make sure buttons aren't affected by iOS styling */
-.QRButton, .OnlineSubmitButton, .SubmitButton, .CancelButton {
-  -webkit-appearance: none; /* Prevent iOS default styling */
-  -webkit-text-fill-color: initial; /* Reset any text fill */
-  text-decoration: none; /* Prevent link styling */
+/* Style specifically for Success and Fail column headers in Coral tables */
+.Coral .Table thead th:not(:first-child) {
+  font-size: 22px; 
 }
 
-/* Add styles for buttons within MainDiv to ensure all buttons get the styling */
-.MainDiv button {
-  -webkit-appearance: none; /* Prevent iOS default styling */
-  -webkit-text-fill-color: initial; /* Reset any text fill */
-  text-decoration: none; /* Prevent link styling */
+/* Fix for the Coral section table layout */
+.Coral .Table {
+  margin-top: 0;
+  padding-top: 0;
 }
 
-/* Make specific rule for L1-L4 labels to stand out more */
-.Coral .Table td:first-child h2 {
-  font-size: 28px;
-  font-weight: bold;
-  padding: 0;
-  margin: 0;
-  height: 45px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  line-height: 1;
+/* Style table headers */
+.Table thead th {
+  font-weight: normal;
+  color: #bd9748;
+  padding: 0 0 5px 0;
+  text-align: center;
+  font-size: 22px;
 }
 
-/* Override any conflicting style for input width */
-.NumericInput input.Success, 
-.NumericInput input.Fail,
-.NumericInput input.Counter {
-  width: 50px !important;
+/* Hide table headers in non-Coral tables */
+.Processor .Table thead, 
+.Net .Table thead {
+  display: table-header-group; /* Show headers instead of hiding them */
 }
 
-/* HBox consistency */
+/* Style specifically for Success and Fail column headers in all tables */
+.Coral .Table thead th:not(:first-child),
+.Processor .Table thead th:not(:first-child),
+.Net .Table thead th:not(:first-child) {
+  font-size: 22px; 
+}
+
+/* Fix for the section table layouts */
+.Coral .Table,
+.Processor .Table,
+.Net .Table {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Consistent NumericInput label styling */
+.NumericInput .label {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2;
+  font-size: 22px;
+  display: none; /* Hide by default */
+}
+
+/* Hide labels for Processor and Net sections since we're using table headers now */
+.Processor .NumericInput .label,
+.Net .NumericInput .label {
+  display: none !important;
+}
+
+/* Consistent HBox styling */
 .HBox {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 20px;
   width: 100%;
   justify-content: center;
-  align-items: center;
+  margin-top: 5px;
 }
 
-.HBox .NumericInput {
-  margin: 0 5px;
-}
-
-/* First column consistency for all tables */
-.Table td:first-child {
-  width: 50px;
-  min-width: 50px;
-  text-align: right;
-  padding-right: 8px;
-  visibility: visible !important;
-  display: table-cell !important;
-  vertical-align: middle;
-}
-
-/* Standard styling for all table inputs */
-.Table input {
-  width: 50px;
-  height: 45px;
-  text-align: center;
-  margin: 0;
-}
-
-/* Global NumericInput styling */
-.NumericInput {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.NumericInput button, 
-.NumericInput input {
-  height: 45px !important;
-  min-height: 45px !important;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.NumericInput input {
-  width: 50px;
-  text-align: center;
-  font-size: 18px;
-}
-
-/* Make L1-L4 text bigger and properly aligned for ALL tables */
-.Table td h2 {
-  padding: 0;
-  margin: 0;
-  text-align: right;
-  font-size: 28px;
-  white-space: nowrap;
-  font-weight: bold;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 45px;
-  line-height: 1;
-}
-
-/* Make specific rule for L1-L4 labels to stand out more */
-.Coral .Table td:first-child h2 {
-  font-size: 28px;
-  font-weight: bold;
-  padding: 0;
-  margin: 0;
-  height: 45px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  line-height: 1;
-}
-
-/* Override any conflicting style for input width */
-.NumericInput input.Success, 
-.NumericInput input.Fail,
-.NumericInput input.Counter {
-  width: 50px !important;
-}
-
-/* Fix alignment for all tables */
-.Table {
+/* Component section spacing */
+.componentSection {
+  margin-top: 10px;
+  margin-bottom: 10px;
   width: 100%;
   max-width: 350px;
-  margin: 0 auto;
-  margin-top: 10px;
-  table-layout: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Center content in all buttons */
-.NumericInput button h1 {
+/* Fix component alignment */
+.AlgaeRemoved, .Processor, .Net {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SubHeader styling */
+.subHeader {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+/* Make headers more compact */
+.header {
+  margin-bottom: 5px;
+}
+
+/* Additional spacing adjustment for specific components */
+.Coral, .Processor, .Net, .AlgaeRemoved {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/* Make all component titles uniform */
+.SubHeader h2 {
+  font-size: 22px;
   margin: 0;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  line-height: 1;
-}
-
-/* Make sure ALL numeric inputs have consistent sizing */
-.Auto .NumericInput,
-.Endgame .NumericInput,
-.PostMatch .NumericInput,
-.AlgaeRemoved .NumericInput,
-.Processor .NumericInput,
-.Net .NumericInput {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 5px 0;
-}
-
-/* Fix HBox layout for Processor, Net, etc. */
-.HBox {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%;
-  justify-content: center;
-  align-items: center;
-}
-
-.HBox .NumericInput {
-  margin: 0 5px;
-}
-
-/* Fix for extra padding in table cells with NumericInput components */
-.Table td .NumericInput .label {
-  margin-bottom: 0;
-  font-size: 16px;
 }

@@ -1,0 +1,77 @@
+/* Component Uniformity Styles */
+
+/* Component section spacing */
+.Coral, .Processor, .Net, .AlgaeRemoved {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 350px;
+}
+
+/* Subheader styling */
+.subHeader {
+  margin-bottom: 10px;
+  margin-top: 5px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Consistent NumericInput styling */
+.NumericInput {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* Labels for NumericInput components */
+.NumericInput .label {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2;
+  font-size: 22px;
+  display: none; /* Hide by default */
+}
+
+/* Show labels for Processor and Net sections */
+.Processor .NumericInput .label,
+.Net .NumericInput .label {
+  display: block !important;
+  margin-bottom: 5px !important;
+}
+
+/* Table headers - only shown in Coral tables */
+.Table thead {
+  display: none; /* Hide by default */
+}
+
+.Coral .Table thead {
+  display: table-header-group; /* Show for Coral */
+}
+
+.Table thead th {
+  font-weight: normal;
+  color: #bd9748;
+  padding: 0 0 5px 0;
+  text-align: center;
+  font-size: 22px;
+}
+
+/* Fix for the Coral section table layout */
+.Coral .Table {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Consistent HBox styling for Processor and Net */
+.HBox {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 5px;
+} 

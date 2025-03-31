@@ -717,139 +717,183 @@ export default function Home() {
             <div className={styles.Auto}>
               <Header headerName={"Auto"}/>
               <Checkbox visibleName={"Leave"} internalName={"leave"} />
-              <div className={styles.Coral}>
+              <div className={`${styles.Coral} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Coral"}/>
-                <table className={styles.Table}>
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     <tr>
                       <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol4fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol3fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol2fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol1fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <div className={styles.AlgaeRemoved}>
+              <div className={`${styles.AlgaeRemoved} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Algae Removed"}/>
                 <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
               </div>
-              <div className={styles.Processor}>
+              <div className={`${styles.Processor} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Processor"} />
-                <div className={styles.HBox}>
-                  <NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autoprocessorsuccess"}/>
-                  <NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autoprocessorfail"}/>
-                </div>
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autoprocessorsuccess"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autoprocessorfail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              <div className={styles.Net}>
-              <SubHeader subHeaderName={"Net"} />
-              <div className={styles.HBox}>
-              <NumericInput 
-                    visibleName={"Success"}
-                    pieceType={"Success"}
-                    internalName={"autonetsuccess"}/>
-                  <NumericInput 
-                    visibleName={"Fail"}
-                    pieceType={"Fail"}
-                    internalName={"autonetfail"}/>
+              <div className={`${styles.Net} ${styles.componentSection}`}>
+                <SubHeader subHeaderName={"Net"} />
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"autonetsuccess"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"autonetfail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </div>
-
-            
-
             </div>
 
             <div className={styles.Auto}>
               <Header headerName={"Tele"}/>
-              <div className={styles.Coral}>
+              <div className={`${styles.Coral} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Coral"}/>
-                <table className={styles.Table}>
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     <tr>
                       <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel4fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel3fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel2fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel1fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <div className={styles.AlgaeRemoved}>
+              <div className={`${styles.AlgaeRemoved} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Algae Removed"}/>
                 <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
               </div>
-              <div className={styles.Processor}>
+              <div className={`${styles.Processor} ${styles.componentSection}`}>
                 <SubHeader subHeaderName={"Processor"} />
-                <div className={styles.HBox}>
-                  <NumericInput visibleName={"Success"} pieceType={"Success"} internalName={"teleprocessorsuccess"}/>
-                  <NumericInput visibleName={"Fail"} pieceType={"Fail"}  internalName={"teleprocessorfail"}/>
-                </div>
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"teleprocessorsuccess"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"teleprocessorfail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              <div className={styles.Net}>
-              <SubHeader subHeaderName={"Net"} />
-              <div className={styles.HBox}>
-              <NumericInput 
-                    visibleName={"Success"}
-                    pieceType={"Success"}
-                    internalName={"telenetsuccess"}/>
-                  <NumericInput 
-                    visibleName={"Fail"}
-                    pieceType={"Fail"}
-                    internalName={"telenetfail"}/>
+              <div className={`${styles.Net} ${styles.componentSection}`}>
+                <SubHeader subHeaderName={"Net"} />
+                <table className={`${styles.Table} ${styles.CoralTable}`}>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Success</th>
+                      <th>Fail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td></td>
+                      <td><NumericInput pieceType={"Success"} internalName={"telenetsuccess"}/></td>
+                      <td><NumericInput pieceType={"Fail"} internalName={"telenetfail"}/></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </div>
 
-            <CommentBox
-                visibleName={"General Comments"}
-                internalName={"generalcomments"}
-            />
-
-            <Checkbox 
-                visibleName={"Playing Defense?"} 
-                internalName={"defense"} 
-                changeListener={onDefenseChange}
+              <CommentBox
+                  visibleName={"General Comments"}
+                  internalName={"generalcomments"}
               />
-              {defense && (
-                <CommentBox
-                  visibleName={"Defense Elaboration"}
-                  internalName={"defensecomments"}
-                />
-              )}    
 
+              <Checkbox 
+                  visibleName={"Playing Defense?"} 
+                  internalName={"defense"} 
+                  changeListener={onDefenseChange}
+                />
+                {defense && (
+                  <CommentBox
+                    visibleName={"Defense Elaboration"}
+                    internalName={"defensecomments"}
+                  />
+                )}    
 
             </div>
-
-
 
             <div className={styles.Endgame}>
               <Header headerName={"Endgame"}/>
