@@ -14,3 +14,17 @@
     min-width: 180px;
     margin: 0 auto;
 }
+
+@media (max-width: 480px) {
+    .subHeader {
+        width: 90%;
+        max-width: 280px;
+        margin: 10px auto;
+    }
+    
+    .subHeader hr {
+        width: 90%;
+        min-width: unset;
+        max-width: 200px;
+    }
+}

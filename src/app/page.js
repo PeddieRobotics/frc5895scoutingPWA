@@ -897,11 +897,26 @@ export default function Home() {
               <Header headerName={"Post-Match"}/>
               <SubHeader subHeaderName={"Intake"}/>
               <div className={styles.Intake}>
-                <Checkbox visibleName={"Coral Ground"} internalName={"coralgrndintake"}/>
-                <Checkbox visibleName={"Coral Station"} internalName={"coralstationintake"}/>
-                <Checkbox visibleName={"Algae Ground"} internalName={"algaegrndintake"}/>
-                <Checkbox visibleName={"Algae High Reef"} internalName={"algaehighreefintake"}/>
-                <Checkbox visibleName={"Algae Low Reef"} internalName={"algaelowreefintake"}/>
+                <div className={styles.checkOption}>
+                  <input type="checkbox" id="coralgrndintake" name="coralgrndintake" />
+                  <label htmlFor="coralgrndintake">Coral Ground</label>
+                </div>
+                <div className={styles.checkOption}>
+                  <input type="checkbox" id="coralstationintake" name="coralstationintake" />
+                  <label htmlFor="coralstationintake">Coral Station</label>
+                </div>
+                <div className={styles.checkOption}>
+                  <input type="checkbox" id="algaegrndintake" name="algaegrndintake" />
+                  <label htmlFor="algaegrndintake">Algae Ground</label>
+                </div>
+                <div className={styles.checkOption}>
+                  <input type="checkbox" id="algaehighreefintake" name="algaehighreefintake" />
+                  <label htmlFor="algaehighreefintake">Algae High Reef</label>
+                </div>
+                <div className={styles.checkOption}>
+                  <input type="checkbox" id="algaelowreefintake" name="algaelowreefintake" />
+                  <label htmlFor="algaelowreefintake">Algae Low Reef</label>
+                </div>
               </div>
               <Checkbox 
                 visibleName={"Broke down?"} 
@@ -914,8 +929,6 @@ export default function Home() {
                   internalName={"breakdowncomments"}
                 />
               )}
-             
-              
             </div>
           </>
         )}

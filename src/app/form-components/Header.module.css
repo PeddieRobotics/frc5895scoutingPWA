@@ -11,3 +11,15 @@
     width: 60%;
     margin: 0 auto;
 }
+
+@media (max-width: 480px) {
+    .header hr {
+        min-width: 80%;
+        max-width: 90%;
+        width: 90%;
+    }
+    
+    .header {
+        font-size: 36px;
+    }
+}

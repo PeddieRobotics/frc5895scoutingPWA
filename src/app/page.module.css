@@ -223,20 +223,59 @@ hr.subsubheading {
   background-color: #bd9748;
 }
 
+/* Intake styling to match EndPlacement */
 .Intake {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  background-color:#bd9748;
+  flex-direction: column;
+  justify-content: right;
+  background-color: #bd9748;
   color: black;
   border-radius: 8px;
-  align-items: center;
   padding: 3px;
-  width: 250px;
-  height: 375px;
-  justify-self: center;
-  margin: 15px;
-  gap: -5px;
+  width: 275px;
+  margin: 15px auto;
+}
+
+/* Add wrapper to fix boxContainer alignment */
+.Intake .boxContainer {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Make box match EndPlacement options */
+.Intake .box {
+  display: flex;
+  justify-content: left;
+  background-color: #cdf3ff;
+  color: black;
+  border: 2px solid #888484;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 5px 15px;
+  margin: 5px;
+}
+
+/* Must apply to checkbox specifically */
+.Intake input[type="checkbox"] {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+/* Color when checked */
+.Intake .box:has(input:checked) {
+  background-color: #9de387;
+}
+
+/* Hover style */
+.Intake .box:hover {
+  background-color: #8de3fc;
+}
+
+/* Make label style match */
+.Intake .box label {
+  cursor: pointer;
+  margin-left: 10px;
 }
 
 .MainDiv input:focus,
@@ -790,13 +829,15 @@ hr.subsubheading {
   }
   
   .Intake {
-    width: 100%;
-    max-width: 250px;
+    width: 90%;
+    max-width: 275px;
     height: auto;
-    padding: 10px 5px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
+    padding: 5px;
+  }
+  
+  .Intake label {
+    font-size: 16px;
+    padding: 8px 12px;
   }
   
   /* Improve vertical spacing for labels */
@@ -978,4 +1019,34 @@ hr.subsubheading {
   font-size: 22px;
   margin: 0;
   padding: 0;
+}
+
+/* Add the checkOption class for the intake section */
+.checkOption {
+  display: flex;
+  justify-content: left;
+  background-color: #cdf3ff;
+  color: black;
+  border: 2px solid #888484;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 5px 15px;
+  margin: 5px;
+}
+
+.checkOption:has(input:checked) {
+  background: #9de387;
+}
+
+.checkOption:hover {
+  background-color: #8de3fc;
+}
+
+.checkOption label {
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.checkOption input[type="checkbox"] {
+  cursor: pointer;
 }
