@@ -482,6 +482,15 @@ export default function Home() {
     });
   };
   
+  const handleQRCancel = () => {
+    // Simply hide the QR code dialog without resetting the form
+    setShowQRCode(false);
+    
+    // Clear temporary QR code data
+    setQrCodeDataURL1("");
+    setQrCodeDataURL2("");
+  };
+  
   const handleSubmitClose = () => {
     // Just hide the dialog - when submissionResult is set to success, 
     // the submitDataOnline function already handles the form reset
@@ -834,7 +843,10 @@ export default function Home() {
               {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="QR Code 1" className={styles.QRCodeImage} />}
               {qrCodeDataURL2 && <img src={qrCodeDataURL2} alt="QR Code 2" className={styles.QRCodeImage} />}
             </div>
-            <button onClick={handleQRClose} className={styles.QRCloseButton}>Done</button>
+            <div className={styles.SubmitButtons}>
+              <button onClick={handleQRClose} className={styles.SubmitButton}>Done</button>
+              <button onClick={handleQRCancel} className={styles.CancelButton}>Cancel</button>
+            </div>
           </div>
         </div>
       )}
@@ -960,7 +972,7 @@ export default function Home() {
                   {submissionResult.success ? "Submission Successful!" : "Submission Failed"}
                 </h3>
                 <p>{uploadStatus}</p>
-                <button onClick={handleSubmitClose} className={styles.QRCloseButton}>
+                <button onClick={handleSubmitClose} className={styles.SubmitButton}>
                   {submissionResult.success ? "Done" : "Close"}
                 </button>
               </div>
