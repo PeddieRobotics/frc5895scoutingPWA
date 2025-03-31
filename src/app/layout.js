@@ -9,7 +9,6 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   manifest: '/manifest.json',
-  themeColor: '#000000',
   title: 'Team 5895 Analytics App',
   description: 'For scouting and analysis of the FIRST game!',
 
@@ -23,17 +22,17 @@ export const metadata = {
         media: '(device-width: 320px) and (device-height: 568px)'
       }
     ]
-  },
-
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    minimumScale: 1,
-    maximumScale: 1,
-    userScalable: 'no',
-    viewportFit: 'cover'
   }
+}
 
+export const viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: 'no',
+  viewportFit: 'cover'
 }
 
 export default function RootLayout({ children }) {

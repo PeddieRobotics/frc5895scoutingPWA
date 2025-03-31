@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from 'next/navigation';
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
@@ -15,6 +15,25 @@ import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
 import { toast, Toaster } from 'react-hot-toast';
+
+// Create a separate component that uses useSearchParams
+function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    // Check if auth is required from URL parameter
+    const authRequired = searchParams.get('authRequired');
+    if (authRequired === 'true') {
+      const redirect = searchParams.get('redirect');
+      onAuthRequired(true);
+      if (redirect) {
+        onRedirectTarget(redirect);
+      }
+    }
+  }, [searchParams, onAuthRequired, onRedirectTarget]);
+  
+  return null;
+}
 
 export default function Home() {
   const [noShow, setNoShow] = useState(false);
@@ -35,8 +54,26 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   
-  const searchParams = useSearchParams();
   const form = useRef();
+
+  // Handle auth required from URL
+  const handleAuthRequired = useCallback((required) => {
+    if (required && !authCredentials) {
+      setShowAuthDialog(true);
+    }
+  }, [authCredentials]);
+
+  // Handle redirect target
+  const handleRedirectTarget = useCallback((target) => {
+    if (target) {
+      setAuthRedirectTarget(target);
+      
+      // If we have credentials, redirect immediately
+      if (authCredentials) {
+        window.location.href = target;
+      }
+    }
+  }, [authCredentials]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -77,34 +114,12 @@ export default function Home() {
         }
       }
       
-      // Check if auth is required from URL parameter
-      const authRequired = searchParams.get('authRequired');
-      if (authRequired === 'true') {
-        const redirect = searchParams.get('redirect');
-        
-        // If we already have credentials, redirect immediately
-        if (storedCredentials && redirect) {
-          window.location.href = redirect;
-          return;
-        }
-        
-        // Otherwise show auth dialog
-        if (!storedCredentials) {
-          setShowAuthDialog(true);
-          
-          // Store the redirect target if provided
-          if (redirect) {
-            setAuthRedirectTarget(redirect);
-          }
-        }
-      }
-      
       return () => {
         window.removeEventListener('online', () => setIsOnline(true));
         window.removeEventListener('offline', () => setIsOnline(false));
       };
     }
-  }, [searchParams]);
+  }, []);
 
   const generateTabSeparatedString = (data) => {
     const boolToSheets = (value) => value ? "TRUE" : "FALSE";
@@ -675,6 +690,14 @@ export default function Home() {
   return (
     <div className={styles.MainDiv}>
       <Toaster position="top-center" />
+      
+      {/* Suspense boundary for search params */}
+      <Suspense fallback={null}>
+        <AuthParameterHandler 
+          onAuthRequired={handleAuthRequired}
+          onRedirectTarget={handleRedirectTarget}
+        />
+      </Suspense>
       
       {/* Always render the form - don't conditionally render it, just conditionally hide it */}
       <form 
