@@ -188,21 +188,14 @@ export default function Home() {
       const compressedData = pako.gzip(new TextEncoder().encode(JSON.stringify(data)));
       const base58Encoded = base58.encode(compressedData);
   
-      const dataURL1 = await QRCode.toDataURL(base58Encoded, {
+      const dataURL = await QRCode.toDataURL(base58Encoded, {
         width: 400,
         margin: 3,
         errorCorrectionLevel: 'L'
       });
   
-      const tsvString = generateTabSeparatedString(data);
-      const dataURL2 = await QRCode.toDataURL(tsvString, {
-        width: 400,
-        margin: 3,
-        errorCorrectionLevel: 'L'
-      });
-  
-      setQrCodeDataURL1(dataURL1);
-      setQrCodeDataURL2(dataURL2);
+      setQrCodeDataURL1(dataURL);
+      setQrCodeDataURL2(""); // Clear the second QR code
     } catch (error) {
       console.error("Error generating QR code:", error);
     }
@@ -951,10 +944,9 @@ export default function Home() {
       {showQRCode && (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
-            <h2 className={styles.qrTitle}>Scan QR Codes to Submit Form Data</h2>
+            <h2 className={styles.qrTitle}>Scan QR Code to Submit Form Data</h2>
             <div className={styles.QRCodeRow}>
-              {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="QR Code 1" className={styles.QRCodeImage} />}
-              {qrCodeDataURL2 && <img src={qrCodeDataURL2} alt="QR Code 2" className={styles.QRCodeImage} />}
+              {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="QR Code" className={styles.QRCodeImage} />}
             </div>
             <div className={styles.SubmitButtons}>
               <button onClick={handleQRClose} className={styles.SubmitButton}>Done</button>
