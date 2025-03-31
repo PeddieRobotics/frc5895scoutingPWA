@@ -1,6 +1,6 @@
+import { Analytics } from '@vercel/analytics/next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Analytics } from '@vercel/analytics/next'
 
 import NavBar from './form-components/NavBar.js'
 
@@ -14,7 +14,7 @@ export const metadata = {
 
   appleWebApp: {
     capable: true,
-    title: 'Jormunscoutr',
+    title: 'JÖRMUNSCOUTR',
     statusBarStyle: 'black'
   },
 
