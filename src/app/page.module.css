@@ -3,11 +3,13 @@
 .MainDiv {
     background: #0b233b;
     color: #bd9748;
-    padding: 5px 40px;
+    padding: 5px 15px;
     padding-bottom: 50px;
     min-height: calc(100vh - 45px);
     font-family: "Belleza", sans-serif;
     justify-items: center;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 .MatchInfo {
@@ -43,26 +45,29 @@
 }
 
 .Table {
-  flex-direction: column;
-  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  margin: 0 auto;
 }
 
 .Table td {
   text-align: center; 
-  padding-right: 19px; 
+  padding-right: 10px; 
   position: relative; 
+  font-size: clamp(14px, 4vw, 18px);
 }
 
 .Table td h2 {
   padding-bottom: 15px;
-  position: absolute; 
-  right: 0px;
-  bottom: 15px;
+  position: static;
   margin: 0px;
+  text-align: center;
 }
 
 .Table th {
-  padding-right: 19px;
+  padding-right: 10px;
+  font-size: clamp(14px, 4vw, 18px);
 }
 
 .AlgaeRemoved {
@@ -120,10 +125,11 @@
   .QRButton, .OnlineSubmitButton {
     background-color: #bd9748;
     height: 50px;
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
     border-radius: 5px;
     border: 1px solid #ffa200;
-    font-size: 30px;
+    font-size: clamp(18px, 5vw, 30px);
     cursor: pointer;
   }
   
@@ -365,14 +371,38 @@ hr.subsubheading {
   }
   
   .SubmitButtons {
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
     gap: 10px;
+    margin: 15px auto;
   }
   
-  .QRButton, .OnlineSubmitButton {
+  .SubmitButton, .CancelButton {
+    min-width: 120px;
+    max-width: 45%;
+    font-size: 16px;
+    padding: 10px 15px !important;
+  }
+  
+  .QRCodeContainer {
+    width: 90%;
+    padding: 15px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .MainDiv h1 {
+    font-size: clamp(24px, 7vw, 36px);
+  }
+  
+  .MainDiv h2 {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+  
+  .Coral, .Processor, .Net, .AlgaeRemoved {
     width: 100%;
-    max-width: 300px;
+    max-width: 100%;
   }
 }
 
@@ -593,15 +623,17 @@ hr.subsubheading {
 
 /* Target the hr tag directly through the header class */
 .header hr {
-  min-width: 400px !important;
-  width: 60% !important;
+  min-width: 100% !important;
+  width: 100% !important;
   margin: 0 auto !important;
+  max-width: calc(100vw - 20px);
 }
 
 /* Make sure subheaders stay the right size */
 .subHeader hr {
-  width: 180px !important;
-  min-width: 180px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 180px !important;
   margin: 0 auto !important;
 }
 
@@ -684,4 +716,66 @@ hr.subsubheading {
   justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
+}
+
+/* Adjust form containers to prevent overflow */
+form {
+  max-width: 100%;
+}
+
+/* Additional fix for very small screens */
+@media (max-width: 480px) {
+  .MatchInfo {
+    width: 100%;
+    max-width: 350px;
+  }
+  
+  .SubmitSummary {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .SummarySection h4 {
+    font-size: 16px;
+  }
+  
+  .SummaryList li {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Make tables more compact on mobile */
+  .Table {
+    font-size: 14px;
+  }
+  
+  .Table td, .Table th {
+    padding: 5px;
+  }
+  
+  /* Ensure header text doesn't overflow */
+  .header h1 {
+    font-size: clamp(20px, 6vw, 32px);
+    word-wrap: break-word;
+    text-align: center;
+  }
+  
+  /* Make input fields fit mobile width */
+  input[type="text"], 
+  input[type="number"], 
+  input[type="tel"],
+  textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Adjust QR code overlay for mobile */
+  .QRCodeOverlay {
+    padding: 10px;
+  }
+  
+  .QRCodeContainer h2 {
+    font-size: 18px;
+  }
 }

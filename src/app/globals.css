@@ -1,6 +1,24 @@
 *, html, body {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure content fits within viewport */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Responsive viewport styles */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+}
+
+/* Ensure inputs don't overflow on mobile */
+input, button, textarea, select {
+  max-width: 100%;
 }
 
 
