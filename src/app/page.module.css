@@ -234,6 +234,13 @@ hr.subsubheading {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
+.qrTitle {
+  font-size: 24px;
+  color: #bd9748;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
 .QRCodeRow {
   display: flex;
   gap: 20px;
@@ -762,10 +769,10 @@ hr.subsubheading {
   }
   
   /* Make input fields fit mobile width */
-  input[type="text"], 
-  input[type="number"], 
-  input[type="tel"],
-  textarea {
+  .MainDiv input[type="text"], 
+  .MainDiv input[type="number"], 
+  .MainDiv input[type="tel"],
+  .MainDiv textarea {
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -775,7 +782,7 @@ hr.subsubheading {
     padding: 10px;
   }
   
-  .QRCodeContainer h2 {
+  .QRCodeContainer h2.qrTitle {
     font-size: 18px;
   }
 }

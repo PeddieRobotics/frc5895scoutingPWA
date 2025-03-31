@@ -921,7 +921,7 @@ export default function Home() {
       {showQRCode && (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
-            <h2>Scan QR Codes to Submit Form Data</h2>
+            <h2 className={styles.qrTitle}>Scan QR Codes to Submit Form Data</h2>
             <div className={styles.QRCodeRow}>
               {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="QR Code 1" className={styles.QRCodeImage} />}
               {qrCodeDataURL2 && <img src={qrCodeDataURL2} alt="QR Code 2" className={styles.QRCodeImage} />}
@@ -938,7 +938,7 @@ export default function Home() {
       {showSubmitDialog && (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
-            <h2>Submit Form Data Online</h2>
+            <h2 className={styles.qrTitle}>Submit Form Data Online</h2>
             
             {!submissionResult ? (
               <>
