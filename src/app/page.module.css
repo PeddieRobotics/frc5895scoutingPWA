@@ -10,6 +10,7 @@
     justify-items: center;
     overflow-x: hidden;
     max-width: 100vw;
+    position: relative;
 }
 
 .MatchInfo {
@@ -46,9 +47,22 @@
 
 .Table {
   width: 100%;
-  max-width: 100%;
+  max-width: 350px;
   table-layout: fixed;
   margin: 0 auto;
+}
+
+.Table th:first-child {
+  width: 40px;
+}
+
+.Table td h2 {
+  padding-bottom: 10px;
+  padding-top: 10px;
+  position: static;
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
 }
 
 .Table td {
@@ -56,13 +70,6 @@
   padding-right: 10px; 
   position: relative; 
   font-size: clamp(14px, 4vw, 18px);
-}
-
-.Table td h2 {
-  padding-bottom: 15px;
-  position: static;
-  margin: 0px;
-  text-align: center;
 }
 
 .Table th {
@@ -749,6 +756,22 @@ hr.subsubheading {
   .SummaryList li {
     font-size: 14px;
   }
+  
+  .Intake {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    padding: 10px 5px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  
+  /* Improve vertical spacing for labels */
+  .MainDiv label {
+    font-size: 18px;
+    line-height: 1.2;
+  }
 }
 
 @media (max-width: 600px) {
@@ -785,4 +808,21 @@ hr.subsubheading {
   .QRCodeContainer h2.qrTitle {
     font-size: 18px;
   }
+}
+
+/* Hide Success/Fail headers in the Auto/Tele sections */
+.Coral .Table thead {
+  display: none;
+}
+
+/* Make Table rows more compact */
+.Table tr {
+  height: 40px;
+}
+
+/* Ensure inputs take appropriate size */
+.Table input {
+  width: 45px;
+  height: 35px;
+  text-align: center;
 }

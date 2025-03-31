@@ -4,10 +4,16 @@
   box-sizing: border-box;
 }
 
-/* Ensure content fits within viewport */
+/* Fix scrolling behavior */
 html, body {
   max-width: 100%;
   overflow-x: hidden;
+  height: 100%;
+  position: relative;
+}
+
+body {
+  overflow-y: auto; /* Allow vertical scrolling */
 }
 
 /* Add viewport meta settings equivalents in CSS */

@@ -752,7 +752,7 @@ export default function Home() {
                 </table>
               </div>
               <div className={styles.AlgaeRemoved}>
-                <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
+                <SubHeader subHeaderName={"Algae Removed"}/>
                 <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
               </div>
               <div className={styles.Processor}>
@@ -818,7 +818,7 @@ export default function Home() {
                 </table>
               </div>
               <div className={styles.AlgaeRemoved}>
-                <SubHeader subHeaderName={"Algae Removed Intentionally"}/>
+                <SubHeader subHeaderName={"Algae Removed"}/>
                 <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
               </div>
               <div className={styles.Processor}>
