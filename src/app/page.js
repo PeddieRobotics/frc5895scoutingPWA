@@ -318,7 +318,7 @@ export default function Home() {
       
       // Show loading indicator
       setIsSubmitting(true);
-      toast.loading("Submitting data...");
+      const toastId = toast.loading("Submitting data...");
       
       // Make the API call
       const response = await fetch("/api/add-match-data", {
@@ -333,7 +333,8 @@ export default function Home() {
         throw new Error(`Error: ${response.status}`);
       }
       
-      // Show success message
+      // Dismiss loading toast and show success message
+      toast.dismiss(toastId);
       toast.success("Data submitted successfully!");
       
       // Update scout profile with submitted match
@@ -377,6 +378,8 @@ export default function Home() {
     } catch (error) {
       // Error handling - don't modify the form, just show the error
       console.error("Error submitting data:", error);
+      // Dismiss loading toast and show error message
+      toast.dismiss();
       toast.error("Failed to submit data. Please try again.");
       setSubmissionResult({ success: false });
       setIsSubmitting(false);
@@ -598,7 +601,8 @@ export default function Home() {
             <TextInput
               visibleName={"Team Scouted:"}
               internalName={"team"}
-              type={"number"}
+              type={"tel"}
+              pattern="[0-9]*"
               className="preMatchInput"
             />
             <TextInput 
