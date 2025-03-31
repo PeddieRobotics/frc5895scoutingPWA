@@ -720,33 +720,26 @@ export default function Home() {
               <div className={styles.Coral}>
                 <SubHeader subHeaderName={"Coral"}/>
                 <table className={styles.Table}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                    </tr>
-                  </thead>
                   <tbody>
                     <tr>
                       <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol4fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol3fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol2fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"autol1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"autol1fail"}/></td>
                     </tr>
                   </tbody>
                 </table>
@@ -786,33 +779,26 @@ export default function Home() {
               <div className={styles.Coral}>
                 <SubHeader subHeaderName={"Coral"}/>
                 <table className={styles.Table}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                    </tr>
-                  </thead>
                   <tbody>
                     <tr>
                       <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel4success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel4fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel3success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel3fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel2success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel2fail"}/></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
+                      <td><NumericInput pieceType={"Success"} visibleName={"Success"} internalName={"telel1success"}/></td>
+                      <td><NumericInput pieceType={"Fail"} visibleName={"Fail"} internalName={"telel1fail"}/></td>
                     </tr>
                   </tbody>
                 </table>
