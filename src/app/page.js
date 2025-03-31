@@ -35,8 +35,23 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const savedProfile = localStorage.getItem("ScoutProfile");
       if (savedProfile) {
-        const profileData = JSON.parse(savedProfile)
+        const profileData = JSON.parse(savedProfile);
         setScoutProfile(profileData);
+        
+        // Directly set form values after a short delay to ensure form is mounted
+        setTimeout(() => {
+          if (form.current) {
+            const scoutNameInput = form.current.querySelector('input[name="scoutname"]');
+            if (scoutNameInput && profileData.scoutname) {
+              scoutNameInput.value = profileData.scoutname;
+            }
+            
+            const matchInput = form.current.querySelector('input[name="match"]');
+            if (matchInput && profileData.match) {
+              matchInput.value = profileData.match;
+            }
+          }
+        }, 100);
       }
       
       // Check online status
@@ -144,8 +159,12 @@ export default function Home() {
   }, [formData]);
 
   function onNoShowChange(e) {
-    console.log(`NoShow checkbox changed to: ${e.target.checked}`);
-    setNoShow(e.target.checked);
+    // Update the component state based on checkbox state
+    const isChecked = e.target.checked;
+    console.log(`NoShow checkbox changed to: ${isChecked}`);
+    setNoShow(isChecked);
+    // The rendering of conditional content is already handled by the JSX
+    // through the {!noShow && ( ... )} conditional rendering
   }
 
   function onBreakdownChange(e) {
@@ -299,7 +318,7 @@ export default function Home() {
       
       // Show loading indicator
       setIsSubmitting(true);
-      toast.info("Submitting data...");
+      toast.loading("Submitting data...");
       
       // Make the API call
       const response = await fetch("/api/add-match-data", {
@@ -368,35 +387,90 @@ export default function Home() {
   const handleQRClose = () => {
     setShowQRCode(false);
     
-    // Update profile after QR code is generated and closed
-    if (formData && typeof document !== 'undefined') {
-      const newProfile = { 
-        scoutname: formData.scoutname, 
-        scoutteam: "5895",
-        match: Number(formData.match)+1,
-      };
-      setScoutProfile(newProfile);
-      localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
-    }
+    // First capture the data we need to preserve
+    const scoutName = formData?.scoutname || (scoutProfile?.scoutname || "");
+    const incrementedMatch = Number(formData?.match || 0) + 1;
     
-    // Only reset the form after successfully generating and viewing QR code
+    // Update profile with preserved and incremented data
+    const newProfile = { 
+      scoutname: scoutName, 
+      scoutteam: "5895",
+      match: incrementedMatch,
+    };
+    setScoutProfile(newProfile);
+    localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+    
+    // Reset React state controls - BEFORE touching the DOM
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
     
-    // Clear form fields, but this happens AFTER the QR code is viewed
-    // so no data is lost in the process
+    // First do a complete form reset to ensure clean slate
     if (form.current) {
       form.current.reset();
-      // After resetting, restore the scout profile values
-      setTimeout(() => initializeForm(), 0);
+      
+      // Since form.reset() may not reset all controlled components,
+      // explicitly set each input type
+      
+      // 1. Reset all checkboxes to unchecked state
+      form.current.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      
+      // 2. Reset all numeric inputs to zero
+      form.current.querySelectorAll('input[type="number"]').forEach(input => {
+        if (input.name === "team") {
+          // For team field, clear it completely
+          input.value = "";
+        } else if (input.name !== "match") { // Don't reset match
+          input.value = "0";
+          
+          // Trigger change event to update any component state
+          const event = new Event('change', { bubbles: true });
+          input.dispatchEvent(event);
+        }
+      });
+      
+      // 3. Clear all textareas
+      form.current.querySelectorAll('textarea').forEach(textarea => {
+        textarea.value = "";
+      });
+      
+      // 4. Reset all radio buttons
+      form.current.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+      });
+      
+      // Now restore our preserved values
+      setTimeout(() => {
+        if (form.current) {
+          // Restore scout name
+          const scoutNameInput = form.current.querySelector('input[name="scoutname"]');
+          if (scoutNameInput) {
+            scoutNameInput.value = scoutName;
+          }
+          
+          // Set incremented match number
+          const matchInput = form.current.querySelector('input[name="match"]');
+          if (matchInput) {
+            matchInput.value = incrementedMatch;
+          }
+          
+          // Double check the noShow checkbox is definitely unchecked
+          const noShowCheckbox = form.current.querySelector('input[name="noshow"]');
+          if (noShowCheckbox) {
+            noShowCheckbox.checked = false;
+          }
+        }
+      }, 50); // Slightly longer delay to ensure reset is complete
     }
     
-    // Clear other states
+    // Clear stored form data
     setFormData(null);
     setSubmissionResult(null);
     setUploadStatus("");
     
+    // Show confetti as user feedback
     new JSConfetti().addConfetti({
       emojis: ['🐠', '🐡', '🦀', '🪸'],
       emojiSize: 100,
@@ -477,7 +551,7 @@ export default function Home() {
     if (typeof window !== 'undefined' && submittedData) {
       // Create new profile with incremented match number
       const newProfile = {
-        scoutname: submittedData.scoutname || scoutProfile.scoutname,
+        scoutname: submittedData.scoutname || (scoutProfile ? scoutProfile.scoutname : ""),
         scoutteam: "5895",
         match: Number(submittedData.match) + 1,
       };
@@ -485,6 +559,15 @@ export default function Home() {
       // Update state and local storage
       setScoutProfile(newProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+      
+      // If the form is visible, make sure the UI is updated
+      if (form.current) {
+        const scoutNameInput = form.current.querySelector('input[name="scoutname"]');
+        if (scoutNameInput) scoutNameInput.value = newProfile.scoutname;
+        
+        const matchInput = form.current.querySelector('input[name="match"]');
+        if (matchInput) matchInput.value = newProfile.match;
+      }
     }
   };
 
