@@ -53,6 +53,7 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
+  const [formResetKey, setFormResetKey] = useState(0);
   
   const form = useRef();
 
@@ -416,27 +417,36 @@ export default function Home() {
       toast.dismiss(toastId);
       toast.success("Data submitted successfully!");
       
-      // Update scout profile with submitted match
-      updateScoutProfile(submissionData);
+      // First capture the data we need to preserve
+      const scoutName = submissionData.scoutname || (scoutProfile?.scoutname || "");
+      const incrementedMatch = Number(submissionData.match || 0) + 1;
       
-      // Set submission result first
+      // Update profile with preserved and incremented data
+      const newProfile = { 
+        scoutname: scoutName, 
+        scoutteam: "5895",
+        match: incrementedMatch,
+      };
+      setScoutProfile(newProfile);
+      localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+      
+      // Set submission result
       setSubmissionResult({ success: true });
       
-      // Only reset form state and fields AFTER successful submission
+      // Reset React state controls
       setNoShow(false);
       setBreakdown(false);
       setDefense(false);
       
-      // Clear form fields only after successful submission
-      if (form.current) {
-        form.current.reset();
-        // After resetting, restore the scout profile values
-        setTimeout(() => initializeForm(), 0);
-      }
+      // Force complete component reset by incrementing the key
+      setFormResetKey(prev => prev + 1);
       
-      // Indicate successful submission and hide dialog after a small delay
+      // Indicate successful submission and hide dialog after a delay
       setTimeout(() => {
         setShowSubmitDialog(false);
+        
+        // Initialize the form with preserved values after reset
+        initializeForm();
         
         // Show confetti
         new JSConfetti().addConfetti({
@@ -451,7 +461,7 @@ export default function Home() {
         setSubmissionResult(null);
         setUploadStatus("");
         setIsSubmitting(false);
-      }, 1500);
+      }, 500);
       
       return true;
     } catch (error) {
@@ -484,83 +494,32 @@ export default function Home() {
     setScoutProfile(newProfile);
     localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
     
-    // Reset React state controls - BEFORE touching the DOM
+    // Reset React state controls
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
     
-    // First do a complete form reset to ensure clean slate
-    if (form.current) {
-      form.current.reset();
+    // Force complete component reset by incrementing the key
+    setFormResetKey(prev => prev + 1);
+    
+    // Give time for the UI to reset
+    setTimeout(() => {
+      // Then restore the saved profile values
+      initializeForm();
       
-      // Since form.reset() may not reset all controlled components,
-      // explicitly set each input type
-      
-      // 1. Reset all checkboxes to unchecked state
-      form.current.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
+      // Show confetti as user feedback
+      new JSConfetti().addConfetti({
+        emojis: ['🐠', '🐡', '🦀', '🪸'],
+        emojiSize: 100,
+        confettiRadius: 3,
+        confettiNumber: 100,
       });
-      
-      // 2. Reset all numeric inputs to zero
-      form.current.querySelectorAll('input[type="number"]').forEach(input => {
-        if (input.name === "team") {
-          // For team field, clear it completely
-          input.value = "";
-        } else if (input.name !== "match") { // Don't reset match
-          input.value = "0";
-          
-          // Trigger change event to update any component state
-          const event = new Event('change', { bubbles: true });
-          input.dispatchEvent(event);
-        }
-      });
-      
-      // 3. Clear all textareas
-      form.current.querySelectorAll('textarea').forEach(textarea => {
-        textarea.value = "";
-      });
-      
-      // 4. Reset all radio buttons
-      form.current.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.checked = false;
-      });
-      
-      // Now restore our preserved values
-      setTimeout(() => {
-        if (form.current) {
-          // Restore scout name
-          const scoutNameInput = form.current.querySelector('input[name="scoutname"]');
-          if (scoutNameInput) {
-            scoutNameInput.value = scoutName;
-          }
-          
-          // Set incremented match number
-          const matchInput = form.current.querySelector('input[name="match"]');
-          if (matchInput) {
-            matchInput.value = incrementedMatch;
-          }
-          
-          // Double check the noShow checkbox is definitely unchecked
-          const noShowCheckbox = form.current.querySelector('input[name="noshow"]');
-          if (noShowCheckbox) {
-            noShowCheckbox.checked = false;
-          }
-        }
-      }, 50); // Slightly longer delay to ensure reset is complete
-    }
+    }, 100);
     
     // Clear stored form data
     setFormData(null);
     setSubmissionResult(null);
     setUploadStatus("");
-    
-    // Show confetti as user feedback
-    new JSConfetti().addConfetti({
-      emojis: ['🐠', '🐡', '🦀', '🪸'],
-      emojiSize: 100,
-      confettiRadius: 3,
-      confettiNumber: 100,
-    });
   };
   
   const handleQRCancel = () => {
@@ -701,6 +660,7 @@ export default function Home() {
       
       {/* Always render the form - don't conditionally render it, just conditionally hide it */}
       <form 
+        key={formResetKey}
         ref={form} 
         name="Scouting Form" 
         onSubmit={(e) => {

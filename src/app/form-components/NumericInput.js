@@ -22,6 +22,52 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
         }
     }, []);
 
+    // Add listener for reset events
+    useEffect(() => {
+        // Handler for form reset events
+        const handleReset = (event) => {
+            console.log(`NumericInput ${internalName} received reset event`);
+            
+            // Don't reset match field
+            if (internalName === 'match') {
+                if (event.detail?.preserve?.match) {
+                    setValue(parseInt(event.detail.preserve.match, 10));
+                    if (inputRef.current) {
+                        inputRef.current.value = event.detail.preserve.match;
+                    }
+                }
+                return;
+            }
+            
+            // Reset to 0 for all other fields
+            setValue(0);
+            if (inputRef.current) {
+                inputRef.current.value = "0";
+            }
+        };
+        
+        // Also handle a more direct reset event
+        const handleNumericReset = () => {
+            if (internalName !== 'match') {
+                console.log(`NumericInput ${internalName} reset to 0`);
+                setValue(0);
+                if (inputRef.current) {
+                    inputRef.current.value = "0";
+                }
+            }
+        };
+        
+        // Listen for both types of reset events
+        window.addEventListener('reset_form_components', handleReset);
+        window.addEventListener('reset_numeric_inputs', handleNumericReset);
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('reset_form_components', handleReset);
+            window.removeEventListener('reset_numeric_inputs', handleNumericReset);
+        };
+    }, [internalName]);
+
     function increment() {
         if (value + 1 <= max) {
             const newValue = value + 1;
