@@ -19,6 +19,24 @@ export function middleware(request) {
     return NextResponse.next();
   }
   
+  // Check if the app is being accessed from a standalone PWA context
+  const userAgent = request.headers.get('user-agent') || '';
+  const displayMode = request.headers.get('sec-fetch-dest') || '';
+  const pwaStandaloneCookie = request.cookies.get('pwa-standalone')?.value;
+  
+  const isPWA = 
+    displayMode === 'standalone' || 
+    pwaStandaloneCookie === 'true' ||
+    userAgent.includes('Mobile Safari') && (
+      userAgent.includes('standalone') || 
+      userAgent.includes('navigator.standalone=true')
+    );
+  
+  // Skip authentication for standalone PWA mode 
+  if (isPWA) {
+    return NextResponse.next();
+  }
+  
   const basicAuth = request.headers.get('Authorization');
   
   if (basicAuth) {

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 
 import NavBar from './form-components/NavBar.js'
+import PWADetector from './form-components/PWADetector.js'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -15,7 +16,13 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     title: 'JÖRMUNSCOUTR',
-    statusBarStyle: 'black'
+    statusBarStyle: 'black',
+    startupImage: [
+      {
+        url: '/icons/icon-512.png',
+        media: '(device-width: 320px) and (device-height: 568px)'
+      }
+    ]
   },
 
   viewport: {
@@ -37,8 +44,13 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icons/icon-192.png"></link>
         <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png"></link>
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png"></link>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="JÖRMUNSCOUTR" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
+        <PWADetector />
         <NavBar></NavBar>
         {children}
         <Analytics />
