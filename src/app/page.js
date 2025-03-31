@@ -673,6 +673,7 @@ export default function Home() {
         key={formResetKey}
         ref={form} 
         name="Scouting Form" 
+        className={styles.formContainer}
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();

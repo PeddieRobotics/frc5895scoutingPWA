@@ -10,10 +10,9 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Responsive viewport styles */
-@viewport {
-  width: device-width;
-  initial-scale: 1;
+/* Add viewport meta settings equivalents in CSS */
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Ensure inputs don't overflow on mobile */

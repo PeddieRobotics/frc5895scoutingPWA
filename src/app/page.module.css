@@ -719,7 +719,7 @@ hr.subsubheading {
 }
 
 /* Adjust form containers to prevent overflow */
-form {
+.formContainer {
   max-width: 100%;
 }
 
