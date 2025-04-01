@@ -51,18 +51,35 @@
   margin: 0 auto;
   margin-top: 10px;
   table-layout: fixed;
+  border-spacing: 0;
+  border-collapse: collapse;
 }
 
 .Table th:first-child, 
-.Table td:first-child {
-  width: auto;
+.Table td:first-child,
+.Table th:last-child,
+.Table td:last-child {
+  width: 15%;
   min-width: 30px;
   max-width: 40px;
 }
 
-.Table th:not(:first-child), 
-.Table td:not(:first-child) {
-  width: 50%;
+.Table th:nth-child(2),
+.Table td:nth-child(2),
+.Table th:nth-child(3),
+.Table td:nth-child(3) {
+  width: 38%;
+  padding: 0;
+}
+
+.Table th:nth-child(2),
+.Table td:nth-child(2) {
+  padding-right: 0 !important;
+}
+
+.Table th:nth-child(3),
+.Table td:nth-child(3) {
+  padding-left: 0 !important;
 }
 
 .Table td h2 {
@@ -77,6 +94,7 @@
   align-items: center;
   height: 45px;
   line-height: 1;
+  padding-right: 5px;
 }
 
 .Table td {
@@ -231,6 +249,7 @@ hr.subsubheading {
   background-color: #bd9748;
   color: black;
   border-radius: 8px;
+  cursor: pointer;
   padding: 3px;
   width: 275px;
   margin: 15px auto;
@@ -293,6 +312,7 @@ hr.subsubheading {
   cursor: pointer;
   padding: 5px 15px;
   margin: 5px;
+  width: calc(100% - 10px);
 }
 
 .checkOption:has(input:checked) {
@@ -866,17 +886,7 @@ hr.subsubheading {
   .Intake {
     width: 90%;
     max-width: 275px;
-    height: auto;
-    padding: 5px;
-  }
-  
-  .Intake label {
-    font-size: 16px;
-    padding: 8px 12px;
-  }
-  
-  .Intake .box {
-    padding: 8px 12px;
+    padding: 3px;
   }
   
   /* Improve vertical spacing for labels */
@@ -900,18 +910,18 @@ hr.subsubheading {
   
   /* Fix intake checkbox sizing and padding on mobile */
   .checkOption {
-    padding: 8px 12px;
+    padding: 5px 15px;
     margin: 5px;
     width: calc(100% - 10px);
   }
   
   .checkOption label {
     font-size: 16px;
-    margin-left: 8px;
+    margin-left: 10px;
   }
   
   .checkOption input[type="checkbox"] {
-    margin-right: 8px;
+    margin-right: 10px;
   }
 }
 
@@ -922,7 +932,18 @@ hr.subsubheading {
   }
   
   .Table td, .Table th {
-    padding: 5px;
+    padding: 2px 0; /* Reduce horizontal padding, focus on vertical padding */
+  }
+  
+  /* Ensure table cells with numeric inputs have minimal padding */
+  .Table td:not(:first-child) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  /* Give more space to first column with level labels */
+  .Table td:first-child {
+    padding-left: 8px;
   }
   
   /* Ensure header text doesn't overflow */
@@ -970,9 +991,49 @@ hr.subsubheading {
 }
 
 /* Fix for the Coral section table layout */
-.Coral .Table {
+.Coral .Table,
+.Processor .Table,
+.Net .Table {
   margin-top: 0;
   padding-top: 0;
+  border-spacing: 0 !important;
+  border-collapse: collapse !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Reduce spacing between success/fail columns for all screen sizes */
+.Table td:not(:first-child) {
+  padding: 0 !important;
+  width: 38%; /* Make each success/fail column slightly narrower */
+}
+
+/* Ensure level labels (L4, L3, etc.) don't roll off screen */
+.Table td:first-child {
+  width: 24%; /* Give enough space for labels */
+  min-width: 40px; /* Ensure minimum width for labels */
+  padding-left: 5px;
+  padding-right: 0;
+  text-align: right; /* Align text to the right to prevent roll-off */
+}
+
+/* Remove any padding between success and fail columns */
+.Table td:nth-child(2) {
+  padding-right: 0 !important; /* Remove spacing between success and fail columns */
+}
+
+/* Ensure tables are centered */
+.Table {
+  margin-left: auto;
+  margin-right: auto;
+  border-spacing: 0 !important;
+  border-collapse: collapse !important;
+}
+
+/* Styles for numeric inputs within table cells */
+.Table td .NumericInput .Container {
+  transform: none !important;
+  margin: 0 auto;
 }
 
 /* Style table headers */
@@ -995,14 +1056,8 @@ hr.subsubheading {
 .Processor .Table thead th:not(:first-child),
 .Net .Table thead th:not(:first-child) {
   font-size: 22px; 
-}
-
-/* Fix for the section table layouts */
-.Coral .Table,
-.Processor .Table,
-.Net .Table {
-  margin-top: 0;
-  padding-top: 0;
+  padding-left: 0; /* Reduce padding between headers */
+  padding-right: 0; /* Reduce padding between headers */
 }
 
 /* Consistent NumericInput label styling */
@@ -1074,4 +1129,10 @@ hr.subsubheading {
   font-size: 22px;
   margin: 0;
   padding: 0;
+}
+
+/* Reduce horizontal spacing between numeric inputs in the same column */
+.Table .NumericInput {
+  max-width: 110px;
+  margin: 0 auto;
 }

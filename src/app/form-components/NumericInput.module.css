@@ -1,136 +1,82 @@
-.SuccessButtonRight {
-    background-color: #CBFFD4;
+.SuccessButtonRight, .FailButtonRight, .CounterButtonRight {
     border: 1px solid black; 
-    color: black;
     padding: 0;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
     cursor: pointer;
-    width: 45px;
+    width: 40px;
     height: 45px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0;
+    border-left: none; /* Remove left border to prevent double border */
+}
+
+.SuccessButtonLeft, .FailButtonLeft, .CounterButtonLeft {
+    border: 1px solid black; 
+    padding: 0;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    cursor: pointer;
+    width: 40px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    border-right: none; /* Remove right border to prevent double border */
+}
+
+.SuccessButtonRight {
+    background-color: #CBFFD4;
 }
 
 .SuccessButtonLeft {
     background-color: #CBFFD4;
-    border: 1px solid black; 
-    color: black;
-    padding: 0;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-    cursor: pointer;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-
 .FailButtonRight {
-    background-color: #FFABAB; 
-    border: 1px solid black;
-    color: black;
-    padding: 0;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-    cursor: pointer;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #FFABAB;
 }
 
 .FailButtonLeft {
-    background-color: #FFABAB; 
+    background-color: #FFABAB;
+}
+
+.CounterButtonRight {
+    background-color: #CBFFF5;
+}
+
+.CounterButtonLeft {
+    background-color: #CBFFF5;
+}
+
+.Success, .Fail, .Counter {
     border: 1px solid black;
-    color: black;
-    padding: 0;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-    cursor: pointer;
-    width: 45px;
+    text-align: center;
+    font-size: 25px;
     height: 45px;
+    width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
 }
 
 .Success {
     background-color: #87E47E;
-    border: 1px solid black;
-    text-align: center;
-    font-size: 25px;
-    height: 45px;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .Fail {
     background-color: #FF7272;
-    border: 1px solid black;
-    text-align: center;
-    font-size: 25px;
-    height: 45px;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.Counter{
+.Counter {
     background-color: #66FFD4;
-    border: 1px solid black;
-    text-align: center;
-    font-size: 25px;
-    height: 45px;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.CounterButtonRight {
-    background-color: #CBFFF5; 
-    border: 1px solid black;
-    color: black;
-    padding: 0;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-    cursor: pointer;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.CounterButtonLeft {
-    background-color: #CBFFF5; 
-    border: 1px solid black;
-    color: black;
-    padding: 0;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-    cursor: pointer;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-
-.NumericInput {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
 }
 
 .Container {
@@ -138,6 +84,78 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    gap: 0;
+    font-size: 0; /* Remove any text spacing */
+    max-width: 110px;
+}
+
+/* Apply stronger negative margins to make buttons appear closer together */
+.Container input,
+.Container button {
+    margin: 0 -1px; /* Reduce from -3px to -1px for better spacing */
+}
+
+/* Remove any padding that might create space */
+.Success, .Fail, .Counter,
+.SuccessButtonLeft, .SuccessButtonRight,
+.FailButtonLeft, .FailButtonRight,
+.CounterButtonLeft, .CounterButtonRight {
+    padding: 0;
+}
+
+/* Keep consistent width for all components */
+.NumericInput {
+    padding: 0;
+    margin: 0;
+}
+
+/* When numeric inputs are in tables, reduce their spacing further */
+.Table .NumericInput .Container {
+    margin: 0 -2px; /* Reduce from -4px to -2px for better spacing */
+}
+
+/* Completely remove any hover effects that might cause button enlargement */
+.Container button:hover {
+    position: static; 
+    z-index: auto;
+    transform: none;
+    box-shadow: none;
+    outline: none;
+}
+
+/* Make sure buttons don't change size on any interaction */
+.Container button:active, 
+.Container button:focus {
+    outline: none;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Ensure table cells with NumericInput have minimal padding */
+td .NumericInput {
+    padding: 0;
+    margin: 0;
+}
+
+/* Make the success/fail column cells tighter on mobile */
+@media (max-width: 600px) {
+    .Table td:not(:first-child) {
+        padding: 0;
+        width: 38%; /* Make columns slightly narrower */
+    }
+    
+    /* Increase space for level labels */
+    .Table td:first-child {
+        padding-left: 8px;
+        padding-right: 0;
+    }
+}
+
+.NumericInput {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
 }
 
 .NumericInput .label{

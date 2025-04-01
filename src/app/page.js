@@ -718,6 +718,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -725,21 +726,25 @@ export default function Home() {
                       <td><h2>L4</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -756,6 +761,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -763,6 +769,7 @@ export default function Home() {
                       <td></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autoprocessorsuccess"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autoprocessorfail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -776,6 +783,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -783,6 +791,7 @@ export default function Home() {
                       <td></td>
                       <td><NumericInput pieceType={"Success"} internalName={"autonetsuccess"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"autonetfail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -799,6 +808,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -806,21 +816,25 @@ export default function Home() {
                       <td><h2>L4</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L3</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L2</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
+                      <td></td>
                     </tr>
                     <tr>
                       <td><h2>L1</h2></td>
                       <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -837,6 +851,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -844,6 +859,7 @@ export default function Home() {
                       <td></td>
                       <td><NumericInput pieceType={"Success"} internalName={"teleprocessorsuccess"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"teleprocessorfail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -857,6 +873,7 @@ export default function Home() {
                       <th></th>
                       <th>Success</th>
                       <th>Fail</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -864,6 +881,7 @@ export default function Home() {
                       <td></td>
                       <td><NumericInput pieceType={"Success"} internalName={"telenetsuccess"}/></td>
                       <td><NumericInput pieceType={"Fail"} internalName={"telenetfail"}/></td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
