@@ -2,7 +2,7 @@
 import styles from "./Checkbox.module.css";
 import { useState, useEffect, useRef } from "react";
 
-export default function Checkbox ({ visibleName, internalName, changeListener, className }) {
+export default function Checkbox ({ visibleName, internalName, changeListener, className, style }) {
     const [checked, setChecked] = useState(false);
     const checkboxRef = useRef(null);
     
@@ -73,7 +73,10 @@ export default function Checkbox ({ visibleName, internalName, changeListener, c
     const isLongLabel = visibleName && visibleName.length > 10;
     
     return (
-        <div className={`${styles.boxContainer} ${className || ''} ${isLongLabel ? styles.longLabel : ''}`}>
+        <div 
+            className={`${styles.boxContainer} ${className || ''} ${isLongLabel ? styles.longLabel : ''}`}
+            style={style}
+        >
             <div className={styles.box} onClick={handleBoxClick}>
                 <input 
                     ref={checkboxRef}

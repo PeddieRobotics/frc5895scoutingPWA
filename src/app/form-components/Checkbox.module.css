@@ -98,6 +98,15 @@
     margin: 0;
 }
 
+/* Specific styles for leave checkbox */
+.boxContainer.leaveCheckbox {
+    margin-bottom: 10px;
+}
+
+.boxContainer.leaveCheckbox .box {
+    margin-bottom: 10px;
+}
+
 /* Override hover styles for preMatchInput */
 .boxContainer.preMatchInput .box:hover,
 .boxContainer.preMatchInput .box:focus {

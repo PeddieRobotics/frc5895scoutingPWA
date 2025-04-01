@@ -735,8 +735,8 @@ export default function Home() {
           <>
             <div className={`${styles.Auto} ${compactStyles.Auto}`}>
               <Header headerName={"Auto"} className={compactStyles.header} />
-              <Checkbox visibleName={"Leave"} internalName={"leave"} />
-              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
+              <Checkbox visibleName={"Leave"} internalName={"leave"} className="leaveCheckbox" style={{ marginBottom: '10px' }} />
+              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`} style={{ paddingTop: '10px' }}>
                 <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
                 <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
