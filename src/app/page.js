@@ -107,14 +107,32 @@ export default function Home() {
       window.addEventListener('offline', () => setIsOnline(false));
       
       // Check for stored auth credentials
+      let credentials = null;
+      
+      // First check sessionStorage
       const storedCredentials = sessionStorage.getItem('auth_credentials');
       if (storedCredentials) {
-        setAuthCredentials(storedCredentials);
-        
-        // Also set it as a cookie if not already set
-        if (!document.cookie.includes('auth_credentials')) {
-          document.cookie = `auth_credentials=${storedCredentials}; path=/; max-age=86400; SameSite=Strict`;
+        credentials = storedCredentials;
+      } else {
+        // If not in sessionStorage, check cookies
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith('auth_credentials=')) {
+            credentials = cookie.substring('auth_credentials='.length);
+            // Store back in sessionStorage for future use
+            sessionStorage.setItem('auth_credentials', credentials);
+            break;
+          }
         }
+      }
+      
+      // If credentials were found in either location, set them
+      if (credentials) {
+        setAuthCredentials(credentials);
+        
+        // Ensure cookie is set with a long expiration (30 days)
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
       }
       
       return () => {

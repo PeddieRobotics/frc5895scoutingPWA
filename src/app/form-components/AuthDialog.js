@@ -81,8 +81,8 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
         // Store credentials in sessionStorage for future API calls
         sessionStorage.setItem('auth_credentials', credentials);
         
-        // Also store in a cookie for middleware to access
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=86400; SameSite=Strict`;
+        // Also store in a cookie for middleware to access with longer expiration (30 days)
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
         
         onLogin(credentials);
       } else {
