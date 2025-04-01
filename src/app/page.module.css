@@ -905,7 +905,7 @@ hr.subsubheading {
   }
   
   .NumericInput button {
-    padding: 0 8px !important;
+    padding: 0 0px !important;
   }
   
   .NumericInput input {

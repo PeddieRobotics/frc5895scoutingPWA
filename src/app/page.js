@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import styles from "./page.module.css";
+import compactStyles from "./compact.module.css";
 import NumericInput from "./form-components/NumericInput";
 import Checkbox from "./form-components/Checkbox";
 import CommentBox from "./form-components/CommentBox";
@@ -15,6 +16,7 @@ import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
 import { toast, Toaster } from 'react-hot-toast';
+import IntakeOptions from "./form-components/IntakeOptions";
 
 // Create a separate component that uses useSearchParams
 function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
@@ -650,7 +652,7 @@ export default function Home() {
   };
 
   return (
-    <div className={styles.MainDiv}>
+    <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
       <Toaster position="top-center" />
       
       {/* Suspense boundary for search params */}
@@ -666,7 +668,7 @@ export default function Home() {
         key={formResetKey}
         ref={form} 
         name="Scouting Form" 
-        className={styles.formContainer}
+        className={`${styles.formContainer} ${compactStyles.formContainer}`}
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -674,9 +676,9 @@ export default function Home() {
         }}
         style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
       >
-        <Header headerName={"JÖRMUNSCOUTR"} />
-        <div className={styles.allMatchInfo}>
-          <div className={styles.MatchInfo}>
+        <Header headerName={"JÖRMUNSCOUTR"} className={compactStyles.header} />
+        <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
+          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <TextInput 
               visibleName={"Scout Name:"} 
               internalName={"scoutname"} 
@@ -692,7 +694,7 @@ export default function Home() {
               className="preMatchInput"
             />
           </div>
-          <div className={styles.MatchInfo}>
+          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <TextInput
               visibleName={"Team Scouted:"}
               internalName={"team"}
@@ -701,7 +703,7 @@ export default function Home() {
               className="preMatchInput"
             />
           </div>
-          <div className={styles.MatchInfo}>
+          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <Checkbox
               visibleName={"No Show"}
               internalName={"noshow"}
@@ -713,12 +715,12 @@ export default function Home() {
 
         {!noShow && (
           <>
-            <div className={styles.Auto}>
-              <Header headerName={"Auto"}/>
+            <div className={`${styles.Auto} ${compactStyles.Auto}`}>
+              <Header headerName={"Auto"} className={compactStyles.header} />
               <Checkbox visibleName={"Leave"} internalName={"leave"} />
-              <div className={`${styles.Coral} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Coral"}/>
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -755,13 +757,13 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"}/>
+              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
                 <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
               </div>
-              <div className={`${styles.Processor} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} />
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -781,9 +783,9 @@ export default function Home() {
                 </table>
               </div>
 
-              <div className={`${styles.Net} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} />
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -804,11 +806,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={styles.Auto}>
-              <Header headerName={"Tele"}/>
-              <div className={`${styles.Coral} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Coral"}/>
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+            <div className={`${styles.Auto} ${compactStyles.Auto}`}>
+              <Header headerName={"Tele"} className={compactStyles.header} />
+              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -845,13 +847,13 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"}/>
+              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
                 <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
               </div>
-              <div className={`${styles.Processor} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} />
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -871,9 +873,9 @@ export default function Home() {
                 </table>
               </div>
 
-              <div className={`${styles.Net} ${styles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} />
-                <table className={`${styles.Table} ${styles.CoralTable}`}>
+              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
+                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
                   <thead>
                     <tr>
                       <th></th>
@@ -896,6 +898,7 @@ export default function Home() {
               <CommentBox
                   visibleName={"General Comments"}
                   internalName={"generalcomments"}
+                  className={compactStyles.commentBox}
               />
 
               <Checkbox 
@@ -907,41 +910,21 @@ export default function Home() {
                   <CommentBox
                     visibleName={"Defense Elaboration"}
                     internalName={"defensecomments"}
+                    className={compactStyles.commentBox}
                   />
                 )}    
 
             </div>
 
-            <div className={styles.Endgame}>
-              <Header headerName={"Endgame"}/>
-              <EndPlacement/>
+            <div className={`${styles.Endgame} ${compactStyles.Endgame}`}>
+              <Header headerName={"Endgame"} className={compactStyles.header} />
+              <EndPlacement className={compactStyles.endPlacement} />
             </div>
 
-            <div className={styles.PostMatch}>
-              <Header headerName={"Post-Match"}/>
-              <SubHeader subHeaderName={"Intake"}/>
-              <div className={styles.Intake}>
-                <div className={styles.checkOption} onClick={(e) => {e.target.querySelector("input")?.click();}}>
-                  <input type="checkbox" id="coralgrndintake" name="coralgrndintake" />
-                  <label htmlFor="coralgrndintake">Coral Ground</label>
-                </div>
-                <div className={styles.checkOption} onClick={(e) => {e.target.querySelector("input")?.click();}}>
-                  <input type="checkbox" id="coralstationintake" name="coralstationintake" />
-                  <label htmlFor="coralstationintake">Coral Station</label>
-                </div>
-                <div className={styles.checkOption} onClick={(e) => {e.target.querySelector("input")?.click();}}>
-                  <input type="checkbox" id="algaegrndintake" name="algaegrndintake" />
-                  <label htmlFor="algaegrndintake">Algae Ground</label>
-                </div>
-                <div className={styles.checkOption} onClick={(e) => {e.target.querySelector("input")?.click();}}>
-                  <input type="checkbox" id="algaehighreefintake" name="algaehighreefintake" />
-                  <label htmlFor="algaehighreefintake">Algae High Reef</label>
-                </div>
-                <div className={styles.checkOption} onClick={(e) => {e.target.querySelector("input")?.click();}}>
-                  <input type="checkbox" id="algaelowreefintake" name="algaelowreefintake" />
-                  <label htmlFor="algaelowreefintake">Algae Low Reef</label>
-                </div>
-              </div>
+            <div className={`${styles.PostMatch} ${compactStyles.PostMatch}`}>
+              <Header headerName={"Post-Match"} className={compactStyles.header} />
+              <SubHeader subHeaderName={"Intake"} className={compactStyles.subHeader} />
+              <IntakeOptions className={compactStyles.intakeOptions} />
               <Checkbox 
                 visibleName={"Broke down?"} 
                 internalName={"breakdown"} 
@@ -951,17 +934,18 @@ export default function Home() {
                 <CommentBox
                   visibleName={"Breakdown Elaboration"}
                   internalName={"breakdowncomments"}
+                  className={compactStyles.commentBox}
                 />
               )}
             </div>
           </>
         )}
-        <div className={styles.SubmitButtons}>
+        <div className={`${styles.SubmitButtons} ${compactStyles.SubmitButtons}`}>
           <button 
             id="qrbutton" 
             type="button" 
             onClick={handleQRButtonClick} 
-            className={styles.QRButton}
+            className={`${styles.QRButton} ${compactStyles.QRButton}`}
           >
             GENERATE QR CODE
           </button>
@@ -969,7 +953,7 @@ export default function Home() {
             id="onlinesubmit" 
             type="button" 
             onClick={handleOnlineSubmitClick} 
-            className={styles.OnlineSubmitButton} 
+            className={`${styles.OnlineSubmitButton} ${compactStyles.OnlineSubmitButton}`} 
             disabled={!isOnline}
           >
             {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}

@@ -112,7 +112,6 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
                 />
                 <button type="button" className={styles[pieceType + 'ButtonRight']} onClick={increment}><h1><strong>+</strong></h1></button>
             </div>
-            <br/>
         </div>
     )
 }

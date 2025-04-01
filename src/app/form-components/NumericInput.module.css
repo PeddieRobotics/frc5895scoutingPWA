@@ -107,6 +107,8 @@
 .NumericInput {
     padding: 0;
     margin: 0;
+    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
+    margin-bottom: 2px !important; /* Also add a small margin for spacing */
 }
 
 /* When numeric inputs are in tables, reduce their spacing further */
@@ -135,6 +137,8 @@
 td .NumericInput {
     padding: 0;
     margin: 0;
+    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
+    margin-bottom: 2px !important; /* Also add a small margin for spacing */
 }
 
 /* Make the success/fail column cells tighter on mobile */
@@ -156,6 +160,8 @@ td .NumericInput {
     flex-direction: column;
     text-align: center;
     align-items: center;
+    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
+    margin-bottom: 2px !important; /* Also add a small margin for spacing */
 }
 
 .NumericInput .label{

@@ -1,0 +1,297 @@
+/* Compact layout styles for FRC5895 scouting app */
+
+/* Make the main container more compact with less vertical padding */
+.MainDiv {
+  padding: 2px 10px !important;
+  padding-bottom: 15px !important;
+}
+
+/* Drastically reduce spacing between major form sections */
+.Auto, .Endgame, .PostMatch {
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Make headers extremely compact with minimal vertical space */
+.header h1 {
+  font-size: 24px !important;
+  margin: 2px 0 0 !important;
+  line-height: 1 !important;
+}
+
+.subHeader h2 {
+  font-size: 20px !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Slightly increase space below header and subheader lines */
+.header hr, .subHeader hr {
+  margin: 0 auto 3px !important;
+}
+
+.header {
+  margin-bottom: 2px !important;
+  padding-bottom: 0 !important;
+}
+
+.subHeader {
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Minimize spacing in match info section */
+.allMatchInfo {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.MatchInfo {
+  gap: 8px !important;
+  margin: 1px 0 !important;
+}
+
+/* Keep input controls same size but reduce surrounding space */
+.TextInput {
+  margin-bottom: 0 !important;
+}
+
+/* Reduce space around checkboxes but keep them readable */
+.box {
+  margin: 1px auto !important;
+}
+
+/* Component sections with minimal vertical padding */
+.componentSection {
+  margin-bottom: 3px !important;
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Reduce padding below tables */
+.Table {
+  margin-top: 0 !important;
+  margin-bottom: -5px !important;  /* Increased negative margin */
+  padding-bottom: 0 !important;
+}
+
+.Table tr {
+  line-height: 1 !important;
+}
+
+.Table th {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Further reduce space below table cells with number inputs */
+.Table td {
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+  vertical-align: top !important;
+  margin-bottom: -5px !important;
+}
+
+/* Add specific rule to reduce space after table elements */
+.Table tbody {
+  margin-bottom: -5px !important;
+  padding-bottom: 0 !important;
+}
+
+/* Target NumericInput components more aggressively */
+.Table [class*="NumericInput_Container"],
+.Table [class*="NumericInput_NumericInput"] {
+  margin-bottom: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* For the numeric input boxes with plus/minus buttons */
+.Table [class*="NumericInput_Counter"],
+.Table [class*="NumericInput_Success"],
+.Table [class*="NumericInput_Fail"] {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Further reduce vertical height of numeric input container */
+.componentSection .NumericInput {
+  margin-bottom: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* Apply spacing to all NumericInput components globally using valid selectors */
+.MainDiv [class*="NumericInput_NumericInput"] {
+  margin-bottom: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* More specific selectors that should catch all numeric inputs */
+.Auto [class*="NumericInput_NumericInput"],
+.Endgame [class*="NumericInput_NumericInput"],
+.PostMatch [class*="NumericInput_NumericInput"],
+.Table [class*="NumericInput_NumericInput"],
+.componentSection [class*="NumericInput_NumericInput"] {
+  margin-bottom: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* Tighten comment box */
+.commentBox {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.commentBox textarea {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+/* Remove spacing before comment boxes */
+*:not(.commentBox) + .commentBox {
+  margin-top: -2px !important;
+}
+
+/* Target component section containing comment boxes specifically */
+.componentSection [class*="CommentBox_commentBoxContainer"],
+.Auto [class*="CommentBox_commentBoxContainer"],
+.PostMatch [class*="CommentBox_commentBoxContainer"],
+.MainDiv [class*="CommentBox_commentBoxContainer"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-top: -5px !important;
+  margin-bottom: 0 !important;
+}
+
+/* Target textarea within comment boxes */
+.MainDiv [class*="CommentBox_textarea"] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Target comment box labels */
+.MainDiv [class*="CommentBox_commentLabel"] {
+  margin-bottom: 0 !important;
+  margin-top: 4px !important;
+  padding-top: 4px !important;
+}
+
+/* Target checkbox followed by comment box specifically (for defense and breakdown) */
+.MainDiv [class*="Checkbox_box"] + div {
+  margin-top: -10px !important;
+}
+
+/* Tighten intake section */
+.Intake {
+  gap: 2px !important;
+  padding: 2px !important;
+  margin-top: 0 !important;
+}
+
+.checkOption {
+  margin: 1px !important;
+}
+
+/* New styles for the IntakeOptions component */
+.intakeOptions {
+  padding: 2px !important;
+  gap: 2px !important;
+  margin-bottom: 2px !important;
+  margin-top: 0 !important;
+  width: 275px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.intakeOptions .checkOption {
+  margin: 1px !important;
+}
+
+/* EndPlacement component with minimal space */
+.endPlacement {
+  padding: 2px !important;
+  gap: 2px !important;
+  margin-bottom: 2px !important;
+  margin-top: 0 !important;
+}
+
+.endPlacement .option {
+  margin: 1px !important;
+}
+
+/* Reduce submit button spacing */
+.SubmitButtons {
+  gap: 10px !important;
+  margin-top: 15px !important;
+}
+
+/* Remove any spacing between Auto, Tele, Endgame sections */
+.Auto + .Auto,
+.Auto + .Endgame, 
+.Endgame + .PostMatch {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Additional selectors to target specific spacing issues */
+.Coral, .AlgaeRemoved, .Processor, .Net {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Further reduce space below data tables in these sections */
+.Coral .Table, .Processor .Table, .Net .Table {
+  margin-bottom: -7px !important;  /* Increased negative margin more aggressively */
+}
+
+/* Target AlgaeRemoved counter specifically */
+.AlgaeRemoved [class*="NumericInput"] {
+  margin-bottom: -10px !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove <br> spacing in NumericInput components */
+.AlgaeRemoved [class*="NumericInput_NumericInput"] br {
+  display: none !important;
+}
+
+.AlgaeRemoved [class*="NumericInput_Container"] {
+  margin-bottom: 0 !important;
+}
+
+/* Adjacent tables should be closer */
+.Table + .Table {
+  margin-top: -5px !important;
+}
+
+/* Styles for form container to ensure no extra space */
+.formContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+/* Mobile adjustments while keeping text readable */
+@media (max-width: 480px) {
+  .MainDiv {
+    padding: 2px 6px !important;
+  }
+  
+  .header h1 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .componentSection {
+    margin-bottom: 1px !important;
+  }
+}
