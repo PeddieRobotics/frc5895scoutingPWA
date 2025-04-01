@@ -1,14 +1,18 @@
 .box {
     background-color:#cdf3ff;
     color: black;
-    padding: 1rem;
     border: 2px solid #888484;
     border-radius: 5px;
     cursor: pointer;
-    padding: 5px 15px;
-    margin: 10px auto;
-    display: inline-block;
+    padding: 0 10px;
+    margin: 5px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    height: 40px;
+    width: 165px;
+    box-sizing: border-box;
 }
 .box:hover,
 .box:focus {
@@ -21,10 +25,81 @@
 
 .box label {
     margin-left: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 25px;
 }
 
 .boxContainer {
     display: flex;
     align-content: center;
     flex-grow: 1;
+}
+
+.emptyLabel {
+    height: 25px;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 25px;
+    text-align: center;
+}
+
+.boxContainer.preMatchInput {
+    max-width: 165px;
+    min-width: 165px;
+    margin: 0 auto;
+    width: 165px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+}
+
+.boxContainer.preMatchInput .box {
+    margin: 0;
+    width: 100%;
+    min-width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #cdf3ff;
+    height: 40px;
+    border-radius: 5px;
+    padding: 0 10px;
+    border: 2px solid #888484;
+}
+
+.boxContainer.preMatchInput .box label {
+    font-size: 25px;
+    text-align: center;
+    margin-left: 8px;
+    width: 100%;
+}
+
+.checkboxInput {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.boxContainer.preMatchInput .checkboxInput {
+    width: 25px;
+    height: 25px;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* Override hover styles for preMatchInput */
+.boxContainer.preMatchInput .box:hover,
+.boxContainer.preMatchInput .box:focus {
+    background-color: #8de3fc;
+    border: 2px solid #888484;
+}
+
+/* Ensure consistent checked state */
+.boxContainer.preMatchInput .box:has(input:checked) {
+    border: 2px solid #116215;
+    background-color: #9de387;
 }

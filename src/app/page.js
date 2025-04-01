@@ -683,6 +683,16 @@ export default function Home() {
               defaultValue={scoutProfile?.scoutname || ""}
               className="preMatchInput"
             />
+            <TextInput 
+              visibleName={"Match #:"} 
+              internalName={"match"} 
+              defaultValue={scoutProfile?.match || ""}
+              type={"tel"}
+              pattern="[0-9]*"
+              className="preMatchInput"
+            />
+          </div>
+          <div className={styles.MatchInfo}>
             <TextInput
               visibleName={"Team Scouted:"}
               internalName={"team"}
@@ -690,19 +700,15 @@ export default function Home() {
               pattern="[0-9]*"
               className="preMatchInput"
             />
-            <TextInput 
-              visibleName={"Match #:"} 
-              internalName={"match"} 
-              defaultValue={scoutProfile?.match || ""}
-              type={"number"}
+          </div>
+          <div className={styles.MatchInfo}>
+            <Checkbox
+              visibleName={"No Show"}
+              internalName={"noshow"}
+              changeListener={onNoShowChange}
               className="preMatchInput"
             />
           </div>
-          <Checkbox
-            visibleName={"No Show"}
-            internalName={"noshow"}
-            changeListener={onNoShowChange}
-          />
         </div>
 
         {!noShow && (
@@ -998,9 +1004,9 @@ export default function Home() {
                 <div className={styles.SubmitSummary}>
                   <h3>Data Summary</h3>
                   <div className={styles.SummaryMainDetails}>
-                    <p><strong>Team:</strong> {formData?.team}</p>
-                    <p><strong>Match:</strong> {formData?.match}</p>
                     <p><strong>Scout:</strong> {formData?.scoutname}</p>
+                    <p><strong>Match:</strong> {formData?.match}</p>
+                    <p><strong>Team:</strong> {formData?.team}</p>
                     <p><strong>No Show:</strong> {formData?.noshow ? "Yes" : "No"}</p>
                   </div>
                   

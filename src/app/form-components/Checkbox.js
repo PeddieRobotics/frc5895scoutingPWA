@@ -2,7 +2,7 @@
 import styles from "./Checkbox.module.css";
 import { useState, useEffect, useRef } from "react";
 
-export default function Checkbox ({ visibleName, internalName, changeListener }) {
+export default function Checkbox ({ visibleName, internalName, changeListener, className }) {
     const [checked, setChecked] = useState(false);
     const checkboxRef = useRef(null);
     
@@ -54,9 +54,24 @@ export default function Checkbox ({ visibleName, internalName, changeListener })
         if (changeListener) changeListener(e);
     };
     
+    // Handle click on the box div
+    const handleBoxClick = (e) => {
+        // Only trigger if the click wasn't on the input itself
+        if (e.target.tagName !== 'INPUT') {
+            // Stop propagation to prevent double handling
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Programmatically click the checkbox
+            if (checkboxRef.current) {
+                checkboxRef.current.click();
+            }
+        }
+    };
+    
     return (
-        <div className={styles.boxContainer}>
-            <div className={styles.box}>
+        <div className={`${styles.boxContainer} ${className || ''}`}>
+            <div className={styles.box} onClick={handleBoxClick}>
                 <input 
                     ref={checkboxRef}
                     type="checkbox" 
@@ -64,6 +79,7 @@ export default function Checkbox ({ visibleName, internalName, changeListener })
                     name={internalName} 
                     checked={checked} 
                     onChange={handleChange}
+                    className={className && className.includes('preMatchInput') ? styles.checkboxInput : ''}
                 />
                 <label htmlFor={internalName}>{visibleName}</label>
             </div>

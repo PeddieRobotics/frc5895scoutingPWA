@@ -175,12 +175,15 @@ td .NumericInput {
     height: 100%;
 }
 
+/* Ensure button text is always black, especially on mobile */
 .NumericInput button h1 strong {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
+    color: black !important;
+    -webkit-text-fill-color: black;
 }
 
 /* Fix input display for all types */
