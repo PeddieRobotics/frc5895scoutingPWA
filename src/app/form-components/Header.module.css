@@ -14,9 +14,9 @@
 
 @media (max-width: 480px) {
     .header hr {
-        min-width: 80%;
-        max-width: 90%;
-        width: 90%;
+        width: 280px;
+        min-width: 280px;
+        margin: 0 auto;
     }
     
     .header {

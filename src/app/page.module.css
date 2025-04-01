@@ -241,6 +241,9 @@ hr.subsubheading {
   margin: 0;
   padding: 0;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Make box match EndPlacement options */
@@ -254,6 +257,7 @@ hr.subsubheading {
   cursor: pointer;
   padding: 5px 15px;
   margin: 5px;
+  width: calc(100% - 10px);
 }
 
 /* Must apply to checkbox specifically */
@@ -276,6 +280,37 @@ hr.subsubheading {
 .Intake .box label {
   cursor: pointer;
   margin-left: 10px;
+}
+
+/* Add the checkOption class for the intake section */
+.checkOption {
+  display: flex;
+  justify-content: left;
+  background-color: #cdf3ff;
+  color: black;
+  border: 2px solid #888484;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 5px 15px;
+  margin: 5px;
+}
+
+.checkOption:has(input:checked) {
+  background: #9de387;
+}
+
+.checkOption:hover {
+  background-color: #8de3fc;
+}
+
+.checkOption label {
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.checkOption input[type="checkbox"] {
+  cursor: pointer;
+  margin-right: 10px;
 }
 
 .MainDiv input:focus,
@@ -840,6 +875,10 @@ hr.subsubheading {
     padding: 8px 12px;
   }
   
+  .Intake .box {
+    padding: 8px 12px;
+  }
+  
   /* Improve vertical spacing for labels */
   .MainDiv label {
     font-size: 18px;
@@ -857,6 +896,14 @@ hr.subsubheading {
   
   .NumericInput input {
     width: 35px;
+  }
+  
+  .checkOption {
+    padding: 8px 12px;
+  }
+  
+  .checkOption label {
+    font-size: 16px;
   }
 }
 
@@ -1019,34 +1066,4 @@ hr.subsubheading {
   font-size: 22px;
   margin: 0;
   padding: 0;
-}
-
-/* Add the checkOption class for the intake section */
-.checkOption {
-  display: flex;
-  justify-content: left;
-  background-color: #cdf3ff;
-  color: black;
-  border: 2px solid #888484;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 5px 15px;
-  margin: 5px;
-}
-
-.checkOption:has(input:checked) {
-  background: #9de387;
-}
-
-.checkOption:hover {
-  background-color: #8de3fc;
-}
-
-.checkOption label {
-  margin-left: 10px;
-  cursor: pointer;
-}
-
-.checkOption input[type="checkbox"] {
-  cursor: pointer;
 }
