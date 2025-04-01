@@ -69,8 +69,11 @@ export default function Checkbox ({ visibleName, internalName, changeListener, c
         }
     };
     
+    // Determine if this is a long label that needs special handling
+    const isLongLabel = visibleName && visibleName.length > 10;
+    
     return (
-        <div className={`${styles.boxContainer} ${className || ''}`}>
+        <div className={`${styles.boxContainer} ${className || ''} ${isLongLabel ? styles.longLabel : ''}`}>
             <div className={styles.box} onClick={handleBoxClick}>
                 <input 
                     ref={checkboxRef}

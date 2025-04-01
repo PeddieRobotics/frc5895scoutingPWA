@@ -4,14 +4,16 @@
     border: 2px solid #888484;
     border-radius: 5px;
     cursor: pointer;
-    padding: 0 10px;
+    padding: 0 15px;
     margin: 5px auto;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     text-align: center;
     height: 40px;
-    width: 165px;
+    min-width: 165px;
+    width: auto;
+    max-width: 300px;
     box-sizing: border-box;
 }
 .box:hover,
@@ -26,14 +28,18 @@
 .box label {
     margin-left: 10px;
     width: 100%;
-    text-align: center;
-    font-size: 25px;
+    text-align: left;
+    font-size: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .boxContainer {
     display: flex;
     align-content: center;
     flex-grow: 1;
+    justify-content: center;
 }
 
 .emptyLabel {
@@ -60,6 +66,7 @@
     margin: 0;
     width: 100%;
     min-width: 100%;
+    max-width: 165px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
@@ -72,7 +79,7 @@
 }
 
 .boxContainer.preMatchInput .box label {
-    font-size: 25px;
+    font-size: 20px;
     text-align: center;
     margin-left: 8px;
     width: 100%;
@@ -102,4 +109,48 @@
 .boxContainer.preMatchInput .box:has(input:checked) {
     border: 2px solid #116215;
     background-color: #9de387;
+}
+
+/* Add extra space for specific long-text checkboxes */
+.boxContainer:has(input#defense),
+.boxContainer:has(input#breakdown) {
+    width: auto;
+    max-width: 300px;
+}
+
+.boxContainer:has(input#defense) .box,
+.boxContainer:has(input#breakdown) .box {
+    width: 100%;
+    max-width: 300px;
+    justify-content: flex-start;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+    .box {
+        font-size: 18px;
+        padding: 0 10px;
+        max-width: 250px;
+    }
+    
+    .box label {
+        font-size: 18px;
+    }
+    
+    .boxContainer:has(input#defense) .box,
+    .boxContainer:has(input#breakdown) .box {
+        max-width: 250px;
+    }
+}
+
+/* Style for long label checkboxes */
+.longLabel {
+    width: auto;
+    min-width: 165px;
+    max-width: 300px;
+}
+
+.longLabel .box {
+    width: 100%;
+    justify-content: flex-start;
 }
