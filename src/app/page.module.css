@@ -898,12 +898,20 @@ hr.subsubheading {
     width: 35px;
   }
   
+  /* Fix intake checkbox sizing and padding on mobile */
   .checkOption {
     padding: 8px 12px;
+    margin: 5px;
+    width: calc(100% - 10px);
   }
   
   .checkOption label {
     font-size: 16px;
+    margin-left: 8px;
+  }
+  
+  .checkOption input[type="checkbox"] {
+    margin-right: 8px;
   }
 }
 
