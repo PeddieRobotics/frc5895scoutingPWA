@@ -9,10 +9,10 @@ export default function Qualitative ({ visibleName, internalName, description, s
     useEffect(() => {
         if (forcedMinRating > 0 && rating < forcedMinRating) {
             setRating(forcedMinRating);
-        } else if (forcedMinRating === 0 && rating > 0) {
+        } else if (forcedMinRating === 0) {
             setRating(0);
         }
-    }, [forcedMinRating, rating]);
+    }, [forcedMinRating]);
 
     const ratingDescriptions = [
         "",
@@ -35,49 +35,49 @@ export default function Qualitative ({ visibleName, internalName, description, s
                 })}
             </div>
             
-            {rating === 0 && (description == "Coral Speed" || description == "Processor Speed" || description == "Net Speed") && (
+            {rating === 0 && (description === "Coral Speed" || description === "Processor Speed" || description === "Net Speed") && (
                 <div>
                     Not Applicable
                 </div>
             )}
 
-            {rating === 0 && description == "Algae Removal Speed" && (
+            {rating === 0 && description === "Algae Removal Speed" && (
                 <div>
                     Did Not Try to Remove Algae
                 </div>
             )}
 
-            {rating === 0 && description == "Climb Speed" && (
+            {rating === 0 && description === "Climb Speed" && (
                 <div>
                     Did Not Try to Climb
                 </div>
             )}
 
-            {rating === 0 && description == "Maneuverability" && (
+            {rating === 0 && description === "Maneuverability" && (
                 <div>
                     Did Not Move
                 </div>
             )}
 
-            {rating === 0 && description == "Ability to Play Defense" && (
+            {rating === 0 && description === "Ability to Play Defense" && (
                 <div>
                     Did Not Defend
                 </div>
             )}
 
-            {rating === 0 && description == "Defense Evasion Ability" && (
+            {rating === 0 && description === "Defense Evasion Ability" && (
                 <div>
                     Was Not Defended Against
                 </div>
             )}
 
-            {rating === 0 && description == "Aggression" && (
+            {rating === 0 && description === "Aggression" && (
                 <div>
                     Did Not Move
                 </div>
             )}
 
-            {rating === 0 && description == "Cage Hazard" && (
+            {rating === 0 && description === "Cage Hazard" && (
                 <div>
                     Did Not Interact With Teammates in the Barge
                 </div>
