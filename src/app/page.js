@@ -17,6 +17,7 @@ import pako from 'pako';
 import base58 from 'base-58';
 import { toast, Toaster } from 'react-hot-toast';
 import IntakeOptions from "./form-components/IntakeOptions";
+import Qualitative from "./form-components/Qualitative";
 
 // Create a separate component that uses useSearchParams
 function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
@@ -282,7 +283,19 @@ export default function Home() {
       coralstationintake: false,
       algaegrndintake: false,
       algaehighreefintake: false,
-      algaelowreefintake: false
+      algaelowreefintake: false,
+      // Qualitative ratings
+      defenseplayed: 0,
+      // Remove other qualitative ratings
+      coralspeed: null,
+      processorspeed: null,
+      netspeed: null,
+      algaeremovalspeed: null,
+      climbspeed: null,
+      maneuverability: null,
+      defenseevasion: null,
+      aggression: null,
+      cagehazard: null
     };
     
     try {
@@ -925,11 +938,20 @@ export default function Home() {
                   changeListener={onDefenseChange}
                 />
                 {defense && (
-                  <CommentBox
-                    visibleName={"Defense Elaboration"}
-                    internalName={"defensecomments"}
-                    className={compactStyles.commentBox}
-                  />
+                  <>
+                    <CommentBox
+                      visibleName={"Defense Elaboration"}
+                      internalName={"defensecomments"}
+                      className={compactStyles.commentBox}
+                    />
+                    <div className={`${styles.defenseRating} ${compactStyles.defenseRating}`}>
+                      <Qualitative
+                        visibleName="Defense Played"
+                        internalName="defenseplayed"
+                        description="Ability to Play Defense"
+                      />
+                    </div>
+                  </>
                 )}    
 
             </div>
@@ -1042,6 +1064,9 @@ export default function Home() {
                         <p><strong>Processor:</strong> {formData.teleprocessorsuccess || 0} success, {formData.teleprocessorfail || 0} fail</p>
                         <p><strong>Net:</strong> {formData.telenetsuccess || 0} success, {formData.telenetfail || 0} fail</p>
                         <p><strong>Playing Defense:</strong> {formData.defense ? "Yes" : "No"}</p>
+                        {formData.defense && (
+                          <p><strong>Defense Rating:</strong> {formData.defenseplayed}/6</p>
+                        )}
                       </div>
                       
                       <div className={styles.SummarySection}>

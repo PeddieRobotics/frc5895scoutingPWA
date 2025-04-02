@@ -20,20 +20,58 @@
 }
 
 .qual {
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
     align-items: center;
     text-align: center;
 }
 
-.qual button {
-    background-color: red;
-    color: white;
-    width: 80px;
+.clearButton {
+    background-color: #ff9999; /* Pastel red */
+    color: #333;
+    width: 140px; /* Increased from 80px to fit longer text */
     height: 50px;
-    font-size: 25px;
+    font-size: calc(14px + 0.5vw); /* Responsive font size */
     border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    padding: 0 8px; /* Add horizontal padding for text */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-top: 10px;
 }
 
-.qual button:hover {
-    background-color: rgb(255, 66, 66);
+.clearButton:hover {
+    background-color: #ffb3b3; /* Lighter pastel red on hover */
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    .symbol {
+        font-size: 40px;
+    }
+    
+    .qual {
+        padding: 0 5px;
+    }
+    
+    .clearButton {
+        width: 120px; /* Slightly smaller on mobile but still fits text */
+        height: 45px;
+        font-size: 16px; /* Fixed size for mobile */
+    }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+    .clearButton {
+        width: 110px;
+        height: 40px;
+        font-size: 14px;
+    }
+    
+    .symbol {
+        font-size: 35px;
+    }
 }

@@ -173,7 +173,7 @@ function TeamView() {
       setLoading(true);
       setError(null);
   
-      fetch(`/api/get-team-data?team=${team}`)
+      fetch(`/api/get-team-data?team=${team}&includeRows=true`)
           .then(response => {
               if (!response.ok) {
                   throw new Error("Failed to fetch data");
@@ -185,18 +185,29 @@ function TeamView() {
 
               setData(data);
               console.log("Coral Total (Frontend):", data.leave);
-              const last3Matches = data.matches.slice(-3); 
+              
+              // Add null check for matches before using slice
+              if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
+                const last3Matches = data.matches.slice(-3);
+                
+                const last3Epa = last3Matches.reduce((sum, match) => sum + match.epa, 0) / last3Matches.length;
+                const last3Auto = last3Matches.reduce((sum, match) => sum + match.auto, 0) / last3Matches.length;
+                const last3Tele = last3Matches.reduce((sum, match) => sum + match.tele, 0) / last3Matches.length;
+                const last3End = last3Matches.reduce((sum, match) => sum + match.end, 0) / last3Matches.length;
 
-              const last3Epa = last3Matches.reduce((sum, match) => sum + match.epa, 0) / last3Matches.length;
-              const last3Auto = last3Matches.reduce((sum, match) => sum + match.auto, 0) / last3Matches.length;
-              const last3Tele = last3Matches.reduce((sum, match) => sum + match.tele, 0) / last3Matches.length;
-              const last3End = last3Matches.reduce((sum, match) => sum + match.end, 0) / last3Matches.length;
-
-              // Add the calculated metrics to the data object
-              data.last3Epa = last3Epa;
-              data.last3Auto = last3Auto;
-              data.last3Tele = last3Tele;
-              data.last3End = last3End;
+                // Add the calculated metrics to the data object
+                data.last3Epa = last3Epa;
+                data.last3Auto = last3Auto;
+                data.last3Tele = last3Tele;
+                data.last3End = last3End;
+              } else {
+                // Provide default values if there are no matches
+                data.last3Epa = data.avgEpa || 0;
+                data.last3Auto = data.avgAuto || 0;
+                data.last3Tele = data.avgTele || 0;
+                data.last3End = data.avgEnd || 0;
+              }
+              
               setLoading(false);
           })
           .catch(error => {
@@ -536,42 +547,165 @@ function TeamView() {
           <div className={styles.qualitative}>
           <h1 className={styles.header} style={{ color: Colors[4][3] }}>Qualitative</h1>
             <div className={styles.radarContainer}>
-            <h4 className={styles.graphTitle} >Qualitative Ratings</h4>
-              <Qualitative data={data.qualitative} color1={Colors[4][2]} color2={Colors[4][2]}/>
-            <p>*Inverted so outside is good</p>
+              <h4 className={styles.graphTitle}>Defense Played Ratings</h4>
+              <div style={{ marginTop: "50px", display: "flex", justifyContent: "center", width: "100%" }}>
+                <BarChart
+                  width={400}
+                  height={300}
+                  data={(() => {
+                    // Log the data structure for debugging
+                    console.log("DATA STRUCTURE:", Object.keys(data));
+                    
+                    // Look for the raw match data in the fetched data
+                    const allRows = data.rows || [];
+                    
+                    console.log("ALL ROWS:", allRows);
+                    
+                    // Helper function to handle possible field name variants
+                    const getDefensePlayed = (row) => {
+                      // Check all possible field name variations
+                      const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
+                      
+                      for (const field of fieldVariants) {
+                        if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
+                          return row[field];
+                        }
+                      }
+                      return null;
+                    };
+                    
+                    // Special handling for team 69 for debugging
+                    if (team == 69) {
+                      console.log("TEAM 69 DETECTED - DEBUGGING DEFENSE RATINGS");
+                      console.log("Number of rows:", allRows.length);
+                      
+                      // Log all defense values for this team, even if null
+                      allRows.forEach((row, index) => {
+                        const defenseValue = getDefensePlayed(row);
+                        console.log(`Row ${index} - Match ${row.match} - Scout: ${row.scoutname} - Defense: ${defenseValue}`);
+                      });
+                    }
+                    
+                    // Filter to only team matches with valid defensePlayed values
+                    const validDefenseRatings = allRows.filter(row => {
+                      const defenseValue = getDefensePlayed(row);
+                      return row.team == team && defenseValue !== null;
+                    });
+                    
+                    console.log("VALID DEFENSE RATINGS:", validDefenseRatings);
+                    
+                    // If we have valid ratings, calculate the TOTAL properly
+                    if (validDefenseRatings.length > 0) {
+                      // Calculate the sum of valid ratings
+                      const totalSum = validDefenseRatings.reduce((sum, row) => {
+                        const defenseValue = getDefensePlayed(row);
+                        return sum + defenseValue;
+                      }, 0);
+                      
+                      // Divide by count of valid ratings ONLY (excluding NULL values)
+                      const totalAvg = totalSum / validDefenseRatings.length;
+                      
+                      console.log(`DEFENSE CALCULATION: ${totalSum} ÷ ${validDefenseRatings.length} = ${totalAvg}`);
+                      
+                      // Prepare chart data starting with the TOTAL
+                      const chartData = [
+                        { name: 'TOTAL', value: totalAvg }
+                      ];
+                      
+                      // Group by scout name
+                      const scoutMap = {};
+                      validDefenseRatings.forEach(row => {
+                        const scoutName = row.scoutname || 'Unknown';
+                        if (!scoutMap[scoutName]) {
+                          scoutMap[scoutName] = [];
+                        }
+                        scoutMap[scoutName].push(getDefensePlayed(row));
+                      });
+                      
+                      // Calculate scout-specific averages
+                      Object.entries(scoutMap).forEach(([scout, ratings]) => {
+                        if (ratings.length > 0) {
+                          const scoutSum = ratings.reduce((sum, rating) => sum + rating, 0);
+                          const scoutAvg = scoutSum / ratings.length;
+                          
+                          console.log(`SCOUT ${scout}: ${scoutSum} ÷ ${ratings.length} = ${scoutAvg}`);
+                          
+                          chartData.push({
+                            name: scout,
+                            value: scoutAvg
+                          });
+                        }
+                      });
+                      
+                      console.log("FINAL CHART DATA:", chartData);
+                      return chartData;
+                    } 
+                    
+                    // Try from qualitative data if available
+                    if (data.qualitative) {
+                      const defenseItem = data.qualitative.find(q => q.name === "Defense Played");
+                      if (defenseItem && defenseItem.rating > 0) {
+                        console.log("Using qualitative defense rating:", defenseItem.rating);
+                        return [{ name: 'TOTAL', value: defenseItem.rating }];
+                      }
+                    }
+                    
+                    // Last resort: if everything else fails, show a default
+                    console.log("No valid defense ratings found, using fallback");
+                    return [{ name: 'TOTAL', value: 0 }];
+                  })()}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-90} 
+                    textAnchor="end" 
+                    height={70} 
+                    tick={{ dy: 10 }}
+                  />
+                  <YAxis 
+                    domain={[0, 6]} 
+                    ticks={[0, 1, 2, 3, 4, 5, 6]}
+                    interval={0}
+                  />
+                  <Tooltip formatter={(value) => value.toFixed(1)} />
+                  <Bar dataKey="value" fill={Colors[4][2]} />
+                </BarChart>
+              </div>
+            </div>
+            <table className={styles.differentTable}> 
+              <tbody>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Coral Intake</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Source</td>
+                </tr>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.coralGroundIntake}></input></td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.coralStationIntake}></input></td>
+                </tr>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Algae Intake</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Lollipop</td>
+                </tr>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.algaeGroundIntake}></input></td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.lollipop}></input></td>
+                </tr>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Reef Intake</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Low</td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>High</td>
+                </tr>
+                <tr>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.algaeLowReefIntake}></input></td>
+                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.algaeHighReefIntake}></input></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <table className={styles.differentTable}> 
-            <tbody>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Coral Intake</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Source</td>
-              </tr>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.coralGroundIntake}></input></td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.coralStationIntake}></input></td>
-              </tr>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Algae Intake</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Lollipop</td>
-              </tr>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.algaeGroundIntake}></input></td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.lollipop}></input></td>
-              </tr>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Reef Intake</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Low</td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>High</td>
-              </tr>
-              <tr>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={data.algaeLowReefIntake}></input></td>
-                  <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={data.algaeHighReefIntake}></input></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
         </div>
       </div>
     </div>

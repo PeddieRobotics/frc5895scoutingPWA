@@ -9,6 +9,7 @@ export const revalidate = 300; // Cache for 5 minutes
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = searchParams.get('team');
+  const includeRows = searchParams.get('includeRows') === 'true';
 
   if (!_.isNumber(+team)) {
     return NextResponse.json({ message: "ERROR: Invalid team number" }, { status: 400 });
@@ -795,6 +796,11 @@ returnObject[0].teleOverTime = processedTeleOverTime;
 
 // Add debugging logs
 console.log("Backend End Placement:", returnObject[0].endPlacement);
+
+// Include the raw rows if requested
+if (includeRows) {
+  returnObject[0].rows = rows;
+}
 
 // Just one return statement
 return NextResponse.json(returnObject[0], { status: 200 });

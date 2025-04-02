@@ -295,3 +295,44 @@
     margin-bottom: 1px !important;
   }
 }
+
+.Qualitative {
+  width: 100%;
+  padding: 5px;
+  margin-top: 10px;
+}
+
+.qualGrid {
+  display: flex;
+  justify-content: center;
+  padding: 5px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .Qualitative {
+    padding: 3px;
+    margin-top: 5px;
+  }
+  
+  .qualGrid {
+    padding: 2px;
+  }
+}
+
+.defenseRating {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10 !important;
+  margin-bottom: 5px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.defenseRating [class*="Qualitative"] {
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
