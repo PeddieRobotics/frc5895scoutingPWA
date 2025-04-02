@@ -949,6 +949,7 @@ export default function Home() {
                         visibleName="Defense Played"
                         internalName="defenseplayed"
                         description="Ability to Play Defense"
+                        forcedMinRating={1}
                       />
                     </div>
                   </>

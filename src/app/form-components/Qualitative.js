@@ -2,8 +2,17 @@
 import { useEffect, useState } from 'react'
 import styles from './Qualitative.module.css'
 
-export default function Qualitative ({ visibleName, internalName, description, symbol="★"}) {
-    const [rating, setRating] = useState(0);
+export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0 }) {
+    const [rating, setRating] = useState(forcedMinRating);
+
+    // Update rating if forcedMinRating changes
+    useEffect(() => {
+        if (forcedMinRating > 0 && rating < forcedMinRating) {
+            setRating(forcedMinRating);
+        } else if (forcedMinRating === 0 && rating > 0) {
+            setRating(0);
+        }
+    }, [forcedMinRating, rating]);
 
     const ratingDescriptions = [
         "",
@@ -79,8 +88,6 @@ export default function Qualitative ({ visibleName, internalName, description, s
                     {ratingDescriptions[rating]} {description}
                 </div>
             )}
-
-            <button type="button" className={styles.clearButton} onClick={() => setRating(0)}>Clear Rating</button>
         </div>
     )
 }
