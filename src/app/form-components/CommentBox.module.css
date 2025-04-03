@@ -39,6 +39,15 @@
     overflow-y: auto;
 }
 
+.charCounter {
+    width: 90%;
+    text-align: right;
+    font-size: 14px;
+    color: #ffffff;
+    margin-top: 2px;
+    margin-bottom: 5px;
+}
+
 @media (max-width: 768px) {
     .textarea {
         min-height: 150px;
@@ -49,5 +58,9 @@
     
     .commentLabel {
         font-size: 18px;
+    }
+    
+    .charCounter {
+        font-size: 12px;
     }
 }

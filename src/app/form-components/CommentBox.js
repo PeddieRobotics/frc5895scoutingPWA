@@ -5,6 +5,8 @@ import { useRef, useEffect, useState } from 'react';
 export default function CommentBox ({ visibleName, internalName}) {
     const textareaRef = useRef(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [charCount, setCharCount] = useState(0);
+    const MAX_CHARS = 255;
     
     // Function to auto-resize the textarea
     const autoResize = () => {
@@ -28,6 +30,12 @@ export default function CommentBox ({ visibleName, internalName}) {
         }
     };
     
+    // Update character count
+    const handleInput = (e) => {
+        setCharCount(e.target.value.length);
+        autoResize();
+    };
+    
     // Set up the resize on input and window resize
     useEffect(() => {
         const textarea = textareaRef.current;
@@ -37,12 +45,10 @@ export default function CommentBox ({ visibleName, internalName}) {
         autoResize();
         
         // Add event listeners
-        textarea.addEventListener('input', autoResize);
         window.addEventListener('resize', autoResize);
         
         // Cleanup
         return () => {
-            textarea.removeEventListener('input', autoResize);
             window.removeEventListener('resize', autoResize);
         };
     }, [isExpanded]);
@@ -57,8 +63,13 @@ export default function CommentBox ({ visibleName, internalName}) {
                 name={internalName}
                 placeholder="Enter your comments here..."
                 rows="3"
+                maxLength={MAX_CHARS}
+                onInput={handleInput}
                 onFocus={autoResize}
             ></textarea>
+            <div className={styles.charCounter}>
+                {charCount}/{MAX_CHARS} characters
+            </div>
         </div>
     )
 }
