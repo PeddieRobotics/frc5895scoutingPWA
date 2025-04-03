@@ -396,10 +396,10 @@ function AllianceButtons({t1, t2, t3, colors}) {
 
     return <div className={styles.lightBorderBox}>
       <div className={styles.scoreBreakdownContainer}>
-      <div style={{background: colors[0]}} className={styles.EPABox}>{Math.round(10*auto)/10 + Math.round(10*tele)/10 + Math.round(10*end)/10}</div>        <div className={styles.EPABreakdown}>
-          <div style={{background: colors[1]}}>A: {Math.round(10*auto)/10}</div>
-          <div style={{background: colors[1]}}>T: {Math.round(10*tele)/10}</div>
-          <div style={{background: colors[1]}}>E: {Math.round(10*end)/10}</div>
+      <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>{Math.round(10*auto)/10 + Math.round(10*tele)/10 + Math.round(10*end)/10}</div>        <div className={styles.EPABreakdown}>
+          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {Math.round(10*auto)/10}</div>
+          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {Math.round(10*tele)/10}</div>
+          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {Math.round(10*end)/10}</div>
         </div>
       </div>
       <div className={styles.RPs}>
@@ -430,13 +430,13 @@ function AllianceButtons({t1, t2, t3, colors}) {
       <h1 style={{color: colors[3]}}>{teamData.team}</h1>
       <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer}>
-      <div style={{background: colors[0]}} className={styles.EPABox}>
+      <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
         {Math.round(10 * teamData.last3EPA) / 10}
       </div>
       <div className={styles.EPABreakdown}>
-        <div style={{background: colors[2]}}>A: {Math.round(10 * teamData.last3Auto) / 10}</div>
-        <div style={{background: colors[2]}}>T: {Math.round(10 * teamData.last3Tele) / 10}</div>
-        <div style={{background: colors[2]}}>E: {Math.round(10 * teamData.last3End) / 10}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {Math.round(10 * teamData.last3Auto) / 10}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {Math.round(10 * teamData.last3Tele) / 10}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {Math.round(10 * teamData.last3End) / 10}</div>
       </div>
       </div>
       <div className={styles.barchartContainer}>
