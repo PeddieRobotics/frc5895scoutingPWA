@@ -162,10 +162,11 @@ export default function Home() {
       (data.telel4fail || 0) +
       (data.teleprocessorfail || 0);
   
-    const climbStatus = data.stageplacement || -1;
-    const parked = climbStatus === 2 ? "TRUE" : "FALSE";
-    const shallowClimb = climbStatus === 3 ? "TRUE" : "FALSE";
-    const deepClimb = climbStatus === 4 ? "TRUE" : "FALSE";
+    // Use endlocation (DB value) for the export
+    const climbStatus = data.endlocation || 1; // Default to None (1)
+    const parked = climbStatus === 2 ? "TRUE" : "FALSE";  // 2 = Parked in DB (both Park and Fail+Park)
+    const shallowClimb = climbStatus === 3 ? "TRUE" : "FALSE"; // 3 = Shallow in DB
+    const deepClimb = climbStatus === 4 ? "TRUE" : "FALSE"; // 4 = Deep in DB
   
     const notes = [
       data.breakdowncomments,
@@ -181,7 +182,7 @@ export default function Home() {
       "NULL",
       boolToSheets(data.leave),
       data.autol1success || 0,
-      data.autol2sucess || 0,
+      data.autol2success || 0,
       data.autol3success || 0,
       data.autol4success || 0,
       data.autoprocessorsuccess || 0,
@@ -192,7 +193,7 @@ export default function Home() {
       data.telel3success || 0,
       data.telel4success || 0,
       data.teleprocessorsuccess || 0,
-      data.telenetsucess || 0,
+      data.telenetsuccess || 0,
       teleCoralMissed,
       "NULL",
       parked,
@@ -260,6 +261,8 @@ export default function Home() {
       breakdown: false, 
       defense: false, 
       stageplacement: -1, 
+      endlocation: null, // Initialize endlocation field
+      matchtype: 2, // Set the default matchtype to Qualification (2)
       breakdowncomments: null, 
       defensecomments: null, 
       generalcomments: null,
@@ -328,11 +331,50 @@ export default function Home() {
       
       // Directly check for stageplacement radio buttons
       const stagePlacementRadios = form.current.querySelectorAll('input[name="stageplacement"]');
+      let foundCheckedPlacement = false;
       for (let radio of stagePlacementRadios) {
         if (radio.checked) {
-          data.stageplacement = parseInt(radio.value);
+          // Get the placement value from the radio button
+          const rawPlacementValue = parseInt(radio.value);
+          
+          // Map the form values to the database values:
+          // Form values from EndPlacement.js:
+          // 0=None, 1=Park, 2=Fail+Park, 3=Shallow, 4=Deep
+          // DB expects: 1=None, 2=Park/Fail+Park, 3=Shallow, 4=Deep
+          let mappedValue;
+          switch(rawPlacementValue) {
+            case 0: // None in form
+              mappedValue = 0; // None in DB
+              break;
+            case 1: // Park in form
+              mappedValue = 1; // Park in DB
+              break;
+            case 2: // Fail+Park in form
+              mappedValue = 2; // Also considered as Parked in DB
+              break;
+            case 3: // Shallow cage in form
+              mappedValue = 3; // Shallow in DB
+              break;
+            case 4: // Deep cage in form
+              mappedValue = 4; // Deep in DB
+              break;
+            default:
+              mappedValue = 0; // Default to None in DB
+          }
+          
+          // Store both the raw form value and the mapped DB value
+          data.stageplacement = rawPlacementValue;
+          data.endlocation = mappedValue;
+          
+          foundCheckedPlacement = true;
           break;
         }
+      }
+      
+      // If no placement was selected, explicitly set to no selection
+      if (!foundCheckedPlacement) {
+        data.stageplacement = 0; // 0 = None in the form
+        data.endlocation = 1;    // 1 = None in the DB
       }
       
       // Ensure comments are captured
@@ -415,6 +457,8 @@ export default function Home() {
       setIsSubmitting(true);
       const toastId = toast.loading("Submitting data...");
       
+      console.log("Submitting data:", submissionData);
+      
       // Make the API call with authentication
       const response = await fetch("/api/add-match-data", {
         method: "POST",
@@ -426,6 +470,18 @@ export default function Home() {
       });
       
       if (!response.ok) {
+        // Try to get more details about the error
+        let errorText = `Error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorText = `${errorText} - ${errorData.message}`;
+          }
+        } catch (e) {
+          // If we can't parse the JSON, just use the status text
+          errorText = `${errorText} - ${response.statusText}`;
+        }
+        
         if (response.status === 401) {
           // Authentication failed, clear credentials and show auth dialog
           sessionStorage.removeItem('auth_credentials');
@@ -436,7 +492,8 @@ export default function Home() {
           setAuthError("Your session has expired. Please log in again.");
           throw new Error("Authentication failed");
         }
-        throw new Error(`Error: ${response.status}`);
+        
+        throw new Error(errorText);
       }
       
       // Dismiss loading toast and show success message
@@ -480,10 +537,14 @@ export default function Home() {
     } catch (error) {
       // Error handling - don't modify the form, just show the error
       console.error("Error submitting data:", error);
+      
+      // Set more detailed error information
+      setUploadStatus(error.message || "Unknown error occurred");
+      
       // Dismiss loading toast and show error message
       toast.dismiss();
       if (error.message !== "Authentication failed") {
-        toast.error("Failed to submit data. Please try again.");
+        toast.error(`Failed to submit data: ${error.message}`);
         setSubmissionResult({ success: false });
       }
       setIsSubmitting(false);
@@ -1046,9 +1107,18 @@ export default function Home() {
                       <div className={styles.SummarySection}>
                         <h4>Endgame</h4>
                         <p><strong>Stage Placement:</strong> {
-                          formData.stageplacement === 2 ? "Parked" : 
-                          formData.stageplacement === 3 ? "Shallow Water" : 
-                          formData.stageplacement === 4 ? "Deep Water" : "None"
+                          (() => {
+                            // Use stageplacement for display since it has the raw form values
+                            const placement = formData.stageplacement;
+                            switch(placement) {
+                              case 0: return "None";  // value=0 in EndPlacement.js
+                              case 1: return "Park";  // value=1 in EndPlacement.js
+                              case 2: return "Fail + Park";  // value=2 in EndPlacement.js
+                              case 3: return "Shallow Cage";  // value=3 in EndPlacement.js
+                              case 4: return "Deep Cage";  // value=4 in EndPlacement.js
+                              default: return "None";
+                            }
+                          })()
                         }</p>
                       </div>
                       
