@@ -210,14 +210,23 @@ export default function Home() {
       const compressedData = pako.gzip(new TextEncoder().encode(JSON.stringify(data)));
       const base58Encoded = base58.encode(compressedData);
   
-      const dataURL = await QRCode.toDataURL(base58Encoded, {
+      // Generate original QR code
+      const dataURL1 = await QRCode.toDataURL(base58Encoded, {
         width: 400,
         margin: 3,
         errorCorrectionLevel: 'L'
       });
   
-      setQrCodeDataURL1(dataURL);
-      setQrCodeDataURL2(""); // Clear the second QR code
+      // Generate TSV QR code
+      const tsvString = generateTabSeparatedString(data);
+      const dataURL2 = await QRCode.toDataURL(tsvString, {
+        width: 400,
+        margin: 3,
+        errorCorrectionLevel: 'L'
+      });
+  
+      setQrCodeDataURL1(dataURL1);
+      setQrCodeDataURL2(dataURL2);
     } catch (error) {
       console.error("Error generating QR code:", error);
     }
@@ -1042,7 +1051,7 @@ export default function Home() {
           <div className={styles.QRCodeContainer}>
             <h2 className={styles.qrTitle}>Scan QR Code to Submit Form Data</h2>
             <div className={styles.QRCodeRow}>
-              {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="QR Code" className={styles.QRCodeImage} />}
+              {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="JSON QR" className={styles.QRCodeImage} />}
             </div>
             <div className={styles.SubmitButtons}>
               <button onClick={handleQRClose} className={styles.SubmitButton}>Done</button>
