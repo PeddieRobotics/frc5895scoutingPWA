@@ -18,7 +18,7 @@ export default function Endgame({ colors, endgameData }) {
       padding={100}
       data={endgameData}
       colorScale={colors}
-      labels={({ datum }) => `${datum.x}: ${Math.round(datum.y)}%`}
+      labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : null}
       style={{
         data: {
           stroke: '#000', // Black border
