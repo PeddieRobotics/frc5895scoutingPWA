@@ -443,18 +443,8 @@ export default function Home() {
       toast.dismiss(toastId);
       toast.success("Data submitted successfully!");
       
-      // First capture the data we need to preserve
-      const scoutName = submissionData.scoutname || (scoutProfile?.scoutname || "");
-      const incrementedMatch = Number(submissionData.match || 0) + 1;
-      
-      // Update profile with preserved and incremented data
-      const newProfile = { 
-        scoutname: scoutName, 
-        scoutteam: "5895",
-        match: incrementedMatch,
-      };
-      setScoutProfile(newProfile);
-      localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+      // Use the helper function to update scout profile consistently
+      updateScoutProfile(submissionData);
       
       // Set submission result
       setSubmissionResult({ success: true });
@@ -470,9 +460,6 @@ export default function Home() {
       // Indicate successful submission and hide dialog after a delay
       setTimeout(() => {
         setShowSubmitDialog(false);
-        
-        // Initialize the form with preserved values after reset
-        initializeForm();
         
         // Show confetti
         new JSConfetti().addConfetti({
@@ -507,18 +494,8 @@ export default function Home() {
   const handleQRClose = () => {
     setShowQRCode(false);
     
-    // First capture the data we need to preserve
-    const scoutName = formData?.scoutname || (scoutProfile?.scoutname || "");
-    const incrementedMatch = Number(formData?.match || 0) + 1;
-    
-    // Update profile with preserved and incremented data
-    const newProfile = { 
-      scoutname: scoutName, 
-      scoutteam: "5895",
-      match: incrementedMatch,
-    };
-    setScoutProfile(newProfile);
-    localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
+    // Use the helper function to update scout profile consistently
+    updateScoutProfile(formData);
     
     // Reset React state controls
     setNoShow(false);
@@ -528,12 +505,8 @@ export default function Home() {
     // Force complete component reset by incrementing the key
     setFormResetKey(prev => prev + 1);
     
-    // Give time for the UI to reset
+    // Show confetti with a slight delay 
     setTimeout(() => {
-      // Then restore the saved profile values
-      initializeForm();
-      
-      // Show confetti as user feedback
       new JSConfetti().addConfetti({
         emojis: ['🐠', '🐡', '🦀', '🪸'],
         emojiSize: 100,
@@ -631,7 +604,7 @@ export default function Home() {
       const newProfile = {
         scoutname: submittedData.scoutname || (scoutProfile ? scoutProfile.scoutname : ""),
         scoutteam: "5895",
-        match: Number(submittedData.match) + 1,
+        match: Number(submittedData.match || 0) + 1,
       };
       
       // Update state and local storage
