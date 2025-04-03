@@ -301,6 +301,8 @@ function TeamView() {
         { x: 'Deep', y: data.endPlacement.deep }
     ];
 
+    // Custom color array for endgame pie chart with 5 distinct colors
+    const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
 
     return (
         <div>
@@ -844,7 +846,7 @@ function TeamView() {
                                 <h4 className={styles.graphTitle}>Endgame Placement</h4>
                                 <Endgame 
                                     data={endgamePieData} 
-                                    color={Colors[3]} 
+                                    color={endgameColors} 
                                 />
                             </div>
                             <table className={styles.differentTable} style={{borderRadius: "5px"}}>
