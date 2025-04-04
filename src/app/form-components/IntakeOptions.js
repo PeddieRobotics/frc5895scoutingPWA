@@ -24,75 +24,110 @@ export default function IntakeOptions({ className }) {
         backgroundColor: '#bd9748',
     };
 
+    // Handle click on the entire option box
+    const handleOptionClick = (name) => {
+        setIntakeOptions(prev => ({
+            ...prev,
+            [name]: !prev[name]
+        }));
+    };
+
+    // Label style to ensure it doesn't block clicks
+    const labelStyle = {
+        pointerEvents: 'none', // Make label transparent to mouse events
+        width: '100%',         // Expand to fill the container
+        cursor: 'pointer'      // Show pointer cursor on hover
+    };
+
     return (
         <div 
             className={`${styles.endPossibilities} ${className || ""}`} 
             style={goldContainerStyle}
         >
-            <div className={styles.option} onClick={(e) => {
-                const input = e.currentTarget.querySelector("input");
-                if (input) input.click();
-            }}>
+            <div 
+                className={styles.option} 
+                onClick={() => handleOptionClick('coralgrndintake')}
+            >
                 <input 
                     type="checkbox" 
                     id="coralgrndintake" 
                     name="coralgrndintake" 
                     checked={intakeOptions.coralgrndintake}
                     onChange={handleChange}
+                    onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                 />
-                <label htmlFor="coralgrndintake">Coral Ground</label>
+                <label 
+                    htmlFor="coralgrndintake"
+                    style={labelStyle}
+                >Coral Ground</label>
             </div>
-            <div className={styles.option} onClick={(e) => {
-                const input = e.currentTarget.querySelector("input");
-                if (input) input.click();
-            }}>
+            <div 
+                className={styles.option} 
+                onClick={() => handleOptionClick('coralstationintake')}
+            >
                 <input 
                     type="checkbox" 
                     id="coralstationintake" 
                     name="coralstationintake" 
                     checked={intakeOptions.coralstationintake}
                     onChange={handleChange}
+                    onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                 />
-                <label htmlFor="coralstationintake">Coral Station</label>
+                <label 
+                    htmlFor="coralstationintake"
+                    style={labelStyle}
+                >Coral Station</label>
             </div>
-            <div className={styles.option} onClick={(e) => {
-                const input = e.currentTarget.querySelector("input");
-                if (input) input.click();
-            }}>
+            <div 
+                className={styles.option} 
+                onClick={() => handleOptionClick('algaegrndintake')}
+            >
                 <input 
                     type="checkbox" 
                     id="algaegrndintake" 
                     name="algaegrndintake" 
                     checked={intakeOptions.algaegrndintake}
                     onChange={handleChange}
+                    onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                 />
-                <label htmlFor="algaegrndintake">Algae Ground</label>
+                <label 
+                    htmlFor="algaegrndintake"
+                    style={labelStyle}
+                >Algae Ground</label>
             </div>
-            <div className={styles.option} onClick={(e) => {
-                const input = e.currentTarget.querySelector("input");
-                if (input) input.click();
-            }}>
+            <div 
+                className={styles.option} 
+                onClick={() => handleOptionClick('algaehighreefintake')}
+            >
                 <input 
                     type="checkbox" 
                     id="algaehighreefintake" 
                     name="algaehighreefintake" 
                     checked={intakeOptions.algaehighreefintake}
                     onChange={handleChange}
+                    onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                 />
-                <label htmlFor="algaehighreefintake">Algae High Reef</label>
+                <label 
+                    htmlFor="algaehighreefintake"
+                    style={labelStyle}
+                >Algae High Reef</label>
             </div>
-            <div className={styles.option} onClick={(e) => {
-                const input = e.currentTarget.querySelector("input");
-                if (input) input.click();
-            }}>
+            <div 
+                className={styles.option} 
+                onClick={() => handleOptionClick('algaelowreefintake')}
+            >
                 <input 
                     type="checkbox" 
                     id="algaelowreefintake" 
                     name="algaelowreefintake" 
                     checked={intakeOptions.algaelowreefintake}
                     onChange={handleChange}
+                    onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                 />
-                <label htmlFor="algaelowreefintake">Algae Low Reef</label>
+                <label 
+                    htmlFor="algaelowreefintake"
+                    style={labelStyle}
+                >Algae Low Reef</label>
             </div>
         </div>
     );
