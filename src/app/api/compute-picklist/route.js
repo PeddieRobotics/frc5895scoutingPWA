@@ -22,6 +22,11 @@ export async function POST(request) {
 
   let teamTable = tidy(rows, groupBy(['team', 'match'], [summarizeAll(averageField)]));
   teamTable = teamTable.filter(dr => !dr.noshow);
+
+  // Before grouping by team, save the match data to count breakdowns
+  let teamMatchData = teamTable;
+
+  // Continue with existing grouping by team
   teamTable = tidy(teamTable, groupBy(['team'], [summarizeAll(averageField)]));
 
   const calcConsistency = (dr) => {
@@ -105,6 +110,23 @@ export async function POST(request) {
       return 0;  // No cage success or failed attempt
   },
 
+    // Calculate average coral scored
+    avgCoral: d => {
+      const autoCoralScored = (d.autol1success || 0) + (d.autol2success || 0) + (d.autol3success || 0) + (d.autol4success || 0);
+      const teleCoralScored = (d.telel1success || 0) + (d.telel2success || 0) + (d.telel3success || 0) + (d.telel4success || 0);
+      return autoCoralScored + teleCoralScored;
+    },
+    
+    // Calculate average net algae scored
+    avgNet: d => {
+      return (d.autonetsuccess || 0) + (d.telenetsuccess || 0);
+    },
+    
+    // Calculate average processor algae scored
+    avgProcessor: d => {
+      return (d.autoprocessorsuccess || 0) + (d.teleprocessorsuccess || 0);
+    },
+
     consistency: d => calcConsistency(d),
     coral: d => {
       const success = (d.autol1success || 0) + (d.autol2success || 0) + (d.autol3success || 0) + (d.autol4success || 0) +
@@ -129,7 +151,23 @@ export async function POST(request) {
     const defensePlayed = d.defenseplayed || 0;
     return defensePlayed > 0 ? defensePlayed * 10 : 0;  // Scale as needed (example: x10 for visibility)
 },
-}), select(['team', 'auto', 'tele', 'end', 'epa', 'cage', 'consistency', 'coral', 'algae', 'defense']));
+
+  // Calculate breakdown percentage (0 to 1, where 0 is best)
+  breakdown: d => {
+    // Get all matches for this team
+    const teamMatches = teamMatchData.filter(match => match.team === d.team);
+    const totalMatches = teamMatches.length;
+    
+    // Count matches with breakdowns
+    const breakdownMatches = teamMatches.filter(match => 
+      (match.breakdown === true) || 
+      (match.breakdowncomments && match.breakdowncomments.trim() !== "")
+    ).length;
+    
+    // Calculate percentage (0 to 1)
+    return totalMatches > 0 ? breakdownMatches / totalMatches : 0;
+  },
+}), select(['team', 'auto', 'tele', 'end', 'epa', 'cage', 'consistency', 'coral', 'algae', 'defense', 'breakdown', 'avgCoral', 'avgNet', 'avgProcessor']));
 
 
 
@@ -193,8 +231,22 @@ try {
     coral: d => maxes.coral ? d.coral / maxes.coral : 0,
     algae: d => maxes.algae ? d.algae / maxes.algae : 0,
     defense: d => maxes.defense ? d.defense / maxes.defense : 0,
+    // No normalization for breakdown since lower is better
+    breakdown: d => d.breakdown,
+    // Store real values before normalization 
+    realAvgCoral: d => d.avgCoral,
+    realAvgNet: d => d.avgNet,
+    realAvgProcessor: d => d.avgProcessor,
+    // Normalize for scoring
+    avgCoral: d => maxes.avgCoral ? d.avgCoral / maxes.avgCoral : 0,
+    avgNet: d => maxes.avgNet ? d.avgNet / maxes.avgNet : 0,
+    avgProcessor: d => maxes.avgProcessor ? d.avgProcessor / maxes.avgProcessor : 0,
     score: d => requestBody.reduce((sum, [key, weight]) => {
       const value = d[key] ?? 0;
+      // For breakdown, we invert the value since lower is better
+      if (key === 'breakdown') {
+        return sum + ((1 - value) * parseFloat(weight));
+      }
       return sum + (value * parseFloat(weight));
     }, 0),
       }), arrange(desc('score')));

@@ -58,62 +58,37 @@ export default function Picklist() {
     const urlParams = new URLSearchParams([...weightEntries, ...Object.entries(allianceData).flatMap(([allianceNumber, teams]) => teams.map((team, index) => [`T${allianceNumber}A${index + 1}`, team]))]);
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
     
-    const picklist = await fetch('/api/compute-picklist', {
-      method: 'POST',
-      body: JSON.stringify(weightEntries)
-    }).then(resp => resp.json());
-    
-
-    // Static data
-    // const picklist = [
-    //   {
-    //     team: 2485,
-    //     score: 0.95,
-    //     firstRanking: 4,
-    //     epa: 0.9,
-    //     auto: 0.85,
-    //     tele: 0.95,
-    //     end: 0.8,
-    //     cage: 0.75,
-    //     consistency: 0.95,
-    //     coral: 0.9,
-    //     algae: 0.85,
-    //     defense: 0.7
-    //   },
-    //   {
-    //     team: 1678,
-    //     score: 0.75,
-    //     firstRanking: 3,
-    //     epa: 0.7,
-    //     auto: 0.8,
-    //     tele: 0.75,
-    //     end: 0.7,
-    //     cage: 0.8,
-    //     consistency: 0.75,
-    //     coral: 0.8,
-    //     algae: 0.7,
-    //     defense: 0.75
-    //   },
-    //   {
-    //     team: 254,
-    //     score: 0.85,
-    //     firstRanking: 2,
-    //     epa: 0.8,
-    //     auto: 0.75,
-    //     tele: 0.85,
-    //     end: 0.9,
-    //     cage: 0.85,
-    //     consistency: 0.8,
-    //     coral: 0.75,
-    //     algae: 0.8,
-    //     defense: 0.85
-    //   },
-    // ];
-    
-
-    setPicklist(picklist);
-    setMaxScore(picklist[0].score);
-    setWeightsChanged(false);
+    try {
+      const response = await fetch('/api/compute-picklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(weightEntries)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+      
+      const text = await response.text();
+      if (!text) {
+        throw new Error('Empty response from server');
+      }
+      
+      const picklist = JSON.parse(text);
+      
+      if (picklist && picklist.length > 0) {
+        setPicklist(picklist);
+        setMaxScore(picklist[0].score);
+        setWeightsChanged(false);
+      } else {
+        console.error('Received empty picklist array');
+      }
+    } catch (error) {
+      console.error('Error calculating picklist:', error);
+      alert('Error calculating picklist. Please check the console for details.');
+    }
   }
 
   function updateAlliancesData(allianceNumber, allianceTeams) {
@@ -163,6 +138,22 @@ export default function Picklist() {
           <td><input id="algae" type="number" value={weights.algae || 0} name="algae" onChange={handleWeightChange}></input></td>
           <td><label htmlFor="defense">Defense:</label></td>
           <td><input id="defense" type="number" value={weights.defense || 0} name="defense" onChange={handleWeightChange}></input></td>
+        </tr>
+        <tr>
+          <td><label htmlFor="avgCoral">Avg Coral:</label></td>
+          <td><input id="avgCoral" type="number" value={weights.avgCoral || 0} name="avgCoral" onChange={handleWeightChange}></input></td>
+          <td><label htmlFor="avgNet">Avg Net:</label></td>
+          <td><input id="avgNet" type="number" value={weights.avgNet || 0} name="avgNet" onChange={handleWeightChange}></input></td>
+          <td><label htmlFor="avgProcessor">Avg Prcsr:</label></td>
+          <td><input id="avgProcessor" type="number" value={weights.avgProcessor || 0} name="avgProcessor" onChange={handleWeightChange}></input></td>
+        </tr>
+        <tr>
+          <td><label htmlFor="breakdown">Breakdown:</label></td>
+          <td><input id="breakdown" type="number" value={weights.breakdown || 0} name="breakdown" onChange={handleWeightChange}></input></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -245,6 +236,15 @@ export default function Picklist() {
       return greenToRedColors[4];
     };
 
+    // Inverse color function for breakdown (where 0% is good, 100% is bad)
+    const inverseValueToColor = (value) => {
+      if (value < 0.2) return greenToRedColors[0]; // 0-20% breakdown is great (green)
+      if (value < 0.4) return greenToRedColors[1];
+      if (value < 0.6) return greenToRedColors[2];
+      if (value < 0.8) return greenToRedColors[3];
+      return greenToRedColors[4]; // 80-100% breakdown is bad (red)
+    };
+
     function handleThumbsUp(team) {
       const newRatings = { ...teamRatings, [team]: true };
       setTeamRatings(newRatings);
@@ -298,6 +298,10 @@ export default function Picklist() {
             <th>Coral</th>
             <th>Algae</th>
             <th>Defense</th>
+            <th>Avg Coral</th>
+            <th>Avg Net</th>
+            <th>Avg Prcsr</th>
+            <th>Brkdn %</th>
             <th>Rating</th>
             <th>Comments</th>
           </tr>
@@ -337,6 +341,10 @@ export default function Picklist() {
                       <td style={{ backgroundColor: valueToColor(teamData.coral) }}>{roundToThree(teamData.coral)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.algae) }}>{roundToThree(teamData.algae)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.defense) }}>{roundToThree(teamData.defense)}</td>
+                      <td style={{ backgroundColor: valueToColor(teamData.avgCoral) }}>{teamData.realAvgCoral ? roundToOne(teamData.realAvgCoral) : '0'}</td>
+                      <td style={{ backgroundColor: valueToColor(teamData.avgNet) }}>{teamData.realAvgNet ? roundToOne(teamData.realAvgNet) : '0'}</td>
+                      <td style={{ backgroundColor: valueToColor(teamData.avgProcessor) }}>{teamData.realAvgProcessor ? roundToOne(teamData.realAvgProcessor) : '0'}</td>
+                      <td style={{ backgroundColor: inverseValueToColor(teamData.breakdown || 0) }}>{teamData.breakdown ? `${roundToOne(teamData.breakdown * 100)}%` : '0%'}</td>
                       <td>
                         {teamRatings[teamData.team] !== true &&
                           <button onClick={() => handleThumbsUp(teamData.team)}>✅</button>
