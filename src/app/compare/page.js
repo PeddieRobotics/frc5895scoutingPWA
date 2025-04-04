@@ -1,10 +1,27 @@
 'use client';
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import styles from "./page.module.css";
 import Link from "next/link";
+
+// Custom tooltip formatter to show 1 decimal place
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className={styles.customTooltip}>
+        <p className={styles.label}>{`${label}`}</p>
+        {payload.map((entry, index) => (
+          <p key={`item-${index}`} style={{ color: entry.color }}>
+            {`${entry.name}: ${parseFloat(entry.value).toFixed(1)}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function ComparePage() {
   return (
@@ -20,12 +37,15 @@ function Compare() {
   const [error, setError] = useState(null);
   const searchParams = useSearchParams();
   
-  const teams = [
-    searchParams.get('team1'),
-    searchParams.get('team2'),
-    searchParams.get('team3'),
-    searchParams.get('team4')
-  ].filter(team => team !== null && team !== "");
+  // Memoize the teams array to prevent re-rendering loops
+  const teams = useMemo(() => {
+    return [
+      searchParams.get('team1'),
+      searchParams.get('team2'),
+      searchParams.get('team3'),
+      searchParams.get('team4')
+    ].filter(team => team !== null && team !== "");
+  }, [searchParams]);
 
   // Colors for each team (same as match-view)
   const COLORS = [
@@ -36,6 +56,8 @@ function Compare() {
   ];
 
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchTeamData() {
       if (teams.length === 0) {
         setLoading(false);
@@ -47,32 +69,61 @@ function Compare() {
 
       try {
         const teamDataPromises = teams.map(team => 
-          fetch(`/api/get-team-data?team=${team}`)
-            .then(response => {
+          fetch(`/api/get-team-data?team=${team}&includeRows=true`)
+            .then(async response => {
               if (!response.ok) {
+                console.error(`Error fetching team ${team} data:`, response.status);
                 throw new Error(`Failed to fetch data for team ${team}`);
               }
-              return response.json();
+              const data = await response.json();
+              // Check if the API returned an error message
+              if (data.message && data.message.startsWith('ERROR:')) {
+                console.error(`API error for team ${team}:`, data.message);
+                throw new Error(data.message);
+              }
+              return data;
             })
         );
 
         const results = await Promise.all(teamDataPromises);
         
-        const teamsDataObj = {};
-        results.forEach((data, index) => {
-          teamsDataObj[teams[index]] = data;
-        });
-
-        setTeamsData(teamsDataObj);
-        setLoading(false);
+        if (isMounted) {
+          const teamsDataObj = {};
+          results.forEach((data, index) => {
+            // Check if data has required fields, if not provide defaults
+            if (!data.avgEpa && data.avgEpa !== 0) {
+              console.warn(`Team ${teams[index]} data is missing avgEpa field`);
+            }
+            
+            teamsDataObj[teams[index]] = data || { 
+              team: teams[index],
+              name: `Team ${teams[index]}`,
+              avgEpa: 0,
+              avgAuto: 0,
+              avgTele: 0,
+              avgEnd: 0
+            };
+          });
+  
+          console.log('Processed team data:', teamsDataObj);
+          setTeamsData(teamsDataObj);
+          setLoading(false);
+        }
       } catch (error) {
-        console.error("Error fetching team data:", error);
-        setError(error.message);
-        setLoading(false);
+        if (isMounted) {
+          console.error("Error fetching team data:", error);
+          setError(error.message || "Failed to fetch team data");
+          setLoading(false);
+        }
       }
     }
 
     fetchTeamData();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [teams]);
 
   if (loading) {
@@ -103,9 +154,12 @@ function Compare() {
       <div className={styles.comparisonGrid}>
         <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} />
         <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} />
+        <CoralLevelComparison teamsData={teamsData} teams={teams} colors={COLORS} />
         <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} />
-        <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} />
       </div>
+      
+      {/* Defense ratings section outside the grid to span full width */}
+      <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} />
 
       <div className={styles.linkContainer}>
         {teams.map((team, index) => (
@@ -200,7 +254,7 @@ function MetricsComparison({ teamsData, teams, colors }) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={<CustomTooltip />} />
           <Legend />
           {teams.map((team, index) => (
             <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
@@ -212,19 +266,35 @@ function MetricsComparison({ teamsData, teams, colors }) {
 }
 
 function ScoreComparison({ teamsData, teams, colors }) {
-  // Prepare data for coral & algae comparisons
-  const chartData = teams.map((team, index) => {
-    const data = teamsData[team] || {};
-    const avgPieces = data.avgPieces || {};
+  // Restructure data for comparison to match the pattern in MetricsComparison
+  
+  // First determine all the scoring metrics we want to show
+  const metrics = ["Coral", "Net", "Processor", "Algae"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
+    const dataPoint = { name: metric };
     
-    return {
-      name: `Team ${team}`,
-      "Avg Coral": data.avgCoral || 0,
-      "Avg Net": avgPieces.net || 0,
-      "Avg Processor": avgPieces.processor || 0,
-      "Avg Algae": data.avgAlgae || 0,
-      fill: colors[index]
-    };
+    // Add each team's value for this metric
+    teams.forEach(team => {
+      const data = teamsData[team] || {};
+      const avgPieces = data.avgPieces || {};
+      
+      let value = 0;
+      if (metric === "Coral") {
+        value = data.auto?.coral?.total + data.tele?.coral?.total || data.avgCoral || 0;
+      } else if (metric === "Net") {
+        value = avgPieces.net || (data.auto?.algae?.avgNet || 0) + (data.tele?.algae?.avgNet || 0);
+      } else if (metric === "Processor") {
+        value = avgPieces.processor || (data.auto?.algae?.avgProcessor || 0) + (data.tele?.algae?.avgProcessor || 0);
+      } else if (metric === "Algae") {
+        value = data.avgAlgae || (data.auto?.algae?.removed || 0) + (data.tele?.algae?.removed || 0);
+      }
+      
+      dataPoint[`team${team}`] = value;
+    });
+    
+    return dataPoint;
   });
 
   return (
@@ -235,12 +305,65 @@ function ScoreComparison({ teamsData, teams, colors }) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar dataKey="Avg Coral" fill="#8884d8" />
-          <Bar dataKey="Avg Net" fill="#82ca9d" />
-          <Bar dataKey="Avg Processor" fill="#ffc658" />
-          <Bar dataKey="Avg Algae" fill="#ff8042" />
+          {teams.map((team, index) => (
+            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function CoralLevelComparison({ teamsData, teams, colors }) {
+  // Restructure data for comparison to match the pattern in MetricsComparison
+  
+  // First determine all the coral level metrics we want to show
+  const metrics = ["L1", "L2", "L3", "L4", "Fail %"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
+    const dataPoint = { name: metric };
+    
+    // Add each team's value for this metric
+    teams.forEach(team => {
+      const data = teamsData[team] || {};
+      const auto = data.auto?.coral || {};
+      const tele = data.tele?.coral || {};
+      
+      let value = 0;
+      if (metric === "L1") {
+        value = (auto.avgL1 || 0) + (tele.avgL1 || 0);
+      } else if (metric === "L2") {
+        value = (auto.avgL2 || 0) + (tele.avgL2 || 0);
+      } else if (metric === "L3") {
+        value = (auto.avgL3 || 0) + (tele.avgL3 || 0);
+      } else if (metric === "L4") {
+        value = (auto.avgL4 || 0) + (tele.avgL4 || 0);
+      } else if (metric === "Fail %") {
+        value = 100 - ((auto.success || 0) + (tele.success || 0)) / 2;
+      }
+      
+      dataPoint[`team${team}`] = value;
+    });
+    
+    return dataPoint;
+  });
+
+  return (
+    <div className={styles.chartContainer}>
+      <h2>Coral Level Comparison</h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          {teams.map((team, index) => (
+            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -248,37 +371,54 @@ function ScoreComparison({ teamsData, teams, colors }) {
 }
 
 function EndgameComparison({ teamsData, teams, colors }) {
-  // Format endgame data for comparison
-  const endgameData = teams.map(team => {
-    const data = teamsData[team] || {};
-    const endgame = data.endgame || { none: 0, park: 0, shallow: 0, deep: 0, fail: 0 };
+  // Restructure data for comparison to match the pattern in other components
+  
+  // Define endgame metrics
+  const metrics = ["None", "Park", "Shallow", "Deep", "Fail"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
+    const dataPoint = { name: metric };
     
-    return {
-      team: team,
-      name: `Team ${team}`,
-      "None": endgame.none || 0,
-      "Park": endgame.park || 0,
-      "Shallow": endgame.shallow || 0, 
-      "Deep": endgame.deep || 0,
-      "Fail": endgame.fail || 0
-    };
+    // Add each team's value for this metric
+    teams.forEach(team => {
+      const data = teamsData[team] || {};
+      // Try to get data from two possible sources - direct endgame object or endPlacement
+      const endgame = data.endgame || {};
+      const endPlacement = data.endPlacement || {};
+      
+      let value = 0;
+      if (metric === "None") {
+        value = endgame.none || endPlacement.none || 0;
+      } else if (metric === "Park") {
+        value = endgame.park || endPlacement.park || 0;
+      } else if (metric === "Shallow") {
+        value = endgame.shallow || endPlacement.shallow || 0;
+      } else if (metric === "Deep") {
+        value = endgame.deep || endPlacement.deep || 0;
+      } else if (metric === "Fail") {
+        value = endgame.fail || endPlacement.parkandFail || 0;
+      }
+      
+      dataPoint[`team${team}`] = value;
+    });
+    
+    return dataPoint;
   });
 
   return (
     <div className={styles.chartContainer}>
       <h2>Endgame Comparison</h2>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={endgameData} layout="vertical">
+        <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="name" type="category" />
-          <Tooltip />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar dataKey="None" stackId="a" fill="#cccccc" />
-          <Bar dataKey="Park" stackId="a" fill="#82ca9d" />
-          <Bar dataKey="Shallow" stackId="a" fill="#8884d8" />
-          <Bar dataKey="Deep" stackId="a" fill="#ffc658" />
-          <Bar dataKey="Fail" stackId="a" fill="#ff8042" />
+          {teams.map((team, index) => (
+            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -286,57 +426,132 @@ function EndgameComparison({ teamsData, teams, colors }) {
 }
 
 function QualitativeComparison({ teamsData, teams, colors }) {
-  // Format qualitative metrics for radar chart
-  const qualitativeData = [];
-  
-  // Define metrics to include
-  const metrics = [
-    { key: 'coralspeed', name: 'Coral Speed' },
-    { key: 'processorspeed', name: 'Processor Speed' },
-    { key: 'netspeed', name: 'Net Speed' },
-    { key: 'algaeremovalspeed', name: 'Algae Speed' },
-    { key: 'climbspeed', name: 'Climb Speed' },
-    { key: 'maneuverability', name: 'Maneuverability' },
-    { key: 'defenseplayed', name: 'Defense' },
-    { key: 'defenseevasion', name: 'Defense Evasion' },
-  ];
-  
-  // Prepare data in the format needed for the table
-  metrics.forEach(metric => {
-    const dataPoint = { metric: metric.name };
-    
-    teams.forEach(team => {
-      const data = teamsData[team] || {};
-      const qualitative = data.qualitative || {};
-      dataPoint[`team${team}`] = qualitative[metric.key] || 0;
-    });
-    
-    qualitativeData.push(dataPoint);
-  });
-
+  // Format team-specific defense data using bar charts like in team-view
   return (
-    <div className={styles.tableContainer}>
-      <h2>Qualitative Comparison</h2>
-      <table className={styles.comparisonTable}>
-        <thead>
-          <tr>
-            <th>Metric</th>
-            {teams.map((team, index) => (
-              <th key={team} style={{backgroundColor: colors[index]}}>Team {team}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {qualitativeData.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td>{row.metric}</td>
-              {teams.map(team => (
-                <td key={team}>{row[`team${team}`]}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={styles.qualitativeContainer}>
+      <h2>Defense Ratings</h2>
+      <div className={styles.defenseGridContainer}>
+        {teams.map((team, index) => {
+          const data = teamsData[team] || {};
+          const rows = data.rows || [];
+          
+          // Get defense played ratings using the same method as team-view
+          const getDefensePlayed = (row) => {
+            const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
+            for (const field of fieldVariants) {
+              if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
+                return row[field];
+              }
+            }
+            return null;
+          };
+          
+          // Filter valid defense ratings
+          const validDefenseRatings = rows.filter(row => {
+            const defenseValue = getDefensePlayed(row);
+            return row.team == team && defenseValue !== null;
+          });
+          
+          // Debug for when there's no row data
+          if (rows.length === 0) {
+            console.log(`Team ${team}: No row data available from API.`);
+          } else if (validDefenseRatings.length === 0) {
+            console.log(`Team ${team}: Has ${rows.length} rows but no defense ratings found.`);
+          }
+          
+          // Prepare chart data
+          let chartData = [];
+          
+          if (validDefenseRatings.length > 0) {
+            // Calculate average defense rating
+            const totalSum = validDefenseRatings.reduce((sum, row) => {
+              const defenseValue = getDefensePlayed(row);
+              return sum + defenseValue;
+            }, 0);
+            
+            const totalAvg = totalSum / validDefenseRatings.length;
+            
+            // Debug log defense data
+            console.log(`Team ${team} Defense Ratings:`, {
+              numRows: rows.length,
+              validRatings: validDefenseRatings.length,
+              totalAvg,
+              ratings: validDefenseRatings.map(row => ({
+                match: row.match,
+                scout: row.scoutname,
+                rating: getDefensePlayed(row)
+              }))
+            });
+            
+            chartData = [{ name: 'TOTAL', value: totalAvg }];
+            
+            // Group by scout
+            const scoutMap = {};
+            validDefenseRatings.forEach(row => {
+              const scoutName = row.scoutname || 'Unknown';
+              if (!scoutMap[scoutName]) {
+                scoutMap[scoutName] = [];
+              }
+              scoutMap[scoutName].push(getDefensePlayed(row));
+            });
+            
+            // Add scout averages
+            Object.entries(scoutMap).forEach(([scout, ratings]) => {
+              if (ratings.length > 0) {
+                const scoutSum = ratings.reduce((sum, rating) => sum + rating, 0);
+                const scoutAvg = scoutSum / ratings.length;
+                chartData.push({
+                  name: scout,
+                  value: scoutAvg
+                });
+              }
+            });
+          } 
+          // If no row-level data but has qualitative array
+          else if (data.qualitative) {
+            // Check for defense rating in qualitative data
+            const defenseItem = Array.isArray(data.qualitative) 
+              ? data.qualitative.find(q => q.name === "Defense Played")
+              : null;
+              
+            if (defenseItem && defenseItem.rating > 0) {
+              chartData = [{ name: 'TOTAL', value: defenseItem.rating }];
+            } else {
+              chartData = [{ name: 'TOTAL', value: 0 }];
+            }
+          } else {
+            chartData = [{ name: 'TOTAL', value: 0 }];
+          }
+          
+          return (
+            <div key={team} className={styles.defenseChart}>
+              <h3 style={{ color: colors[index] }}>Team {team}</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={70} 
+                    tick={{ dy: 10, fontSize: 12 }}
+                  />
+                  <YAxis 
+                    domain={[0, 6]} 
+                    ticks={[0, 1, 2, 3, 4, 5, 6]}
+                    interval={0}
+                  />
+                  <Tooltip formatter={(value) => parseFloat(value).toFixed(1)} />
+                  <Bar dataKey="value" fill={colors[index]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

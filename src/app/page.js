@@ -31,6 +31,12 @@ function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
       onAuthRequired(true);
       if (redirect) {
         onRedirectTarget(redirect);
+        
+        // Clear the URL parameters after processing to prevent redirect loops
+        if (typeof window !== 'undefined') {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
       }
     }
   }, [searchParams, onAuthRequired, onRedirectTarget]);
@@ -699,7 +705,19 @@ export default function Home() {
     
     // If we have a redirect target, navigate to it after authentication
     if (authRedirectTarget) {
-      window.location.href = authRedirectTarget;
+      // Clear URL parameters before redirecting
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.search = ''; // Remove all query parameters
+        window.history.replaceState({}, '', url);
+        
+        // Short delay to ensure state is updated before redirect
+        setTimeout(() => {
+          window.location.href = authRedirectTarget;
+        }, 50);
+      } else {
+        window.location.href = authRedirectTarget;
+      }
       return;
     }
     

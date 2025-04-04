@@ -6,6 +6,10 @@ export function middleware(request) {
     request.nextUrl.pathname === '/' || 
     request.nextUrl.pathname === ''
   ) {
+    // Prevent redirect loop - if we're already at the root with auth params, don't redirect again
+    if (request.nextUrl.searchParams.has('authRequired')) {
+      return NextResponse.next();
+    }
     return NextResponse.next();
   }
   

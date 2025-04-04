@@ -155,4 +155,67 @@
 
 .linkContainer button:hover {
   opacity: 0.9;
+}
+
+/* Update styles for defense rating bar charts */
+.qualitativeContainer {
+  width: 100%;
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  grid-column: 1 / -1; /* Make it span full width if still in grid */
+}
+
+.defenseGridContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+@media (min-width: 1200px) {
+  .defenseGridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+.defenseChart {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #eee;
+}
+
+.defenseChart h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.noData {
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-style: italic;
+}
+
+.customTooltip {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.customTooltip .label {
+  font-weight: bold;
+  margin-bottom: 5px;
 } 
