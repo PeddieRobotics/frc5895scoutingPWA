@@ -18,6 +18,7 @@ export default function NavBar() {
             <Link href="/">Scouting Form</Link>
             <Link href="/team-view">Team View</Link>
             <Link href="/match-view">Match View</Link>
+            <Link href="/compare">Compare</Link>
             <Link href="/picklist">Picklist</Link>
             {sudo && 
                 <Link href='/sudo'>Sudo</Link>
