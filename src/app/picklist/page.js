@@ -275,6 +275,7 @@ export default function Picklist() {
     
 
     const roundToThree = (x) => Math.round(x * 1000) / 1000;
+    const roundToOne = (x) => Math.round(x * 10) / 10;
     
 
     return (
@@ -287,7 +288,8 @@ export default function Picklist() {
             <th>Picklist Rank</th>
             <th>TBA Rank</th>
             <th>Team</th>
-            <th>EPA</th>
+            <th>Norm EPA</th>
+            <th>Real EPA</th>
             <th>Auto</th>
             <th>Tele</th>
             <th>End</th>
@@ -326,6 +328,7 @@ export default function Picklist() {
                         </a>
                       </td>
                       <td style={{ backgroundColor: valueToColor(teamData.epa) }}>{roundToThree(teamData.epa)}</td>
+                      <td style={{ backgroundColor: valueToColor(teamData.epa) }}>{teamData.realEpa ? roundToOne(teamData.realEpa) : 'N/A'}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.auto) }}>{roundToThree(teamData.auto)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.tele) }}>{roundToThree(teamData.tele)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.end) }}>{roundToThree(teamData.end)}</td>

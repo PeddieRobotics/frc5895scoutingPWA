@@ -186,6 +186,7 @@ try {
     auto: d => maxes.auto ? d.auto / maxes.auto : 0,
     tele: d => maxes.tele ? d.tele / maxes.tele : 0,
     end: d => maxes.end ? d.end / maxes.end : 0,
+    realEpa: d => d.epa, // Store the real EPA value before normalization
     epa: d => maxes.epa ? d.epa / maxes.epa : 0,
     cage: d => maxes.cage ? d.cage / maxes.cage : 0,
     consistency: d => maxes.consistency ? d.consistency / maxes.consistency : 0,
