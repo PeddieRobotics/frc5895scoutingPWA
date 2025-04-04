@@ -448,8 +448,8 @@ function AllianceButtons({t1, t2, t3, colors}) {
           L2={Math.round(10*teamData.avgPieces.L2)/10}
           L3={Math.round(10*teamData.avgPieces.L3)/10} 
           L4={Math.round(10*teamData.avgPieces.L4)/10} 
-          net={Math.round(10*teamData.avgPieces.net)/10}
-          processor={Math.round(10*teamData.avgPieces.processor)/10}
+          net={Math.round(10*teamData.avgPieces.processor)/10}
+          processor={Math.round(10*teamData.avgPieces.net)/10}
           HP={Math.round(10*teamData.avgPieces.HP)/10}
         />
       </div>
