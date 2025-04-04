@@ -16,6 +16,7 @@ export default function NavBar() {
         <img className={styles.logo} src="https://static.wixstatic.com/media/01a1eb_8e7e35f6173149238e59205a31892fc9~mv2.png"></img>
         <div className={styles.pages}>
             <Link href="/">Scouting Form</Link>
+            <Link href="/scanner">Scanner</Link>
             <Link href="/team-view">Team View</Link>
             <Link href="/match-view">Match View</Link>
             <Link href="/compare">Compare</Link>
