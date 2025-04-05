@@ -45,7 +45,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
   // Fetch and process defense ratings for each team
   useEffect(() => {
     const fetchTeamData = async (teamNumber) => {
-      if (!teamNumber) return { rows: [] };
+      if (!teamNumber || teamNumber === "N/A") return { rows: [] };
       
       try {
         const response = await fetch(`/api/get-team-data?team=${teamNumber}&includeRows=true`);
@@ -62,7 +62,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
 
     const fetchAllTeamData = async () => {
       // Only fetch data for valid team numbers
-      const validTeamNumbers = teamNumbers.filter(num => num && num !== 404);
+      const validTeamNumbers = teamNumbers.filter(num => num && num !== "N/A");
       if (validTeamNumbers.length === 0) return;
       
       const teamData = await Promise.all(

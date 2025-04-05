@@ -86,25 +86,25 @@ function MatchView() {
   }
 
   const defaultTeam = {
-    team: 404,
-    teamName: "Invisibotics 👻",
-    auto: 0,
-    tele: 0,
-    end: 0,
+    team: "N/A",
+    teamName: "No Data",
+    auto: null,
+    tele: null,
+    end: null,
     avgPieces: {
-      L1: 0,
-      L2: 0,
-      L3: 0,
-      L4: 0,
-      net: 0, 
-      processor: 0,
-      HP: 0,
+      L1: null,
+      L2: null,
+      L3: null,
+      L4: null,
+      net: null, 
+      processor: null,
+      HP: null,
     },
-    leave: false,
-    autoCoral: 0,
-    removedAlgae: 0,
+    leave: null,
+    autoCoral: null,
+    removedAlgae: null,
     endgame: { none: 100, park: 0, shallow: 0, deep: 0, fail: 0},
-    qualitative: { coralspeed: 0, processorspeed: 0, netspeed: 0, algaeremovalspeed: 0, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
+    qualitative: { coralspeed: null, processorspeed: null, netspeed: null, algaeremovalspeed: null, climbspeed: null, maneuverability: null, defenseplayed: null, defenseevasion: null, aggression: null, cagehazard: null }
   };
 
   // // Static data instead of fetching
@@ -340,9 +340,10 @@ function AllianceButtons({t1, t2, t3, colors}) {
 
   function AllianceDisplay({teams, opponents, colors}) {
     //calc alliance espm breakdown
-    const auto = (teams[0]?.last3Auto || 0) + (teams[1]?.last3Auto || 0) + (teams[2]?.last3Auto || 0);
-    const tele = (teams[0]?.last3Tele || 0) + (teams[1]?.last3Tele || 0) + (teams[2]?.last3Tele || 0);
-    const end = (teams[0]?.last3End || 0) + (teams[1]?.last3End || 0) + (teams[2]?.last3End || 0);
+    const validTeams = teams.filter(team => team && team.last3Auto !== null);
+    const auto = validTeams.reduce((sum, team) => sum + (team.last3Auto || 0), 0);
+    const tele = validTeams.reduce((sum, team) => sum + (team.last3Tele || 0), 0);
+    const end = validTeams.reduce((sum, team) => sum + (team.last3End || 0), 0);
 
     console.log(auto)
     console.log(tele)
@@ -358,23 +359,37 @@ function AllianceButtons({t1, t2, t3, colors}) {
       yellow: "#FFDD9A"
     }
     //win = higher espm than opponents
-    const teamEPA = (team) => team ? team.auto + team.tele + team.end : 0;
-    const opponentsEPA = teamEPA(opponents[0]) + teamEPA(opponents[1]) + teamEPA(opponents[2]);
+    const teamEPA = (team) => team && team.auto !== null ? team.auto + team.tele + team.end : 0;
+    const validOpponents = opponents.filter(opponent => opponent && opponent.auto !== null);
+    const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
     const currentAllianceEPA = auto + tele + end;
     let RP_WIN = RGBColors.red;
     if (currentAllianceEPA > opponentsEPA) RP_WIN = RGBColors.green;
     else if (currentAllianceEPA == opponentsEPA) RP_WIN = RGBColors.yellow;
 
     //auto rp = all robots leave and alliance scores one coral
-    const allianceCoral = Math.floor(teams[0].autoCoral) + Math.floor(teams[1].autoCoral) + Math.floor(teams[2].autoCoral);
+    const allianceCoral = teams.reduce((sum, team) => {
+      return sum + (team && team.autoCoral !== null ? Math.floor(team.autoCoral) : 0);
+    }, 0);
+    
     let RP_AUTO = RGBColors.red;
-    if ((allianceCoral >= 1) && (teams[0].leave == true) && (teams[1].leave == true) && (teams[2].leave == true)) RP_AUTO = RGBColors.green;
+    if ((allianceCoral >= 1) && 
+        teams.every(team => team && team.leave === true)) {
+      RP_AUTO = RGBColors.green;
+    }
 
     //coral rp = 5 coral scored on each level (5 on 3 levels is yellow)
-    const allianceL1 = teams[0].avgPieces.L1 + teams[1].avgPieces.L1 + teams[2].avgPieces.L1;
-    const allianceL2 = teams[0].avgPieces.L2 + teams[1].avgPieces.L2 + teams[2].avgPieces.L2;
-    const allianceL3 = teams[0].avgPieces.L3 + teams[1].avgPieces.L3 + teams[2].avgPieces.L3;
-    const allianceL4 = teams[0].avgPieces.L4 + teams[1].avgPieces.L4 + teams[2].avgPieces.L4;
+    const sumValidPieces = (pieceType) => {
+      return teams.reduce((sum, team) => {
+        return sum + (team && team.avgPieces && team.avgPieces[pieceType] !== null ? team.avgPieces[pieceType] : 0);
+      }, 0);
+    };
+    
+    const allianceL1 = sumValidPieces('L1');
+    const allianceL2 = sumValidPieces('L2'); 
+    const allianceL3 = sumValidPieces('L3');
+    const allianceL4 = sumValidPieces('L4');
+    
     let RP_CORAL = RGBColors.red;
     const conditions = [
       allianceL1 >= 5,
@@ -390,7 +405,10 @@ function AllianceButtons({t1, t2, t3, colors}) {
     else if (trueCount == 3) RP_CORAL = RGBColors.yellow;
   
     //barge rp = 14 points in the barge
-    const endgamePoints = Math.floor(teams[0].end) + Math.floor(teams[1].end) + Math.floor(teams[2].end)
+    const endgamePoints = teams.reduce((sum, team) => {
+      return sum + (team && team.end !== null ? Math.floor(team.end) : 0);
+    }, 0);
+    
     let RP_BARGE = RGBColors.red;
     if (endgamePoints >= 14) RP_BARGE = RGBColors.green;
 
@@ -416,27 +434,32 @@ function AllianceButtons({t1, t2, t3, colors}) {
   function TeamDisplay({teamData, colors, matchMax}) {
 
     const PiecePlacement = dynamic(() => import('./components/PiecePlacement'), { ssr: false });
-    const endgameData = [
+    
+    // Check if endgame data is valid
+    const hasEndgameData = teamData.endgame && 
+      Object.values(teamData.endgame).some(value => value !== null && value > 0);
+    
+    const endgameData = hasEndgameData ? [
       { x: 'None', y: teamData.endgame.none },
       { x: 'Fail', y: teamData.endgame.fail},
       { x: 'Park', y: teamData.endgame.park },
       { x: 'Shallow', y: teamData.endgame.shallow },
       { x: 'Deep', y: teamData.endgame.deep },
+    ] : [
+      { x: 'N/A', y: 100 }
     ];
-
-
 
     return <div className={styles.lightBorderBox}>
       <h1 style={{color: colors[3]}}>{teamData.team}</h1>
       <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer}>
       <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
-        {(teamData.last3EPA || 0).toFixed(1)}
+        {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
       </div>
       <div className={styles.EPABreakdown}>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {(teamData.last3Auto || 0).toFixed(1)}</div>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {(teamData.last3Tele || 0).toFixed(1)}</div>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {(teamData.last3End || 0).toFixed(1)}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
       </div>
       </div>
       <div className={styles.barchartContainer}>
@@ -444,13 +467,13 @@ function AllianceButtons({t1, t2, t3, colors}) {
         <PiecePlacement 
           colors={colors}
           matchMax={matchMax} 
-          L1={Math.round(10*teamData.avgPieces.L1)/10}
-          L2={Math.round(10*teamData.avgPieces.L2)/10}
-          L3={Math.round(10*teamData.avgPieces.L3)/10} 
-          L4={Math.round(10*teamData.avgPieces.L4)/10} 
-          net={Math.round(10*teamData.avgPieces.processor)/10}
-          processor={Math.round(10*teamData.avgPieces.net)/10}
-          HP={Math.round(10*teamData.avgPieces.HP)/10}
+          L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
+          L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
+          L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
+          L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
+          net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
+          processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
+          HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
         />
       </div>
       <div className={styles.chartContainer}>
@@ -464,9 +487,11 @@ function AllianceButtons({t1, t2, t3, colors}) {
   }
     let get = (alliance, thing) => {
     let sum = 0;
-    if (alliance[0] && alliance[0][thing]) sum += alliance[0][thing];
-    if (alliance[1] && alliance[1][thing]) sum += alliance[1][thing];
-    if (alliance[2] && alliance[2][thing]) sum += alliance[2][thing];
+    for (let i = 0; i < alliance.length; i++) {
+      if (alliance[i] && alliance[i][thing] !== null) {
+        sum += alliance[i][thing];
+      }
+    }
     return sum;
   }
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
@@ -488,22 +513,34 @@ function AllianceButtons({t1, t2, t3, colors}) {
   let radarData = [];
   for (let qual of ['coralspeed', 'processorspeed', 'netspeed', 'algaeremovalspeed', 'climbspeed', 'maneuverability', 'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard']) {
     radarData.push({qual, 
-      team1: data?.team1?.qualitative[qual] || 0,
-      team2: data?.team2?.qualitative[qual] || 0,
-      team3: data?.team3?.qualitative[qual] || 0,
-      team4: data?.team4?.qualitative[qual] || 0,
-      team5: data?.team5?.qualitative[qual] || 0,
-      team6: data?.team6?.qualitative[qual] || 0,
+      team1: data?.team1?.qualitative?.[qual] !== undefined ? data.team1.qualitative[qual] : null,
+      team2: data?.team2?.qualitative?.[qual] !== undefined ? data.team2.qualitative[qual] : null,
+      team3: data?.team3?.qualitative?.[qual] !== undefined ? data.team3.qualitative[qual] : null,
+      team4: data?.team4?.qualitative?.[qual] !== undefined ? data.team4.qualitative[qual] : null,
+      team5: data?.team5?.qualitative?.[qual] !== undefined ? data.team5.qualitative[qual] : null,
+      team6: data?.team6?.qualitative?.[qual] !== undefined ? data.team6.qualitative[qual] : null,
       fullMark: 5});
   }
   console.log(radarData);
 
   let matchMax = 0;
   for (let teamData of [data.team1, data.team2, data.team3, data.team4, data.team5, data.team6]) {
-   if (teamData) {
-    matchMax = Math.max(teamData.avgPieces.L4, teamData.avgPieces.L3, teamData.avgPieces.L2, teamData.avgPieces.L1, teamData.avgPieces.net, teamData.avgPieces.processor, teamData.avgPieces.HP, matchMax)
-  }
+   if (teamData && teamData.avgPieces) {
+    const pieceValues = [
+      teamData.avgPieces.L4, 
+      teamData.avgPieces.L3, 
+      teamData.avgPieces.L2, 
+      teamData.avgPieces.L1, 
+      teamData.avgPieces.net, 
+      teamData.avgPieces.processor, 
+      teamData.avgPieces.HP
+    ].filter(value => value !== null);
+    
+    if (pieceValues.length > 0) {
+      matchMax = Math.max(...pieceValues, matchMax);
+    }
    }
+  }
   matchMax = Math.floor(matchMax) + 2; 
   console.log("Team 1 Data:", data.team1);
   console.log("Team 2 Data:", data.team2);
