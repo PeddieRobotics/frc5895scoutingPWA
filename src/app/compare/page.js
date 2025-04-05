@@ -101,8 +101,20 @@ function Compare() {
               avgEpa: 0,
               avgAuto: 0,
               avgTele: 0,
-              avgEnd: 0
+              avgEnd: 0,
+              last3Epa: 0,
+              last3Auto: 0,
+              last3Tele: 0,
+              last3End: 0
             };
+            
+            // Log last3EPA values from API
+            console.log(`Team ${teams[index]} Last 3 EPA values:`, {
+              epa: teamsDataObj[teams[index]].last3Epa,
+              auto: teamsDataObj[teams[index]].last3Auto,
+              tele: teamsDataObj[teams[index]].last3Tele,
+              end: teamsDataObj[teams[index]].last3End
+            });
           });
   
           console.log('Processed team data:', teamsDataObj);
@@ -236,11 +248,13 @@ function MetricsComparison({ teamsData, teams, colors }) {
       avgAuto: data.avgAuto || 0,
       avgTele: data.avgTele || 0,
       avgEnd: data.avgEnd || 0,
+      last3EPA: data.last3Epa || 0,
     };
   });
 
   const chartData = [
     { name: 'EPA', ...formatChartData(metricsData, 'avgEpa') },
+    { name: 'Last 3 EPA', ...formatChartData(metricsData, 'last3EPA') },
     { name: 'Auto', ...formatChartData(metricsData, 'avgAuto') },
     { name: 'Teleop', ...formatChartData(metricsData, 'avgTele') },
     { name: 'Endgame', ...formatChartData(metricsData, 'avgEnd') },
