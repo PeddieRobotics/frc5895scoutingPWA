@@ -33,7 +33,11 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData }) {
       setHighlightedTeams([]);
     } else {
       // Parse team numbers from the input
-      const teamNumbers = teamHighlight.split(',').map(val => val.trim());
+      const teamNumbers = teamHighlight
+        .split(',')
+        .map(val => val.trim())
+        .filter(val => val !== ''); // Filter out empty entries (like trailing commas)
+      
       setHighlightedTeams(teamNumbers);
     }
   }, [teamHighlight, teamData]);
@@ -108,7 +112,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData }) {
             <Scatter
               name="Highlighted Teams"
               data={teamData.filter(team => 
-                highlightedTeams.some(t => team.team.toString().includes(t))
+                highlightedTeams.some(t => team.team.toString() === t) // Exact match, not includes
               )}
               fill="#FF5733"
               onClick={(data) => {
