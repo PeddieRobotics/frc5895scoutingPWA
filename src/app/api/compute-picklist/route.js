@@ -167,7 +167,42 @@ export async function POST(request) {
     // Calculate percentage (0 to 1)
     return totalMatches > 0 ? breakdownMatches / totalMatches : 0;
   },
-}), select(['team', 'auto', 'tele', 'end', 'epa', 'cage', 'consistency', 'coral', 'algae', 'defense', 'breakdown', 'avgCoral', 'avgNet', 'avgProcessor']));
+
+  // Calculate EPA for last 3 matches
+  epa3: d => {
+    // Get all matches for this team
+    const teamMatches = teamMatchData.filter(match => match.team === d.team);
+    
+    // Sort by match number (descending) and take last 3
+    const latest3Matches = teamMatches.sort((a, b) => b.match - a.match).slice(0, 3);
+    
+    if (latest3Matches.length === 0) return 0;
+    
+    // Calculate EPA for each of the last 3 matches
+    const epas = latest3Matches.map(match => 
+      calcEPA({
+        autol1success: match.autol1success || 0,
+        autol2success: match.autol2success || 0,
+        autol3success: match.autol3success || 0,
+        autol4success: match.autol4success || 0,
+        autoprocessorsuccess: match.autoprocessorsuccess || 0,
+        autonetsuccess: match.autonetsuccess || 0,
+        leave: match.leave || false,
+        telel1success: match.telel1success || 0,
+        telel2success: match.telel2success || 0,
+        telel3success: match.telel3success || 0,
+        telel4success: match.telel4success || 0,
+        teleprocessorsuccess: match.teleprocessorsuccess || 0,
+        telenetsuccess: match.telenetsuccess || 0,
+        hpsuccess: match.hpsuccess || 0,
+        endlocation: match.endlocation || 0
+      })
+    );
+    
+    // Return average EPA of last 3 matches
+    return epas.reduce((sum, epa) => sum + epa, 0) / epas.length;
+  },
+}), select(['team', 'auto', 'tele', 'end', 'epa', 'epa3', 'cage', 'consistency', 'coral', 'algae', 'defense', 'breakdown', 'avgCoral', 'avgNet', 'avgProcessor']));
 
 
 
@@ -226,6 +261,8 @@ try {
     end: d => maxes.end ? d.end / maxes.end : 0,
     realEpa: d => d.epa, // Store the real EPA value before normalization
     epa: d => maxes.epa ? d.epa / maxes.epa : 0,
+    realEpa3: d => d.epa3, // Store the real Last 3 EPA value before normalization
+    epa3: d => maxes.epa3 ? d.epa3 / maxes.epa3 : 0,
     cage: d => maxes.cage ? d.cage / maxes.cage : 0,
     consistency: d => maxes.consistency ? d.consistency / maxes.consistency : 0,
     coral: d => maxes.coral ? d.coral / maxes.coral : 0,
