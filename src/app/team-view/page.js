@@ -361,6 +361,26 @@ function TeamView() {
                                 </div>
                             </div>
                         </div>
+                        <div className={styles.matchesRow}>
+                            <div className={styles.matchesContainer}>
+                                <div style={{ background: Colors[0][1] }} className={styles.matchesHeader}>Matches</div>
+                                <div className={styles.matchesList}>
+                                    {data.rows && data.rows
+                                        .filter(match => match.team == team)
+                                        .sort((a, b) => a.match - b.match)
+                                        .map((match, index) => (
+                                            <Link 
+                                                key={index} 
+                                                href={`/match-view?match=${match.match}`}
+                                                className={styles.matchLink}
+                                            >
+                                                <span style={{ background: Colors[0][0] }}>{match.match}</span>
+                                            </Link>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        </div>
                         <div className={styles.graphContainer}>
                             <h4 className={styles.graphTitle}>EPA Over Time</h4>
                             <EPALineChart data={data.epaOverTime} color={Colors[0][3]} label={"epa"}/>

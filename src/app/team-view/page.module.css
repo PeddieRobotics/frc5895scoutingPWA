@@ -74,6 +74,58 @@
     justify-content: space-evenly;
 }
 
+.matchesRow {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+.matchesContainer {
+    width: 90%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.matchesHeader {
+    padding: 5px 10px;
+    border: 1px solid black;
+    border-radius: 10px 10px 0 0;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.matchesList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid black;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background-color: #f8f8f8;
+}
+
+.matchLink span {
+    display: inline-block;
+    min-width: 40px;
+    padding: 5px 10px;
+    border: 1px solid black;
+    border-radius: 5px;
+    text-align: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.matchLink:hover span {
+    background: black !important;
+    color: yellow !important;
+    transform: scale(1.1);
+}
+
 .valueBoxes {
     display: flex;
     flex-direction: column;
