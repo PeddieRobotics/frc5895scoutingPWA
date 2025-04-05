@@ -9,10 +9,10 @@
 /* iOS-specific fixes for compact mode */
 @supports (-webkit-touch-callout: none) {
   /* Fix for the input shifting issue specific to iOS in compact mode */
-  .TextInput input,
-  input[type="text"],
-  input[type="tel"],
-  input[type="number"] {
+  .MainDiv .TextInput input,
+  .MainDiv input[type="text"],
+  .MainDiv input[type="tel"],
+  .MainDiv input[type="number"] {
     /* Add !important to override other styles */
     height: 40px !important;
     min-height: 40px !important;
@@ -25,7 +25,7 @@
   }
   
   /* Additional fix for preMatchInput in compact mode */
-  .preMatchInput {
+  .MainDiv .preMatchInput {
     /* Force stable rendering */
     -webkit-appearance: none !important;
     appearance: none !important;
@@ -33,7 +33,7 @@
   }
   
   /* Force stable positioning for input containers */
-  .TextInput {
+  .MainDiv .TextInput {
     position: relative !important;
     height: auto !important;
     margin-bottom: 0 !important;

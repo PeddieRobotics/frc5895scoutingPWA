@@ -31,7 +31,7 @@
     }
     
     /* Target specifically the pre-match inputs which have the shifting issue */
-    .preMatchInput {
+    .MainDiv .preMatchInput {
         padding: 0 10px !important;
         margin: 0 !important;
         height: 40px !important;
