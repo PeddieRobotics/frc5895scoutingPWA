@@ -59,18 +59,27 @@ function MatchView() {
           } else {
             //update url with teams
             const newParams = new URLSearchParams(searchParams);
-            newParams.set('team1', data.team1);
-            newParams.set('team2', data.team2);
-            newParams.set('team3', data.team3);
-            newParams.set('team4', data.team4);
-            newParams.set('team5', data.team5);
-            newParams.set('team6', data.team6);
+            // Swap team positions as requested: team1<->team4, team2<->team5, team3<->team6
+            newParams.set('team1', data.team4);
+            newParams.set('team2', data.team5);
+            newParams.set('team3', data.team6);
+            newParams.set('team4', data.team1);
+            newParams.set('team5', data.team2);
+            newParams.set('team6', data.team3);
             newParams.delete('match');
 
             const newUrl = `${window.location.pathname}?${newParams.toString()}`;
             window.history.replaceState(null, 'Picklist', newUrl);
             
-            setData({team1: allData[data.team1], team2: allData[data.team2], team3: allData[data.team3], team4: allData[data.team4], team5: allData[data.team5], team6: allData[data.team6]});
+            // Also swap the data assignment
+            setData({
+              team1: allData[data.team4], 
+              team2: allData[data.team5], 
+              team3: allData[data.team6], 
+              team4: allData[data.team1], 
+              team5: allData[data.team2], 
+              team6: allData[data.team3]
+            });
           }
         })
 
