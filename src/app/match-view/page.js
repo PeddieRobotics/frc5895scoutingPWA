@@ -67,6 +67,8 @@ function MatchView() {
             newParams.set('team5', data.team2);
             newParams.set('team6', data.team3);
             newParams.delete('match');
+            // Add a flag to indicate the teams were loaded from a match and swapped
+            newParams.set('from_match', 'true');
 
             const newUrl = `${window.location.pathname}?${newParams.toString()}`;
             window.history.replaceState(null, 'Picklist', newUrl);
@@ -334,14 +336,19 @@ if (searchParams.get("go") != "go") {
 
 
 function AllianceButtons({t1, t2, t3, colors}) {
+  // Check if we're viewing a match that was loaded by match number
+  const fromMatch = searchParams.get('match') !== null || searchParams.toString().includes('from_match=true');
+  
+  // Preserve original team order in the URL by getting team values from the current URL params
+  // This maintains consistency when teams were swapped due to match number lookup
   return <div className={styles.allianceBoard}>
-    <Link href={`/team-view?team=${t1.team}&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}>
+    <Link href={`/team-view?team=${t1.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
       <button style={{background: colors[0][1]}}>{t1.team}</button>
     </Link>
-    <Link href={`/team-view?team=${t2.team}&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}>
+    <Link href={`/team-view?team=${t2.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
       <button style={{background: colors[1][1]}}>{t2.team}</button>
     </Link>
-    <Link href={`/team-view?team=${t3.team}&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}>
+    <Link href={`/team-view?team=${t3.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
       <button style={{background: colors[2][1]}}>{t3.team}</button>
     </Link>
   </div>

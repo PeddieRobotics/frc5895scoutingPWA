@@ -98,13 +98,31 @@ function TeamView() {
         ["#FABFC4", "#FEA6AD", "#F29199", "#E67983"],
         ["#FFE3D3", "#EBB291", "#E19A70", "#D7814F"],
       ];
+      
       if (!hasTopBar || source === 'compare') {
         return <></>
       }
+      
+      // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
+      // when viewing a match by match number
+      const fromMatch = searchParams.get('from_match') === 'true';
+
       return <div className={styles.matchNav}>
-        <AllianceButtons t1={searchParams.get('team1')} t2={searchParams.get('team2')} t3={searchParams.get('team3')} colors={[COLORS[0], COLORS[1], COLORS[2]]}></AllianceButtons>
-        <Link href={`/match-view?team1=${searchParams.get('team1') || ""}&team2=${searchParams.get('team2') || ""}&team3=${searchParams.get('team3') || ""}&team4=${searchParams.get('team4') || ""}&team5=${searchParams.get('team5') || ""}&team6=${searchParams.get('team6') || ""}&go=go`}><button style={{background: "#ffff88", color: "black"}}>Match</button></Link>
-        <AllianceButtons t1={searchParams.get('team4')} t2={searchParams.get('team5')} t3={searchParams.get('team6')} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
+        <AllianceButtons 
+          t1={searchParams.get('team1')} 
+          t2={searchParams.get('team2')} 
+          t3={searchParams.get('team3')} 
+          colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
+        />
+        <Link href={`/match-view?team1=${searchParams.get('team1') || ""}&team2=${searchParams.get('team2') || ""}&team3=${searchParams.get('team3') || ""}&team4=${searchParams.get('team4') || ""}&team5=${searchParams.get('team5') || ""}&team6=${searchParams.get('team6') || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
+          <button style={{background: "#ffff88", color: "black"}}>Match</button>
+        </Link>
+        <AllianceButtons 
+          t1={searchParams.get('team4')} 
+          t2={searchParams.get('team5')} 
+          t3={searchParams.get('team6')} 
+          colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
+        />
       </div>
     }
 
