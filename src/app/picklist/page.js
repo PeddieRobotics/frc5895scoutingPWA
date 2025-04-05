@@ -234,13 +234,28 @@ export default function Picklist() {
     const urlAlliances = {};
     let urlTeamsToExclude = teamsToExclude;
     for (const [key, value] of urlParams.entries()) {
-      if (key.startsWith('A')) {
+      // Check for alliance team parameters in various formats
+      if (key.startsWith('A') && key.includes('T')) {
+        // Original format: A1T1 (Alliance 1, Position 1)
         const [, allianceNumber, teamPosition] = key.match(/A(\d+)T(\d+)/);
         if (!urlAlliances[allianceNumber]) {
           urlAlliances[allianceNumber] = [];
         }
         urlAlliances[allianceNumber][parseInt(teamPosition) - 1] = value;
         urlTeamsToExclude[((allianceNumber - 1) * 4) + (teamPosition-1)] = +value;
+      } else if (key.startsWith('T') && key.includes('A')) {
+        // Format: T1A1 (Alliance 1, Position 1 is team 341)
+        const matches = key.match(/T(\d+)A(\d+)/);
+        if (matches) {
+          const allianceNumber = matches[1];
+          const position = matches[2];
+          
+          if (!urlAlliances[allianceNumber]) {
+            urlAlliances[allianceNumber] = [];
+          }
+          urlAlliances[allianceNumber][parseInt(position) - 1] = value;
+          urlTeamsToExclude[((allianceNumber - 1) * 4) + (parseInt(position)-1)] = +value;
+        }
       }
     }
     setAllianceData(urlAlliances);
@@ -260,7 +275,13 @@ export default function Picklist() {
     const newWeights = Object.fromEntries(weightEntries);
     setWeights(newWeights);
 
-    const urlParams = new URLSearchParams([...weightEntries, ...Object.entries(allianceData).flatMap(([allianceNumber, teams]) => teams.map((team, index) => [`T${allianceNumber}A${index + 1}`, team]))]);
+    // Generate URL parameters in T1A1 format (Alliance 1, Position 1 is team 341)
+    const urlParams = new URLSearchParams([
+      ...weightEntries, 
+      ...Object.entries(allianceData).flatMap(([allianceNumber, teams]) => 
+        teams.map((team, index) => [`T${allianceNumber}A${index + 1}`, team])
+      )
+    ]);
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
     
     try {
@@ -306,7 +327,13 @@ export default function Picklist() {
       [allianceNumber]: allianceTeams
     }
 
-    const urlParams = new URLSearchParams([...Object.entries(weights), ...Object.entries(updateAllianceData).flatMap(([allianceNumber, teams]) => teams.map((team, index) => [`A${allianceNumber}T${index + 1}`, team]))]);
+    // Generate URL parameters in T1A1 format (Alliance 1, Position 1 is team 341)
+    const urlParams = new URLSearchParams([
+      ...Object.entries(weights), 
+      ...Object.entries(updateAllianceData).flatMap(([allianceNumber, teams]) => 
+        teams.map((team, index) => [`T${allianceNumber}A${index + 1}`, team])
+      )
+    ]);
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
   };
 
