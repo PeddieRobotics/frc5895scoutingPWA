@@ -206,3 +206,71 @@ button.recalculateIsMad {
     justify-self: left; */
 }
 
+/* Scatter Plot Styles */
+.scatterPlotContainer {
+    margin: 20px 0 40px 0;
+    width: 400px;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
+}
+
+.scatterPlotContainer h1 {
+    font-size: 30px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.teamFilterContainer {
+    margin: 0 auto 15px auto;
+    width: 90%;
+    display: flex;
+    justify-content: center;
+}
+
+.teamFilterInput {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    font-family: 'Philosopher', sans-serif;
+}
+
+.teamFilterInput::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.loadingGraph {
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #666;
+}
+
+.customTooltip {
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.tooltipTeam {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 16px;
+    color: #0146A0;
+}
+
+.commentBox {
+    height: 50px;
+    width: 200px;
+    resize: none;
+}
+
