@@ -104,6 +104,9 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
                     id={internalName}
                     name={internalName}
                     value={value}
+                    readOnly={true}
+                    onFocus={(e) => e.target.blur()}
+                    tabIndex="-1"
                     onChange={(e) => {
                         // Handle external changes to the input
                         const newValue = parseInt(e.target.value || '0', 10);

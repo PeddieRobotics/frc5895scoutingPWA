@@ -196,10 +196,17 @@ td .NumericInput {
 .NumericInput input {
     appearance: textfield;
     -moz-appearance: textfield;
+    user-select: none;
+    cursor: default;
 }
 
 .NumericInput input::-webkit-inner-spin-button,
 .NumericInput input::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+}
+
+/* Prevent text selection in inputs */
+.NumericInput input::selection {
+    background: transparent;
 }
