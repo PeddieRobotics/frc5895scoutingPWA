@@ -12,10 +12,19 @@
     padding: 0 10px;
     -webkit-appearance: none;
     appearance: none;
+    margin-top: 5px;
 }
 
 .TextInput {
     text-align: center;
     width: 165px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.TextInput label {
+    display: block;
+    margin-bottom: 2px;
 }

@@ -3,7 +3,6 @@ export default function TextInput ({ visibleName, internalName, defaultValue, ty
     return (
         <div className={styles.TextInput}>
             <label htmlFor={internalName}>{visibleName}</label>
-            <br></br>
             <input 
                 className={className || ""} 
                 type={type} 
@@ -12,7 +11,6 @@ export default function TextInput ({ visibleName, internalName, defaultValue, ty
                 defaultValue={defaultValue}
                 pattern={pattern}
             ></input>
-            <br></br>
         </div>
     )
 }
