@@ -148,9 +148,44 @@ export async function POST(request) {
   
   
   defense: d => {
+    // Get all matches for this team
+    const teamMatches = teamMatchData.filter(match => match.team === d.team);
+    
+    // Helper function to get defense played value from a row
+    const getDefensePlayed = (row) => {
+      if (!row) return null;
+      
+      const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
+      for (const field of fieldVariants) {
+        if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
+          return row[field];
+        }
+      }
+      return null;
+    };
+    
+    // Filter to only team matches with valid defensePlayed values
+    const validDefenseRatings = teamMatches.filter(row => {
+      const defenseValue = getDefensePlayed(row);
+      return defenseValue !== null;
+    });
+    
+    // If we have valid ratings, calculate the average
+    if (validDefenseRatings.length > 0) {
+      // Calculate the sum of valid ratings
+      const totalSum = validDefenseRatings.reduce((sum, row) => {
+        const defenseValue = getDefensePlayed(row);
+        return sum + defenseValue;
+      }, 0);
+      
+      // Return the raw average without scaling
+      return totalSum / validDefenseRatings.length;
+    }
+    
+    // Fall back to the original behavior if no valid ratings but without scaling
     const defensePlayed = d.defenseplayed || 0;
-    return defensePlayed > 0 ? defensePlayed * 10 : 0;  // Scale as needed (example: x10 for visibility)
-},
+    return defensePlayed > 0 ? defensePlayed : 0;
+  },
 
   // Calculate breakdown percentage (0 to 1, where 0 is best)
   breakdown: d => {
@@ -267,6 +302,7 @@ try {
     consistency: d => maxes.consistency ? d.consistency / maxes.consistency : 0,
     coral: d => maxes.coral ? d.coral / maxes.coral : 0,
     algae: d => maxes.algae ? d.algae / maxes.algae : 0,
+    realDefense: d => d.defense, // Store the raw defense value before normalization
     defense: d => maxes.defense ? d.defense / maxes.defense : 0,
     // No normalization for breakdown since lower is better
     breakdown: d => d.breakdown,

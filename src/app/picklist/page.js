@@ -320,31 +320,31 @@ export default function Picklist() {
     // BIG MUST: CHANGE THE BACKEND LOGIC FOR EACH OF THESE NEW VALUE NAMES
     return <table className={styles.weightsTable}>
       <tbody>
-        <tr>
+        <tr style={{ height: '50px' }}>
           <td><label htmlFor="epa">EPA:</label></td>
           <td><input id="epa" type="number" value={weights.epa || 0} name="epa" onChange={handleWeightChange}></input></td>
           <td><label htmlFor="epa3">3 EPA:</label></td>
           <td><input id="epa3" type="number" value={weights.epa3 || 0} name="epa3" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="auto">Auto:</label></td>
+          <td><label htmlFor="auto">Auto Pts:</label></td>
           <td><input id="auto" type="number" value={weights.auto || 0} name="auto" onChange={handleWeightChange}></input></td>
         </tr>
-        <tr>
-          <td><label htmlFor="tele">Tele:</label></td>
+        <tr style={{ height: '50px' }}>
+          <td><label htmlFor="tele">Tele Pts:</label></td>
           <td><input id="tele" type="number" value={weights.tele || 0} name="tele" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="consistency">Consistency:</label></td>
+          <td><label htmlFor="consistency">Cnstcy:</label></td>
           <td><input id="consistency" type="number" value={weights.consistency || 0} name="consistency" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="coral">Coral:</label></td>
+          <td><label htmlFor="coral">Coral Focus:</label></td>
           <td><input id="coral" type="number" value={weights.coral || 0} name="coral" onChange={handleWeightChange}></input></td>
         </tr>
-        <tr>
-          <td><label htmlFor="algae">Algae:</label></td>
+        <tr style={{ height: '50px' }}>
+          <td><label htmlFor="algae">Algae Focus:</label></td>
           <td><input id="algae" type="number" value={weights.algae || 0} name="algae" onChange={handleWeightChange}></input></td>
           <td><label htmlFor="defense">Defense:</label></td>
           <td><input id="defense" type="number" value={weights.defense || 0} name="defense" onChange={handleWeightChange}></input></td>
           <td><label htmlFor="breakdown">Break %:</label></td>
           <td><input id="breakdown" type="number" value={weights.breakdown || 0} name="breakdown" onChange={handleWeightChange}></input></td>
         </tr>
-        <tr>
+        <tr style={{ height: '50px' }}>
           <td><label htmlFor="avgCoral">Avg Coral:</label></td>
           <td><input id="avgCoral" type="number" value={weights.avgCoral || 0} name="avgCoral" onChange={handleWeightChange}></input></td>
           <td><label htmlFor="avgNet">Avg Net:</label></td>
@@ -488,12 +488,12 @@ export default function Picklist() {
             <th>Real EPA</th>
             <th>Norm 3 EPA</th>
             <th>Real 3 EPA</th>
-            <th>Auto</th>
-            <th>Tele</th>
+            <th>Auto Points</th>
+            <th>Tele Points</th>
             <th>Cnstcy</th>
-            <th>Coral</th>
-            <th>Algae</th>
-            <th>Defense</th>
+            <th>Coral Focus</th>
+            <th>Algae Focus</th>
+            <th>Avg Defense Rating</th>
             <th>Break %</th>
             <th>Avg Coral</th>
             <th>Avg Net</th>
@@ -536,7 +536,7 @@ export default function Picklist() {
                       <td style={{ backgroundColor: valueToColor(teamData.consistency) }}>{roundToThree(teamData.consistency)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.coral) }}>{roundToThree(teamData.coral)}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.algae) }}>{roundToThree(teamData.algae)}</td>
-                      <td style={{ backgroundColor: valueToColor(teamData.defense) }}>{roundToThree(teamData.defense)}</td>
+                      <td style={{ backgroundColor: valueToColor(teamData.defense) }}>{teamData.realDefense ? roundToOne(teamData.realDefense) : '0'}</td>
                       <td style={{ backgroundColor: inverseValueToColor(teamData.breakdown || 0) }}>{teamData.breakdown ? `${roundToOne(teamData.breakdown * 100)}%` : '0%'}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.avgCoral) }}>{teamData.realAvgCoral ? roundToOne(teamData.realAvgCoral) : '0'}</td>
                       <td style={{ backgroundColor: valueToColor(teamData.avgNet) }}>{teamData.realAvgNet ? roundToOne(teamData.realAvgNet) : '0'}</td>
