@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import PiecePlacement from "./components/PiecePlacement";
 import dynamic from 'next/dynamic';
 import Endgame from "./components/Endgame";
-import Qualitative from "./components/Qualitative";
+import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
 
 
@@ -523,16 +523,15 @@ function AllianceButtons({t1, t2, t3, colors}) {
       </div>
       <div className={styles.allianceGraphs}>
         <div className={styles.graphContainer}>
-          <Qualitative 
-            radarData={radarData} 
-            teamIndices={[1, 2, 3]} 
+          <DefenseBarChart 
+            allianceData={redAlliance}
             colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
             teamNumbers={[
               (data.team1 || defaultTeam).team,
               (data.team2 || defaultTeam).team,
               (data.team3 || defaultTeam).team
             ]}
-                      />
+          />
         </div>
         <div className={styles.lineGraphContainer}>
           <h2>EPA / time</h2>
@@ -540,16 +539,15 @@ function AllianceButtons({t1, t2, t3, colors}) {
           <EPALineChart data={epaData}/>
         </div>
         <div className={styles.graphContainer}>
-          <Qualitative 
-            radarData={radarData} 
-            teamIndices={[4, 5, 6]} 
-            colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]} 
+          <DefenseBarChart 
+            allianceData={blueAlliance}
+            colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
             teamNumbers={[
               (data.team4 || defaultTeam).team,
               (data.team5 || defaultTeam).team,
               (data.team6 || defaultTeam).team
             ]}
-                      />
+          />
         </div>
       </div>
       <div className={styles.matches}>
