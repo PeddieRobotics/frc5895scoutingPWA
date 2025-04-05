@@ -128,30 +128,16 @@ function TeamView() {
                   data.rows = [];
               }
               
+              // No need to recalculate last3Epa values - they are already correctly calculated in the API
+              // just log them to verify they exist
+              console.log("Last 3 EPA values from API:", {
+                epa: data.last3Epa,
+                auto: data.last3Auto, 
+                tele: data.last3Tele,
+                end: data.last3End
+              });
+              
               setData(data);
-              
-              // Process remaining data as before...
-              if (data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
-                const last3Matches = data.matches.slice(-3);
-                
-                const last3Epa = last3Matches.reduce((sum, match) => sum + match.epa, 0) / last3Matches.length;
-                const last3Auto = last3Matches.reduce((sum, match) => sum + match.auto, 0) / last3Matches.length;
-                const last3Tele = last3Matches.reduce((sum, match) => sum + match.tele, 0) / last3Matches.length;
-                const last3End = last3Matches.reduce((sum, match) => sum + match.end, 0) / last3Matches.length;
-
-                // Add the calculated metrics to the data object
-                data.last3Epa = last3Epa;
-                data.last3Auto = last3Auto;
-                data.last3Tele = last3Tele;
-                data.last3End = last3End;
-              } else {
-                // Provide default values if there are no matches
-                data.last3Epa = data.avgEpa || 0;
-                data.last3Auto = data.avgAuto || 0;
-                data.last3Tele = data.avgTele || 0;
-                data.last3End = data.avgEnd || 0;
-              }
-              
               setLoading(false);
           })
           .catch(error => {
