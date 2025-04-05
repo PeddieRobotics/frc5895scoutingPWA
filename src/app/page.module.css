@@ -13,6 +13,34 @@
     position: relative;
 }
 
+/* iOS-specific fixes for input elements */
+@supports (-webkit-touch-callout: none) {
+    /* iOS-specific overrides to prevent input field shifting */
+    .MainDiv input[type="text"],
+    .MainDiv input[type="tel"],
+    .MainDiv input[type="number"] {
+        -webkit-appearance: none;
+        appearance: none;
+        min-height: 40px; /* Ensure consistent height */
+        transform: translateZ(0); /* Force GPU rendering */
+        position: relative; /* Create stacking context */
+        font-size: 16px !important; /* Prevent zoom on input focus */
+        /* Make text appear larger visually while keeping system font size small */
+        transform-origin: center;
+        line-height: 1;
+    }
+    
+    /* Target specifically the pre-match inputs which have the shifting issue */
+    .preMatchInput {
+        padding: 0 10px !important;
+        margin: 0 !important;
+        height: 40px !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+        backface-visibility: hidden; /* Prevent possible 3D rendering glitches */
+    }
+}
+
 .MatchInfo {
     display: flex;
     flex-direction: row;

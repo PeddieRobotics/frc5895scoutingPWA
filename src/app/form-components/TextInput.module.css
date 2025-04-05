@@ -9,10 +9,42 @@
     border: 2px solid #888484;
     box-sizing: border-box;
     padding: 0 10px;
+    /* iOS-specific fixes to prevent shifting */
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 40px;
+    line-height: 1;
+    position: relative;
+    margin: 0;
+    transform: translateZ(0); /* Force GPU rendering to reduce layout shifts */
 }
 
 .TextInput {
     text-align: center;
     width: 165px;
     margin: 0 auto;
+    position: relative; /* Ensure container has position context */
+    height: auto; /* Allow height to be determined by content, but don't collapse */
+    display: block; /* Ensure block display for consistent sizing */
+}
+
+/* Fix iOS Safari zoom on focus */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    .TextInput input {
+        font-size: 16px; /* Prevent iOS zoom when focusing input fields */
+    }
+    
+    /* Use transform to visually make the text appear larger without triggering zoom */
+    .TextInput input::placeholder {
+        font-size: 16px;
+    }
+    
+    /* Apply styles to ensure visible text size appears correct */
+    .TextInput input {
+        transform: scale(1.5);
+        transform-origin: center center;
+        height: 40px;
+        /* Ensure text maintains correct appearance even with transform */
+        line-height: 24px;
+    }
 }

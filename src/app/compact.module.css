@@ -6,6 +6,40 @@
   padding-bottom: 15px !important;
 }
 
+/* iOS-specific fixes for compact mode */
+@supports (-webkit-touch-callout: none) {
+  /* Fix for the input shifting issue specific to iOS in compact mode */
+  .TextInput input,
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"] {
+    /* Add !important to override other styles */
+    height: 40px !important;
+    min-height: 40px !important;
+    position: relative !important;
+    transform: translateZ(0) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+    backface-visibility: hidden !important;
+  }
+  
+  /* Additional fix for preMatchInput in compact mode */
+  .preMatchInput {
+    /* Force stable rendering */
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    will-change: transform !important;
+  }
+  
+  /* Force stable positioning for input containers */
+  .TextInput {
+    position: relative !important;
+    height: auto !important;
+    margin-bottom: 0 !important;
+  }
+}
+
 /* Drastically reduce spacing between major form sections */
 .Auto, .Endgame, .PostMatch {
   margin-bottom: 0 !important;
