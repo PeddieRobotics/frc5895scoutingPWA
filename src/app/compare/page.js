@@ -151,6 +151,16 @@ function Compare() {
       
       {error && <div className={styles.error}>{error}</div>}
       
+      <div className={styles.linkContainer} style={{margin: "20px 0"}}>
+        {teams.map((team, index) => (
+          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
+            <button style={{backgroundColor: COLORS[index]}}>
+              View Team {team} Details
+            </button>
+          </Link>
+        ))}
+      </div>
+      
       <div className={styles.comparisonGrid}>
         <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} />
         <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} />
@@ -160,16 +170,6 @@ function Compare() {
       
       {/* Defense ratings section outside the grid to span full width */}
       <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} />
-
-      <div className={styles.linkContainer}>
-        {teams.map((team, index) => (
-          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
-            <button style={{backgroundColor: COLORS[index]}}>
-              View Team {team} Details
-            </button>
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }
