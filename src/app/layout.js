@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata = {
   manifest: '/manifest.json',
   title: 'JÖRMUNSCOUTR',
-  description: 'Peddie Robotics\' Scouting/Analysis App',
+  description: 'Peddie Robotics\' Scouting & Analysis App',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
