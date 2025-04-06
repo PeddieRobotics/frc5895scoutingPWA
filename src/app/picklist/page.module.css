@@ -47,6 +47,11 @@
     justify-content: center;
     width: 400px;
     align-items: center;
+    margin: 20px 0 40px 0;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
 }
 
 .allianceTable input {
@@ -64,7 +69,7 @@
     border: 1px solid gray;
     padding: 10px;
     border-radius: 10px;
-    margin-top: 10px;
+    margin-top: 5px;
     box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
 }
 
@@ -249,8 +254,8 @@ button.recalculateIsMad {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 18px;
     color: #666;
+    font-style: italic;
 }
 
 .customTooltip {
@@ -272,5 +277,63 @@ button.recalculateIsMad {
     height: 50px;
     width: 200px;
     resize: none;
+}
+
+/* TBA Fetch Button Styles */
+.tbaFetchContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 5px 0 10px;
+    width: 100%;
+}
+
+.eventCodeInput {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.eventCodeInput input {
+    height: 35px;
+    width: 120px;
+    border: 2px solid #0146A0;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 16px;
+    font-family: 'Philosopher', sans-serif;
+}
+
+.eventCodeInput label {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.tbaFetchButton {
+    padding: 8px 12px;
+    background: linear-gradient(100deg, #0146A0, #0066CC);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Philosopher', sans-serif;
+    box-shadow: 0px 3px 5px rgba(0,0,0,0.2);
+}
+
+.tbaFetchButton:hover {
+    background: linear-gradient(100deg, #003E8F, #0058B3);
+    transform: translateY(-2px);
+    box-shadow: 0px 5px 8px rgba(0,0,0,0.3);
+}
+
+.tbaFetchButton:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 

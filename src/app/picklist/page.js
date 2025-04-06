@@ -145,6 +145,8 @@ export default function Picklist() {
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [teamData, setTeamData] = useState([]);
+  const [eventCode, setEventCode] = useState('2025mrcmp'); // Default event code
+  const [fetchingAlliances, setFetchingAlliances] = useState(false);
 
   const weightsFormRef = useRef();
   const alliancesFormRef = useRef();
@@ -225,6 +227,11 @@ export default function Picklist() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlWeights = Object.fromEntries(urlParams);
     setWeights(urlWeights);
+
+    // Check for event code in URL
+    if (urlParams.has('eventCode')) {
+      setEventCode(urlParams.get('eventCode'));
+    }
 
     const storedRatings = localStorage.getItem('teamRatings');
     if (storedRatings) {
@@ -336,6 +343,75 @@ export default function Picklist() {
     ]);
     window.history.replaceState(null, '', `?${urlParams.toString()}`);
   };
+
+  // Fetch alliance selections from The Blue Alliance API
+  async function fetchTBAAlliances() {
+    try {
+      setFetchingAlliances(true);
+      // Create a new API route to handle the request to avoid exposing API keys
+      const response = await fetch(`/api/get-alliance-selections?eventCode=${eventCode}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('TBA API Error Response:', errorData);
+        
+        // Specific message for 404 errors which likely indicate the event doesn't have alliance data yet
+        if (response.status === 404) {
+          throw new Error(`No alliance data found for event code: ${eventCode}. This event may not have completed alliance selections yet, or the event code may be incorrect. Try using a past event code like '2023cmptx' or '2024gal'.`);
+        }
+        
+        throw new Error(`Failed to fetch alliances: ${response.status}${errorData.message ? ' - ' + errorData.message : ''}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data.alliances) {
+        throw new Error('Invalid alliance data format');
+      }
+      
+      if (!Array.isArray(data.alliances) || data.alliances.length === 0) {
+        throw new Error('No alliance data available for this event');
+      }
+      
+      // Transform the data to match our alliance data format
+      const newAllianceData = {};
+      
+      data.alliances.forEach((alliance, index) => {
+        const allianceNumber = (index + 1).toString();
+        // The API returns teams as "frc123", so we need to remove the "frc" prefix
+        const teams = alliance.picks.map(team => team.replace('frc', ''));
+        newAllianceData[allianceNumber] = teams;
+      });
+      
+      setAllianceData(newAllianceData);
+      
+      // Update teams to exclude
+      const teamsArray = new Array(24);
+      Object.entries(newAllianceData).forEach(([allianceNumber, teams]) => {
+        teams.forEach((team, index) => {
+          teamsArray[((parseInt(allianceNumber) - 1) * 3) + index] = parseInt(team);
+        });
+      });
+      
+      setTeamsToExclude(teamsArray);
+      
+      // Update URL with new alliance data
+      const urlParams = new URLSearchParams([
+        ['eventCode', eventCode], // Include the event code in the URL
+        ...Object.entries(weights),
+        ...Object.entries(newAllianceData).flatMap(([allianceNumber, teams]) => 
+          teams.map((team, index) => [`T${allianceNumber}A${index + 1}`, team])
+        )
+      ]);
+      window.history.replaceState(null, '', `?${urlParams.toString()}`);
+      
+    } catch (error) {
+      console.error('Error fetching TBA alliances:', error);
+      alert(`Error fetching alliance data: ${error.message || 'Unknown error'}\n\nPossible reasons:\n1. The Blue Alliance API key may not be set up\n2. The event might not have alliance selections yet\n3. The event code may be incorrect`);
+    } finally {
+      setFetchingAlliances(false);
+    }
+  }
 
   const Weights = () => {
     const handleWeightChange = (e) => {
@@ -660,6 +736,26 @@ export default function Picklist() {
         
         <div className={styles.alliances}>
           <h1>Alliances</h1>
+          <div className={styles.tbaFetchContainer}>
+            <div className={styles.eventCodeInput}>
+              <label htmlFor="eventCode">Event Code:</label>
+              <input 
+                id="eventCode" 
+                type="text" 
+                value={eventCode} 
+                onChange={(e) => setEventCode(e.target.value)}
+                placeholder="e.g. 2025mrcmp"
+              />
+            </div>
+            <button 
+              type="button" 
+              onClick={fetchTBAAlliances}
+              disabled={fetchingAlliances}
+              className={styles.tbaFetchButton}
+            >
+              {fetchingAlliances ? 'Fetching...' : 'TBA Fetch'}
+            </button>
+          </div>
           <div className={styles.wholeAlliance}>
             <form ref={alliancesFormRef}>
               <table className={styles.allianceTable}>
