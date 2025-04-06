@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Not Found - Team 5895 Analytics App',
+  title: 'Not Found - JÖRMUNSCOUTR',
   description: 'Page not found'
 }
 

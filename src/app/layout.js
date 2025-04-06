@@ -9,8 +9,12 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   manifest: '/manifest.json',
-  title: 'Team 5895 Analytics App',
-  description: 'For scouting and analysis of the FIRST game!',
+  title: 'JÖRMUNSCOUTR',
+  description: 'Peddie Robotics\' Scouting/Analysis App',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
 
   appleWebApp: {
     capable: true,
@@ -40,7 +44,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Teko&amp;display=swap" rel="stylesheet"></link>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/favicon.ico" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png"></link>
         <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png"></link>
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png"></link>
