@@ -68,17 +68,21 @@
   display: block;
   margin: 0 auto;
   padding: 10px 20px;
-  background: linear-gradient(100deg, rgb(181, 238, 134), rgb(236, 234, 136));
-  border: 1px solid green;
+  background: #0b233b;
+  color: #bd9748;
+  border: 2px solid #bd9748;
   border-radius: 5px;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
 }
 
 .compareButton:hover {
-  background: linear-gradient(100deg, rgb(161, 218, 114), rgb(216, 214, 116));
+  background: #bd9748;
+  color: #0b233b;
+  border-color: #0b233b;
 }
 
 /* Comparison Grid Styles */
