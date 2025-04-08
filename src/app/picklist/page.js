@@ -145,7 +145,7 @@ export default function Picklist() {
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [teamData, setTeamData] = useState([]);
-  const [eventCode, setEventCode] = useState('2025cmptx'); // Default event code
+  const [eventCode, setEventCode] = useState('2025mrcmp'); // Default event code
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
 
   const weightsFormRef = useRef();
@@ -744,7 +744,7 @@ export default function Picklist() {
                 type="text" 
                 value={eventCode} 
                 onChange={(e) => setEventCode(e.target.value)}
-                placeholder="e.g. 2025cmptx"
+                placeholder="e.g. 2025mrcmp"
               />
             </div>
             <button 
