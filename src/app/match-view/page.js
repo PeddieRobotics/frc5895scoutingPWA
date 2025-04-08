@@ -328,7 +328,7 @@ if (searchParams.get("go") != "go") {
         <span>Or by Match...</span>
         <label htmlFor="match">Match #</label>
         <input id="match" name="match" type="number"></input>
-        <button>Go!</button>
+        <button className={styles.goButton}>Go!</button>
       </form>
     </div>
   );

@@ -83,7 +83,7 @@ function TeamView() {
             ))}
           </div>
           <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
-            <button style={{background: "#ffff88", color: "black"}}>Compare</button>
+            <button className={styles.goButton}>Compare</button>
           </Link>
         </div>
       );
@@ -182,7 +182,7 @@ function TeamView() {
                     <label htmlFor="team">Team: </label>
                     <input id="team" name="team" placeholder="Team #" type="number"></input>
                     <br></br>
-                    <button>Go!</button>
+                    <button className={styles.goButton}>Go!</button>
                 </form>
             </div>
         );
