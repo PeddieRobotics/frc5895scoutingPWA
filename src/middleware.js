@@ -73,16 +73,24 @@ export async function middleware(request) {
       // If we got credentials from header but not cookie, set the cookie
       const response = NextResponse.next();
       
+      // Determine if we're in a secure environment based on the request
+      const isSecureEnvironment = !request.nextUrl.hostname.includes('localhost') && 
+                                !request.nextUrl.hostname.includes('127.0.0.1');
+      
       // Set both the complex auth cookie and a simple session cookie
       response.cookies.set('auth_credentials', basicAuth.split(' ')[1], { 
         maxAge: 2592000, // 30 days 
-        path: '/'
+        path: '/',
+        secure: isSecureEnvironment,
+        sameSite: 'lax'
       });
       
       // Also set a simple session cookie that's less prone to issues
       response.cookies.set('session', 'authenticated', { 
         maxAge: 2592000, // 30 days
-        path: '/'
+        path: '/',
+        secure: isSecureEnvironment,
+        sameSite: 'lax'
       });
       
       return response;
@@ -101,10 +109,16 @@ export async function middleware(request) {
       // Set a simpler session cookie and let the request proceed
       const response = NextResponse.next();
       
+      // Determine if we're in a secure environment based on the request
+      const isSecureEnvironment = !request.nextUrl.hostname.includes('localhost') && 
+                                !request.nextUrl.hostname.includes('127.0.0.1');
+      
       // Also set a simple session cookie that's less prone to issues
       response.cookies.set('session', 'authenticated', { 
         maxAge: 2592000, // 30 days
-        path: '/'
+        path: '/',
+        secure: isSecureEnvironment,
+        sameSite: 'lax'
       });
       
       return response;
