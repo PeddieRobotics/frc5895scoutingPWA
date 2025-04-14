@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { Pool } from 'pg';
-import bcrypt from 'bcrypt';
 
 // Create a database connection pool
 const pool = new Pool({
@@ -68,6 +67,9 @@ export async function GET(request) {
 // POST handler to add a new team
 export async function POST(request) {
   try {
+    // Dynamically import bcrypt to avoid mocks in production
+    const bcrypt = await import('bcrypt').then(mod => mod.default);
+    
     if (!(await verifyAdminAuth(request))) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },

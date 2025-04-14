@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
-import bcrypt from 'bcrypt';
 
 // Store failed attempts with timestamps for rate limiting
 const failedAttempts = new Map();
@@ -58,6 +57,9 @@ function recordFailedAttempt(identifier) {
 }
 
 export async function GET(request) {
+  // Dynamically import bcrypt to avoid mocks in production
+  const bcrypt = await import('bcrypt').then(mod => mod.default);
+  
   // Set no-cache headers
   const headers = new Headers({
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
