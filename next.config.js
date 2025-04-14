@@ -13,13 +13,22 @@ const nextConfig = {
   reactStrictMode: true,
   generateBuildId: () => 'scout-app-v1',
   webpack: (config, { isServer }) => {
-    // Use mock modules for client-side
+    // Use mock modules for client-side only, but NOT for API routes
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
         bcrypt: path.resolve(__dirname, './src/mocks/bcrypt.js'),
         pg: path.resolve(__dirname, './src/mocks/pg.js'),
       };
+      
+      // This ensures that Next.js API routes still use the real modules, not the mocks
+      config.module.rules.push({
+        test: /\.(js|jsx)$/,
+        include: [path.resolve(__dirname, 'src/app/api')],
+        use: [{
+          loader: 'null-loader'
+        }]
+      });
     }
     
     // Ignore native modules

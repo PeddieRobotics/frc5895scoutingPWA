@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 
+// Verify we're running on the server
+const isServer = typeof window === 'undefined';
+
 // Create a database connection pool with the same configuration as your other routes
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -10,6 +13,14 @@ const pool = new Pool({
 });
 
 export async function GET(request) {
+  // Return an error if somehow this is being executed on the client
+  if (!isServer) {
+    return NextResponse.json({
+      error: "This API route must run on the server",
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
+
   const info = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'unknown',
