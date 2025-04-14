@@ -59,12 +59,12 @@ export async function GET(request) {
       
       info.databaseInfo = dbResult.rows[0];
       
-      // Check if teamauthnew table exists
+      // Check if team_auth table exists
       const tableCheck = await client.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = current_schema()
-          AND table_name = 'teamauthnew'
+          AND table_name = 'team_auth'
         ) as exists
       `);
       
@@ -74,7 +74,7 @@ export async function GET(request) {
       if (info.tableExists) {
         try {
           const countResult = await client.query(
-            'SELECT COUNT(*) as count FROM teamauthnew'
+            'SELECT COUNT(*) as count FROM team_auth'
           );
           info.teamAuthTest = {
             count: countResult.rows[0].count,

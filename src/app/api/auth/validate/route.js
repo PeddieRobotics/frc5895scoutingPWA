@@ -132,7 +132,7 @@ export async function GET(request) {
     try {
       console.log(`Checking database for team: ${username}`);
       const result = await client.query(
-        'SELECT password_hash FROM teamauthnew WHERE team_name = $1',
+        'SELECT password_hash FROM team_auth WHERE team_name = $1',
         [username]
       );
       
@@ -156,7 +156,7 @@ export async function GET(request) {
       if (passwordMatches) {
         // Update last login timestamp
         await client.query(
-          'UPDATE teamauthnew SET last_login = CURRENT_TIMESTAMP WHERE team_name = $1',
+          'UPDATE team_auth SET last_login = CURRENT_TIMESTAMP WHERE team_name = $1',
           [username]
         );
         
