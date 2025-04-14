@@ -22,6 +22,8 @@ export async function middleware(request) {
     (request.nextUrl.pathname.startsWith('/api/get-') && request.method === 'GET') ||
     // Auth validation endpoint
     request.nextUrl.pathname.startsWith('/api/auth/validate') ||
+    // Debug database endpoint
+    request.nextUrl.pathname.startsWith('/api/debug-db') ||
     // Admin API endpoints - handle auth internally
     request.nextUrl.pathname.startsWith('/api/admin/') ||
     // Next.js internals
@@ -50,12 +52,6 @@ export async function middleware(request) {
       authCredentials = atob(authCookie);
     } catch (error) {
       console.error("Auth cookie error:", error);
-      // Clear invalid cookies and redirect to login
-      const response = NextResponse.redirect(new URL('/', request.url));
-      response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-      response.cookies.set('auth_validated', '', { maxAge: 0, path: '/' });
-      response.cookies.set('auth_token', '', { maxAge: 0, path: '/' });
-      return response;
     }
   }
   // If no cookie, try Basic Auth header
@@ -68,14 +64,10 @@ export async function middleware(request) {
         maxAge: 86400, // 24 hours
         path: '/' 
       });
-      
-      // Generate a unique session token instead of just 'success'
-      const sessionToken = generateSessionToken();
-      response.cookies.set('auth_token', sessionToken, { 
+      response.cookies.set('auth_validated', 'success', { 
         maxAge: 86400, // 24 hours
         path: '/' 
       });
-      
       return response;
     } catch (error) {
       console.error("Auth decoding error:", error);
@@ -87,27 +79,90 @@ export async function middleware(request) {
     const [user, pwd] = authCredentials.split(':');
     
     if (user && pwd) {
-      // Check for validation status - now using auth_token instead of auth_validated
-      const authToken = request.cookies.get('auth_token')?.value;
+      // Check for validation status
+      const validationStatus = request.cookies.get('auth_validated')?.value;
       
-      // If no token exists or it's expired, we need to validate
-      if (!authToken) {
-        console.log("Middleware: No auth token found, validating credentials");
-        return validateAndRespond(request, user, pwd);
+      // If validation has failed previously, clear cookies and redirect to home
+      if (validationStatus === 'failed') {
+        console.log("Middleware: Found failed validation cookie, redirecting to login");
+        // Clear auth cookies to force a new login and redirect to home
+        const response = NextResponse.redirect(new URL('/', request.url));
+        response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
+        response.cookies.set('auth_validated', '', { maxAge: 0, path: '/' });
+        return response;
       }
       
-      // For API write operations, always validate
-      const isWriteOperation = 
+      // Increase validation frequency for protected pages
+      const shouldValidate = 
+        // Always validate for sensitive operations or data fetching
         request.nextUrl.pathname.startsWith('/api/add-') || 
         request.nextUrl.pathname.startsWith('/api/delete-') ||
-        request.method !== 'GET';
-        
-      if (isWriteOperation) {
-        console.log(`Middleware: Validating credentials for write operation: ${request.nextUrl.pathname}`);
-        return validateAndRespond(request, user, pwd);
+        // Always validate on any API request that could access data
+        request.nextUrl.pathname.startsWith('/api/get-') || 
+        // For regular page loads, validate much less frequently (5% chance)
+        // to prevent overwhelming the validation endpoint
+        (!request.nextUrl.pathname.startsWith('/api/') && Math.random() < 0.05);
+      
+      if (shouldValidate) {
+        console.log(`Middleware: Validating credentials for ${request.nextUrl.pathname}`);
+        try {
+          // Add timestamp and random string to prevent caching
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2);
+          const validateUrl = new URL(`/api/auth/validate?_t=${timestamp}&_r=${random}`, request.url);
+          const validateResponse = await fetch(validateUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${btoa(`${user}:${pwd}`)}`,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'X-Random': random
+            }
+          });
+          
+          // If validation fails, clear cookies and redirect
+          if (!validateResponse.ok) {
+            console.log("Middleware: Validation request failed");
+            // Clear auth cookies to force a new login and redirect to home
+            const response = NextResponse.redirect(new URL('/', request.url));
+            response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
+            response.cookies.set('auth_validated', 'failed', { maxAge: 30, path: '/' });
+            return response;
+          }
+          
+          // Parse the response JSON
+          const responseData = await validateResponse.json();
+          
+          if (!responseData.authenticated) {
+            console.log("Middleware: Authentication rejected by server");
+            // Clear auth cookies to force a new login and redirect to home
+            const response = NextResponse.redirect(new URL('/', request.url));
+            response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
+            response.cookies.set('auth_validated', 'failed', { maxAge: 30, path: '/' });
+            return response;
+          }
+          
+          // If validation succeeds, update the validation cookie
+          console.log("Middleware: Authentication succeeded");
+          const response = NextResponse.next();
+          // Set both cookies with same expiration
+          response.cookies.set('auth_credentials', btoa(`${user}:${pwd}`), { 
+            maxAge: 86400, // 24 hours
+            path: '/' 
+          });
+          response.cookies.set('auth_validated', 'success', { 
+            maxAge: 86400, // 24 hours
+            path: '/' 
+          });
+          return response;
+        } catch (error) {
+          console.error("Middleware: Auth validation error:", error);
+          // If there's an error with validation, continue but don't update cookies
+          return NextResponse.next();
+        }
       }
       
-      // For normal page navigation, trust the token and proceed
+      // For regular page navigation where we don't need to validate, proceed
       return NextResponse.next();
     }
   }
@@ -153,78 +208,4 @@ export async function middleware(request) {
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', request.nextUrl.pathname);
   return NextResponse.redirect(url);
-}
-
-// Helper function to validate credentials and return appropriate response
-async function validateAndRespond(request, user, pwd) {
-  try {
-    // Add timestamp and random string to prevent caching
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2);
-    const validateUrl = new URL(`/api/auth/validate?_t=${timestamp}&_r=${random}`, request.url);
-    const validateResponse = await fetch(validateUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${btoa(`${user}:${pwd}`)}`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'X-Random': random
-      }
-    });
-    
-    // If validation fails, clear cookies and redirect
-    if (!validateResponse.ok) {
-      console.log("Middleware: Validation request failed");
-      // Clear auth cookies to force a new login and redirect to home
-      const response = NextResponse.redirect(new URL('/', request.url));
-      response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-      response.cookies.set('auth_token', '', { maxAge: 0, path: '/' });
-      return response;
-    }
-    
-    // Parse the response JSON
-    const responseData = await validateResponse.json();
-    
-    if (!responseData.authenticated) {
-      console.log("Middleware: Authentication rejected by server");
-      // Clear auth cookies to force a new login and redirect to home
-      const response = NextResponse.redirect(new URL('/', request.url));
-      response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-      response.cookies.set('auth_token', '', { maxAge: 0, path: '/' });
-      return response;
-    }
-    
-    // If validation succeeds, update the validation cookie
-    console.log("Middleware: Authentication succeeded");
-    const response = NextResponse.next();
-    
-    // Update credentials cookie
-    response.cookies.set('auth_credentials', btoa(`${user}:${pwd}`), { 
-      maxAge: 86400, // 24 hours
-      path: '/' 
-    });
-    
-    // Generate a unique session token
-    const sessionToken = generateSessionToken();
-    response.cookies.set('auth_token', sessionToken, { 
-      maxAge: 86400, // 24 hours
-      path: '/' 
-    });
-    
-    return response;
-  } catch (error) {
-    console.error("Middleware: Auth validation error:", error);
-    // If there's an error with validation, clear cookies and redirect
-    const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-    response.cookies.set('auth_token', '', { maxAge: 0, path: '/' });
-    return response;
-  }
-}
-
-// Generate a unique session token
-function generateSessionToken() {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 10);
-  return `${timestamp}-${randomPart}`;
 } 

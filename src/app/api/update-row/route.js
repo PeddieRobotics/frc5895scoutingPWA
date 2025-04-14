@@ -56,7 +56,7 @@ export async function POST(request) {
   const processedData = processDataForSave(data);
   
   // Check if user is allowed to edit this row
-  const row = await sql`SELECT * FROM cmptx2025 WHERE id = ${id};`;
+  const row = await sql`SELECT * FROM mrcmp2025 WHERE id = ${id};`;
   
   if (row.rows.length === 0) {
     return NextResponse.json({error: "Row not found"}, {status: 404});
@@ -106,7 +106,7 @@ export async function POST(request) {
     return NextResponse.json({error: "No valid fields to update"}, {status: 400});
   }
   
-  const query = `UPDATE cmptx2025 SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+  const query = `UPDATE mrcmp2025 SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
   values.push(id);
   
   try {
