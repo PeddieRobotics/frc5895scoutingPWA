@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
+import { Pool } from 'pg';
+import bcrypt from 'bcrypt';
 
 // Store failed attempts with timestamps for rate limiting
 const failedAttempts = new Map();
 const MAX_ATTEMPTS = 10; // Max failed attempts per IP in a 15-minute window
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+// Create a database connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
+});
 
 // Helper to get IP-based identifier for rate limiting
 function getClientIdentifier(request) {
@@ -48,6 +58,14 @@ function recordFailedAttempt(identifier) {
 }
 
 export async function GET(request) {
+  // Set no-cache headers
+  const headers = new Headers({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
+  });
+
   // Get client identifier for rate limiting
   const clientId = getClientIdentifier(request);
   
@@ -56,7 +74,13 @@ export async function GET(request) {
     return NextResponse.json({ 
       authenticated: false,
       message: 'Too many failed attempts. Please try again later.'
-    }, { status: 429 });
+    }, { 
+      status: 429,
+      headers: {
+        ...Object.fromEntries(headers.entries()),
+        'Retry-After': '60'
+      }
+    });
   }
   
   // Get the Authorization header
@@ -67,7 +91,10 @@ export async function GET(request) {
     return NextResponse.json({ 
       authenticated: false,
       message: 'Authentication required'
-    }, { status: 401 });
+    }, { 
+      status: 401,
+      headers
+    });
   }
   
   try {
@@ -76,39 +103,87 @@ export async function GET(request) {
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(':');
     
+    console.log(`Validation request for team: ${username} with params: ${request.nextUrl.search}`);
+    
     // Basic validation
     if (!username || !password) {
       recordFailedAttempt(clientId);
+      console.error(`Invalid credential format: username=${!!username}, password=${!!password}`);
       return NextResponse.json({ 
         authenticated: false,
         message: 'Invalid credentials format'
-      }, { status: 401 });
-    }
-    
-    // Check credentials against environment variables
-    if (
-      username === process.env.BASIC_AUTH_USERNAME && 
-      password === process.env.BASIC_AUTH_PASSWORD
-    ) {
-      return NextResponse.json({ 
-        authenticated: true,
-        message: 'Authentication successful'
+      }, { 
+        status: 401,
+        headers
       });
     }
-    
-    // Failed authentication
-    recordFailedAttempt(clientId);
-    return NextResponse.json({ 
-      authenticated: false,
-      message: 'Invalid credentials'
-    }, { status: 401 });
-    
+
+    // Always check team authentication from database - no caching
+    const client = await pool.connect();
+    try {
+      console.log(`Checking database for team: ${username}`);
+      const result = await client.query(
+        'SELECT password_hash FROM team_auth WHERE team_name = $1',
+        [username]
+      );
+      
+      if (result.rowCount === 0) {
+        // Team not found
+        console.log(`Team not found: ${username}`);
+        recordFailedAttempt(clientId);
+        return NextResponse.json({ 
+          authenticated: false,
+          message: 'Invalid credentials'
+        }, { 
+          status: 401,
+          headers
+        });
+      }
+      
+      // Check password using bcrypt
+      const { password_hash } = result.rows[0];
+      const passwordMatches = await bcrypt.compare(password, password_hash);
+      
+      if (passwordMatches) {
+        // Update last login timestamp
+        await client.query(
+          'UPDATE team_auth SET last_login = CURRENT_TIMESTAMP WHERE team_name = $1',
+          [username]
+        );
+        
+        console.log(`Successful authentication for team: ${username}`);
+        
+        return NextResponse.json({ 
+          authenticated: true,
+          message: 'Authentication successful',
+          scoutTeam: username
+        }, { 
+          headers
+        });
+      } else {
+        // Password incorrect
+        console.log(`Password mismatch for team: ${username}`);
+        recordFailedAttempt(clientId);
+        return NextResponse.json({ 
+          authenticated: false,
+          message: 'Invalid credentials'
+        }, { 
+          status: 401,
+          headers
+        });
+      }
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error("Auth error:", error);
     recordFailedAttempt(clientId);
     return NextResponse.json({ 
       authenticated: false,
       message: 'Authentication error'
-    }, { status: 400 });
+    }, { 
+      status: 400,
+      headers
+    });
   }
 } 

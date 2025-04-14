@@ -6,7 +6,7 @@ export async function POST(request) {
   const res = await request.json();
   const { id, password } = res;
 
-  if (password !== process.env.SUDO_PASSWORD) {
+  if (password !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json({error: "Invalid password"}, {status: 401});
   }
   if (!_.isInteger(id)) {

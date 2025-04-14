@@ -6,7 +6,40 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development'
 });
 
-module.exports = withPWA({
+const path = require('path');
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   generateBuildId: () => 'scout-app-v1',
-});
+  webpack: (config, { isServer }) => {
+    // Use mock modules for client-side
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        bcrypt: path.resolve(__dirname, './src/mocks/bcrypt.js'),
+        pg: path.resolve(__dirname, './src/mocks/pg.js'),
+      };
+    }
+    
+    // Ignore native modules
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      // Add these fallbacks to handle Node.js native module imports
+      net: false,
+      tls: false,
+      dns: false,
+      fs: false,
+      path: false,
+      os: false,
+      crypto: false,
+      stream: false,
+      child_process: false,
+      'pg-native': false
+    };
+    
+    return config;
+  }
+};
+
+module.exports = withPWA(nextConfig);
