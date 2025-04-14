@@ -44,7 +44,7 @@ export async function GET(request) {
     try {
       const result = await client.query(`
         SELECT id, team_name, created_at, last_login
-        FROM team_auth
+        FROM teamauthnew
         ORDER BY team_name ASC
       `);
       
@@ -98,7 +98,7 @@ export async function POST(request) {
     try {
       // Check if team already exists
       const checkResult = await client.query(
-        'SELECT id FROM team_auth WHERE team_name = $1',
+        'SELECT id FROM teamauthnew WHERE team_name = $1',
         [teamName]
       );
       
@@ -115,7 +115,7 @@ export async function POST(request) {
       
       // Insert the new team
       await client.query(
-        'INSERT INTO team_auth (team_name, password_hash) VALUES ($1, $2)',
+        'INSERT INTO teamauthnew (team_name, password_hash) VALUES ($1, $2)',
         [teamName, passwordHash]
       );
       
@@ -158,7 +158,7 @@ export async function DELETE(request) {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        'DELETE FROM team_auth WHERE team_name = $1 RETURNING id',
+        'DELETE FROM teamauthnew WHERE team_name = $1 RETURNING id',
         [teamName]
       );
       

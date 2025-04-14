@@ -70,7 +70,7 @@ CREATE TABLE mrcmp2025 (
 );
 
 -- Authentication table for team logins
-CREATE TABLE team_auth (
+CREATE TABLE teamauthnew (
    id serial PRIMARY KEY,
    team_name VARCHAR(255) UNIQUE NOT NULL,
    password_hash VARCHAR(255) NOT NULL,
