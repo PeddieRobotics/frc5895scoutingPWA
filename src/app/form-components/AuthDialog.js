@@ -113,10 +113,12 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
         }
         
         // Also store in a cookie for middleware to access with longer expiration (30 days)
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const secureAttribute = isProduction ? '; Secure' : '';
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
         
-        // Set success validation
-        document.cookie = 'auth_validated=success; path=/; max-age=60';
+        // Set a simple session cookie that is less prone to issues
+        document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
         
         console.log("Login successful, calling onLogin handler");
         onLogin(credentials, data.scoutTeam);
@@ -171,8 +173,9 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
     sessionStorage.removeItem('auth_credentials');
     
     // Clear cookies
-    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
-    document.cookie = 'auth_validated=failed; path=/; max-age=30; SameSite=Strict';
+    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'session=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'auth_validated=; path=/; max-age=0; SameSite=Lax';
   };
 
   const handleCancel = () => {

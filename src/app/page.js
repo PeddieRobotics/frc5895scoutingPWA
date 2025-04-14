@@ -126,12 +126,16 @@ export default function Home() {
       
       if (response.ok && data.authenticated === true) {
         // Set cookie to avoid repeated validation
-        document.cookie = 'auth_validated=success; path=/; max-age=60';
+        const isProduction = process.env.NODE_ENV === 'production';
+        const secureAttribute = isProduction ? '; Secure' : '';
+        document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+        console.log("Successfully validated credentials in client-side");
         return true;
       }
       
       // Mark as failed validation
-      document.cookie = 'auth_validated=failed; path=/; max-age=30; SameSite=Strict';
+      document.cookie = 'auth_validated=failed; path=/; max-age=30; SameSite=Lax';
+      console.log("Failed to validate credentials in client-side");
       return false;
     } catch (error) {
       console.error("Error validating credentials:", error);
@@ -163,10 +167,12 @@ export default function Home() {
   const clearAuthCookies = () => {
     // Clear sessionStorage
     sessionStorage.removeItem('auth_credentials');
+    console.log("Clearing auth cookies in client-side");
     
     // Clear cookies
-    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
-    document.cookie = 'auth_validated=failed; path=/; max-age=30; SameSite=Strict';
+    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'session=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'auth_validated=; path=/; max-age=0; SameSite=Lax';
   };
 
   // Set up polling to periodically check if credentials are still valid
@@ -390,7 +396,11 @@ export default function Home() {
             setAuthCredentials(credentials);
             
             // Ensure cookie is set with a long expiration (30 days)
-            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
+            const isProduction = process.env.NODE_ENV === 'production';
+            const secureAttribute = isProduction ? '; Secure' : '';
+            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+            document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+            console.log("Setting auth_credentials cookie in client-side");
           } else {
             // If validation failed, clear credentials
             clearAuthCookies();
@@ -770,11 +780,12 @@ export default function Home() {
         if (response.status === 401) {
           // Authentication failed, clear credentials and show auth dialog
           sessionStorage.removeItem('auth_credentials');
-          document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
+          document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
           setAuthCredentials(null);
           setShowSubmitDialog(false);
           setShowAuthDialog(true);
           setAuthError("Your session has expired. Please log in again.");
+          console.log("Clearing auth cookies after auth failure in data submission");
           throw new Error("Authentication failed");
         }
         

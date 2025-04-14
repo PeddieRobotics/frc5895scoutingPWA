@@ -9,7 +9,7 @@ npm install
 Next, set up the database on Vercel with test data.
 ```sql
 
-CREATE TABLE mrcmp2025 (
+CREATE TABLE cmptx2025 (
    ID serial PRIMARY KEY,
    ScoutName VARCHAR (255),
    ScoutTeam INT,
@@ -78,7 +78,7 @@ CREATE TABLE team_auth (
    last_login TIMESTAMP WITH TIME ZONE
 );
 
-INSERT INTO mrcmp2025 (
+INSERT INTO cmptx2025 (
    ScoutName, ScoutTeam, Team, Match, MatchType, Breakdown, NoShow, Leave,
    AutoL1Success, AutoL1Fail, AutoL2Success, AutoL2Fail, AutoL3Success, AutoL3Fail, AutoL4Success, AutoL4Fail,
    AutoAlgaeRemoved, AutoProcessorSuccess, AutoProcessorFail, AutoNetSuccess, AutoNetFail,

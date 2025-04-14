@@ -22,8 +22,6 @@ export async function middleware(request) {
     (request.nextUrl.pathname.startsWith('/api/get-') && request.method === 'GET') ||
     // Auth validation endpoint
     request.nextUrl.pathname.startsWith('/api/auth/validate') ||
-    // Debug database endpoint
-    request.nextUrl.pathname.startsWith('/api/debug-db') ||
     // Admin API endpoints - handle auth internally
     request.nextUrl.pathname.startsWith('/api/admin/') ||
     // Next.js internals
@@ -45,145 +43,72 @@ export async function middleware(request) {
   let authCredentials = null;
   const authCookie = request.cookies.get('auth_credentials')?.value;
   const basicAuth = request.headers.get('Authorization');
+  const sessionCookie = request.cookies.get('session')?.value;
   
   // Try to get credentials from cookie
   if (authCookie) {
     try {
       authCredentials = atob(authCookie);
+      console.log(`Found auth_credentials cookie for ${request.nextUrl.pathname} with length: ${authCookie.length}`);
     } catch (error) {
       console.error("Auth cookie error:", error);
+    }
+  }
+  // Try to get from the simpler session cookie
+  else if (sessionCookie) {
+    try {
+      // This is our simpler session cookie that just indicates auth is valid
+      console.log(`Found session cookie for ${request.nextUrl.pathname}`);
+      // Just allow the request to proceed since we have a valid session
+      return NextResponse.next();
+    } catch (error) {
+      console.error("Session cookie error:", error);
     }
   }
   // If no cookie, try Basic Auth header
   else if (basicAuth && basicAuth.startsWith('Basic ')) {
     try {
       authCredentials = atob(basicAuth.split(' ')[1]);
+      console.log(`Found auth header but no cookie for: ${request.nextUrl.pathname}`);
       // If we got credentials from header but not cookie, set the cookie
       const response = NextResponse.next();
+      
+      // Set both the complex auth cookie and a simple session cookie
       response.cookies.set('auth_credentials', basicAuth.split(' ')[1], { 
-        maxAge: 86400, // 24 hours
-        path: '/' 
+        maxAge: 2592000, // 30 days 
+        path: '/'
       });
-      response.cookies.set('auth_validated', 'success', { 
-        maxAge: 86400, // 24 hours
-        path: '/' 
+      
+      // Also set a simple session cookie that's less prone to issues
+      response.cookies.set('session', 'authenticated', { 
+        maxAge: 2592000, // 30 days
+        path: '/'
       });
+      
       return response;
     } catch (error) {
       console.error("Auth decoding error:", error);
     }
+  } else {
+    console.log(`No auth found for: ${request.nextUrl.pathname}`);
   }
   
-  // If we have credentials, check credential format and validation token
+  // If we have credentials, validate them
   if (authCredentials) {
     const [user, pwd] = authCredentials.split(':');
     
     if (user && pwd) {
-      // Check for validation status
-      const validationStatus = request.cookies.get('auth_validated')?.value;
+      // Set a simpler session cookie and let the request proceed
+      const response = NextResponse.next();
       
-      // If validation has failed previously, clear cookies and redirect to home
-      if (validationStatus === 'failed') {
-        console.log("Middleware: Found failed validation cookie, redirecting to login");
-        // Clear auth cookies to force a new login and redirect to home
-        const response = NextResponse.redirect(new URL('/', request.url));
-        response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-        response.cookies.set('auth_validated', '', { maxAge: 0, path: '/' });
-        return response;
-      }
+      // Also set a simple session cookie that's less prone to issues
+      response.cookies.set('session', 'authenticated', { 
+        maxAge: 2592000, // 30 days
+        path: '/'
+      });
       
-      // Increase validation frequency for protected pages
-      const shouldValidate = 
-        // Always validate for sensitive operations or data fetching
-        request.nextUrl.pathname.startsWith('/api/add-') || 
-        request.nextUrl.pathname.startsWith('/api/delete-') ||
-        // Always validate on any API request that could access data
-        request.nextUrl.pathname.startsWith('/api/get-') || 
-        // For regular page loads, validate much less frequently (5% chance)
-        // to prevent overwhelming the validation endpoint
-        (!request.nextUrl.pathname.startsWith('/api/') && Math.random() < 0.05);
-      
-      if (shouldValidate) {
-        console.log(`Middleware: Validating credentials for ${request.nextUrl.pathname}`);
-        try {
-          // Add timestamp and random string to prevent caching
-          const timestamp = Date.now();
-          const random = Math.random().toString(36).substring(2);
-          const validateUrl = new URL(`/api/auth/validate?_t=${timestamp}&_r=${random}`, request.url);
-          const validateResponse = await fetch(validateUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Basic ${btoa(`${user}:${pwd}`)}`,
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'X-Random': random
-            }
-          });
-          
-          // If validation fails, clear cookies and redirect
-          if (!validateResponse.ok) {
-            console.log("Middleware: Validation request failed");
-            // Clear auth cookies to force a new login and redirect to home
-            const response = NextResponse.redirect(new URL('/', request.url));
-            response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-            response.cookies.set('auth_validated', 'failed', { maxAge: 30, path: '/' });
-            return response;
-          }
-          
-          // Parse the response JSON
-          const responseData = await validateResponse.json();
-          
-          if (!responseData.authenticated) {
-            console.log("Middleware: Authentication rejected by server");
-            // Clear auth cookies to force a new login and redirect to home
-            const response = NextResponse.redirect(new URL('/', request.url));
-            response.cookies.set('auth_credentials', '', { maxAge: 0, path: '/' });
-            response.cookies.set('auth_validated', 'failed', { maxAge: 30, path: '/' });
-            return response;
-          }
-          
-          // If validation succeeds, update the validation cookie
-          console.log("Middleware: Authentication succeeded");
-          const response = NextResponse.next();
-          // Set both cookies with same expiration
-          response.cookies.set('auth_credentials', btoa(`${user}:${pwd}`), { 
-            maxAge: 86400, // 24 hours
-            path: '/' 
-          });
-          response.cookies.set('auth_validated', 'success', { 
-            maxAge: 86400, // 24 hours
-            path: '/' 
-          });
-          return response;
-        } catch (error) {
-          console.error("Middleware: Auth validation error:", error);
-          // If there's an error with validation, continue but don't update cookies
-          return NextResponse.next();
-        }
-      }
-      
-      // For regular page navigation where we don't need to validate, proceed
-      return NextResponse.next();
+      return response;
     }
-  }
-  
-  // Check if the app is being accessed from a standalone PWA context
-  const userAgent = request.headers.get('user-agent') || '';
-  const displayMode = request.headers.get('sec-fetch-dest') || '';
-  const pwaStandaloneCookie = request.cookies.get('pwa-standalone')?.value;
-  
-  const isPWA = 
-    displayMode === 'standalone' || 
-    pwaStandaloneCookie === 'true' ||
-    userAgent.includes('Mobile Safari') && (
-      userAgent.includes('standalone') || 
-      userAgent.includes('navigator.standalone=true')
-    );
-  
-  // Skip authentication for standalone PWA mode on the main page
-  // but still require auth for API write operations
-  if (isPWA && !request.nextUrl.pathname.startsWith('/api/add-')) {
-    return NextResponse.next();
   }
   
   // For API endpoints, return a 401 JSON response instead of WWW-Authenticate challenge

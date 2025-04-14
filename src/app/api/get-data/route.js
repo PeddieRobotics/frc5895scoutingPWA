@@ -34,7 +34,7 @@ export async function GET(request) {
     // If all data was requested and admin password was provided, fetch everything
     if (allData && isAdmin) {
         console.log("Admin access granted - fetching all data");
-        const data = await sql`SELECT * FROM mrcmp2025;`;
+        const data = await sql`SELECT * FROM cmptx2025;`;
         console.log(`Returning all ${data.rows.length} rows as admin`);
         return NextResponse.json({ 
             rows: data.rows, 
@@ -54,7 +54,7 @@ export async function GET(request) {
     if (userTeam) {
         // Check if the team exists in the database
         console.log(`Checking if team ${userTeam} exists in the database`);
-        const teamCheck = await sql`SELECT DISTINCT scoutteam FROM mrcmp2025 WHERE scoutteam = ${userTeam};`;
+        const teamCheck = await sql`SELECT DISTINCT scoutteam FROM cmptx2025 WHERE scoutteam = ${userTeam};`;
         
         if (teamCheck.rows.length === 0) {
             console.log(`Team ${userTeam} not found in database`);
@@ -75,7 +75,7 @@ export async function GET(request) {
         
         // Filter data by the scoutteam field
         console.log(`Filtering data for team ${userTeam}`);
-        const data = await sql`SELECT * FROM mrcmp2025 WHERE scoutteam = ${userTeam};`;
+        const data = await sql`SELECT * FROM cmptx2025 WHERE scoutteam = ${userTeam};`;
         console.log(`Found ${data.rows.length} rows for team ${userTeam}`);
         return NextResponse.json({ 
             rows: data.rows, 

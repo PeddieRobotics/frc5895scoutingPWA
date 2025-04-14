@@ -6,12 +6,12 @@ export const revalidate = 300; // Cache for 5 minutes
 
 export async function GET() {
   try {
-    const { rows } = await sql`SELECT * FROM mrcmp2025;`;
+    const { rows } = await sql`SELECT * FROM cmptx2025;`;
     let responseObject = {};
 
 
     // fetch team name from blue alliance api, commented our for now while testing getting from the backend
-    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mrcmp/teams`, {
+    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025cmptx/teams`, {
       headers: {
         "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
         "Accept": "application/json"
