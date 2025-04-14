@@ -9,7 +9,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
-  } : false
+  } : false,
+  // Add schema specification
+  schema: 'public'
+});
+
+// Add connection error logging
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
 });
 
 export async function GET(request) {
@@ -29,7 +36,14 @@ export async function GET(request) {
     tables: [],
     connectionString: process.env.DATABASE_URL ? 
       `${process.env.DATABASE_URL.split('@')[0].split(':')[0]}:****@${process.env.DATABASE_URL.split('@')[1]}` 
-      : 'not available'
+      : 'not available',
+    pgPoolConfig: {
+      ssl: process.env.NODE_ENV === 'production' ? 'configured with rejectUnauthorized:false' : 'disabled',
+      max: pool.options.max,
+      idleTimeoutMillis: pool.options.idleTimeoutMillis,
+      schema: pool.options.schema || 'default'
+    },
+    teamAuthTest: null
   };
   
   try {
@@ -55,6 +69,24 @@ export async function GET(request) {
       `);
       
       info.tableExists = tableCheck.rows[0].exists;
+      
+      // If table exists, try to get row count
+      if (info.tableExists) {
+        try {
+          const countResult = await client.query(
+            'SELECT COUNT(*) as count FROM team_auth'
+          );
+          info.teamAuthTest = {
+            count: countResult.rows[0].count,
+            status: 'success'
+          };
+        } catch (tableError) {
+          info.teamAuthTest = {
+            error: tableError.message,
+            status: 'error'
+          };
+        }
+      }
       
       // List all tables in current schema
       const tablesResult = await client.query(`

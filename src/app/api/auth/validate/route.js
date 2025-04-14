@@ -6,12 +6,19 @@ const failedAttempts = new Map();
 const MAX_ATTEMPTS = 10; // Max failed attempts per IP in a 15-minute window
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
-// Create a database connection pool
+// Create a database connection pool with more explicit configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
-  } : false
+  } : false,
+  // Add explicit configuration to ensure we connect to the right schema
+  schema: 'public'
+});
+
+// Add connection error logging
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
 });
 
 // Helper to get IP-based identifier for rate limiting

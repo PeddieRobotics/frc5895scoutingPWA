@@ -68,6 +68,16 @@ CREATE TABLE mrcmp2025 (
    BreakdownComments VARCHAR (255),
    DefenseComments VARCHAR (255)
 );
+
+-- Authentication table for team logins
+CREATE TABLE team_auth (
+   id serial PRIMARY KEY,
+   team_name VARCHAR(255) UNIQUE NOT NULL,
+   password_hash VARCHAR(255) NOT NULL,
+   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+   last_login TIMESTAMP WITH TIME ZONE
+);
+
 INSERT INTO mrcmp2025 (
    ScoutName, ScoutTeam, Team, Match, MatchType, Breakdown, NoShow, Leave,
    AutoL1Success, AutoL1Fail, AutoL2Success, AutoL2Fail, AutoL3Success, AutoL3Fail, AutoL4Success, AutoL4Fail,
@@ -91,4 +101,3 @@ VALUES
    TRUE, FALSE, TRUE, TRUE, FALSE, FALSE,
    'Performed well in auto but struggled with teleop.', NULL, 'Played strong defense.'
 );
-```
