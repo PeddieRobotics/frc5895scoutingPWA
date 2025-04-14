@@ -22,6 +22,8 @@ export async function middleware(request) {
     (request.nextUrl.pathname.startsWith('/api/get-') && request.method === 'GET') ||
     // Auth validation endpoint
     request.nextUrl.pathname.startsWith('/api/auth/validate') ||
+    // Debug database endpoint
+    request.nextUrl.pathname.startsWith('/api/debug-db') ||
     // Admin API endpoints - handle auth internally
     request.nextUrl.pathname.startsWith('/api/admin/') ||
     // Next.js internals
