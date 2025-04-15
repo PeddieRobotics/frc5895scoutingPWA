@@ -7,7 +7,8 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/favicon.ico',
-  '/manifest.json'
+  '/manifest.json',
+  '/ios-auth.js'
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -20,6 +21,10 @@ const PUBLIC_PATH_PREFIXES = [
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  
+  if (pathname.startsWith('/ios-auth.js')) {
+    return NextResponse.next();
+  }
   
   // Allow public paths without auth
   if (PUBLIC_PATHS.includes(pathname) || 
@@ -40,35 +45,75 @@ export async function middleware(request) {
   const urlParams = new URL(request.url).searchParams;
   const iosAuthFromUrl = urlParams.get('ios_auth');
   
-  console.log(`Auth Debug - Path: ${pathname}, iOS: ${isIOS}, URL param: ${iosAuthFromUrl ? 'present' : 'absent'}, Cookie: ${iOSAuth?.value ? 'present' : 'absent'}, Auth: ${authCredentials?.value ? 'present' : 'absent'}`);
-
+  if (isIOS && iosAuthFromUrl && !authCredentials?.value) {
+    console.log('Found iOS auth from URL parameter');
+    authCredentials = { value: iosAuthFromUrl };
+  }
+  
   // Try authorization header for API
   const authorization = request.headers.get('authorization');
   if (!authCredentials?.value && authorization?.startsWith('Basic ')) {
     authCredentials = { value: authorization.substring('Basic '.length) };
   }
-
-  // AUTHORIZATION CHECK (middleware never sets cookies)
+  
+  // AUTHORIZATION CHECK
   if (authCredentials?.value || adminAuth?.value || iOSAuth?.value) {
-    return NextResponse.next();
+    // Auth found! Create response with enhanced cookie persistence
+    const response = NextResponse.next();
+    
+    // Get the credential value from whichever source had it
+    const credValue = authCredentials?.value || iOSAuth?.value;
+    
+    if (credValue) {
+      if (isIOS) {
+        console.log('iOS device detected, applying special cookie settings');
+        
+        // Special iOS cookie settings
+        response.cookies.set('ios_auth', credValue, {
+          // No expiry - session only for iOS
+          path: '/',
+          // No httpOnly to allow JS access
+          secure: false,
+          // No sameSite specification
+        });
+        
+        // Add special header that will be detected by client script
+        response.headers.set('X-Auth-Transfer', 'enabled');
+        
+        // Also set the normal cookie without restrictive flags
+        response.cookies.set('auth_credentials', credValue, {
+          path: '/',
+        });
+      } else {
+        // Standard settings for non-iOS browsers
+        response.cookies.set('auth_credentials', credValue, {
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          path: '/',
+          httpOnly: true
+        });
+      }
+    }
+    
+    if (adminAuth?.value) {
+      response.cookies.set('admin_auth', adminAuth.value, {
+        maxAge: isIOS ? undefined : 30 * 24 * 60 * 60,
+        path: '/',
+        httpOnly: !isIOS
+      });
+    }
+    
+    return response;
   }
-
+  
   // Dev mode override
   if (process.env.NODE_ENV !== 'production' && 
       request.headers.get('x-override-auth') === 'true') {
     return NextResponse.next();
   }
-
+  
   // No auth found - redirect to login
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', pathname);
-  
-  // Preserve iOS auth parameter if present
-  if (isIOS && iosAuthFromUrl) {
-    url.searchParams.set('ios_auth', iosAuthFromUrl);
-    console.log(`Preserving iOS auth during redirect to: ${url.toString()}`);
-  }
-  
   return NextResponse.redirect(url);
 } 
