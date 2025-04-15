@@ -12,20 +12,28 @@ const pool = new Pool({
 
 // Verify admin authentication
 async function verifyAdminAuth(request) {
-  const cookieStore = cookies();
-  const adminAuth = cookieStore.get('admin_auth')?.value;
-  
-  if (!adminAuth) {
-    return false;
-  }
-  
   try {
-    const credentials = atob(adminAuth);
-    const [username, password] = credentials.split(':');
+    const cookieStore = await cookies();
+    
+    if (!cookieStore.has('admin_auth')) {
+      return false;
+    }
+    
+    const adminAuthCookie = cookieStore.get('admin_auth');
+    if (!adminAuthCookie) return false;
+    
+    const adminAuth = adminAuthCookie.value;
+    
+    // First try to decode URI component (for %3D etc.)
+    const decodedValue = decodeURIComponent(adminAuth);
+    
+    // Use Buffer for Node.js environments instead of atob
+    const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
+    const [username, password] = decoded.split(':');
     
     return username === 'admin' && password === process.env.ADMIN_PASSWORD;
   } catch (e) {
-    console.error('Admin auth verification error:', e);
+    console.error('Admin auth verification error:', e.message || e);
     return false;
   }
 }
@@ -33,7 +41,7 @@ async function verifyAdminAuth(request) {
 // GET handler to list all teams
 export async function GET(request) {
   try {
-    if (!(await verifyAdminAuth(request))) {
+    if (!await verifyAdminAuth(request)) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -70,7 +78,7 @@ export async function POST(request) {
     // Dynamically import bcrypt to avoid mocks in production
     const bcrypt = await import('bcrypt').then(mod => mod.default);
     
-    if (!(await verifyAdminAuth(request))) {
+    if (!await verifyAdminAuth(request)) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -138,7 +146,7 @@ export async function POST(request) {
 // DELETE handler to remove a team
 export async function DELETE(request) {
   try {
-    if (!(await verifyAdminAuth(request))) {
+    if (!await verifyAdminAuth(request)) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }

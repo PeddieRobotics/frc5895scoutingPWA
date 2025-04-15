@@ -44,32 +44,110 @@ export default function AdminPage() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [newTeam, setNewTeam] = useState({ teamName: '', password: '' });
   const [formError, setFormError] = useState('');
+  const [newTeam, setNewTeam] = useState({ teamName: '', password: '' });
+  const [cookieDebug, setCookieDebug] = useState('');
+  const [showDebugUI, setShowDebugUI] = useState(false);
   const router = useRouter();
 
-  // Check if user is already authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/validate', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          setAuthenticated(true);
-          fetchTeams();
-        }
-      } catch (err) {
-        console.error('Auth validation error:', err);
+  // Define fetchTeams function before it's used in checkAuth
+  const fetchTeams = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/teams');
+      if (response.ok) {
+        const data = await response.json();
+        setTeams(data.teams);
+      } else {
+        setError('Failed to fetch teams');
       }
-    };
+    } catch (err) {
+      setError('Network error loading teams');
+      console.error('Fetch teams error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Define checkAuth function outside useEffects so it can be used in multiple places
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/admin/validate', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        setAuthenticated(true);
+        // Only fetch teams after setting authenticated to true
+        fetchTeams();
+      }
+    } catch (err) {
+      console.error('Auth validation error:', err);
+    }
+  };
+
+  // Function to dump cookie information to console
+  const dumpCookiesToConsole = () => {
+    const allCookies = document.cookie;
     
+    // Get all cookie names
+    const cookieNames = allCookies.split(';')
+      .map(cookie => cookie.trim().split('=')[0]);
+    
+    console.group('🍪 Cookie Debug Dump');
+    console.log('All cookies:', allCookies);
+    
+    if (cookieNames.length > 0) {
+      console.table(cookieNames.map(name => {
+        // Try to get cookie value
+        const match = new RegExp(`${name}=([^;]+)`).exec(allCookies);
+        const value = match ? match[1] : '';
+        
+        // Try to decode if possible
+        let decodedValue = '';
+        try {
+          if (value && (name === 'admin_auth' || name === 'auth_credentials')) {
+            decodedValue = Buffer.from(decodeURIComponent(value), 'base64').toString('utf-8');
+          }
+        } catch (e) {
+          decodedValue = 'Error decoding';
+        }
+        
+        return {
+          name,
+          value: value ? `${value.slice(0, 20)}${value.length > 20 ? '...' : ''}` : '(empty)',
+          decoded: decodedValue || '(not applicable)',
+          domain: document.location.hostname
+        };
+      }));
+    } else {
+      console.log('No cookies found!');
+    }
+    
+    console.groupEnd();
+    
+    return allCookies;
+  };
+
+  // Combined useEffect for initialization
+  useEffect(() => {
+    // Check cookies and local storage for debugging
+    const allCookies = document.cookie;
+    setCookieDebug(allCookies);
+    
+    // Log cookies to console
+    console.log('Cookie Debug [init]:', allCookies);
+    dumpCookiesToConsole();
+    
+    // Regular authentication check
     checkAuth();
+    
+    // No need for checkAuth in the dependency array as it would cause an infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAdminAuth = async (e) => {
@@ -99,24 +177,6 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
       setAdminPassword('');
-    }
-  };
-
-  const fetchTeams = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/teams');
-      if (response.ok) {
-        const data = await response.json();
-        setTeams(data.teams);
-      } else {
-        setError('Failed to fetch teams');
-      }
-    } catch (err) {
-      setError('Network error loading teams');
-      console.error('Fetch teams error:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -192,14 +252,157 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    fetch('/api/admin/logout', { method: 'POST' })
-      .then(() => {
-        setAuthenticated(false);
-        router.push('/');
-      })
-      .catch(err => {
-        console.error('Logout error:', err);
+    console.log("Starting logout process - cookies before deletion:", document.cookie);
+    setCookieDebug("Before logout: " + document.cookie);
+    console.log("Cookie Debug [before logout]:", document.cookie);
+
+    // Start with the most complete possible browser-side cookie deletion
+    function deleteCookie(name) {
+      // Get domain parts for hierarchical deletion
+      const domain = window.location.hostname;
+      const domains = [];
+      
+      // Add domain and all parent domains
+      const parts = domain.split('.');
+      for (let i = 0; i < parts.length - 1; i++) {
+        domains.push(parts.slice(i).join('.'));
+      }
+      
+      // Also try with no domain
+      domains.push('');
+      
+      // Get path for hierarchical deletion
+      const path = window.location.pathname;
+      const paths = ['/'];
+      
+      // Add current path and all parent paths
+      let currentPath = '';
+      const pathParts = path.split('/').filter(Boolean);
+      for (let i = 0; i < pathParts.length; i++) {
+        currentPath += '/' + pathParts[i];
+        paths.push(currentPath);
+        paths.push(currentPath + '/');
+      }
+      
+      // Also try with empty path
+      paths.push('');
+      
+      // Try all combinations of domains, paths and cookie settings
+      domains.forEach(d => {
+        const domainStr = d ? `domain=${d}; ` : '';
+        
+        paths.forEach(p => {
+          const pathStr = p ? `path=${p}; ` : '';
+          
+          // Basic deletion
+          document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+          
+          // With Secure flag
+          document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; secure;`;
+          
+          // With different SameSite values
+          ['strict', 'lax', 'none'].forEach(sameSite => {
+            if (sameSite === 'none') {
+              // SameSite=None requires Secure
+              document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; secure; samesite=${sameSite};`;
+            } else {
+              document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; samesite=${sameSite};`;
+              document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; secure; samesite=${sameSite};`;
+            }
+          });
+        });
       });
+    }
+    
+    // Delete the cookies
+    deleteCookie('admin_auth');
+    deleteCookie('auth_credentials');
+    
+    // Check if cookies were deleted
+    setTimeout(() => {
+      console.log("After client-side cookie deletion:", document.cookie);
+      setCookieDebug("After client deletion: " + document.cookie);
+      console.log("Cookie Debug [after client deletion]:", document.cookie);
+    }, 100);
+
+    // Generate a unique logout ID
+    const logoutId = Date.now().toString();
+    
+    // Call the server-side logout API
+    fetch('/api/admin/logout', { 
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
+    .then(response => {
+      console.log("Logout API response status:", response.status);
+      if (!response.ok) {
+        console.error('Logout API returned error:', response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log("Logout API response:", data);
+      setTimeout(() => {
+        setCookieDebug("After server logout: " + document.cookie);
+        console.log("Cookie Debug [after server logout]:", document.cookie);
+      }, 100);
+      
+      // Also call team auth logout endpoint
+      return fetch('/api/auth/validate', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    })
+    .then(response => {
+      console.log("Auth validate DELETE response status:", response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Auth validate DELETE response:", data);
+      setTimeout(() => {
+        console.log("Final cookies before redirect:", document.cookie);
+        setCookieDebug("Final: " + document.cookie);
+        console.log("Cookie Debug [final]:", document.cookie);
+  
+        // Last resort - attempt to use the browser's clear site data feature
+        try {
+          if ('cookieStore' in window) {
+            // Use modern Cookie Store API if available
+            window.cookieStore.getAll().then(cookies => {
+              cookies.forEach(cookie => {
+                window.cookieStore.delete(cookie.name);
+              });
+            });
+          }
+        } catch (e) {
+          console.error("Error using cookieStore:", e);
+        }
+        
+        // Force a complete page reload to clear any in-memory auth state
+        setAuthenticated(false);
+        
+        // Use a timeout to give time for the UI to update
+        setTimeout(() => {
+          // Add special parameter for middleware to detect this logout
+          window.location.href = `/?nocache=${logoutId}&logout=${logoutId}`;
+        }, 300);
+      }, 300);
+    })
+    .catch(err => {
+      console.error('Logout error:', err);
+      // Force redirect anyway with logout parameter
+      window.location.href = `/?nocache=${Date.now()}&logout=${Date.now()}`;
+    });
   };
 
   if (!authenticated) {
@@ -250,13 +453,47 @@ export default function AdminPage() {
     <div className={styles.adminContainer}>
       <div className={styles.adminHeader}>
         <h1 className={styles.adminTitle}>Team Authentication Management</h1>
-        <button 
-          onClick={handleLogout}
-          className={styles.logoutButton}
-        >
-          <LogoutIcon /> Logout
-        </button>
+        <div>
+          <button 
+            onClick={dumpCookiesToConsole}
+            className={styles.debugButton || styles.refreshButton}
+            title="Dump cookies to console"
+            style={{ marginRight: '10px' }}
+          >
+            Console Log
+          </button>
+          <button 
+            onClick={() => setShowDebugUI(!showDebugUI)}
+            className={styles.debugButton || styles.refreshButton}
+            title="Toggle debug info"
+            style={{ marginRight: '10px' }}
+          >
+            {showDebugUI ? 'Hide Debug' : 'Show Debug'}
+          </button>
+          <button 
+            onClick={handleLogout}
+            className={styles.logoutButton}
+          >
+            <LogoutIcon /> Logout
+          </button>
+        </div>
       </div>
+      
+      {cookieDebug && showDebugUI && (
+        <div className={styles.debugInfo}>
+          <h3>Cookie Debug Info</h3>
+          <pre>{cookieDebug || 'No cookies found'}</pre>
+          <button 
+            onClick={() => {
+              const allCookies = dumpCookiesToConsole();
+              setCookieDebug(allCookies);
+            }}
+            className={styles.refreshButton}
+          >
+            Refresh Cookie Info
+          </button>
+        </div>
+      )}
       
       <div className={styles.adminContent}>
         <div className={styles.card}>

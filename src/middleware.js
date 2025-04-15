@@ -1,148 +1,331 @@
 import { NextResponse } from 'next/server';
+import { Pool } from 'pg';
 
-// Instead of using database directly in middleware, 
-// we'll delegate full authentication to the API routes
+// Create a database connection pool for verifying credentials
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
+});
+
+// Add a way to track logout state using URL parameter
+const logoutTimestamps = new Map();
+const LOGOUT_EXPIRY_TIME = 30 * 60 * 1000; // 30 minutes
+
 export async function middleware(request) {
-  // Allow public access to landing page
+  // Check for explicit logout parameter in URL
+  if (request.nextUrl.searchParams.has('logout')) {
+    const logoutId = request.nextUrl.searchParams.get('logout');
+    if (logoutId) {
+      // Store timestamp of logout 
+      logoutTimestamps.set(logoutId, Date.now());
+      console.log(`Registered logout session: ${logoutId}`);
+      
+      // Redirect to home without the logout parameter
+      const cleanUrl = new URL('/', request.url);
+      return NextResponse.redirect(cleanUrl);
+    }
+  }
+  
+  // Check if request has a logout session that's still valid
+  const cookies = request.cookies.getAll();
+  const cookieHeader = request.headers.get('cookie');
+  const hasLogoutParam = request.nextUrl.searchParams.has('nocache');
+  
+  if (hasLogoutParam) {
+    const nocacheValue = request.nextUrl.searchParams.get('nocache');
+    const isRecentLogout = logoutTimestamps.has(nocacheValue) && 
+                          (Date.now() - logoutTimestamps.get(nocacheValue) < LOGOUT_EXPIRY_TIME);
+                          
+    if (isRecentLogout) {
+      console.log(`Recent logout detected (${nocacheValue}), forcing redirect to home`);
+      // Redirect to home without the nocache parameter
+      const cleanUrl = new URL('/', request.url);
+      return NextResponse.redirect(cleanUrl);
+    }
+  }
+
+  // ALWAYS ALLOW ACCESS TO THESE RESOURCES
   if (
+    // Entry points and public pages
     request.nextUrl.pathname === '/' || 
-    request.nextUrl.pathname === ''
-  ) {
-    return NextResponse.next();
-  }
-  
-  // Allow access to admin page - it handles auth internally
-  if (request.nextUrl.pathname === '/admin') {
-    return NextResponse.next();
-  }
-  
-  // Skip auth check for PWA resources, static files, and API endpoints that don't write data
-  if (
-    // Public API routes (read-only)
-    (request.nextUrl.pathname.startsWith('/api/get-') && request.method === 'GET') ||
-    // Auth validation endpoint
-    request.nextUrl.pathname.startsWith('/api/auth/validate') ||
-    // Admin API endpoints - handle auth internally
-    request.nextUrl.pathname.startsWith('/api/admin/') ||
-    // Next.js internals
+    request.nextUrl.pathname === '' ||
+    request.nextUrl.pathname === '/admin' ||
+    
+    // Static assets and internals
     request.nextUrl.pathname.startsWith('/_next/') ||
-    // Favicons and manifest
     request.nextUrl.pathname === '/favicon.ico' ||
     request.nextUrl.pathname === '/manifest.json' ||
-    // Icons
     request.nextUrl.pathname.startsWith('/icons/') ||
     request.nextUrl.pathname.startsWith('/apple-touch-icon') ||
-    // Service worker files
     request.nextUrl.pathname === '/sw.js' ||
-    request.nextUrl.pathname.startsWith('/workbox-')
+    request.nextUrl.pathname.startsWith('/workbox-') ||
+    
+    // API endpoints - authentication handled internally
+    request.nextUrl.pathname.startsWith('/api/')
   ) {
     return NextResponse.next();
   }
+
+  console.log(`Middleware checking auth for: ${request.nextUrl.pathname}`);
   
-  // Check for authentication credentials in cookies or headers
-  let authCredentials = null;
-  const authCookie = request.cookies.get('auth_credentials')?.value;
-  const basicAuth = request.headers.get('Authorization');
-  const sessionCookie = request.cookies.get('session')?.value;
+  // For all other routes, check for auth cookie in multiple ways
+  let authCredentials = request.cookies.get('auth_credentials');
+  let adminAuth = request.cookies.get('admin_auth');
   
-  // Try to get credentials from cookie
-  if (authCookie) {
-    try {
-      authCredentials = atob(authCookie);
-      console.log(`Found auth_credentials cookie for ${request.nextUrl.pathname} with length: ${authCookie.length}`);
-    } catch (error) {
-      console.error("Auth cookie error:", error);
-    }
-  }
-  // Try to get from the simpler session cookie
-  else if (sessionCookie) {
-    try {
-      // This is our simpler session cookie that just indicates auth is valid
-      console.log(`Found session cookie for ${request.nextUrl.pathname}`);
-      // Just allow the request to proceed since we have a valid session
-      return NextResponse.next();
-    } catch (error) {
-      console.error("Session cookie error:", error);
-    }
-  }
-  // If no cookie, try Basic Auth header
-  else if (basicAuth && basicAuth.startsWith('Basic ')) {
-    try {
-      authCredentials = atob(basicAuth.split(' ')[1]);
-      console.log(`Found auth header but no cookie for: ${request.nextUrl.pathname}`);
-      // If we got credentials from header but not cookie, set the cookie
-      const response = NextResponse.next();
-      
-      // Determine if we're in a secure environment based on the request
-      const isSecureEnvironment = !request.nextUrl.hostname.includes('localhost') && 
-                                !request.nextUrl.hostname.includes('127.0.0.1');
-      
-      // Set both the complex auth cookie and a simple session cookie
-      response.cookies.set('auth_credentials', basicAuth.split(' ')[1], { 
-        maxAge: 2592000, // 30 days 
-        path: '/',
-        secure: isSecureEnvironment,
-        sameSite: 'lax'
-      });
-      
-      // Also set a simple session cookie that's less prone to issues
-      response.cookies.set('session', 'authenticated', { 
-        maxAge: 2592000, // 30 days
-        path: '/',
-        secure: isSecureEnvironment,
-        sameSite: 'lax'
-      });
-      
-      return response;
-    } catch (error) {
-      console.error("Auth decoding error:", error);
-    }
-  } else {
-    console.log(`No auth found for: ${request.nextUrl.pathname}`);
-  }
+  // Debug cookie information
+  console.log(`Auth cookie from request.cookies: ${authCredentials ? 'EXISTS' : 'MISSING'}`);
+  console.log(`Admin auth cookie from request.cookies: ${adminAuth ? 'EXISTS' : 'MISSING'}`);
   
-  // If we have credentials, validate them
-  if (authCredentials) {
-    const [user, pwd] = authCredentials.split(':');
+  // Try to get from local storage via header
+  if (!authCredentials?.value) {
+    // Try to manually parse cookie header as a fallback
+    const cookieHeader = request.headers.get('cookie');
+    console.log(`Raw cookie header: ${cookieHeader ? `present (${cookieHeader.length} bytes)` : 'missing'}`);
     
-    if (user && pwd) {
-      // Set a simpler session cookie and let the request proceed
-      const response = NextResponse.next();
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      console.log(`Parsed ${cookies.length} cookies from header: ${cookies.join(', ')}`);
       
-      // Determine if we're in a secure environment based on the request
-      const isSecureEnvironment = !request.nextUrl.hostname.includes('localhost') && 
-                                !request.nextUrl.hostname.includes('127.0.0.1');
+      const authCookie = cookies.find(c => c.startsWith('auth_credentials='));
+      if (authCookie) {
+        const value = authCookie.substring('auth_credentials='.length);
+        console.log(`Found auth_credentials in raw cookie header: ${value ? 'has value' : 'empty'}`);
+        authCredentials = { value };
+      }
+
+      // Also look for admin_auth cookie
+      const adminCookie = cookies.find(c => c.startsWith('admin_auth='));
+      if (adminCookie) {
+        const value = adminCookie.substring('admin_auth='.length);
+        console.log(`Found admin_auth in raw cookie header: ${value ? 'has value' : 'empty'}`);
+        adminAuth = { value };
+      }
+    }
+    
+    // List all cookies for debugging
+    const allCookies = request.cookies.getAll();
+    console.log(`All cookies from request.cookies (${allCookies.length}): ${allCookies.map(c => c.name).join(', ')}`);
+  }
+  
+  // Also check headers directly
+  const authorization = request.headers.get('authorization');
+  if (!authCredentials?.value && authorization?.startsWith('Basic ')) {
+    console.log('Found auth in Authorization header');
+    const value = authorization.substring('Basic '.length);
+    authCredentials = { value };
+  }
+  
+  // Check for nocache parameter - indicates a recent logout
+  if (request.nextUrl.searchParams.has('nocache')) {
+    console.log('Detected nocache parameter - recent logout');
+    console.log('Overriding authentication due to recent logout');
+    
+    // Force a redirect to home page
+    const url = new URL('/', request.url);
+    return NextResponse.redirect(url);
+  }
+  
+  // Pre-declare our auth validation variables
+  let adminAuthValid = false;
+  let authValid = false;
+
+  // Validate auth_credentials against database if present
+  if (authCredentials?.value) {
+    try {
+      const decoded = Buffer.from(authCredentials.value, 'base64').toString('utf-8');
+      console.log(`Auth credentials decoded: ${decoded.includes(':') ? 'VALID FORMAT' : 'INVALID FORMAT'}`);
       
-      // Also set a simple session cookie that's less prone to issues
-      response.cookies.set('session', 'authenticated', { 
-        maxAge: 2592000, // 30 days
-        path: '/',
-        secure: isSecureEnvironment,
-        sameSite: 'lax'
-      });
-      
-      return response;
+      // Only proceed if we have a valid format
+      if (decoded.includes(':')) {
+        const [teamName, _] = decoded.split(':');
+        
+        // STRICTLY verify that team exists in the database - NO FALLBACKS
+        let client = null;
+        try {
+          client = await pool.connect();
+          const result = await client.query(
+            'SELECT team_name FROM team_auth WHERE team_name = $1',
+            [teamName]
+          );
+          
+          authValid = result.rowCount > 0;
+          console.log(`Team ${teamName} database validation: ${authValid ? 'EXISTS' : 'NOT FOUND'}`);
+          
+          // If team not found, FORCE LOGOUT IMMEDIATELY
+          if (!authValid) {
+            console.log(`Team ${teamName} not found in database - FORCING IMMEDIATE LOGOUT`);
+            
+            // Generate a unique logout ID for tracking
+            const forceLogoutId = Date.now().toString();
+            logoutTimestamps.set(forceLogoutId, Date.now());
+            
+            // Build response with deleted cookies
+            const response = NextResponse.redirect(new URL('/', request.url));
+            
+            // Add URL parameters to signal logout
+            response.cookies.delete('auth_credentials', { path: '/' });
+            response.cookies.delete('admin_auth', { path: '/' });
+            
+            // Also try with various combinations for maximum compatibility
+            ['lax', 'strict'].forEach(sameSite => {
+              response.cookies.set('auth_credentials', '', { 
+                maxAge: 0,
+                path: '/',
+                expires: new Date(0),
+                sameSite
+              });
+              
+              response.cookies.set('admin_auth', '', { 
+                maxAge: 0,
+                path: '/',
+                expires: new Date(0),
+                sameSite
+              });
+            });
+            
+            // For cross-site contexts
+            response.cookies.set('auth_credentials', '', { 
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0),
+              sameSite: 'none',
+              secure: true
+            });
+            
+            response.cookies.set('admin_auth', '', { 
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0),
+              sameSite: 'none',
+              secure: true
+            });
+            
+            // Add nocache param to prevent browser caching
+            const redirectUrl = new URL('/', request.url);
+            redirectUrl.searchParams.set('nocache', forceLogoutId);
+            redirectUrl.searchParams.set('logout', forceLogoutId);
+            redirectUrl.searchParams.set('reason', 'deleted');
+            
+            response.headers.set('Location', redirectUrl.toString());
+            
+            if (client) client.release();
+            return response;
+          }
+        } catch (dbError) {
+          console.error('Database validation error:', dbError.message || dbError);
+          // NEVER fall back to format validation on database errors
+          // Better to deny access than risk security breach
+          authValid = false;
+          console.log('DB validation error, DENYING ACCESS');
+        } finally {
+          if (client) client.release();
+        }
+      }
+    } catch (e) {
+      console.error('Auth credentials validation error:', e);
     }
   }
   
-  // For API endpoints, return a 401 JSON response instead of WWW-Authenticate challenge
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 }
-    );
+  // Also validate admin_auth more thoroughly
+  if (adminAuth?.value) {
+    try {
+      // URL decode first (important for handling %3D etc.)
+      const decodedValue = decodeURIComponent(adminAuth.value);
+      
+      // Use Buffer instead of atob for server components
+      const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
+      console.log(`Admin auth decoded, checking format and credentials`);
+      
+      const [username, password] = decoded.split(':');
+      
+      if (username && password) {
+        console.log(`Admin auth has valid format, username: ${username}`);
+        // STRICT validation against environment variable
+        if (username === 'admin' && password === process.env.ADMIN_PASSWORD) {
+          adminAuthValid = true;
+          console.log(`Admin auth validation: VALID`);
+        } else {
+          adminAuthValid = false;
+          console.log(`Admin auth validation: INVALID - Forcing immediate logout`);
+          
+          // Generate a unique logout ID to track
+          const forceLogoutId = Date.now().toString();
+          logoutTimestamps.set(forceLogoutId, Date.now());
+          
+          // Build response with aggressive cookie deletion
+          const response = NextResponse.redirect(new URL('/', request.url));
+          
+          // Delete all auth cookies with multiple approaches
+          response.cookies.delete('auth_credentials', { path: '/' });
+          response.cookies.delete('admin_auth', { path: '/' });
+          
+          // Also try with various combinations
+          ['lax', 'strict'].forEach(sameSite => {
+            response.cookies.set('auth_credentials', '', { 
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0),
+              sameSite
+            });
+            
+            response.cookies.set('admin_auth', '', { 
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0),
+              sameSite
+            });
+          });
+          
+          // For cross-site contexts
+          response.cookies.set('auth_credentials', '', { 
+            maxAge: 0,
+            path: '/',
+            expires: new Date(0),
+            sameSite: 'none',
+            secure: true
+          });
+          
+          response.cookies.set('admin_auth', '', { 
+            maxAge: 0,
+            path: '/',
+            expires: new Date(0),
+            sameSite: 'none',
+            secure: true
+          });
+          
+          // Add URL parameters to trigger proper logout handling
+          const redirectUrl = new URL('/', request.url);
+          redirectUrl.searchParams.set('nocache', forceLogoutId);
+          redirectUrl.searchParams.set('logout', forceLogoutId);
+          redirectUrl.searchParams.set('reason', 'invalid');
+          
+          response.headers.set('Location', redirectUrl.toString());
+          return response;
+        }
+      } else {
+        console.log(`Admin auth validation failed: Invalid format`);
+      }
+    } catch (e) {
+      console.error('Admin auth validation error:', e.message || e);
+    }
   }
   
-  // Prevent redirect loops by checking the referer
-  const referer = request.headers.get('referer') || '';
-  const isFromHomepage = referer.includes('/?authRequired=true');
-  
-  if (isFromHomepage && request.nextUrl.pathname !== '/') {
-    // User is already trying to authenticate, don't redirect again
+  if (authValid || adminAuthValid) {
+    // Allow access if either auth credential is valid
+    console.log("Auth found, allowing access");
     return NextResponse.next();
   }
   
-  // For other pages, redirect to the main page with an auth query parameter
+  // Add a hook for testing in development mode
+  if (process.env.NODE_ENV !== 'production' && request.headers.get('x-override-auth') === 'true') {
+    console.log("Dev auth override header found, allowing access");
+    return NextResponse.next();
+  }
+  
+  // If auth_credentials cookie doesn't exist, redirect to homepage
+  console.log("Auth not found, redirecting to homepage");
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', request.nextUrl.pathname);

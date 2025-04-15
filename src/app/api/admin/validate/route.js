@@ -4,7 +4,8 @@ import { cookies } from 'next/headers';
 export async function GET(request) {
   try {
     // Get admin auth cookie
-    const adminAuth = cookies().get('admin_auth')?.value;
+    const cookieStore = await cookies();
+    const adminAuth = cookieStore.get('admin_auth')?.value;
     
     if (!adminAuth) {
       return NextResponse.json(
@@ -15,8 +16,9 @@ export async function GET(request) {
     
     try {
       // Decode and check credentials
-      const credentials = atob(adminAuth);
-      const [username, password] = credentials.split(':');
+      const decodedValue = decodeURIComponent(adminAuth);
+      const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
+      const [username, password] = decoded.split(':');
       
       if (username === 'admin' && password === process.env.ADMIN_PASSWORD) {
         return NextResponse.json({ authenticated: true });

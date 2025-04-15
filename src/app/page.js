@@ -98,6 +98,8 @@ export default function Home() {
   // Add a function to validate credentials
   const validateCredentials = async (credentials) => {
     try {
+      console.log("Validating credentials...");
+      
       // Add random number to further prevent any caching
       const timestamp = new Date().getTime();
       const random = Math.random().toString(36).substring(2);
@@ -125,16 +127,36 @@ export default function Home() {
       console.log(`Auth validation result: status=${response.status}, authenticated=${data.authenticated}`);
       
       if (response.ok && data.authenticated === true) {
-        // Set cookie to avoid repeated validation
-        const isProduction = process.env.NODE_ENV === 'production';
-        const secureAttribute = isProduction ? '; Secure' : '';
-        document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+        // Set cookies to avoid repeated validation
+        console.log("Authentication successful, setting auth data");
+        
+        // Store in sessionStorage (reliable in-browser storage)
+        sessionStorage.setItem('auth_credentials', credentials);
+        
+        // Set cookies with different SameSite attributes for maximum compatibility
+        setAuthCookies(credentials);
+        
+        // Also try to ensure server-side cookies are set
+        try {
+          console.log("Ensuring server-side cookies are set");
+          await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            body: JSON.stringify({ setCookie: true }),
+            credentials: 'same-origin'
+          });
+        } catch (e) {
+          console.log("Server cookie setting failed, using client-side cookies");
+        }
+        
         console.log("Successfully validated credentials in client-side");
         return true;
       }
       
       // Mark as failed validation
-      document.cookie = 'auth_validated=failed; path=/; max-age=30; SameSite=Lax';
       console.log("Failed to validate credentials in client-side");
       return false;
     } catch (error) {
@@ -143,36 +165,71 @@ export default function Home() {
     }
   };
 
-  // Function to handle authentication failure
-  const handleAuthFailure = () => {
-    console.log("Authentication failed, logging out user");
+  // Helper function to set auth cookies with multiple approaches
+  const setAuthCookies = (credentials) => {
+    if (!credentials) return;
     
-    // Clear auth cookies and state
-    clearAuthCookies();
-    setAuthCredentials(null);
+    console.log("Setting auth cookies with multiple approaches");
     
-    // Show a notification to the user
-    toast.error('Your session has expired. Please log in again.');
+    // Store in localStorage for direct access
+    localStorage.setItem('auth_credentials', credentials);
     
-    // If not on the homepage, redirect there
-    if (window.location.pathname !== '/') {
-      window.location.href = '/';
-    } else {
-      // If already on homepage, show the auth dialog
-      setShowAuthDialog(true);
+    // Store in sessionStorage for session persistence
+    sessionStorage.setItem('auth_credentials', credentials);
+    
+    // Set as normal cookie with path=/
+    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
+    
+    // Set as SameSite=Lax cookie (best for cross-page navigation and localhost)
+    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
+    
+    // Set as SameSite=None+Secure cookie (needed for production HTTPS)
+    try {
+      if (window.location.protocol === 'https:') {
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+      }
+    } catch (e) {
+      console.error('Error setting secure cookie:', e);
     }
+    
+    // Dispatch a custom event to notify other pages that auth has been updated
+    try {
+      window.dispatchEvent(new CustomEvent('auth_updated', {
+        detail: { timestamp: Date.now() }
+      }));
+    } catch (e) {
+      console.error('Error dispatching auth event:', e);
+    }
+    
+    console.log("Auth cookies set with multiple approaches for maximum compatibility");
   };
 
   // Helper function to clear auth cookies
   const clearAuthCookies = () => {
-    // Clear sessionStorage
+    // Clear all storage
+    localStorage.removeItem('auth_credentials');
     sessionStorage.removeItem('auth_credentials');
-    console.log("Clearing auth cookies in client-side");
+    console.log("Clearing auth cookies and storage");
     
-    // Clear cookies
-    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'session=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'auth_validated=; path=/; max-age=0; SameSite=Lax';
+    // Clear cookies with all possible attributes
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+    document.cookie = `auth_credentials=; path=/; max-age=0`;
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
+    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure`;
+    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=None; Secure`;
+    
+    console.log("All auth cookies and storage cleared");
+    
+    // Also try to clear via server
+    try {
+      fetch('/api/auth/validate', {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+    } catch (e) {
+      console.log("Server cookie clearing failed");
+    }
   };
 
   // Set up polling to periodically check if credentials are still valid
@@ -185,6 +242,21 @@ export default function Home() {
     let visibilityChangeAttached = false;
     let lastSuccessfulValidation = Date.now(); // Track last successful validation
     
+    // Listen for auth update events from other tabs/pages
+    const handleAuthUpdated = (event) => {
+      console.log("Auth updated event received, refreshing cookies");
+      // Get current credentials from storage
+      const currentCreds = sessionStorage.getItem('auth_credentials') || 
+                         localStorage.getItem('auth_credentials');
+      if (currentCreds) {
+        // Re-apply cookie settings to ensure consistency
+        setAuthCookies(currentCreds);
+      }
+    };
+    
+    // Add auth updated event listener
+    window.addEventListener('auth_updated', handleAuthUpdated);
+    
     // Function to check credentials and log out if invalid
     const checkCredentials = async (force = false) => {
       if (!isPollingActive) return; // Skip if component was unmounted
@@ -195,9 +267,10 @@ export default function Home() {
         return;
       }
       
-      // Skip if checked successfully within the last 30 seconds (unless forced)
+      // Skip if checked successfully within the last 10 seconds (unless forced)
+      // Reducing from 30s to 10s to check more frequently
       const timeSinceLastCheck = Date.now() - lastSuccessfulValidation;
-      if (!force && timeSinceLastCheck < 30000) {
+      if (!force && timeSinceLastCheck < 10000) {
         console.log(`Skipping check, last successful validation was ${timeSinceLastCheck/1000}s ago`);
         scheduleNextCheck();
         return;
@@ -206,11 +279,13 @@ export default function Home() {
       console.log(`Checking credential validity... (timestamp: ${new Date().toISOString()})`);
       
       try {
+        // Always use the validate endpoint which checks against the database
         const isValid = await validateCredentials(authCredentials);
         
         if (!isPollingActive) return; // Check again in case validation took a while
         
         if (!isValid) {
+          console.log(`Credential validation failed, logging out (${new Date().toISOString()})`);
           handleAuthFailure();
         } else {
           console.log(`Credentials validated successfully (${new Date().toISOString()})`);
@@ -235,8 +310,9 @@ export default function Home() {
         clearTimeout(checkTimer);
       }
       
-      // Set a new timer (20 seconds when page is visible, 1 minute when hidden)
-      const interval = document.hidden ? 60000 : 20000;
+      // Set a new timer (10 seconds when page is visible, 30 seconds when hidden)
+      // Reduced from 20/60 to 10/30 to check more frequently
+      const interval = document.hidden ? 30000 : 10000;
       checkTimer = setTimeout(() => checkCredentials(), interval);
     };
     
@@ -320,25 +396,29 @@ export default function Home() {
     // Check immediately on mount or when credentials change
     checkCredentials(true);
     
-    // Clean up
+    // Clean up on unmount
     return () => {
+      console.log("Cleaning up auth polling");
       isPollingActive = false;
       if (checkTimer) {
         clearTimeout(checkTimer);
       }
-      
-      // Remove all event listeners
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       interactionEvents.forEach(event => {
         window.removeEventListener(event, handleUserInteraction);
       });
       window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('auth_updated', handleAuthUpdated);
       
-      // Restore original history methods
-      window.history.pushState = originalPushState;
-      window.history.replaceState = originalReplaceState;
+      // Restore original history methods if they exist
+      if (window.history && originalPushState) {
+        window.history.pushState = originalPushState;
+      }
+      if (window.history && originalReplaceState) {
+        window.history.replaceState = originalReplaceState;
+      }
     };
-  }, [authCredentials, setAuthCredentials, toast, setShowAuthDialog]);
+  }, [authCredentials, validateCredentials, setAuthCookies, clearAuthCookies]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -396,11 +476,9 @@ export default function Home() {
             setAuthCredentials(credentials);
             
             // Ensure cookie is set with a long expiration (30 days)
-            const isProduction = process.env.NODE_ENV === 'production';
-            const secureAttribute = isProduction ? '; Secure' : '';
-            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
-            document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
-            console.log("Setting auth_credentials cookie in client-side");
+            console.log("Setting auth_credentials cookie in client-side with value");
+            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+            console.log("Client cookie set with SameSite=None; Secure");
           } else {
             // If validation failed, clear credentials
             clearAuthCookies();
@@ -779,8 +857,7 @@ export default function Home() {
         
         if (response.status === 401) {
           // Authentication failed, clear credentials and show auth dialog
-          sessionStorage.removeItem('auth_credentials');
-          document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
+          clearAuthCookies();
           setAuthCredentials(null);
           setShowSubmitDialog(false);
           setShowAuthDialog(true);
@@ -1016,6 +1093,26 @@ export default function Home() {
       const url = new URL(window.location.href);
       url.search = ''; // Remove all query parameters
       window.history.replaceState({}, '', url);
+    }
+  };
+
+  // Function to handle authentication failure
+  const handleAuthFailure = () => {
+    console.log("Authentication failed, logging out user");
+    
+    // Clear auth cookies and state
+    clearAuthCookies();
+    setAuthCredentials(null);
+    
+    // Show a notification to the user
+    toast.error('Your session has expired. Please log in again.');
+    
+    // If not on the homepage, redirect there
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    } else {
+      // If already on homepage, show the auth dialog
+      setShowAuthDialog(true);
     }
   };
 

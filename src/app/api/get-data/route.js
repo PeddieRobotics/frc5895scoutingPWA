@@ -5,8 +5,12 @@ import { cookies } from "next/headers";
 export const revalidate = 0; // Disable cache to ensure fresh data
 
 export async function GET(request) {
-    const cookieStore = cookies();
-    const authCookie = cookieStore.get('auth_credentials');
+    // Use cookies() properly in an async context
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.has('auth_credentials') ? 
+                       { value: cookieStore.get('auth_credentials').value } : 
+                       null;
+    
     const url = new URL(request.url);
     const allData = url.searchParams.get('all') === 'true';
     const adminPassword = request.headers.get('Admin-Password');

@@ -47,58 +47,39 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Prevent submission if locked
-    if (isLocked) return;
-    
-    // Basic input validation
-    if (!username.trim() || !password.trim()) {
-      setError('Team name and password are required');
+    if (isLocked || isLoading) {
       return;
     }
     
-    // Prevent XSS in credentials
-    const sanitizedUsername = username.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Validate inputs
+    if (!username || !password) {
+      setError('Please enter both team name and password');
+      return;
+    }
     
     setIsLoading(true);
     setError('');
-
+    
     try {
-      // First, clear any existing invalid auth cookies
-      document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
-      document.cookie = 'auth_validated=; path=/; max-age=0; SameSite=Strict';
+      // Create Base64 credentials
+      const credentials = btoa(`${username}:${password}`);
       
-      // Convert credentials to base64 for Basic Auth
-      const credentials = btoa(`${sanitizedUsername}:${password}`);
+      // Get a timestamp for cache-busting
+      const timestamp = Date.now();
       
-      console.log(`Attempting login for team: ${sanitizedUsername}`);
-      
-      // Try to authenticate by making a request to a protected endpoint
-      // Add cache busting to prevent any caching
-      const timestamp = new Date().getTime();
-      const random = Math.random().toString(36).substring(2);
-      
-      const response = await fetch(`/api/auth/validate?_t=${timestamp}&_r=${random}`, {
+      // Call the server to validate
+      const response = await fetch(`/api/auth/validate?t=${timestamp}`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${credentials}`,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'X-Random': random
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
         },
-        cache: 'no-store',
-        credentials: 'same-origin'
+        cache: 'no-store'
       });
       
-      // Read response data regardless of status
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        console.error("Error parsing auth response:", e);
-        data = { authenticated: false, message: "Error parsing server response" };
-      }
-      
-      console.log(`Auth response status: ${response.status}, authenticated: ${data.authenticated}`);
+      // Parse the response
+      const data = await response.json();
       
       if (response.ok && data.authenticated === true) {
         // Reset attempts on successful login
@@ -112,70 +93,70 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
           localStorage.setItem('scout_team', data.scoutTeam);
         }
         
-        // Also store in a cookie for middleware to access with longer expiration (30 days)
-        const isProduction = process.env.NODE_ENV === 'production';
-        const secureAttribute = isProduction ? '; Secure' : '';
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+        // Set auth cookies with different attributes for maximum compatibility
+        // Set as normal cookie
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
         
-        // Set a simple session cookie that is less prone to issues
-        document.cookie = `session=authenticated; path=/; max-age=2592000; SameSite=Lax${secureAttribute}`;
+        // Set as SameSite=Lax cookie (best for localhost)
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
+        
+        // Set as SameSite=None+Secure for production
+        if (window.location.protocol === 'https:') {
+          document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+        }
+        
+        console.log("Set auth cookies with multiple approaches for best compatibility");
+        
+        // Also attempt to set cookies via fetch to ensure they're properly set server-side
+        try {
+          console.log("Setting server-side cookies via API call");
+          await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            body: JSON.stringify({ setCookie: true }),
+            credentials: 'same-origin'
+          });
+        } catch (e) {
+          console.log("Cookie setting API call failed, proceeding with client cookies");
+        }
         
         console.log("Login successful, calling onLogin handler");
         onLogin(credentials, data.scoutTeam);
-      } else if (response.status === 429) {
-        // Rate limited
-        setIsLocked(true);
-        const retryAfter = response.headers.get('Retry-After') || 60;
-        setLockTimer(parseInt(retryAfter, 10));
-        setError(`Too many login attempts. Please try again later.`);
-        clearAuthCookies();
       } else {
-        // Other auth failure
-        console.log("Login failed, handling auth failure");
-        handleAuthFailure();
+        // Handle failed login
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        
+        // Implement lockout after 5 failed attempts
+        if (newAttempts >= 5) {
+          setIsLocked(true);
+          setLockTimer(60);
+          
+          // Start a countdown timer
+          const interval = setInterval(() => {
+            setLockTimer(prev => {
+              if (prev <= 1) {
+                clearInterval(interval);
+                setIsLocked(false);
+                setAttempts(0);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+        
+        setError(data.message || 'Invalid username or password');
       }
-    } catch (err) {
-      setError('An error occurred during authentication');
-      console.error('Auth error:', err);
-      clearAuthCookies();
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
-      // Clear password field on failure for security
-      if (error) {
-        setPassword('');
-      }
     }
-  };
-
-  // Helper function to handle auth failure
-  const handleAuthFailure = () => {
-    // Increment failed attempts
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
-    
-    // If too many failed attempts, lock the form
-    if (newAttempts >= 5) {
-      const lockTime = Math.min(30 * (newAttempts - 4), 300); // Exponential backoff, max 5 min
-      setIsLocked(true);
-      setLockTimer(lockTime);
-      setError(`Too many failed attempts. Try again in ${lockTime} seconds.`);
-    } else {
-      setError(`Invalid team name or password. ${5 - newAttempts} attempts remaining.`);
-    }
-    
-    // Clear any existing auth cookies/storage
-    clearAuthCookies();
-  };
-
-  // Helper function to clear auth cookies
-  const clearAuthCookies = () => {
-    // Clear sessionStorage
-    sessionStorage.removeItem('auth_credentials');
-    
-    // Clear cookies
-    document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'session=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'auth_validated=; path=/; max-age=0; SameSite=Lax';
   };
 
   const handleCancel = () => {
