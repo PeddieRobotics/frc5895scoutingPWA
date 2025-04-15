@@ -27,80 +27,49 @@ export async function middleware(request) {
     return NextResponse.next();
   }
   
-  // DETECT iOS DEVICE
-  const userAgent = request.headers.get('user-agent') || '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+  // Get auth from cookies, URL params, or headers
+  let authenticated = false;
   
-  // Get auth from cookies or headers
-  let authCredentials = request.cookies.get('auth_credentials');
-  let iOSAuth = request.cookies.get('ios_auth'); // iOS-specific cookie
-  let adminAuth = request.cookies.get('admin_auth');
+  // 1. Check cookies first (most common auth method)
+  const authCookie = request.cookies.get('auth_credentials');
+  const adminAuthCookie = request.cookies.get('admin_auth');
   
-  // Check URL param for iOS authentication
+  // 2. Check URL params (for redirects from auth flow)
   const urlParams = new URL(request.url).searchParams;
-  const iosAuthFromUrl = urlParams.get('ios_auth');
+  const authFromUrl = urlParams.get('auth_token');
   
-  // Add debug logging
-  console.log(`Auth Debug - Path: ${pathname}, iOS: ${isIOS}, URL param: ${iosAuthFromUrl ? 'present' : 'absent'}, Cookie: ${iOSAuth?.value ? 'present' : 'absent'}, Auth: ${authCredentials?.value ? 'present' : 'absent'}`);
-  
-  if (isIOS && iosAuthFromUrl && !authCredentials?.value) {
-    console.log('Found iOS auth from URL parameter');
-    authCredentials = { value: iosAuthFromUrl };
-  }
-  
-  // Try authorization header for API
+  // 3. Check authorization header (for API requests)
   const authorization = request.headers.get('authorization');
-  if (!authCredentials?.value && authorization?.startsWith('Basic ')) {
-    authCredentials = { value: authorization.substring('Basic '.length) };
+  let authFromHeader = null;
+  if (authorization?.startsWith('Basic ')) {
+    authFromHeader = authorization.substring('Basic '.length);
   }
   
-  // AUTHORIZATION CHECK
-  if (authCredentials?.value || adminAuth?.value || iOSAuth?.value) {
-    // Auth found! Create response with enhanced cookie persistence
+  // Determine which auth credential to use
+  const authCredential = authCookie?.value || authFromUrl || authFromHeader;
+  
+  if (authCredential || adminAuthCookie?.value) {
+    authenticated = true;
+    
+    // Create response with standard cookie handling
     const response = NextResponse.next();
     
-    // Get the credential value from whichever source had it
-    const credValue = authCredentials?.value || iOSAuth?.value;
-    
-    if (credValue) {
-      if (isIOS) {
-        console.log('iOS device detected, applying special cookie settings');
-        
-        // Special iOS cookie settings
-        response.cookies.set('ios_auth', credValue, {
-          maxAge: 30 * 24 * 60 * 60, // 30 days instead of session-only
-          path: '/',
-          // No httpOnly to allow JS access
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax' // Explicitly set sameSite to fix iOS Safari issues
-        });
-        
-        // Add special header that will be detected by client script
-        response.headers.set('X-Auth-Transfer', 'enabled');
-        
-        // Also set the normal cookie without restrictive flags
-        response.cookies.set('auth_credentials', credValue, {
-          path: '/',
-          maxAge: 30 * 24 * 60 * 60, // 30 days
-          sameSite: 'lax'
-        });
-        
-        console.log('Set iOS cookies with auth value length: ' + credValue.length);
-      } else {
-        // Standard settings for non-iOS browsers
-        response.cookies.set('auth_credentials', credValue, {
-          maxAge: 30 * 24 * 60 * 60, // 30 days
-          path: '/',
-          httpOnly: true
-        });
-      }
+    // If we have auth from URL or header, set it as a cookie for future requests
+    if ((authFromUrl || authFromHeader) && !authCookie?.value) {
+      response.cookies.set('auth_credentials', authCredential, {
+        // Universal cookie settings that work across devices
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
     }
     
-    if (adminAuth?.value) {
-      response.cookies.set('admin_auth', adminAuth.value, {
-        maxAge: 30 * 24 * 60 * 60, // Always set expiry, even for iOS
+    // Preserve admin auth if present
+    if (adminAuthCookie?.value) {
+      response.cookies.set('admin_auth', adminAuthCookie.value, {
+        maxAge: 30 * 24 * 60 * 60,
         path: '/',
-        httpOnly: !isIOS,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       });
