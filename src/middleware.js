@@ -40,6 +40,8 @@ export async function middleware(request) {
   const urlParams = new URL(request.url).searchParams;
   const iosAuthFromUrl = urlParams.get('ios_auth');
   
+  console.log(`Auth Debug - Path: ${pathname}, iOS: ${isIOS}, URL param: ${iosAuthFromUrl ? 'present' : 'absent'}, Cookie: ${iOSAuth?.value ? 'present' : 'absent'}, Auth: ${authCredentials?.value ? 'present' : 'absent'}`);
+  
   if (isIOS && iosAuthFromUrl && !authCredentials?.value) {
     console.log('Found iOS auth from URL parameter');
     authCredentials = { value: iosAuthFromUrl };
@@ -78,6 +80,7 @@ export async function middleware(request) {
         // Also set the normal cookie without restrictive flags
         response.cookies.set('auth_credentials', credValue, {
           path: '/',
+          maxAge: 30 * 24 * 60 * 60, // Adding expiry for iOS too
         });
       } else {
         // Standard settings for non-iOS browsers
@@ -110,5 +113,12 @@ export async function middleware(request) {
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', pathname);
+  
+  // Preserve iOS auth parameter if present
+  if (isIOS && iosAuthFromUrl) {
+    url.searchParams.set('ios_auth', iosAuthFromUrl);
+    console.log(`Preserving iOS auth during redirect to: ${url.toString()}`);
+  }
+  
   return NextResponse.redirect(url);
 } 
