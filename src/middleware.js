@@ -1,114 +1,115 @@
 import { NextResponse } from 'next/server';
 
-// Skip database validation completely for now to fix the login loop
+// Only essential allowed paths to prevent security issues
+const PUBLIC_PATHS = [
+  '/',
+  '/admin',
+  '/login',
+  '/register',
+  '/favicon.ico',
+  '/manifest.json'
+];
+
+const PUBLIC_PATH_PREFIXES = [
+  '/_next/',
+  '/icons/',
+  '/apple-touch-icon',
+  '/api/',
+  '/auth/'
+];
+
 export async function middleware(request) {
-  // ALWAYS ALLOW ACCESS TO THESE RESOURCES
-  if (
-    // Entry points and public pages
-    request.nextUrl.pathname === '/' || 
-    request.nextUrl.pathname === '' ||
-    request.nextUrl.pathname === '/admin' ||
-    
-    // Static assets and internals
-    request.nextUrl.pathname.startsWith('/_next/') ||
-    request.nextUrl.pathname === '/favicon.ico' ||
-    request.nextUrl.pathname === '/manifest.json' ||
-    request.nextUrl.pathname.startsWith('/icons/') ||
-    request.nextUrl.pathname.startsWith('/apple-touch-icon') ||
-    request.nextUrl.pathname === '/sw.js' ||
-    request.nextUrl.pathname.startsWith('/workbox-') ||
-    
-    // API endpoints - authentication handled internally
-    request.nextUrl.pathname.startsWith('/api/') ||
-    
-    // Auth related paths
-    request.nextUrl.pathname === '/login' ||
-    request.nextUrl.pathname === '/register' ||
-    request.nextUrl.pathname.startsWith('/auth/')
-  ) {
+  const { pathname } = request.nextUrl;
+  
+  // Allow public paths
+  if (PUBLIC_PATHS.includes(pathname) || 
+      PUBLIC_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+    console.log(`Public path allowed: ${pathname}`);
     return NextResponse.next();
   }
-
-  console.log(`Middleware checking auth for: ${request.nextUrl.pathname}`);
   
-  // For all other routes, check for auth cookie
+  console.log(`Auth check for: ${pathname}`);
+  
+  // Check for auth in all possible locations
   let authCredentials = request.cookies.get('auth_credentials');
   let adminAuth = request.cookies.get('admin_auth');
   
-  console.log(`Auth cookie from request.cookies: ${authCredentials ? 'EXISTS' : 'MISSING'}`);
-  console.log(`Admin auth cookie from request.cookies: ${adminAuth ? 'EXISTS' : 'MISSING'}`);
-  
-  // Try to get from cookie header as a fallback
+  // Fallback to cookie header
   if (!authCredentials?.value) {
     const cookieHeader = request.headers.get('cookie');
-    console.log(`Raw cookie header: ${cookieHeader ? `present (${cookieHeader.length} bytes)` : 'missing'}`);
-    
     if (cookieHeader) {
       const cookies = cookieHeader.split(';').map(c => c.trim());
       
       const authCookie = cookies.find(c => c.startsWith('auth_credentials='));
       if (authCookie) {
-        const value = authCookie.substring('auth_credentials='.length);
-        console.log(`Found auth_credentials in raw cookie header: ${value ? 'has value' : 'empty'}`);
-        authCredentials = { value };
+        authCredentials = { value: authCookie.substring('auth_credentials='.length) };
       }
-
+      
       const adminCookie = cookies.find(c => c.startsWith('admin_auth='));
       if (adminCookie) {
-        const value = adminCookie.substring('admin_auth='.length);
-        console.log(`Found admin_auth in raw cookie header: ${value ? 'has value' : 'empty'}`);
-        adminAuth = { value };
+        adminAuth = { value: adminCookie.substring('admin_auth='.length) };
       }
     }
   }
   
-  // Also check authorization header
+  // Check authorization header for API clients
   const authorization = request.headers.get('authorization');
   if (!authCredentials?.value && authorization?.startsWith('Basic ')) {
-    console.log('Found auth in Authorization header');
-    const value = authorization.substring('Basic '.length);
-    authCredentials = { value };
+    authCredentials = { value: authorization.substring('Basic '.length) };
   }
   
-  // SIMPLIFIED AUTH CHECK - If any auth exists, allow access
   if (authCredentials?.value || adminAuth?.value) {
-    console.log("Auth found, allowing access");
+    console.log('Auth found, allowing access');
     
-    // Create persistent response with cookie reinforcement
+    // MULTIPLE BROWSER SUPPORT STRATEGY
+    // Create a response with multiple cookie settings to cover all browsers
     const response = NextResponse.next();
     
-    // Re-establish the cookie to ensure it persists
+    // iOS compatibility mode - use both secure and non-secure cookies
     if (authCredentials?.value) {
+      // Standard cookie (works in most browsers)
       response.cookies.set('auth_credentials', authCredentials.value, {
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: '/',
+        httpOnly: true
+      });
+      
+      // iOS Safari cookie (secure, but no SameSite to maximize compat)
+      response.cookies.set('auth_credentials_ios', authCredentials.value, {
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/',
         httpOnly: true,
-        sameSite: 'lax'
+        secure: true
+      });
+      
+      // Session cookie (for browsers that don't support maxAge)
+      response.cookies.set('auth_credentials_session', authCredentials.value, {
+        path: '/',
+        httpOnly: true
       });
     }
     
     if (adminAuth?.value) {
       response.cookies.set('admin_auth', adminAuth.value, {
-        maxAge: 30 * 24 * 60 * 60, // 30 days
+        maxAge: 30 * 24 * 60 * 60,
         path: '/',
-        httpOnly: true,
-        sameSite: 'lax'
+        httpOnly: true
       });
     }
     
     return response;
   }
   
-  // Development mode testing hook
-  if (process.env.NODE_ENV !== 'production' && request.headers.get('x-override-auth') === 'true') {
-    console.log("Dev auth override header found, allowing access");
+  // Dev mode override
+  if (process.env.NODE_ENV !== 'production' && 
+      request.headers.get('x-override-auth') === 'true') {
     return NextResponse.next();
   }
   
-  // If no auth found, redirect to homepage
-  console.log("Auth not found, redirecting to homepage");
+  // Redirect to login page
+  console.log("Auth not found, redirecting to login page");
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
-  url.searchParams.set('redirect', request.nextUrl.pathname);
+  url.searchParams.set('redirect', pathname);
   return NextResponse.redirect(url);
 } 
