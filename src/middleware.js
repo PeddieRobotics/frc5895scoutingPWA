@@ -152,13 +152,31 @@ export async function middleware(request) {
           
           // Create persistent cookie response
           const response = NextResponse.next();
-          response.cookies.set('auth_credentials', authCredentials.value, {
-            maxAge: 30 * 24 * 60 * 60, // 30 days
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-          });
+          
+          // Check for iOS user agent
+          const userAgent = request.headers.get('user-agent') || '';
+          const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+          
+          if (isIOS) {
+            console.log('iOS device detected, applying special cookie settings');
+            // iOS-specific cookie settings - Safari has stricter handling
+            response.cookies.set('auth_credentials', authCredentials.value, {
+              maxAge: 30 * 24 * 60 * 60, // 30 days
+              path: '/',
+              httpOnly: true,
+              secure: true, // Always use secure for iOS
+              sameSite: 'none' // Using 'none' for iOS which has stricter handling
+            });
+          } else {
+            // Standard cookie for other browsers
+            response.cookies.set('auth_credentials', authCredentials.value, {
+              maxAge: 30 * 24 * 60 * 60, // 30 days
+              path: '/',
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax'
+            });
+          }
           
           // Validate against database without blocking navigation
           try {
@@ -170,12 +188,109 @@ export async function middleware(request) {
             
             const existsInDb = result.rowCount > 0;
             console.log(`Team ${teamName} database validation: ${existsInDb ? 'EXISTS' : 'NOT FOUND'}`);
-            client.release();
+            
+            // If team found in database, ensure cookie persistence
+            if (existsInDb) {
+              const response = NextResponse.next();
+              
+              // Check for iOS user agent
+              const userAgent = request.headers.get('user-agent') || '';
+              const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+              
+              if (isIOS) {
+                console.log('iOS device detected, applying special cookie settings (DB user)');
+                // iOS-specific cookie settings - Safari has stricter handling
+                response.cookies.set('auth_credentials', authCredentials.value, {
+                  maxAge: 30 * 24 * 60 * 60, // 30 days
+                  path: '/',
+                  httpOnly: true,
+                  secure: true, // Always use secure for iOS
+                  sameSite: 'none' // Using 'none' for iOS which has stricter handling
+                });
+              } else {
+                // Standard cookie for other browsers
+                response.cookies.set('auth_credentials', authCredentials.value, {
+                  maxAge: 30 * 24 * 60 * 60, // 30 days
+                  path: '/',
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax'
+                });
+              }
+              
+              if (client) client.release();
+              return response;
+            }
+            
+            // If team not found, FORCE LOGOUT IMMEDIATELY
+            if (!existsInDb) {
+              console.log(`Team ${teamName} not found in database - FORCING IMMEDIATE LOGOUT`);
+              
+              // Generate a unique logout ID for tracking
+              const forceLogoutId = Date.now().toString();
+              logoutTimestamps.set(forceLogoutId, Date.now());
+              
+              // Build response with deleted cookies
+              const response = NextResponse.redirect(new URL('/', request.url));
+              
+              // Add URL parameters to signal logout
+              response.cookies.delete('auth_credentials', { path: '/' });
+              response.cookies.delete('admin_auth', { path: '/' });
+              
+              // Also try with various combinations for maximum compatibility
+              ['lax', 'strict'].forEach(sameSite => {
+                response.cookies.set('auth_credentials', '', { 
+                  maxAge: 0,
+                  path: '/',
+                  expires: new Date(0),
+                  sameSite
+                });
+                
+                response.cookies.set('admin_auth', '', { 
+                  maxAge: 0,
+                  path: '/',
+                  expires: new Date(0),
+                  sameSite
+                });
+              });
+              
+              // For cross-site contexts
+              response.cookies.set('auth_credentials', '', { 
+                maxAge: 0,
+                path: '/',
+                expires: new Date(0),
+                sameSite: 'none',
+                secure: true
+              });
+              
+              response.cookies.set('admin_auth', '', { 
+                maxAge: 0,
+                path: '/',
+                expires: new Date(0),
+                sameSite: 'none',
+                secure: true
+              });
+              
+              // Add nocache param to prevent browser caching
+              const redirectUrl = new URL('/', request.url);
+              redirectUrl.searchParams.set('nocache', forceLogoutId);
+              redirectUrl.searchParams.set('logout', forceLogoutId);
+              redirectUrl.searchParams.set('reason', 'deleted');
+              
+              response.headers.set('Location', redirectUrl.toString());
+              
+              if (client) client.release();
+              return response;
+            }
           } catch (dbError) {
             console.error('Database validation error:', dbError.message || dbError);
+            // NEVER fall back to format validation on database errors
+            // Better to deny access than risk security breach
+            authValid = false;
+            console.log('DB validation error, DENYING ACCESS');
+          } finally {
+            if (client) client.release();
           }
-          
-          return response;
         } else {
           // Invalid format, go through strict database validation
           let client = null;
@@ -192,13 +307,31 @@ export async function middleware(request) {
             // If team found in database, ensure cookie persistence
             if (authValid) {
               const response = NextResponse.next();
-              response.cookies.set('auth_credentials', authCredentials.value, {
-                maxAge: 30 * 24 * 60 * 60, // 30 days
-                path: '/',
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax'
-              });
+              
+              // Check for iOS user agent
+              const userAgent = request.headers.get('user-agent') || '';
+              const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+              
+              if (isIOS) {
+                console.log('iOS device detected, applying special cookie settings (DB user)');
+                // iOS-specific cookie settings - Safari has stricter handling
+                response.cookies.set('auth_credentials', authCredentials.value, {
+                  maxAge: 30 * 24 * 60 * 60, // 30 days
+                  path: '/',
+                  httpOnly: true,
+                  secure: true, // Always use secure for iOS
+                  sameSite: 'none' // Using 'none' for iOS which has stricter handling
+                });
+              } else {
+                // Standard cookie for other browsers
+                response.cookies.set('auth_credentials', authCredentials.value, {
+                  maxAge: 30 * 24 * 60 * 60, // 30 days
+                  path: '/',
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === 'production',
+                  sameSite: 'lax'
+                });
+              }
               
               if (client) client.release();
               return response;
