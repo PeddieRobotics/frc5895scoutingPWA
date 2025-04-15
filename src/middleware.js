@@ -7,8 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/favicon.ico',
-  '/manifest.json',
-  '/ios-auth.js'
+  '/manifest.json'
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -21,10 +20,6 @@ const PUBLIC_PATH_PREFIXES = [
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  
-  if (pathname.startsWith('/ios-auth.js')) {
-    return NextResponse.next();
-  }
   
   // Allow public paths without auth
   if (PUBLIC_PATHS.includes(pathname) || 
@@ -44,6 +39,9 @@ export async function middleware(request) {
   // Check URL param for iOS authentication
   const urlParams = new URL(request.url).searchParams;
   const iosAuthFromUrl = urlParams.get('ios_auth');
+  
+  // Add debug logging
+  console.log(`Auth Debug - Path: ${pathname}, iOS: ${isIOS}, URL param: ${iosAuthFromUrl ? 'present' : 'absent'}, Cookie: ${iOSAuth?.value ? 'present' : 'absent'}, Auth: ${authCredentials?.value ? 'present' : 'absent'}`);
   
   if (isIOS && iosAuthFromUrl && !authCredentials?.value) {
     console.log('Found iOS auth from URL parameter');
@@ -70,11 +68,11 @@ export async function middleware(request) {
         
         // Special iOS cookie settings
         response.cookies.set('ios_auth', credValue, {
-          // No expiry - session only for iOS
+          maxAge: 30 * 24 * 60 * 60, // 30 days instead of session-only
           path: '/',
           // No httpOnly to allow JS access
-          secure: false,
-          // No sameSite specification
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax' // Explicitly set sameSite to fix iOS Safari issues
         });
         
         // Add special header that will be detected by client script
@@ -83,7 +81,11 @@ export async function middleware(request) {
         // Also set the normal cookie without restrictive flags
         response.cookies.set('auth_credentials', credValue, {
           path: '/',
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          sameSite: 'lax'
         });
+        
+        console.log('Set iOS cookies with auth value length: ' + credValue.length);
       } else {
         // Standard settings for non-iOS browsers
         response.cookies.set('auth_credentials', credValue, {
@@ -96,9 +98,11 @@ export async function middleware(request) {
     
     if (adminAuth?.value) {
       response.cookies.set('admin_auth', adminAuth.value, {
-        maxAge: isIOS ? undefined : 30 * 24 * 60 * 60,
+        maxAge: 30 * 24 * 60 * 60, // Always set expiry, even for iOS
         path: '/',
-        httpOnly: !isIOS
+        httpOnly: !isIOS,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
       });
     }
     
