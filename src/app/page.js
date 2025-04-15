@@ -78,12 +78,347 @@ export default function Home() {
     if (target) {
       setAuthRedirectTarget(target);
       
-      // If we have credentials, redirect immediately
+      // If we have credentials, validate them before redirecting
       if (authCredentials) {
-        window.location.href = target;
+        // Check credentials validity
+        validateCredentials(authCredentials).then(isValid => {
+          if (isValid) {
+            window.location.href = target;
+          } else {
+            // If validation failed, clear credentials and show auth dialog
+            clearAuthCookies();
+            setAuthCredentials(null);
+            setShowAuthDialog(true);
+          }
+        });
       }
     }
   }, [authCredentials]);
+
+  // Add a function to validate credentials
+  const validateCredentials = async (credentials) => {
+    try {
+      console.log("Validating credentials...");
+      
+      // Add random number to further prevent any caching
+      const timestamp = new Date().getTime();
+      const random = Math.random().toString(36).substring(2);
+      const response = await fetch(`/api/auth/validate?_t=${timestamp}&_r=${random}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'X-Random': random // Adding a random header to further prevent caching
+        },
+        cache: 'no-store',
+        credentials: 'same-origin'
+      });
+      
+      // Read response data regardless of status
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Error parsing auth response:", e);
+        data = { authenticated: false, message: "Error parsing server response" };
+      }
+      
+      console.log(`Auth validation result: status=${response.status}, authenticated=${data.authenticated}`);
+      
+      if (response.ok && data.authenticated === true) {
+        // Set cookies to avoid repeated validation
+        console.log("Authentication successful, setting auth data");
+        
+        // Store in sessionStorage (reliable in-browser storage)
+        sessionStorage.setItem('auth_credentials', credentials);
+        
+        // Set cookies with different SameSite attributes for maximum compatibility
+        setAuthCookies(credentials);
+        
+        // Also try to ensure server-side cookies are set
+        try {
+          console.log("Ensuring server-side cookies are set");
+          await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            body: JSON.stringify({ setCookie: true }),
+            credentials: 'same-origin'
+          });
+        } catch (e) {
+          console.log("Server cookie setting failed, using client-side cookies");
+        }
+        
+        console.log("Successfully validated credentials in client-side");
+        return true;
+      }
+      
+      // Mark as failed validation
+      console.log("Failed to validate credentials in client-side");
+      return false;
+    } catch (error) {
+      console.error("Error validating credentials:", error);
+      return false;
+    }
+  };
+
+  // Helper function to set auth cookies with multiple approaches
+  const setAuthCookies = (credentials) => {
+    if (!credentials) return;
+    
+    console.log("Setting auth cookies with multiple approaches");
+    
+    // Store in localStorage for direct access
+    localStorage.setItem('auth_credentials', credentials);
+    
+    // Store in sessionStorage for session persistence
+    sessionStorage.setItem('auth_credentials', credentials);
+    
+    // Set as normal cookie with path=/
+    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
+    
+    // Set as SameSite=Lax cookie (best for cross-page navigation and localhost)
+    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
+    
+    // Set as SameSite=None+Secure cookie (needed for production HTTPS)
+    try {
+      if (window.location.protocol === 'https:') {
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+      }
+    } catch (e) {
+      console.error('Error setting secure cookie:', e);
+    }
+    
+    // Dispatch a custom event to notify other pages that auth has been updated
+    try {
+      window.dispatchEvent(new CustomEvent('auth_updated', {
+        detail: { timestamp: Date.now() }
+      }));
+    } catch (e) {
+      console.error('Error dispatching auth event:', e);
+    }
+    
+    console.log("Auth cookies set with multiple approaches for maximum compatibility");
+  };
+
+  // Helper function to clear auth cookies
+  const clearAuthCookies = () => {
+    // Clear all storage
+    localStorage.removeItem('auth_credentials');
+    sessionStorage.removeItem('auth_credentials');
+    console.log("Clearing auth cookies and storage");
+    
+    // Clear cookies with all possible attributes
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+    document.cookie = `auth_credentials=; path=/; max-age=0`;
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
+    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=Lax`;
+    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure`;
+    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=None; Secure`;
+    
+    console.log("All auth cookies and storage cleared");
+    
+    // Also try to clear via server
+    try {
+      fetch('/api/auth/validate', {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+    } catch (e) {
+      console.log("Server cookie clearing failed");
+    }
+  };
+
+  // Set up polling to periodically check if credentials are still valid
+  useEffect(() => {
+    // Only set up polling if we have credentials
+    if (!authCredentials || typeof window === 'undefined') return;
+    
+    let isPollingActive = true; // Flag to track if component is still mounted
+    let checkTimer = null;
+    let visibilityChangeAttached = false;
+    let lastSuccessfulValidation = Date.now(); // Track last successful validation
+    
+    // Listen for auth update events from other tabs/pages
+    const handleAuthUpdated = (event) => {
+      console.log("Auth updated event received, refreshing cookies");
+      // Get current credentials from storage
+      const currentCreds = sessionStorage.getItem('auth_credentials') || 
+                         localStorage.getItem('auth_credentials');
+      if (currentCreds) {
+        // Re-apply cookie settings to ensure consistency
+        setAuthCookies(currentCreds);
+      }
+    };
+    
+    // Add auth updated event listener
+    window.addEventListener('auth_updated', handleAuthUpdated);
+    
+    // Function to check credentials and log out if invalid
+    const checkCredentials = async (force = false) => {
+      if (!isPollingActive) return; // Skip if component was unmounted
+      
+      // Don't run if document is hidden unless forced
+      if (!force && document.hidden) {
+        console.log("Page is hidden, skipping credential check until visible");
+        return;
+      }
+      
+      // Skip if checked successfully within the last 10 seconds (unless forced)
+      // Reducing from 30s to 10s to check more frequently
+      const timeSinceLastCheck = Date.now() - lastSuccessfulValidation;
+      if (!force && timeSinceLastCheck < 10000) {
+        console.log(`Skipping check, last successful validation was ${timeSinceLastCheck/1000}s ago`);
+        scheduleNextCheck();
+        return;
+      }
+      
+      console.log(`Checking credential validity... (timestamp: ${new Date().toISOString()})`);
+      
+      try {
+        // Always use the validate endpoint which checks against the database
+        const isValid = await validateCredentials(authCredentials);
+        
+        if (!isPollingActive) return; // Check again in case validation took a while
+        
+        if (!isValid) {
+          console.log(`Credential validation failed, logging out (${new Date().toISOString()})`);
+          handleAuthFailure();
+        } else {
+          console.log(`Credentials validated successfully (${new Date().toISOString()})`);
+          // Update last successful validation time
+          lastSuccessfulValidation = Date.now();
+          // Schedule next check
+          scheduleNextCheck();
+        }
+      } catch (error) {
+        console.error("Error during credential polling:", error);
+        // Still schedule next check on error
+        scheduleNextCheck();
+      }
+    };
+    
+    // Schedule the next check
+    const scheduleNextCheck = () => {
+      if (!isPollingActive) return;
+      
+      // Clear any existing timer
+      if (checkTimer) {
+        clearTimeout(checkTimer);
+      }
+      
+      // Set a new timer (10 seconds when page is visible, 30 seconds when hidden)
+      // Reduced from 20/60 to 10/30 to check more frequently
+      const interval = document.hidden ? 30000 : 10000;
+      checkTimer = setTimeout(() => checkCredentials(), interval);
+    };
+    
+    // Force a credential check when user navigates within the app 
+    const handleNavigation = () => {
+      // Always validate on navigation
+      console.log("Navigation detected, checking credentials");
+      checkCredentials(true);
+    };
+    
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Always check when page becomes visible again - this catches credential changes
+        console.log("Page became visible, checking credentials immediately");
+        checkCredentials(true);
+      } else {
+        console.log("Page became hidden, rescheduling check with longer timeout");
+        // Page became hidden, reschedule with longer timeout
+        scheduleNextCheck();
+      }
+    };
+    
+    // Attach visibility change listener
+    if (!visibilityChangeAttached) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      visibilityChangeAttached = true;
+    }
+    
+    // Force a credential check when user interacts with the page
+    const handleUserInteraction = (e) => {
+      // On form submission or navigation actions, always validate
+      if (e.type === 'submit' || 
+          (e.target && (
+            e.target.tagName === 'A' || 
+            e.target.closest('a') || 
+            e.target.closest('button')
+          ))) {
+        console.log("Critical interaction detected (link/button/form), validating credentials");
+        checkCredentials(true);
+        return;
+      }
+      
+      // For other interactions, use a debounce approach
+      // Don't check on every interaction, use a debounce of 5 seconds
+      if (window.lastInteractionCheck && 
+          (Date.now() - window.lastInteractionCheck) < 5000) {
+        return;
+      }
+      
+      window.lastInteractionCheck = Date.now();
+      console.log("User interaction detected, triggering credential check");
+      checkCredentials(true);
+    };
+    
+    // List of events to capture user interaction
+    const interactionEvents = ['click', 'keydown', 'touchstart', 'submit'];
+    
+    // Listen for user interactions
+    interactionEvents.forEach(event => {
+      window.addEventListener(event, handleUserInteraction);
+    });
+    
+    // Also hook into the browser's history API for SPA navigation
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    
+    window.history.pushState = function() {
+      originalPushState.apply(this, arguments);
+      handleNavigation();
+    };
+    
+    window.history.replaceState = function() {
+      originalReplaceState.apply(this, arguments);
+      handleNavigation();
+    };
+    
+    // Add handler for popstate events (back/forward navigation)
+    window.addEventListener('popstate', handleNavigation);
+    
+    // Check immediately on mount or when credentials change
+    checkCredentials(true);
+    
+    // Clean up on unmount
+    return () => {
+      console.log("Cleaning up auth polling");
+      isPollingActive = false;
+      if (checkTimer) {
+        clearTimeout(checkTimer);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      interactionEvents.forEach(event => {
+        window.removeEventListener(event, handleUserInteraction);
+      });
+      window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('auth_updated', handleAuthUpdated);
+      
+      // Restore original history methods if they exist
+      if (window.history && originalPushState) {
+        window.history.pushState = originalPushState;
+      }
+      if (window.history && originalReplaceState) {
+        window.history.replaceState = originalReplaceState;
+      }
+    };
+  }, [authCredentials, validateCredentials, setAuthCookies, clearAuthCookies]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -134,12 +469,22 @@ export default function Home() {
         }
       }
       
-      // If credentials were found in either location, set them
+      // If credentials were found in either location, validate and set them
       if (credentials) {
-        setAuthCredentials(credentials);
-        
-        // Ensure cookie is set with a long expiration (30 days)
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
+        validateCredentials(credentials).then(isValid => {
+          if (isValid) {
+            setAuthCredentials(credentials);
+            
+            // Ensure cookie is set with a long expiration (30 days)
+            console.log("Setting auth_credentials cookie in client-side with value");
+            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+            console.log("Client cookie set with SameSite=None; Secure");
+          } else {
+            // If validation failed, clear credentials
+            clearAuthCookies();
+            setAuthCredentials(null);
+          }
+        });
       }
       
       return () => {
@@ -281,7 +626,7 @@ export default function Home() {
       breakdowncomments: null, 
       defensecomments: null, 
       generalcomments: null,
-      scoutteam: "5895",
+      scoutteam: "5895", // This will be replaced if auth credentials exist
       // Explicitly include all form fields with defaults
       autol1success: 0, autol1fail: 0,
       autol2success: 0, autol2fail: 0,
@@ -412,6 +757,19 @@ export default function Home() {
       } 
     }
 
+    // Get scout team from auth credentials if available
+    if (authCredentials) {
+      try {
+        const decodedCredentials = atob(authCredentials);
+        const [teamName, _] = decodedCredentials.split(':');
+        if (teamName) {
+          data.scoutteam = teamName;
+        }
+      } catch (error) {
+        console.error("Error extracting scoutteam from auth credentials:", error);
+      }
+    }
+
     data.timestamp = new Date().toISOString();
     data.id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
@@ -499,12 +857,12 @@ export default function Home() {
         
         if (response.status === 401) {
           // Authentication failed, clear credentials and show auth dialog
-          sessionStorage.removeItem('auth_credentials');
-          document.cookie = 'auth_credentials=; path=/; max-age=0; SameSite=Strict';
+          clearAuthCookies();
           setAuthCredentials(null);
           setShowSubmitDialog(false);
           setShowAuthDialog(true);
           setAuthError("Your session has expired. Please log in again.");
+          console.log("Clearing auth cookies after auth failure in data submission");
           throw new Error("Authentication failed");
         }
         
@@ -679,7 +1037,7 @@ export default function Home() {
       // Create new profile with incremented match number
       const newProfile = {
         scoutname: submittedData.scoutname || (scoutProfile ? scoutProfile.scoutname : ""),
-        scoutteam: "5895",
+        scoutteam: submittedData.scoutteam || "5895",
         match: Number(submittedData.match || 0) + 1,
       };
       
@@ -699,31 +1057,26 @@ export default function Home() {
   };
 
   // Handle authentication success
-  const handleAuthSuccess = (credentials) => {
+  const handleAuthSuccess = (credentials, scoutTeam) => {
     setAuthCredentials(credentials);
     setShowAuthDialog(false);
+    setAuthError('');
     
-    // If we have a redirect target, navigate to it after authentication
+    // If we have a redirect target, navigate there
     if (authRedirectTarget) {
-      // Clear URL parameters before redirecting
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.search = ''; // Remove all query parameters
-        window.history.replaceState({}, '', url);
-        
-        // Short delay to ensure state is updated before redirect
-        setTimeout(() => {
-          window.location.href = authRedirectTarget;
-        }, 50);
-      } else {
-        window.location.href = authRedirectTarget;
-      }
-      return;
+      window.location.href = authRedirectTarget;
     }
     
-    // Otherwise, continue with showing the submit dialog if we were in that flow
-    if (formData) {
-      setShowSubmitDialog(true);
+    // Update the scout team in the form if one is provided
+    if (scoutTeam) {
+      // Store it in the scoutProfile
+      const currentProfile = scoutProfile || {};
+      const updatedProfile = {
+        ...currentProfile,
+        scoutteam: scoutTeam
+      };
+      setScoutProfile(updatedProfile);
+      localStorage.setItem("ScoutProfile", JSON.stringify(updatedProfile));
     }
   };
 
@@ -740,6 +1093,26 @@ export default function Home() {
       const url = new URL(window.location.href);
       url.search = ''; // Remove all query parameters
       window.history.replaceState({}, '', url);
+    }
+  };
+
+  // Function to handle authentication failure
+  const handleAuthFailure = () => {
+    console.log("Authentication failed, logging out user");
+    
+    // Clear auth cookies and state
+    clearAuthCookies();
+    setAuthCredentials(null);
+    
+    // Show a notification to the user
+    toast.error('Your session has expired. Please log in again.');
+    
+    // If not on the homepage, redirect there
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    } else {
+      // If already on homepage, show the auth dialog
+      setShowAuthDialog(true);
     }
   };
 

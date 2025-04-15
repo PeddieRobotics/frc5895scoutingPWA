@@ -1,0 +1,359 @@
+.adminContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #0b233b;
+  color: #ffffff;
+  font-family: "Belleza", sans-serif;
+}
+
+.adminHeader {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.adminTitle {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  text-align: center;
+  color: #bd9748;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #bd9748;
+  width: fit-content;
+}
+
+.adminContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  width: 100%;
+}
+
+.card {
+  background-color: #152a42;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  width: 100%;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(189, 151, 72, 0.3);
+  padding-bottom: 0.75rem;
+}
+
+.cardTitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #bd9748;
+  margin: 0;
+}
+
+.errorText {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background-color: rgba(255, 107, 107, 0.2);
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Login Form Styles */
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.formLabel {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: #e6e6e6;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 1rem;
+  border: 1px solid rgba(189, 151, 72, 0.5);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-radius: 6px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.formInput:focus {
+  border-color: #bd9748;
+  box-shadow: 0 0 0 2px rgba(189, 151, 72, 0.25);
+  outline: none;
+}
+
+.formInput::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.submitButton {
+  background-color: #bd9748;
+  color: #0b233b;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.submitButton:hover {
+  background-color: #d2ac5e;
+  transform: translateY(-2px);
+}
+
+.submitButton:active {
+  transform: translateY(0px);
+}
+
+.submitButton:disabled {
+  background-color: #787878;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.deleteButton {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.deleteButton:hover {
+  background-color: #ff6b6b;
+}
+
+.deleteButton:disabled {
+  background-color: #787878;
+  cursor: not-allowed;
+}
+
+.logoutButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: 1px solid #bd9748;
+  color: #bd9748;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.logoutButton:hover {
+  background-color: #bd9748;
+  color: #0b233b;
+}
+
+/* Table wrapper to ensure full width */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  background-color: rgba(11, 35, 59, 0.6);
+  border-radius: 8px;
+}
+
+/* Team Table Styles */
+.teamTable {
+  width: 100%;
+  min-width: 750px; /* Ensure table doesn't shrink below readable width */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.teamTable th,
+.teamTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(189, 151, 72, 0.2);
+}
+
+.teamTable th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.teamTable th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.teamTable th {
+  background-color: rgba(189, 151, 72, 0.2);
+  color: #bd9748;
+  font-weight: 500;
+}
+
+.teamTable tr:last-child td {
+  border-bottom: none;
+}
+
+.teamTable tr:hover {
+  background-color: rgba(189, 151, 72, 0.1);
+}
+
+/* Column widths */
+.teamTable th:nth-child(1),
+.teamTable td:nth-child(1) {
+  width: 20%;
+}
+
+.teamTable th:nth-child(2),
+.teamTable td:nth-child(2),
+.teamTable th:nth-child(3),
+.teamTable td:nth-child(3) {
+  width: 30%;
+}
+
+.teamTable th:nth-child(4),
+.teamTable td:nth-child(4) {
+  width: 20%;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+.loadingText {
+  text-align: center;
+  padding: 1rem;
+  color: #bd9748;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .adminContainer {
+    padding: 1rem;
+    width: 100%;
+  }
+  
+  .adminTitle {
+    font-size: 1.8rem;
+  }
+  
+  .cardTitle {
+    font-size: 1.3rem;
+  }
+  
+  .tableWrapper {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .teamTable {
+    width: 100%;
+    min-width: 600px; /* Ensure minimum width for content */
+  }
+  
+  .teamTable th,
+  .teamTable td {
+    padding: 0.8rem;
+    white-space: nowrap;
+  }
+  
+  .logoutButton {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .adminHeader {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Add a specific media query for the problematic middle range */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .card, 
+  .adminContent, 
+  .tableWrapper {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .teamTable {
+    width: 100%;
+  }
+}
+
+.debugInfo {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  overflow: auto;
+}
+
+.debugInfo h3 {
+  margin-top: 0;
+  color: #343a40;
+  font-size: 14px;
+}
+
+.debugInfo pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 12px;
+  background-color: #e9ecef;
+  padding: 8px;
+  border-radius: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.refreshButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.refreshButton:hover {
+  background-color: #5a6268;
+} 

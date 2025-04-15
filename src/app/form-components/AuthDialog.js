@@ -47,68 +47,115 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Prevent submission if locked
-    if (isLocked) return;
-    
-    // Basic input validation
-    if (!username.trim() || !password.trim()) {
-      setError('Username and password are required');
+    if (isLocked || isLoading) {
       return;
     }
     
-    // Prevent XSS in credentials
-    const sanitizedUsername = username.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Validate inputs
+    if (!username || !password) {
+      setError('Please enter both team name and password');
+      return;
+    }
     
     setIsLoading(true);
     setError('');
-
+    
     try {
-      // Convert credentials to base64 for Basic Auth
-      const credentials = btoa(`${sanitizedUsername}:${password}`);
+      // Create Base64 credentials
+      const credentials = btoa(`${username}:${password}`);
       
-      // Try to authenticate by making a request to a protected endpoint
-      const response = await fetch('/api/auth/validate', {
+      // Get a timestamp for cache-busting
+      const timestamp = Date.now();
+      
+      // Call the server to validate
+      const response = await fetch(`/api/auth/validate?t=${timestamp}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Basic ${credentials}`
-        }
+          'Authorization': `Basic ${credentials}`,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
       });
       
-      if (response.ok) {
+      // Parse the response
+      const data = await response.json();
+      
+      if (response.ok && data.authenticated === true) {
         // Reset attempts on successful login
         setAttempts(0);
         
         // Store credentials in sessionStorage for future API calls
         sessionStorage.setItem('auth_credentials', credentials);
         
-        // Also store in a cookie for middleware to access with longer expiration (30 days)
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Strict`;
+        // Store scout team in localStorage for form auto-fill
+        if (data.scoutTeam) {
+          localStorage.setItem('scout_team', data.scoutTeam);
+        }
         
-        onLogin(credentials);
+        // Set auth cookies with different attributes for maximum compatibility
+        // Set as normal cookie
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
+        
+        // Set as SameSite=Lax cookie (best for localhost)
+        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
+        
+        // Set as SameSite=None+Secure for production
+        if (window.location.protocol === 'https:') {
+          document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
+        }
+        
+        console.log("Set auth cookies with multiple approaches for best compatibility");
+        
+        // Also attempt to set cookies via fetch to ensure they're properly set server-side
+        try {
+          console.log("Setting server-side cookies via API call");
+          await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            body: JSON.stringify({ setCookie: true }),
+            credentials: 'same-origin'
+          });
+        } catch (e) {
+          console.log("Cookie setting API call failed, proceeding with client cookies");
+        }
+        
+        console.log("Login successful, calling onLogin handler");
+        onLogin(credentials, data.scoutTeam);
       } else {
-        // Increment failed attempts
+        // Handle failed login
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         
-        // If too many failed attempts, lock the form
+        // Implement lockout after 5 failed attempts
         if (newAttempts >= 5) {
-          const lockTime = Math.min(30 * (newAttempts - 4), 300); // Exponential backoff, max 5 min
           setIsLocked(true);
-          setLockTimer(lockTime);
-          setError(`Too many failed attempts. Try again in ${lockTime} seconds.`);
-        } else {
-          setError(`Invalid username or password. ${5 - newAttempts} attempts remaining.`);
+          setLockTimer(60);
+          
+          // Start a countdown timer
+          const interval = setInterval(() => {
+            setLockTimer(prev => {
+              if (prev <= 1) {
+                clearInterval(interval);
+                setIsLocked(false);
+                setAttempts(0);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
         }
+        
+        setError(data.message || 'Invalid username or password');
       }
-    } catch (err) {
-      setError('An error occurred during authentication');
-      console.error('Auth error:', err);
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
-      // Clear password field on failure for security
-      if (error) {
-        setPassword('');
-      }
     }
   };
 
@@ -126,14 +173,14 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
     <div className={styles.QRCodeOverlay} onClick={e => e.target === e.currentTarget && handleCancel()}>
       <div className={styles.QRCodeContainer}>
         <h2>Authentication Required</h2>
-        <p className={styles.LoginSubheader}>Please login to continue</p>
+        <p className={styles.LoginSubheader}>Please login with your team credentials</p>
         
         {error && <p className={styles.ErrorText}>{error}</p>}
         {isLocked && lockTimer > 0 && <p className={styles.ErrorText}>Account locked. Try again in {lockTimer} seconds.</p>}
         
         <form onSubmit={handleSubmit} className={styles.AuthForm}>
           <div className={styles.FormGroup}>
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">Team Name</label>
             <input
               type="text"
               id="username"
@@ -144,6 +191,7 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
               disabled={isLocked || isLoading}
               autoComplete="username"
               autoFocus
+              placeholder="Enter your team name"
             />
           </div>
           <div className={styles.FormGroup}>
@@ -157,6 +205,7 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
               className={styles.FormInput}
               disabled={isLocked || isLoading}
               autoComplete="current-password"
+              placeholder="Enter your password"
             />
           </div>
           <div className={styles.AuthButtonsContainer}>

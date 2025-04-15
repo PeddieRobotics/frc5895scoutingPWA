@@ -1,13 +1,41 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Table, Button, Checkbox, Switch } from "antd";
+import React, { useEffect, useState, useRef } from "react";
+import { Table, Button, Checkbox, Switch, Input, Form, Popconfirm, Typography, message, Drawer, Space, Card, Tabs, Divider } from "antd";
 import { calcAuto, calcTele, calcEnd, calcEPA } from "@/util/calculations";
 import '@ant-design/v5-patch-for-react-19';
+import { EditOutlined, DeleteOutlined, LockOutlined, TeamOutlined, MenuOutlined } from '@ant-design/icons';
 
 export default function Sudo() {
   const [data, setData] = useState([]);
   const [simplified, setSimplified] = useState(false);
-  //define columns
+  const [editing, setEditing] = useState({});
+  const [form] = Form.useForm();
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [userTeam, setUserTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [mobileView, setMobileView] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [activeTab, setActiveTab] = useState("1");
+
+  // Track screen size for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setMobileView(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // define columns
   const sort = (a, b, f) => {
     if (f) {
       a = a[f];
@@ -18,6 +46,278 @@ export default function Sudo() {
     return 0;
   };
   
+  const startEditing = (record) => {
+    setEditing({ ...editing, [record.id]: true });
+    
+    // Create a copy of the record to ensure proper handling of line breaks in comments
+    const formValues = { ...record };
+    
+    // Set form values, ensuring line breaks are preserved
+    form.setFieldsValue(formValues);
+  };
+
+  const cancelEditing = (record) => {
+    setEditing({ ...editing, [record.id]: false });
+  };
+
+  const saveEditing = async (record) => {
+    try {
+      const values = await form.validateFields();
+      
+      // Process text fields to ensure line breaks are preserved
+      Object.keys(values).forEach(key => {
+        if (typeof values[key] === 'string' && key.includes('comments')) {
+          // Ensure line breaks are preserved
+          values[key] = values[key].replace(/\r\n/g, '\n');
+        }
+      });
+      
+      const updatedRecord = { ...record, ...values };
+      
+      const response = await fetch("/api/update-row", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          id: record.id, 
+          data: updatedRecord,
+          password: adminMode ? adminPassword : undefined 
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update");
+      }
+      
+      setData(data.map(item => item.id === record.id ? updatedRecord : item));
+      setEditing({ ...editing, [record.id]: false });
+      message.success("Record updated successfully");
+      
+      if (mobileView && selectedRecord?.id === record.id) {
+        setSelectedRecord(updatedRecord);
+      }
+    } catch (error) {
+      message.error(`Error: ${error.message}`);
+    }
+  };
+
+  const toggleAdminMode = async () => {
+    if (!adminMode) {
+      if (!adminPassword.trim()) {
+        message.error("Please enter the admin password");
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        // First verify the admin password
+        const verifyResponse = await fetch("/api/verify-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password: adminPassword }),
+        });
+        
+        if (!verifyResponse.ok) {
+          const error = await verifyResponse.json();
+          throw new Error(error.error || "Invalid admin password");
+        }
+        
+        const result = await verifyResponse.json();
+        if (!result.authenticated) {
+          throw new Error("Authentication failed");
+        }
+        
+        setAdminMode(true);
+        message.success("Admin mode activated - viewing all teams' data");
+        
+        // Now fetch all data with the admin password
+        await fetchAllTeamsData();
+      } catch (error) {
+        message.error(`Error: ${error.message}`);
+        setAdminPassword("");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setAdminMode(false);
+      setAdminPassword("");
+      message.info("Admin mode deactivated - only viewing your team's data");
+      fetchData(false); // Refetch only team data
+    }
+  };
+
+  // Special function to fetch all teams' data with admin password
+  const fetchAllTeamsData = async () => {
+    setLoading(true);
+    try {
+      // Make a direct request with the admin password in the headers
+      const response = await fetch("/api/get-data?all=true", {
+        method: "GET",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Admin-Password': adminPassword
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch all teams data");
+      }
+      
+      const data = await response.json();
+      console.log("Admin Data Fetch - Received:", data);
+      
+      if (!data.rows || data.rows.length === 0) {
+        message.warning("No data found in the database");
+        setData([]);
+        return;
+      }
+      
+      let sortedData = data.rows.sort((a, b) => {
+        if (a.match > b.match) return -1;
+        if (a.match < b.match) return 1;
+        if (a.team > b.team) return 1;
+        if (a.team < b.team) return -1;
+        return a.id - b.id;
+      });
+      
+      console.log(`Admin Mode: Got ${sortedData.length} rows of data`);
+      setData(sortedData);
+    } catch (error) {
+      message.error(`Failed to fetch all teams data: ${error.message}`);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchData = async (fetchAll = false) => {
+    setLoading(true);
+    try {
+      const url = fetchAll ? "/api/get-data?all=true" : "/api/get-data";
+      const headers = {
+        'Cache-Control': 'no-cache',
+      };
+      
+      // Add admin password in headers when in admin mode
+      if (adminMode && adminPassword) {
+        headers['Admin-Password'] = adminPassword;
+        console.log("Adding admin password to request");
+      }
+      
+      console.log(`Fetching data with URL: ${url}, admin mode: ${adminMode}, fetch all: ${fetchAll}`);
+      const resp = await fetch(url, { headers });
+      
+      if (!resp.ok) {
+        throw new Error("Failed to fetch data");
+      }
+      
+      const data = await resp.json();
+      console.log("Fetched Data:", data);
+      
+      // Check for error messages from the API
+      if (data.error) {
+        message.warning(data.error);
+      }
+      
+      // Set the user's team if included in the response
+      if (data.userTeam) {
+        setUserTeam(data.userTeam);
+      }
+      
+      // If no data was returned, display appropriate message
+      if (!data.rows || data.rows.length === 0) {
+        if (userTeam) {
+          message.info(`No data found for team ${userTeam}`);
+        } else {
+          message.warning("No team identified. Please login with a valid team account.");
+        }
+        setData([]);
+        return;
+      }
+      
+      let sortedAndColoredData = data.rows.sort((a, b) => {
+        if (a.match > b.match) return -1;
+        if (a.match < b.match) return 1;
+        if (a.team > b.team) return 1;
+        if (a.team < b.team) return -1;
+        return a.id - b.id;
+      });
+      
+      console.log(`Got ${sortedAndColoredData.length} rows of data`);
+      setData(sortedAndColoredData);
+    } catch (error) {
+      message.error(`Error fetching data: ${error.message}`);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Mobile drawer handlers
+  const showMobileDetails = (record) => {
+    setSelectedRecord(record);
+    setDrawerVisible(true);
+  };
+
+  const closeMobileDetails = () => {
+    setDrawerVisible(false);
+    setSelectedRecord(null);
+  };
+
+  // Update the formatValue function to better handle line breaks in comments
+  const formatValue = (value) => {
+    if (typeof value === 'boolean') {
+      return value ? "✅" : "❌";
+    }
+    
+    // Special handling for null/undefined
+    if (value === undefined || value === null) {
+      return "-";
+    }
+    
+    // For comments, preserve the original string without modification
+    return value;
+  };
+
+  // Delete record function
+  const deleteRecord = async (record) => {
+    try {
+      const response = await fetch("/api/delete-row", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          id: record.id, 
+          password: adminMode ? adminPassword : undefined 
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error);
+      }
+      
+      message.success("Record deleted successfully");
+      setData(data.filter((dp) => dp.id != record.id));
+      
+      if (mobileView && selectedRecord?.id === record.id) {
+        setDrawerVisible(false);
+        setSelectedRecord(null);
+      }
+    } catch (error) {
+      message.error(`Error: ${error.message}`);
+    }
+  };
+
   let columns = [
     {
       title: "ScoutName",
@@ -27,6 +327,7 @@ export default function Sudo() {
       fixed: "left",
       simple: true,
       sorter: (a, b) => sort(a, b, "scoutname"),
+      editable: true,
     },
     {
       title: "Team",
@@ -36,6 +337,7 @@ export default function Sudo() {
       fixed: "left",
       simple: true,
       sorter: (a, b) => sort(a, b, "team"),
+      editable: true,
     },
     {
       title: "EPA",
@@ -55,44 +357,71 @@ export default function Sudo() {
       width: 100,
       simple: true,
       sorter: (a, b) => sort(a, b, "match"),
+      editable: true,
     },
     {
-      title: "Action",
-      key: "action",
-      render: (text, record) => (
-        <Button
-          danger
-          onClick={async () => {
-            const password = prompt("Enter your password");
-            console.log({record});
-            fetch("/api/delete-row", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ id: record.id, password }),
-            })
-              .then((resp) => {
-                if (!resp.ok) {
-                  return resp.json().then((error) => {
-                    throw new Error(error.error);
-                  });
-                }
-                return resp.json();
-              })
-              .then((respData) => {
-                alert("Successfully deleted row.");
-                setData(data.filter((dp) => dp.id != record.id));
-              })
-              .catch((error) => {
-                alert(`Error: ${error.message}`);
-              });
-          }}
-        >
-          Delete
-        </Button>
-      ),
+      title: "ScoutTeam",
+      dataIndex: "scoutteam",
+      key: "scoutteam",
       width: 100,
+      editable: true,
+      simple: true,
+      sorter: (a, b) => sort(a, b, "scoutteam"),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => {
+        const isEditing = editing[record.id];
+        
+        if (mobileView) {
+          return (
+            <Button type="primary" size="small" onClick={() => showMobileDetails(record)}>
+              <MenuOutlined />
+            </Button>
+          );
+        }
+        
+        return isEditing ? (
+          <Space>
+            <Button 
+              type="primary" 
+              size="small" 
+              onClick={() => saveEditing(record)}
+            >
+              Save
+            </Button>
+            <Button 
+              size="small" 
+              onClick={() => cancelEditing(record)}
+            >
+              Cancel
+            </Button>
+          </Space>
+        ) : (
+          <Space>
+            <Button 
+              type="primary" 
+              size="small" 
+              onClick={() => startEditing(record)}
+              icon={<EditOutlined />}
+            />
+            <Popconfirm
+              title="Delete this record?"
+              description="This cannot be undone."
+              onConfirm={() => deleteRecord(record)}
+            >
+              <Button 
+                danger 
+                size="small" 
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </Space>
+        );
+      },
+      width: 120,
+      fixed: "left",
     },
 
     {
@@ -128,7 +457,6 @@ export default function Sudo() {
       simple: true,
       width: 100,
     },
-    "ScoutTeam",
     {
       title: "Breakdown",
       dataIndex: "breakdowncomments",
@@ -200,6 +528,39 @@ export default function Sudo() {
         dataIndex: element.toLowerCase(),
         key: element.toLowerCase(),
         ellipsis: true,
+        editable: true,
+        render: (text, record) => {
+          const isEditing = editing[record.id];
+          
+          if (isEditing) {
+            return (
+              <Form.Item
+                name={element.toLowerCase()}
+                style={{ margin: 0 }}
+              >
+                <Input.TextArea 
+                  autoSize={{ minRows: 2, maxRows: 20 }}
+                  style={{ width: '100%' }}
+                  maxLength={255}
+                  showCount
+                  placeholder="Enter comments here..."
+                />
+              </Form.Item>
+            );
+          }
+          
+          return (
+            <div 
+              style={{ 
+                whiteSpace: 'pre-wrap', 
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word'
+              }}
+            >
+              {text}
+            </div>
+          );
+        }
       }
     }
     return {
@@ -207,6 +568,24 @@ export default function Sudo() {
       dataIndex: element.toLowerCase(),
       key: element.toLowerCase(),
       render: (text, record) => {
+        const isEditing = editing[record.id];
+        
+        if (isEditing) {
+          return (
+            <Form.Item
+              name={element.toLowerCase()}
+              style={{ margin: 0 }}
+              valuePropName={typeof text === 'boolean' ? 'checked' : 'value'}
+            >
+              {typeof text === 'boolean' ? (
+                <Checkbox />
+              ) : (
+                <Input />
+              )}
+            </Form.Item>
+          );
+        }
+        
         //display booleans as check or x
         let visibleValue = text;
         if (typeof text == "boolean") {
@@ -220,32 +599,399 @@ export default function Sudo() {
         return <div style={style}>{visibleValue}</div>;
       },
       sorter: (a, b) => sort(a, b, element.toLowerCase()),
+      editable: true,
     };
   });
 
-  useEffect(() => {
-    fetch("/api/get-data")
-      .then((resp) => resp.json())
-      .then((data) => {
-        console.log("Fetched Data:", data);
-        let sortedAndColoredData = data.rows.sort((a, b) => {
-          if (a.match > b.match) return -1;
-          if (a.match < b.match) return 1;
-          if (a.team > b.team) return 1;
-          if (a.team < b.team) return -1;
-          return a.id - b.id;
-        });
-        //todo: add alliance colors & sorting
-        console.log(sortedAndColoredData);
-        setData(sortedAndColoredData)
-      });
-  }, []);
+  // For mobile view, limit columns
+  if (mobileView) {
+    columns = columns.filter(col => 
+      ['scoutname', 'team', 'match', 'EPA', 'actions', 'scoutteam', 'auto', 'tele', 'end'].some(
+        key => col.key?.toLowerCase().includes(key.toLowerCase()) || 
+              col.dataIndex?.toLowerCase().includes(key.toLowerCase())
+      )
+    );
+  }
 
   columns = columns.map((col) => {
     let hidden = false;
     if (simplified && col.simple != true) hidden = true;
     return { ...col, hidden };
   });
+
+  const mergedColumns = columns.map(col => {
+    if (!col.editable) {
+      return col;
+    }
+
+    return {
+      ...col,
+      onCell: record => ({
+        record,
+        dataIndex: col.dataIndex,
+        title: col.title,
+        editing: editing[record.id],
+      }),
+    };
+  });
+
+  // Group data fields for mobile view
+  const autoFields = [
+    'autol1success', 'autol1fail', 'autol2success', 'autol2fail',
+    'autol3success', 'autol3fail', 'autol4success', 'autol4fail',
+    'autoalgaeremoved', 'autoprocessorsuccess', 'autoprocessorfail',
+    'autonetsuccess', 'autonetfail'
+  ];
+  
+  const teleFields = [
+    'telel1success', 'telel1fail', 'telel2success', 'telel2fail',
+    'telel3success', 'telel3fail', 'telel4success', 'telel4fail',
+    'telealgaeremoved', 'teleprocessorsuccess', 'teleprocessorfail',
+    'telenetsuccess', 'telenetfail', 'hpsuccess', 'hpfail'
+  ];
+  
+  const endFields = [
+    'endlocation', 'coralspeed', 'processorspeed', 'netspeed',
+    'algaeremovalspeed', 'climbspeed', 'maneuverability'
+  ];
+  
+  const miscFields = [
+    'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard',
+    'coralgrndintake', 'coralstationintake', 'lollipop',
+    'algaegrndintake', 'algaelowreefintake', 'algaehighreefintake'
+  ];
+  
+  const commentFields = [
+    'generalcomments', 'breakdowncomments', 'defensecomments'
+  ];
+  
+  const generalFields = [
+    'scoutname', 'team', 'match', 'scoutteam', 'noshow', 'leave'
+  ];
+
+  // Render the mobile detail drawer
+  const renderMobileDetailDrawer = () => (
+    <Drawer
+      title={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Team {selectedRecord?.team} - Match {selectedRecord?.match}</span>
+          <Space>
+            {!editing[selectedRecord?.id] && (
+              <>
+                <Button 
+                  type="primary" 
+                  onClick={() => startEditing(selectedRecord)}
+                  icon={<EditOutlined />}
+                  size="small"
+                >
+                  Edit
+                </Button>
+                <Popconfirm
+                  title="Delete this record?"
+                  description="This cannot be undone."
+                  onConfirm={() => deleteRecord(selectedRecord)}
+                >
+                  <Button 
+                    danger 
+                    size="small" 
+                    icon={<DeleteOutlined />}
+                  >
+                    Delete
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+            {editing[selectedRecord?.id] && (
+              <>
+                <Button 
+                  type="primary" 
+                  onClick={() => saveEditing(selectedRecord)}
+                  size="small"
+                >
+                  Save
+                </Button>
+                <Button 
+                  onClick={() => cancelEditing(selectedRecord)}
+                  size="small"
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+          </Space>
+        </div>
+      }
+      placement="bottom"
+      height="90vh"
+      onClose={closeMobileDetails}
+      open={drawerVisible}
+      styles={{
+        body: { padding: '12px', overflowY: 'auto' }
+      }}
+    >
+      {selectedRecord && (
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          {
+            key: "1",
+            label: "General",
+            children: (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <Card size="small" title="Main Info">
+                  <Form form={form} component={false}>
+                    {generalFields.map(field => (
+                      <div key={field} style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        borderBottom: '1px solid #f0f0f0', 
+                        padding: '8px 0' 
+                      }}>
+                        <span style={{ fontWeight: 'bold' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                        {editing[selectedRecord.id] ? (
+                          <Form.Item 
+                            name={field} 
+                            style={{ margin: 0 }}
+                            valuePropName={typeof selectedRecord[field] === 'boolean' ? 'checked' : 'value'}
+                          >
+                            {typeof selectedRecord[field] === 'boolean' ? (
+                              <Checkbox />
+                            ) : (
+                              <Input style={{ width: '150px' }} />
+                            )}
+                          </Form.Item>
+                        ) : (
+                          <span>{formatValue(selectedRecord[field])}</span>
+                        )}
+                      </div>
+                    ))}
+                  </Form>
+                </Card>
+                
+                <Card size="small" title="Scores">
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    borderBottom: '1px solid #f0f0f0', 
+                    padding: '8px 0' 
+                  }}>
+                    <span style={{ fontWeight: 'bold' }}>Auto</span>
+                    <span>{calcAuto(selectedRecord)}</span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    borderBottom: '1px solid #f0f0f0', 
+                    padding: '8px 0' 
+                  }}>
+                    <span style={{ fontWeight: 'bold' }}>Tele</span>
+                    <span>{calcTele(selectedRecord)}</span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    borderBottom: '1px solid #f0f0f0', 
+                    padding: '8px 0' 
+                  }}>
+                    <span style={{ fontWeight: 'bold' }}>End</span>
+                    <span>{calcEnd(selectedRecord)}</span>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    padding: '8px 0',
+                    fontWeight: 'bold'
+                  }}>
+                    <span>EPA</span>
+                    <span>{calcEPA(selectedRecord)}</span>
+                  </div>
+                </Card>
+              </div>
+            )
+          },
+          {
+            key: "2",
+            label: "Auto",
+            children: (
+              <Card size="small" title="Auto Period">
+                <Form form={form} component={false}>
+                  {autoFields.map(field => (
+                    <div key={field} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      borderBottom: '1px solid #f0f0f0', 
+                      padding: '8px 0' 
+                    }}>
+                      <span style={{ fontWeight: 'bold' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                      {editing[selectedRecord.id] ? (
+                        <Form.Item 
+                          name={field} 
+                          style={{ margin: 0 }}
+                          valuePropName={typeof selectedRecord[field] === 'boolean' ? 'checked' : 'value'}
+                        >
+                          {typeof selectedRecord[field] === 'boolean' ? (
+                            <Checkbox />
+                          ) : (
+                            <Input style={{ width: '150px' }} />
+                          )}
+                        </Form.Item>
+                      ) : (
+                        <span>{formatValue(selectedRecord[field])}</span>
+                      )}
+                    </div>
+                  ))}
+                </Form>
+              </Card>
+            )
+          },
+          {
+            key: "3",
+            label: "Tele",
+            children: (
+              <Card size="small" title="Tele Period">
+                <Form form={form} component={false}>
+                  {teleFields.map(field => (
+                    <div key={field} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      borderBottom: '1px solid #f0f0f0', 
+                      padding: '8px 0' 
+                    }}>
+                      <span style={{ fontWeight: 'bold' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                      {editing[selectedRecord.id] ? (
+                        <Form.Item 
+                          name={field} 
+                          style={{ margin: 0 }}
+                          valuePropName={typeof selectedRecord[field] === 'boolean' ? 'checked' : 'value'}
+                        >
+                          {typeof selectedRecord[field] === 'boolean' ? (
+                            <Checkbox />
+                          ) : (
+                            <Input style={{ width: '150px' }} />
+                          )}
+                        </Form.Item>
+                      ) : (
+                        <span>{formatValue(selectedRecord[field])}</span>
+                      )}
+                    </div>
+                  ))}
+                </Form>
+              </Card>
+            )
+          },
+          {
+            key: "4",
+            label: "End",
+            children: (
+              <Card size="small" title="End Period">
+                <Form form={form} component={false}>
+                  {endFields.map(field => (
+                    <div key={field} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      borderBottom: '1px solid #f0f0f0', 
+                      padding: '8px 0' 
+                    }}>
+                      <span style={{ fontWeight: 'bold' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                      {editing[selectedRecord.id] ? (
+                        <Form.Item 
+                          name={field} 
+                          style={{ margin: 0 }}
+                          valuePropName={typeof selectedRecord[field] === 'boolean' ? 'checked' : 'value'}
+                        >
+                          {typeof selectedRecord[field] === 'boolean' ? (
+                            <Checkbox />
+                          ) : (
+                            <Input style={{ width: '150px' }} />
+                          )}
+                        </Form.Item>
+                      ) : (
+                        <span>{formatValue(selectedRecord[field])}</span>
+                      )}
+                    </div>
+                  ))}
+                </Form>
+              </Card>
+            )
+          },
+          {
+            key: "5",
+            label: "Misc",
+            children: (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <Card size="small" title="Misc Statistics">
+                  <Form form={form} component={false}>
+                    {miscFields.map(field => (
+                      <div key={field} style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        borderBottom: '1px solid #f0f0f0', 
+                        padding: '8px 0' 
+                      }}>
+                        <span style={{ fontWeight: 'bold' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                        {editing[selectedRecord.id] ? (
+                          <Form.Item 
+                            name={field} 
+                            style={{ margin: 0 }}
+                            valuePropName={typeof selectedRecord[field] === 'boolean' ? 'checked' : 'value'}
+                          >
+                            {typeof selectedRecord[field] === 'boolean' ? (
+                              <Checkbox />
+                            ) : (
+                              <Input style={{ width: '150px' }} />
+                            )}
+                          </Form.Item>
+                        ) : (
+                          <span>{formatValue(selectedRecord[field])}</span>
+                        )}
+                      </div>
+                    ))}
+                  </Form>
+                </Card>
+                
+                <Card size="small" title="Comments">
+                  <Form form={form} component={false}>
+                    {commentFields.map(field => (
+                      <div key={field} style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        borderBottom: '1px solid #f0f0f0', 
+                        padding: '8px 0' 
+                      }}>
+                        <span style={{ fontWeight: 'bold', marginBottom: '5px' }}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                        {editing[selectedRecord.id] ? (
+                          <Form.Item 
+                            name={field} 
+                            style={{ margin: 0 }}
+                          >
+                            <Input.TextArea 
+                              autoSize={{ minRows: 2, maxRows: 20 }}
+                              style={{ width: '100%' }}
+                              maxLength={255}
+                              showCount
+                              placeholder="Enter comments here..."
+                            />
+                          </Form.Item>
+                        ) : (
+                          <div 
+                            style={{ 
+                              whiteSpace: 'pre-wrap', 
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word' 
+                            }}
+                          >
+                            {formatValue(selectedRecord[field])}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </Form>
+                </Card>
+              </div>
+            )
+          }
+        ]} />
+      )}
+    </Drawer>
+  );
 
   return (
     <div>
@@ -255,19 +1001,163 @@ export default function Sudo() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          width: "90vw",
+          width: mobileView ? "100%" : "90vw",
           margin: "auto",
+          padding: mobileView ? "10px" : 0
         }}
       >
         <br/>
-        <Switch checkedChildren="Simple View" unCheckedChildren="Complex View" onChange={setSimplified}/>
-        <br/>
-        <Table
-          columns={columns}
-          dataSource={data}
-          scroll={{ x: simplified ? undefined : 9000 }}
-        />
+        <div style={{ 
+          display: "flex", 
+          flexDirection: mobileView ? "column" : "row",
+          gap: mobileView ? "10px" : "20px", 
+          alignItems: mobileView ? "stretch" : "center", 
+          marginBottom: "20px",
+          width: "100%"
+        }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: mobileView ? "row" : undefined,
+            justifyContent: mobileView ? "space-between" : undefined,
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <Switch 
+              checkedChildren="Simple View" 
+              unCheckedChildren="Complex View" 
+              onChange={setSimplified}
+            />
+            
+            {userTeam && (
+              <div style={{ fontWeight: 'bold' }}>
+                {adminMode ? 
+                  <span style={{ 
+                    color: 'green', 
+                    backgroundColor: '#f0fff0', 
+                    padding: '5px 10px', 
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}>
+                    <LockOutlined /> {!mobileView && "Admin Mode"}
+                  </span> : 
+                  <span style={{ 
+                    color: '#0050b3', 
+                    backgroundColor: '#e6f7ff', 
+                    padding: '5px 10px', 
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}>
+                    <TeamOutlined /> {!mobileView ? `Team ${userTeam}` : userTeam}
+                  </span>
+                }
+              </div>
+            )}
+          </div>
+          
+          <div style={{ 
+            display: "flex", 
+            gap: "10px", 
+            flexGrow: 1,
+            justifyContent: mobileView ? "space-between" : "flex-end"
+          }}>
+            <Input.Password
+              placeholder="Admin Password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              style={{ width: mobileView ? "60%" : 200 }}
+              disabled={adminMode}
+            />
+            <Button 
+              type={adminMode ? "default" : "primary"}
+              onClick={toggleAdminMode}
+              style={{ width: mobileView ? "37%" : undefined }}
+            >
+              {adminMode ? "Exit Admin" : "Admin Mode"}
+            </Button>
+          </div>
+        </div>
+        
+        <Form form={form} component={false}>
+          <Table
+            components={{
+              body: {
+                cell: EditableCell,
+              },
+            }}
+            columns={mergedColumns}
+            dataSource={data}
+            scroll={{ x: true }}
+            loading={loading}
+            rowKey="id"
+            pagination={{ 
+              position: ['bottomCenter'],
+              showSizeChanger: !mobileView,
+              defaultPageSize: mobileView ? 10 : 20
+            }}
+            size={mobileView ? "small" : "middle"}
+            style={{ 
+              width: '100%', 
+              fontSize: mobileView ? '0.85rem' : '1rem'
+            }}
+          />
+        </Form>
+        
+        {mobileView && renderMobileDetailDrawer()}
       </div>
     </div>
   );
 }
+
+const EditableCell = ({
+  editing,
+  dataIndex,
+  title,
+  record,
+  children,
+  ...restProps
+}) => {
+  // Determine if this is a comment field that needs a TextArea
+  const isCommentField = dataIndex && dataIndex.includes('comments');
+  
+  // Create appropriate input based on field type
+  let inputNode;
+  
+  if (typeof record?.[dataIndex] === 'boolean') {
+    inputNode = <Checkbox />;
+  } else if (isCommentField) {
+    inputNode = (
+      <Input.TextArea 
+        autoSize={{ minRows: 2, maxRows: 20 }}
+        style={{ width: '100%' }}
+        maxLength={255}
+        showCount
+        placeholder="Enter comments here..."
+      />
+    );
+  } else {
+    inputNode = <Input />;
+  }
+  
+  return (
+    <td {...restProps}>
+      {editing ? (
+        <Form.Item
+          name={dataIndex}
+          style={{
+            margin: 0,
+            marginBottom: isCommentField ? '32px' : 0, // Add extra space for comment fields with counter
+          }}
+          valuePropName={typeof record?.[dataIndex] === 'boolean' ? 'checked' : 'value'}
+        >
+          {inputNode}
+        </Form.Item>
+      ) : (
+        children
+      )}
+    </td>
+  );
+};
