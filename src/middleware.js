@@ -77,6 +77,7 @@ export async function middleware(request) {
   // Debug cookie information
   console.log(`Auth cookie from request.cookies: ${authCredentials ? 'EXISTS' : 'MISSING'}`);
   console.log(`Admin auth cookie from request.cookies: ${adminAuth ? 'EXISTS' : 'MISSING'}`);
+  console.log(`User agent: ${request.headers.get('user-agent') || 'unknown'}`);
   
   // Try to get from local storage via header
   if (!authCredentials?.value) {
@@ -301,7 +302,11 @@ export async function middleware(request) {
           redirectUrl.searchParams.set('logout', forceLogoutId);
           redirectUrl.searchParams.set('reason', 'invalid');
           
+          // Add Cache-Control headers to prevent caching
           response.headers.set('Location', redirectUrl.toString());
+          response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          response.headers.set('Pragma', 'no-cache');
+          response.headers.set('Expires', '0');
           return response;
         }
       } else {
@@ -329,5 +334,12 @@ export async function middleware(request) {
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', request.nextUrl.pathname);
-  return NextResponse.redirect(url);
+  const response = NextResponse.redirect(url);
+  
+  // Add Cache-Control headers to prevent caching issues
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  
+  return response;
 } 
