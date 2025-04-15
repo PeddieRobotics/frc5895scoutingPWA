@@ -45,6 +45,10 @@ export async function middleware(request) {
   if (isIOS && iosAuthFromUrl && !authCredentials?.value) {
     console.log('Found iOS auth from URL parameter');
     authCredentials = { value: iosAuthFromUrl };
+    // Redirect to same URL without ios_auth param to break the loop
+    const cleanUrl = new URL(request.url);
+    cleanUrl.searchParams.delete('ios_auth');
+    return NextResponse.redirect(cleanUrl);
   }
   
   // Try authorization header for API
