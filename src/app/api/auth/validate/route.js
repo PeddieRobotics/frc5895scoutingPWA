@@ -208,10 +208,9 @@ export async function POST(request) {
     'Expires': '0',
     'Surrogate-Control': 'no-store'
   });
-
+  
   // Get the Authorization header
   const authHeader = request.headers.get('Authorization');
-  
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     return NextResponse.json({ 
       authenticated: false,
@@ -252,11 +251,9 @@ export async function POST(request) {
       const passwordMatches = await bcrypt.compare(password, password_hash);
       
       if (passwordMatches) {
-        // If authenticated, create a secure response with cookies
         const isProduction = process.env.NODE_ENV === 'production';
         const now = Date.now();
         
-        // Create a response with authenticated cookies
         const response = NextResponse.json({ 
           authenticated: true,
           message: 'Authentication successful',
@@ -268,28 +265,33 @@ export async function POST(request) {
           headers
         });
         
-        console.log(`Setting auth cookies for team ${username}, isProduction=${isProduction}`);
-        
-        // First set a cookie with SameSite=Lax (works on localhost)
+        // Main secure cookie (HTTP only, not accessible via JS)
         response.cookies.set('auth_credentials', base64Credentials, { 
           maxAge: 2592000, // 30 days
           path: '/',
-          httpOnly: false,
+          httpOnly: true,
           secure: isProduction,
           sameSite: 'lax'
         });
         
-        // Also set a SameSite=None cookie with Secure (required for cross-site in production)
+        // Cross-site/cross-origin cookie for iOS/Safari (JS accessible)
         response.cookies.set('auth_credentials', base64Credentials, { 
           maxAge: 2592000, // 30 days
           path: '/',
-          httpOnly: false, 
-          secure: true, // Always use secure when sameSite is 'none'
-          sameSite: 'none', // Changed from 'lax' to 'none' to fix cross-page issues
-          domain: null // Let browser determine the domain
+          httpOnly: false,
+          secure: true,
+          sameSite: 'none'
         });
         
-        console.log(`Set server-side cookies for team: ${username} with both SameSite modes`);
+        // Optionally, set a separate JS-accessible cookie for iOS if needed:
+        // response.cookies.set('ios_auth', base64Credentials, {
+        //   maxAge: 2592000, // 30 days
+        //   path: '/',
+        //   httpOnly: false,
+        //   secure: isProduction,
+        //   sameSite: 'lax'
+        // });
+        
         return response;
       } else {
         // Password incorrect
