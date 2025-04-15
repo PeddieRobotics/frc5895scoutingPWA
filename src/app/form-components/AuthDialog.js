@@ -105,23 +105,6 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
           document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
         }
         
-        // Specific handling for WebKit (iOS Safari)
-        if (/webkit/i.test(navigator.userAgent)) {
-          console.log("WebKit detected, adding special cookie handling");
-          // iOS WebKit requires Secure attribute, even for same-site
-          if (window.location.protocol === 'https:') {
-            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; Secure`;
-          }
-          
-          // Also store in localStorage as a backup for WebKit
-          try {
-            localStorage.setItem('webkit_auth_backup', credentials);
-            localStorage.setItem('webkit_auth_timestamp', Date.now().toString());
-          } catch (e) {
-            console.error("Error storing WebKit backup auth", e);
-          }
-        }
-        
         console.log("Set auth cookies with multiple approaches for best compatibility");
         
         // Also attempt to set cookies via fetch to ensure they're properly set server-side

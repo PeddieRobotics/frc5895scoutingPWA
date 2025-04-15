@@ -201,21 +201,6 @@ export async function GET(request) {
 export async function POST(request) {
   const bcrypt = await import('bcrypt').then(mod => mod.default);
   
-  // Get request body if available
-  let requestBody = {};
-  try {
-    requestBody = await request.json();
-  } catch (e) {
-    console.log('No request body or invalid JSON');
-  }
-  
-  // Check for userAgent in body
-  const userAgent = requestBody.userAgent || request.headers.get('user-agent') || '';
-  const isWebKit = userAgent.toLowerCase().includes('webkit') && 
-                  !userAgent.toLowerCase().includes('chrome');
-  
-  console.log(`POST auth validate: userAgent=${userAgent.substring(0, 20)}..., isWebKit=${isWebKit}`);
-  
   // Set no-cache headers
   const headers = new Headers({
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -295,61 +280,14 @@ export async function POST(request) {
         });
         
         // Also set a SameSite=None cookie with Secure (required for cross-site in production)
-        // WebKit on iOS is very strict about SameSite=None requiring Secure
         response.cookies.set('auth_credentials', base64Credentials, { 
           maxAge: 2592000, // 30 days
           path: '/',
           httpOnly: false, 
           secure: true, // Always use secure when sameSite is 'none'
-          sameSite: 'none',
+          sameSite: 'none', // Changed from 'lax' to 'none' to fix cross-page issues
           domain: null // Let browser determine the domain
         });
-        
-        // For maximum iOS WebKit compatibility
-        // This is needed because iOS sometimes ignores SameSite=None cookies
-        if (isWebKit) {
-          console.log('WebKit detected, adding Safari-compatible cookie');
-          
-          // Add a specific cookie format that works well with WebKit
-          response.cookies.set('auth_credentials', base64Credentials, { 
-            maxAge: 2592000, // 30 days
-            path: '/',
-            httpOnly: false,
-            secure: true,  // Safari/WebKit requires Secure for all cookies
-            sameSite: 'none'
-          });
-          
-          // For iOS, sometimes a simple cookie works better
-          if (userAgent.toLowerCase().includes('iphone') || 
-              userAgent.toLowerCase().includes('ipad') || 
-              userAgent.toLowerCase().includes('ios')) {
-            console.log('iOS device detected, adding specific iOS cookie');
-            response.cookies.set('auth_credentials', base64Credentials, { 
-              maxAge: 2592000, // 30 days
-              path: '/',
-              httpOnly: false,
-              secure: true
-            });
-            
-            // iOS might also need a partitioned cookie (for ITP compatibility)
-            try {
-              response.cookies.set('auth_credentials', base64Credentials, { 
-                maxAge: 2592000, // 30 days
-                path: '/',
-                httpOnly: false,
-                secure: true,
-                partitioned: true // For iOS 16.4+
-              });
-            } catch (e) {
-              console.log('Partitioned cookie not supported');
-            }
-          }
-          
-          // Add Cache-Control headers to prevent caching
-          response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-          response.headers.set('Pragma', 'no-cache');
-          response.headers.set('Expires', '0');
-        }
         
         console.log(`Set server-side cookies for team: ${username} with both SameSite modes`);
         return response;
@@ -418,19 +356,6 @@ export async function DELETE(request) {
     secure: true // Always use secure when sameSite is 'none'
   });
   
-  // For iOS WebKit specific cookie clearing
-  response.cookies.set('auth_credentials', '', { 
-    maxAge: 0,
-    path: '/',
-    expires: new Date(0),
-    secure: true
-  });
-  
-  // Add no-cache headers
-  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
-  
-  console.log('Server-side logout: cleared authentication cookies with all compatibility modes');
+  console.log('Server-side logout: cleared authentication cookies with both SameSite modes');
   return response;
 } 

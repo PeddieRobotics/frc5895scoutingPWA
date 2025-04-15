@@ -192,42 +192,6 @@ export default function Home() {
       console.error('Error setting secure cookie:', e);
     }
     
-    // WebKit (iOS Safari) specific handling
-    const isWebKit = /webkit/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
-    if (isWebKit) {
-      console.log("WebKit browser detected, applying special cookie handling");
-      
-      // iOS WebKit works best with Secure cookies when available
-      if (window.location.protocol === 'https:') {
-        // Plain Secure cookie
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; Secure`;
-      }
-      
-      // Store with timestamp for restoration on page refresh
-      localStorage.setItem('webkit_auth_backup', credentials);
-      localStorage.setItem('webkit_auth_timestamp', Date.now().toString());
-      
-      // Also try to ensure server-side cookies right away
-      try {
-        console.log("Forcing server cookie setting for WebKit");
-        fetch('/api/auth/validate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${credentials}`
-          },
-          body: JSON.stringify({ 
-            setCookie: true,
-            userAgent: navigator.userAgent
-          }),
-          credentials: 'same-origin',
-          cache: 'no-store'
-        });
-      } catch (e) {
-        console.error('WebKit server cookie setting failed:', e);
-      }
-    }
-    
     // Dispatch a custom event to notify other pages that auth has been updated
     try {
       window.dispatchEvent(new CustomEvent('auth_updated', {
@@ -505,27 +469,6 @@ export default function Home() {
         }
       }
       
-      // Special WebKit fallback
-      const webkitBackup = localStorage.getItem('webkit_auth_backup');
-      const webkitTimestamp = localStorage.getItem('webkit_auth_timestamp');
-      const isWebKit = /webkit/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
-      
-      // For WebKit, use the backup if it's recent (within the last hour)
-      if (!credentials && isWebKit && webkitBackup && webkitTimestamp) {
-        const timestamp = parseInt(webkitTimestamp, 10);
-        const isRecent = Date.now() - timestamp < 60 * 60 * 1000; // 1 hour
-        
-        if (isRecent) {
-          console.log("Using WebKit auth backup (cookie not found but recent backup exists)");
-          credentials = webkitBackup;
-          
-          // Re-apply all cookie settings immediately
-          setAuthCookies(credentials);
-        }
-      }
-      
-      console.log(`Auth check results: cookie=${!!credentials}, webkit=${!!webkitBackup}`);
-
       // If credentials were found in either location, validate and set them
       if (credentials) {
         validateCredentials(credentials).then(isValid => {
