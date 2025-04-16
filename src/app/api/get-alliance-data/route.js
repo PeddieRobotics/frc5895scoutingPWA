@@ -11,7 +11,7 @@ export async function GET() {
 
 
     // fetch team name from blue alliance api, commented our for now while testing getting from the backend
-    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025cmptx/teams`, {
+    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mil/teams`, {
       headers: {
         "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
         "Accept": "application/json"
