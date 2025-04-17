@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useCallback, Suspense, lazy } from "react";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import styles from "./page.module.css";
@@ -18,9 +18,6 @@ import { toast, Toaster } from 'react-hot-toast';
 import IntakeOptions from "./form-components/IntakeOptions";
 import Qualitative from "./form-components/Qualitative";
 import { useRouter } from 'next/navigation';
-
-// Load the SearchParamsHandler component with dynamic import to ensure proper Suspense support
-const SearchParamsHandler = lazy(() => import('./components/SearchParamsHandler'));
 
 export default function Home() {
   const [noShow, setNoShow] = useState(false);
@@ -1139,7 +1136,7 @@ export default function Home() {
     }
   };
 
-  // Add this effect to check URL params without Next.js useSearchParams
+  // Check URL parameters on client-side only
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Use browser's built-in URLSearchParams API instead of Next.js hook
@@ -1161,14 +1158,6 @@ export default function Home() {
   return (
     <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
       <Toaster position="top-center" />
-      
-      {/* Properly wrap the SearchParamsHandler with Suspense */}
-      <Suspense fallback={null}>
-        <SearchParamsHandler 
-          onAuthRequired={handleAuthRequired}
-          onRedirectTarget={handleRedirectTarget}
-        />
-      </Suspense>
       
       {/* Always render the form - don't conditionally render it, just conditionally hide it */}
       <form 
