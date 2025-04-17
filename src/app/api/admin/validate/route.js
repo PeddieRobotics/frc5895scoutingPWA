@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// DEVELOPMENT HARDCODED PASSWORD - remove in production
+const DEV_PASSWORD = 'admin123';
+
 export async function GET(request) {
   try {
-    // Get admin auth cookie
-    const cookieStore = await cookies();
-    const adminAuth = cookieStore.get('admin_auth')?.value;
+    // Simple authentication logic for development
+    const adminPassword = process.env.ADMIN_PASSWORD || DEV_PASSWORD;
     
-    if (!adminAuth) {
+    // Get admin auth cookie
+    const cookieStore = cookies();
+    const adminAuth = cookieStore.get('admin_auth');
+    
+    console.log('Admin validation attempt, cookie found:', !!adminAuth);
+    
+    if (!adminAuth?.value) {
+      console.log('No admin_auth cookie found');
       return NextResponse.json(
         { authenticated: false, message: 'Not authenticated' },
         { status: 401 }
@@ -15,12 +24,13 @@ export async function GET(request) {
     }
     
     try {
-      // Decode and check credentials
-      const decodedValue = decodeURIComponent(adminAuth);
-      const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
+      // Simple base64 decoding
+      const decoded = Buffer.from(adminAuth.value, 'base64').toString('utf-8');
       const [username, password] = decoded.split(':');
       
-      if (username === 'admin' && password === process.env.ADMIN_PASSWORD) {
+      console.log(`Admin validation: username=${username}, password length=${password?.length || 0}`);
+      
+      if (username === 'admin' && password === adminPassword) {
         return NextResponse.json({ authenticated: true });
       }
     } catch (e) {

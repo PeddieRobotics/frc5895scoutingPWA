@@ -1,44 +1,54 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// DEVELOPMENT HARDCODED PASSWORD - remove in production
+const DEV_PASSWORD = 'admin123';
+
 export async function POST(request) {
   try {
     const { sudoPassword } = await request.json();
     
-    // Check against environment variable
-    if (sudoPassword !== process.env.ADMIN_PASSWORD) {
+    // Simple authentication logic for development
+    const adminPassword = process.env.ADMIN_PASSWORD || DEV_PASSWORD;
+    
+    // Debug log
+    console.log(`Auth attempt with password: ${sudoPassword?.length || 0} chars`);
+    
+    // Simple password check
+    if (sudoPassword !== adminPassword) {
       return NextResponse.json(
         { success: false, message: 'Invalid admin password' },
         { status: 401 }
       );
     }
     
-    // Set admin cookie with expiration (24 hours)
-    const adminAuth = btoa(`admin:${process.env.ADMIN_PASSWORD}`);
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Create the admin auth token
+    const adminAuth = Buffer.from(`admin:${adminPassword}`).toString('base64');
     
-    // Create a response
+    // Get cookie store
+    const cookieStore = cookies();
+    
+    // Set the cookie directly
+    cookieStore.set('admin_auth', adminAuth, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: '/'
+    });
+    
+    // Create response
     const response = NextResponse.json({ success: true });
     
-    // Set SameSite=Lax cookie (works well on localhost)
+    // Also set the cookie in the response for client-side access
     response.cookies.set('admin_auth', adminAuth, {
-      httpOnly: false,
-      secure: isProduction,
+      httpOnly: false, // Readable by client JS
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24, // 24 hours
-      path: '/',
-      sameSite: 'lax'
+      path: '/'
     });
     
-    // Also set SameSite=None cookie with Secure (required for cross-site in production)
-    response.cookies.set('admin_auth', adminAuth, {
-      httpOnly: false, 
-      secure: true, // Always use secure when sameSite is 'none'
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: '/',
-      sameSite: 'none'
-    });
-    
-    console.log("Set admin_auth cookies with both SameSite modes");
     return response;
   } catch (error) {
     console.error('Admin auth error:', error);

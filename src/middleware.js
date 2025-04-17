@@ -8,7 +8,8 @@ const PUBLIC_PATHS = [
   '/login',
   '/register',
   '/favicon.ico',
-  '/manifest.json'
+  '/manifest.json',
+  '/api/admin/debug'
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -19,12 +20,24 @@ const PUBLIC_PATH_PREFIXES = [
   '/auth/'
 ];
 
+// Admin API routes that use cookies instead of Authorization headers
+const ADMIN_COOKIE_ROUTES = [
+  '/api/admin/auth',
+  '/api/admin/validate',
+  '/api/admin/teams'
+];
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
   // Allow public paths without auth
   if (PUBLIC_PATHS.includes(pathname) || 
       PUBLIC_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+    return NextResponse.next();
+  }
+
+  // Special handling for admin API routes that use cookies
+  if (ADMIN_COOKIE_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
 
