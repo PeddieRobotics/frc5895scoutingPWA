@@ -38,16 +38,26 @@ const TrashIcon = () => (
   </svg>
 );
 
+const UserCircleIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 20a6 6 0 0 0-12 0"></path>
+    <circle cx="12" cy="10" r="4"></circle>
+    <circle cx="12" cy="12" r="10"></circle>
+  </svg>
+);
+
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [teams, setTeams] = useState([]);
+  const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [newTeam, setNewTeam] = useState({ teamName: '', password: '' });
   const [cookieDebug, setCookieDebug] = useState('');
   const [showDebugUI, setShowDebugUI] = useState(false);
+  const [activeTab, setActiveTab] = useState('teams');
   const router = useRouter();
 
   // Define fetchTeams function before it's used in checkAuth
@@ -69,7 +79,26 @@ export default function AdminPage() {
     }
   };
 
-  // Define checkAuth function outside useEffects so it can be used in multiple places
+  // Add function to fetch active sessions
+  const fetchActiveSessions = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/sessions');
+      if (response.ok) {
+        const data = await response.json();
+        setActiveSessions(data.sessions || []);
+      } else {
+        setError('Failed to fetch active sessions');
+      }
+    } catch (err) {
+      setError('Network error loading sessions');
+      console.error('Fetch sessions error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update checkAuth to also fetch sessions
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/admin/validate', {
@@ -82,8 +111,9 @@ export default function AdminPage() {
       
       if (response.ok) {
         setAuthenticated(true);
-        // Only fetch teams after setting authenticated to true
+        // Only fetch teams and sessions after setting authenticated to true
         fetchTeams();
+        fetchActiveSessions();
       }
     } catch (err) {
       console.error('Auth validation error:', err);
@@ -246,6 +276,59 @@ export default function AdminPage() {
     } catch (err) {
       setError('Network error. Please try again.');
       console.error('Delete team error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add function to delete a session
+  const handleDeleteSession = async (sessionId) => {
+    if (!confirm(`Are you sure you want to terminate this session?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/auth/sessions/${sessionId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        setActiveSessions(prev => prev.filter(session => session.session_id !== sessionId));
+      } else {
+        setError('Failed to delete session');
+      }
+    } catch (err) {
+      setError('Network error deleting session');
+      console.error('Delete session error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add function to delete all sessions for a team
+  const handleDeleteTeamSessions = async (teamName) => {
+    if (!confirm(`Are you sure you want to terminate all sessions for team ${teamName}?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/auth/sessions/team/${teamName}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // Refresh sessions list
+        fetchActiveSessions();
+      } else {
+        setError('Failed to delete team sessions');
+      }
+    } catch (err) {
+      setError('Network error deleting team sessions');
+      console.error('Delete team sessions error:', err);
     } finally {
       setLoading(false);
     }

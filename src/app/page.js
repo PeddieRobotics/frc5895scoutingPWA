@@ -18,6 +18,7 @@ import base58 from 'base-58';
 import { toast, Toaster } from 'react-hot-toast';
 import IntakeOptions from "./form-components/IntakeOptions";
 import Qualitative from "./form-components/Qualitative";
+import { useRouter } from 'next/navigation';
 
 // Create a separate component that uses useSearchParams
 function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
@@ -32,11 +33,8 @@ function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
       if (redirect) {
         onRedirectTarget(redirect);
         
-        // Clear the URL parameters after processing to prevent redirect loops
-        if (typeof window !== 'undefined') {
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
-        }
+        // Keep the redirect parameter in URL until authentication is complete
+        // We'll clean it up after successful auth
       }
     }
   }, [searchParams, onAuthRequired, onRedirectTarget]);
@@ -65,6 +63,7 @@ export default function Home() {
   const [formResetKey, setFormResetKey] = useState(0);
   
   const form = useRef();
+  const router = useRouter();
 
   // Handle auth required from URL
   const handleAuthRequired = useCallback((required) => {
@@ -1057,14 +1056,24 @@ export default function Home() {
   };
 
   // Handle authentication success
-  const handleAuthSuccess = (credentials, scoutTeam) => {
+  const handleAuthSuccess = useCallback((credentials, scoutTeam) => {
     setAuthCredentials(credentials);
     setShowAuthDialog(false);
     setAuthError('');
     
     // If we have a redirect target, navigate there
     if (authRedirectTarget) {
-      window.location.href = authRedirectTarget;
+      console.log(`Auth success, redirecting to: ${authRedirectTarget}`);
+      
+      // Instead of immediately redirecting, wait a moment to ensure cookies are set
+      // and recognized by the browser, especially on iOS
+      setTimeout(() => {
+        // Use window.location for a hard navigation rather than the router
+        // This forces a complete page load with the new auth state
+        window.location.href = authRedirectTarget;
+      }, 300);
+      
+      return;
     }
     
     // Update the scout team in the form if one is provided
@@ -1078,7 +1087,7 @@ export default function Home() {
       setScoutProfile(updatedProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(updatedProfile));
     }
-  };
+  }, [authRedirectTarget, scoutProfile]);
 
   // Handle auth dialog close
   const handleAuthClose = () => {

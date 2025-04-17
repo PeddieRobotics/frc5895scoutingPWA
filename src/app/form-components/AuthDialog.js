@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import styles from '../page.module.css';
 
 export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
@@ -11,6 +12,11 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
   const [attempts, setAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Get redirect URL from query params if available
+  const redirectUrl = searchParams?.get('redirect') || null;
 
   // Reset error when errorMessage prop changes
   useEffect(() => {
@@ -67,8 +73,8 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
       // Get a timestamp for cache-busting
       const timestamp = Date.now();
       
-      // Call the server to validate
-      const response = await fetch(`/api/auth/validate?t=${timestamp}`, {
+      // First, validate the credentials
+      const validateResponse = await fetch(`/api/auth/validate?t=${timestamp}`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -78,53 +84,57 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
         cache: 'no-store'
       });
       
-      // Parse the response
-      const data = await response.json();
+      const validateData = await validateResponse.json();
       
-      if (response.ok && data.authenticated === true) {
-        // Reset attempts on successful login
-        setAttempts(0);
+      if (validateResponse.ok && validateData.authenticated === true) {
+        // Credentials are valid, now create a session
+        const sessionResponse = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache'
+          },
+          credentials: 'include', // Important for cookies
+          cache: 'no-store'
+        });
         
-        // Store credentials in sessionStorage for future API calls
-        sessionStorage.setItem('auth_credentials', credentials);
+        const sessionData = await sessionResponse.json();
         
-        // Store scout team in localStorage for form auto-fill
-        if (data.scoutTeam) {
-          localStorage.setItem('scout_team', data.scoutTeam);
+        if (sessionResponse.ok && sessionData.success) {
+          // Reset attempts on successful login
+          setAttempts(0);
+          
+          // Store the basic auth for API calls
+          sessionStorage.setItem('auth_credentials', credentials);
+          
+          // Store scout team in localStorage for form auto-fill
+          if (validateData.scoutTeam) {
+            localStorage.setItem('scout_team', validateData.scoutTeam);
+          }
+          
+          console.log("Login successful, handling redirect");
+          
+          // Call onLogin handler
+          onLogin(credentials, validateData.scoutTeam);
+          
+          // Handle redirection if a redirect URL is provided
+          if (redirectUrl) {
+            console.log(`Redirecting to: ${redirectUrl}`);
+            
+            // Use a timeout to ensure the cookies are set before redirecting
+            // A slightly longer timeout helps ensure iOS Safari has processed the cookies
+            setTimeout(() => {
+              // Use window.location for a full page reload instead of router.push
+              // This ensures the browser has the latest cookies when loading the page
+              window.location.href = redirectUrl;
+            }, 300);
+          }
+        } else {
+          // Something went wrong creating the session
+          setError(sessionData.message || 'Error creating session');
         }
-        
-        // Set auth cookies with different attributes for maximum compatibility
-        // Set as normal cookie
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
-        
-        // Set as SameSite=Lax cookie (best for localhost)
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
-        
-        // Set as SameSite=None+Secure for production
-        if (window.location.protocol === 'https:') {
-          document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
-        }
-        
-        console.log("Set auth cookies with multiple approaches for best compatibility");
-        
-        // Also attempt to set cookies via fetch to ensure they're properly set server-side
-        try {
-          console.log("Setting server-side cookies via API call");
-          await fetch('/api/auth/validate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Basic ${credentials}`
-            },
-            body: JSON.stringify({ setCookie: true }),
-            credentials: 'same-origin'
-          });
-        } catch (e) {
-          console.log("Cookie setting API call failed, proceeding with client cookies");
-        }
-        
-        console.log("Login successful, calling onLogin handler");
-        onLogin(credentials, data.scoutTeam);
       } else {
         // Handle failed login
         const newAttempts = attempts + 1;
@@ -149,7 +159,7 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
           }, 1000);
         }
         
-        setError(data.message || 'Invalid username or password');
+        setError(validateData.message || 'Invalid username or password');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -174,6 +184,10 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
       <div className={styles.QRCodeContainer}>
         <h2>Authentication Required</h2>
         <p className={styles.LoginSubheader}>Please login with your team credentials</p>
+        
+        {redirectUrl && (
+          <p className={styles.RedirectInfo}>You'll be redirected to: {redirectUrl}</p>
+        )}
         
         {error && <p className={styles.ErrorText}>{error}</p>}
         {isLocked && lockTimer > 0 && <p className={styles.ErrorText}>Account locked. Try again in {lockTimer} seconds.</p>}
