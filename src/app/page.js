@@ -20,7 +20,7 @@ import IntakeOptions from "./form-components/IntakeOptions";
 import Qualitative from "./form-components/Qualitative";
 import { useRouter } from 'next/navigation';
 
-// Create a separate component that uses useSearchParams
+// Create a separate client component that uses useSearchParams
 function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
   const searchParams = useSearchParams();
   
@@ -40,6 +40,21 @@ function AuthParameterHandler({ onAuthRequired, onRedirectTarget }) {
   }, [searchParams, onAuthRequired, onRedirectTarget]);
   
   return null;
+}
+
+// Create a client component wrapper for the search params functionality
+function ClientSearchParamsWrapper({ children, onAuthRequired, onRedirectTarget }) {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AuthParameterHandler 
+          onAuthRequired={onAuthRequired}
+          onRedirectTarget={onRedirectTarget}
+        />
+      </Suspense>
+      {children}
+    </>
+  );
 }
 
 export default function Home() {
@@ -1160,490 +1175,487 @@ export default function Home() {
   };
 
   return (
-    <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
-      <Toaster position="top-center" />
-      
-      {/* Suspense boundary for search params */}
-      <Suspense fallback={null}>
-        <AuthParameterHandler 
-          onAuthRequired={handleAuthRequired}
-          onRedirectTarget={handleRedirectTarget}
-        />
-      </Suspense>
-      
-      {/* Always render the form - don't conditionally render it, just conditionally hide it */}
-      <form 
-        key={formResetKey}
-        ref={form} 
-        name="Scouting Form" 
-        className={`${styles.formContainer} ${compactStyles.formContainer}`}
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          return false;
-        }}
-        style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
-      >
-        <Header headerName={"JÖRMUNSCOUTR"} className={compactStyles.header} />
-        <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
-          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
-            <TextInput 
-              visibleName={"Scout Name:"} 
-              internalName={"scoutname"} 
-              defaultValue={scoutProfile?.scoutname || ""}
-              className="preMatchInput"
-            />
-            <TextInput 
-              visibleName={"Match #:"} 
-              internalName={"match"} 
-              defaultValue={scoutProfile?.match || ""}
-              type={"tel"}
-              pattern="[0-9]*"
-              className="preMatchInput"
-            />
-          </div>
-          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
-            <TextInput
-              visibleName={"Team Scouted:"}
-              internalName={"team"}
-              type={"tel"}
-              pattern="[0-9]*"
-              className="preMatchInput"
-            />
-          </div>
-          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
-            <Checkbox
-              visibleName={"No Show"}
-              internalName={"noshow"}
-              changeListener={onNoShowChange}
-              className="preMatchInput"
-            />
-          </div>
-        </div>
-
-        {!noShow && (
-          <>
-            <div className={`${styles.Auto} ${compactStyles.Auto}`}>
-              <Header headerName={"Auto"} className={compactStyles.header} />
-              <Checkbox visibleName={"Leave"} internalName={"leave"} className="leaveCheckbox" style={{ marginBottom: '10px' }} />
-              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`} style={{ paddingTop: '10px' }}>
-                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
-                <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
-              </div>
-              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autoprocessorsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autoprocessorfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autonetsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autonetfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className={`${styles.Auto} ${compactStyles.Auto}`}>
-              <Header headerName={"Tele"} className={compactStyles.header} />
-              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
-                <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
-              </div>
-              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"teleprocessorsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"teleprocessorfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telenetsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telenetfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-                  className={compactStyles.commentBox}
+    <ClientSearchParamsWrapper
+      onAuthRequired={handleAuthRequired}
+      onRedirectTarget={handleRedirectTarget}
+    >
+      <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
+        <Toaster position="top-center" />
+        
+        {/* Always render the form - don't conditionally render it, just conditionally hide it */}
+        <form 
+          key={formResetKey}
+          ref={form} 
+          name="Scouting Form" 
+          className={`${styles.formContainer} ${compactStyles.formContainer}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
+          style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
+        >
+          <Header headerName={"JÖRMUNSCOUTR"} className={compactStyles.header} />
+          <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
+            <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
+              <TextInput 
+                visibleName={"Scout Name:"} 
+                internalName={"scoutname"} 
+                defaultValue={scoutProfile?.scoutname || ""}
+                className="preMatchInput"
               />
-
-              <Checkbox 
-                  visibleName={"Playing Defense?"} 
-                  internalName={"defense"} 
-                  changeListener={onDefenseChange}
-                />
-                {defense && (
-                  <>
-                    <CommentBox
-                      visibleName={"Defense Elaboration"}
-                      internalName={"defensecomments"}
-                      className={compactStyles.commentBox}
-                    />
-                    <div className={`${styles.defenseRating} ${compactStyles.defenseRating}`}>
-                      <Qualitative
-                        visibleName="Defense Played"
-                        internalName="defenseplayed"
-                        description="Ability to Play Defense"
-                        forcedMinRating={1}
-                      />
-                    </div>
-                  </>
-                )}    
-
-            </div>
-
-            <div className={`${styles.Endgame} ${compactStyles.Endgame}`}>
-              <Header headerName={"Endgame"} className={compactStyles.header} />
-              <EndPlacement className={compactStyles.endPlacement} />
-            </div>
-
-            <div className={`${styles.PostMatch} ${compactStyles.PostMatch}`}>
-              <Header headerName={"Post-Match"} className={compactStyles.header} />
-              <SubHeader subHeaderName={"Intake"} className={compactStyles.subHeader} />
-              <IntakeOptions className={compactStyles.intakeOptions} />
-              <Checkbox 
-                visibleName={"Broke down?"} 
-                internalName={"breakdown"} 
-                changeListener={onBreakdownChange} 
+              <TextInput 
+                visibleName={"Match #:"} 
+                internalName={"match"} 
+                defaultValue={scoutProfile?.match || ""}
+                type={"tel"}
+                pattern="[0-9]*"
+                className="preMatchInput"
               />
-              {breakdown && (
+            </div>
+            <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
+              <TextInput
+                visibleName={"Team Scouted:"}
+                internalName={"team"}
+                type={"tel"}
+                pattern="[0-9]*"
+                className="preMatchInput"
+              />
+            </div>
+            <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
+              <Checkbox
+                visibleName={"No Show"}
+                internalName={"noshow"}
+                changeListener={onNoShowChange}
+                className="preMatchInput"
+              />
+            </div>
+          </div>
+
+          {!noShow && (
+            <>
+              <div className={`${styles.Auto} ${compactStyles.Auto}`}>
+                <Header headerName={"Auto"} className={compactStyles.header} />
+                <Checkbox visibleName={"Leave"} internalName={"leave"} className="leaveCheckbox" style={{ marginBottom: '10px' }} />
+                <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`} style={{ paddingTop: '10px' }}>
+                  <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><h2>L4</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L3</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L2</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L1</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
+                  <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
+                </div>
+                <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autoprocessorsuccess"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autoprocessorfail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"autonetsuccess"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"autonetfail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className={`${styles.Auto} ${compactStyles.Auto}`}>
+                <Header headerName={"Tele"} className={compactStyles.header} />
+                <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><h2>L4</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L3</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L2</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><h2>L1</h2></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
+                  <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
+                </div>
+                <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"teleprocessorsuccess"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"teleprocessorfail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
+                  <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
+                  <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Success</th>
+                        <th>Fail</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td></td>
+                        <td><NumericInput pieceType={"Success"} internalName={"telenetsuccess"}/></td>
+                        <td><NumericInput pieceType={"Fail"} internalName={"telenetfail"}/></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
                 <CommentBox
-                  visibleName={"Breakdown Elaboration"}
-                  internalName={"breakdowncomments"}
-                  className={compactStyles.commentBox}
+                    visibleName={"General Comments"}
+                    internalName={"generalcomments"}
+                    className={compactStyles.commentBox}
                 />
-              )}
-            </div>
-          </>
-        )}
-        <div className={`${styles.SubmitButtons} ${compactStyles.SubmitButtons}`}>
-          <button 
-            id="qrbutton" 
-            type="button" 
-            onClick={handleQRButtonClick} 
-            className={`${styles.QRButton} ${compactStyles.QRButton}`}
-          >
-            GENERATE QR CODE
-          </button>
-          <button 
-            id="onlinesubmit" 
-            type="button" 
-            onClick={handleOnlineSubmitClick} 
-            className={`${styles.OnlineSubmitButton} ${compactStyles.OnlineSubmitButton}`} 
-            disabled={!isOnline}
-          >
-            {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
-          </button>
-        </div>
-      </form>
 
-      {/* QR Code Overlay */}
-      {showQRCode && (
-        <div className={styles.QRCodeOverlay}>
-          <div className={styles.QRCodeContainer}>
-            <h2 className={styles.qrTitle}>Scan QR Code to Submit Form Data</h2>
-            <div className={styles.QRCodeRow}>
-              {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="JSON QR" className={styles.QRCodeImage} />}
-            </div>
-            <div className={styles.SubmitButtons}>
-              <button onClick={handleQRClose} className={styles.SubmitButton}>Done</button>
-              <button onClick={handleQRCancel} className={styles.CancelButton}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Submit Dialog Overlay */}
-      {showSubmitDialog && (
-        <div className={styles.QRCodeOverlay}>
-          <div className={styles.QRCodeContainer}>
-            <h2 className={styles.qrTitle}>Submit Form Data Online</h2>
-            
-            {!submissionResult ? (
-              <>
-                <div className={styles.SubmitSummary}>
-                  <h3>Data Summary</h3>
-                  <div className={styles.SummaryMainDetails}>
-                    <p><strong>Scout:</strong> {formData?.scoutname}</p>
-                    <p><strong>Match:</strong> {formData?.match}</p>
-                    <p><strong>Team:</strong> {formData?.team}</p>
-                    <p><strong>No Show:</strong> {formData?.noshow ? "Yes" : "No"}</p>
-                  </div>
-                  
-                  {formData && !formData.noshow && (
+                <Checkbox 
+                    visibleName={"Playing Defense?"} 
+                    internalName={"defense"} 
+                    changeListener={onDefenseChange}
+                  />
+                  {defense && (
                     <>
-                      <div className={styles.SummarySection}>
-                        <h4>Auto</h4>
-                        <p><strong>Leave:</strong> {formData.leave ? "Yes" : "No"}</p>
-                        <p><strong>Coral:</strong></p>
-                        <ul className={styles.SummaryList}>
-                          <li>L1: {formData.autol1success || 0} success, {formData.autol1fail || 0} fail</li>
-                          <li>L2: {formData.autol2success || 0} success, {formData.autol2fail || 0} fail</li>
-                          <li>L3: {formData.autol3success || 0} success, {formData.autol3fail || 0} fail</li>
-                          <li>L4: {formData.autol4success || 0} success, {formData.autol4fail || 0} fail</li>
-                        </ul>
-                        <p><strong>Algae Removed:</strong> {formData.autoalgaeremoved || 0}</p>
-                        <p><strong>Processor:</strong> {formData.autoprocessorsuccess || 0} success, {formData.autoprocessorfail || 0} fail</p>
-                        <p><strong>Net:</strong> {formData.autonetsuccess || 0} success, {formData.autonetfail || 0} fail</p>
-                      </div>
-                      
-                      <div className={styles.SummarySection}>
-                        <h4>Tele</h4>
-                        <p><strong>Coral:</strong></p>
-                        <ul className={styles.SummaryList}>
-                          <li>L1: {formData.telel1success || 0} success, {formData.telel1fail || 0} fail</li>
-                          <li>L2: {formData.telel2success || 0} success, {formData.telel2fail || 0} fail</li>
-                          <li>L3: {formData.telel3success || 0} success, {formData.telel3fail || 0} fail</li>
-                          <li>L4: {formData.telel4success || 0} success, {formData.telel4fail || 0} fail</li>
-                        </ul>
-                        <p><strong>Algae Removed:</strong> {formData.telealgaeremoved || 0}</p>
-                        <p><strong>Processor:</strong> {formData.teleprocessorsuccess || 0} success, {formData.teleprocessorfail || 0} fail</p>
-                        <p><strong>Net:</strong> {formData.telenetsuccess || 0} success, {formData.telenetfail || 0} fail</p>
-                        <p><strong>Playing Defense:</strong> {formData.defense ? "Yes" : "No"}</p>
-                        {formData.defense && (
-                          <p><strong>Defense Rating:</strong> {formData.defenseplayed}/6</p>
-                        )}
-                      </div>
-                      
-                      <div className={styles.SummarySection}>
-                        <h4>Endgame</h4>
-                        <p><strong>Stage Placement:</strong> {
-                          (() => {
-                            // Use stageplacement for display since it has the raw form values
-                            const placement = formData.stageplacement;
-                            switch(placement) {
-                              case 0: return "None";  // value=0 in EndPlacement.js
-                              case 1: return "Park";  // value=1 in EndPlacement.js
-                              case 2: return "Fail + Park";  // value=2 in EndPlacement.js
-                              case 3: return "Shallow Cage";  // value=3 in EndPlacement.js
-                              case 4: return "Deep Cage";  // value=4 in EndPlacement.js
-                              default: return "None";
-                            }
-                          })()
-                        }</p>
-                      </div>
-                      
-                      <div className={styles.SummarySection}>
-                        <h4>Intake Capabilities</h4>
-                        <ul className={styles.SummaryList}>
-                          <li><strong>Coral Ground:</strong> {formData.coralgrndintake ? "Yes" : "No"}</li>
-                          <li><strong>Coral Station:</strong> {formData.coralstationintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae Ground:</strong> {formData.algaegrndintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae High Reef:</strong> {formData.algaehighreefintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae Low Reef:</strong> {formData.algaelowreefintake ? "Yes" : "No"}</li>
-                        </ul>
-                      </div>
-                      
-                      <div className={styles.SummarySection}>
-                        <h4>Comments</h4>
-                        {formData.generalcomments && (
-                          <div className={styles.CommentBlock}>
-                            <strong>General:</strong> {formData.generalcomments}
-                          </div>
-                        )}
-                        
-                        {formData.breakdown && formData.breakdowncomments && (
-                          <div className={styles.CommentBlock}>
-                            <strong>Breakdown:</strong> {formData.breakdowncomments}
-                          </div>
-                        )}
-                        
-                        {formData.defense && formData.defensecomments && (
-                          <div className={styles.CommentBlock}>
-                            <strong>Defense:</strong> {formData.defensecomments}
-                          </div>
-                        )}
-                        
-                        {!formData.generalcomments && !formData.breakdowncomments && !formData.defensecomments && (
-                          <p>No comments provided</p>
-                        )}
+                      <CommentBox
+                        visibleName={"Defense Elaboration"}
+                        internalName={"defensecomments"}
+                        className={compactStyles.commentBox}
+                      />
+                      <div className={`${styles.defenseRating} ${compactStyles.defenseRating}`}>
+                        <Qualitative
+                          visibleName="Defense Played"
+                          internalName="defenseplayed"
+                          description="Ability to Play Defense"
+                          forcedMinRating={1}
+                        />
                       </div>
                     </>
-                  )}
-                </div>
-                <div className={styles.SubmitConfirm}>
-                  <p>Are you sure you want to submit this data?</p>
-                  <div className={styles.SubmitButtons}>
-                    <button 
-                      onClick={submitDataOnline} 
-                      className={styles.SubmitButton} 
-                      disabled={!isOnline || isSubmitting}
-                    >
-                      {isSubmitting ? "Submitting..." : "Submit"}
-                    </button>
-                    <button 
-                      onClick={handleCancelSubmit} 
-                      className={styles.CancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className={styles.SubmitResults}>
-                <h3 className={submissionResult.success ? styles.SuccessText : styles.ErrorText}>
-                  {submissionResult.success ? "Submission Successful!" : "Submission Failed"}
-                </h3>
-                <p>{uploadStatus}</p>
-                <button onClick={handleSubmitClose} className={styles.SubmitButton}>
-                  {submissionResult.success ? "Done" : "Close"}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                  )}    
 
-      {/* Auth Dialog */}
-      <AuthDialog 
-        isOpen={showAuthDialog} 
-        onClose={handleAuthClose}
-        onLogin={handleAuthSuccess}
-        errorMessage={authError}
-      />
-    </div>
+              </div>
+
+              <div className={`${styles.Endgame} ${compactStyles.Endgame}`}>
+                <Header headerName={"Endgame"} className={compactStyles.header} />
+                <EndPlacement className={compactStyles.endPlacement} />
+              </div>
+
+              <div className={`${styles.PostMatch} ${compactStyles.PostMatch}`}>
+                <Header headerName={"Post-Match"} className={compactStyles.header} />
+                <SubHeader subHeaderName={"Intake"} className={compactStyles.subHeader} />
+                <IntakeOptions className={compactStyles.intakeOptions} />
+                <Checkbox 
+                  visibleName={"Broke down?"} 
+                  internalName={"breakdown"} 
+                  changeListener={onBreakdownChange} 
+                />
+                {breakdown && (
+                  <CommentBox
+                    visibleName={"Breakdown Elaboration"}
+                    internalName={"breakdowncomments"}
+                    className={compactStyles.commentBox}
+                  />
+                )}
+              </div>
+            </>
+          )}
+          <div className={`${styles.SubmitButtons} ${compactStyles.SubmitButtons}`}>
+            <button 
+              id="qrbutton" 
+              type="button" 
+              onClick={handleQRButtonClick} 
+              className={`${styles.QRButton} ${compactStyles.QRButton}`}
+            >
+              GENERATE QR CODE
+            </button>
+            <button 
+              id="onlinesubmit" 
+              type="button" 
+              onClick={handleOnlineSubmitClick} 
+              className={`${styles.OnlineSubmitButton} ${compactStyles.OnlineSubmitButton}`} 
+              disabled={!isOnline}
+            >
+              {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
+            </button>
+          </div>
+        </form>
+
+        {/* QR Code Overlay */}
+        {showQRCode && (
+          <div className={styles.QRCodeOverlay}>
+            <div className={styles.QRCodeContainer}>
+              <h2 className={styles.qrTitle}>Scan QR Code to Submit Form Data</h2>
+              <div className={styles.QRCodeRow}>
+                {qrCodeDataURL1 && <img src={qrCodeDataURL1} alt="JSON QR" className={styles.QRCodeImage} />}
+              </div>
+              <div className={styles.SubmitButtons}>
+                <button onClick={handleQRClose} className={styles.SubmitButton}>Done</button>
+                <button onClick={handleQRCancel} className={styles.CancelButton}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Submit Dialog Overlay */}
+        {showSubmitDialog && (
+          <div className={styles.QRCodeOverlay}>
+            <div className={styles.QRCodeContainer}>
+              <h2 className={styles.qrTitle}>Submit Form Data Online</h2>
+              
+              {!submissionResult ? (
+                <>
+                  <div className={styles.SubmitSummary}>
+                    <h3>Data Summary</h3>
+                    <div className={styles.SummaryMainDetails}>
+                      <p><strong>Scout:</strong> {formData?.scoutname}</p>
+                      <p><strong>Match:</strong> {formData?.match}</p>
+                      <p><strong>Team:</strong> {formData?.team}</p>
+                      <p><strong>No Show:</strong> {formData?.noshow ? "Yes" : "No"}</p>
+                    </div>
+                    
+                    {formData && !formData.noshow && (
+                      <>
+                        <div className={styles.SummarySection}>
+                          <h4>Auto</h4>
+                          <p><strong>Leave:</strong> {formData.leave ? "Yes" : "No"}</p>
+                          <p><strong>Coral:</strong></p>
+                          <ul className={styles.SummaryList}>
+                            <li>L1: {formData.autol1success || 0} success, {formData.autol1fail || 0} fail</li>
+                            <li>L2: {formData.autol2success || 0} success, {formData.autol2fail || 0} fail</li>
+                            <li>L3: {formData.autol3success || 0} success, {formData.autol3fail || 0} fail</li>
+                            <li>L4: {formData.autol4success || 0} success, {formData.autol4fail || 0} fail</li>
+                          </ul>
+                          <p><strong>Algae Removed:</strong> {formData.autoalgaeremoved || 0}</p>
+                          <p><strong>Processor:</strong> {formData.autoprocessorsuccess || 0} success, {formData.autoprocessorfail || 0} fail</p>
+                          <p><strong>Net:</strong> {formData.autonetsuccess || 0} success, {formData.autonetfail || 0} fail</p>
+                        </div>
+                        
+                        <div className={styles.SummarySection}>
+                          <h4>Tele</h4>
+                          <p><strong>Coral:</strong></p>
+                          <ul className={styles.SummaryList}>
+                            <li>L1: {formData.telel1success || 0} success, {formData.telel1fail || 0} fail</li>
+                            <li>L2: {formData.telel2success || 0} success, {formData.telel2fail || 0} fail</li>
+                            <li>L3: {formData.telel3success || 0} success, {formData.telel3fail || 0} fail</li>
+                            <li>L4: {formData.telel4success || 0} success, {formData.telel4fail || 0} fail</li>
+                          </ul>
+                          <p><strong>Algae Removed:</strong> {formData.telealgaeremoved || 0}</p>
+                          <p><strong>Processor:</strong> {formData.teleprocessorsuccess || 0} success, {formData.teleprocessorfail || 0} fail</p>
+                          <p><strong>Net:</strong> {formData.telenetsuccess || 0} success, {formData.telenetfail || 0} fail</p>
+                          <p><strong>Playing Defense:</strong> {formData.defense ? "Yes" : "No"}</p>
+                          {formData.defense && (
+                            <p><strong>Defense Rating:</strong> {formData.defenseplayed}/6</p>
+                          )}
+                        </div>
+                        
+                        <div className={styles.SummarySection}>
+                          <h4>Endgame</h4>
+                          <p><strong>Stage Placement:</strong> {
+                            (() => {
+                              // Use stageplacement for display since it has the raw form values
+                              const placement = formData.stageplacement;
+                              switch(placement) {
+                                case 0: return "None";  // value=0 in EndPlacement.js
+                                case 1: return "Park";  // value=1 in EndPlacement.js
+                                case 2: return "Fail + Park";  // value=2 in EndPlacement.js
+                                case 3: return "Shallow Cage";  // value=3 in EndPlacement.js
+                                case 4: return "Deep Cage";  // value=4 in EndPlacement.js
+                                default: return "None";
+                              }
+                            })()
+                          }</p>
+                        </div>
+                        
+                        <div className={styles.SummarySection}>
+                          <h4>Intake Capabilities</h4>
+                          <ul className={styles.SummaryList}>
+                            <li><strong>Coral Ground:</strong> {formData.coralgrndintake ? "Yes" : "No"}</li>
+                            <li><strong>Coral Station:</strong> {formData.coralstationintake ? "Yes" : "No"}</li>
+                            <li><strong>Algae Ground:</strong> {formData.algaegrndintake ? "Yes" : "No"}</li>
+                            <li><strong>Algae High Reef:</strong> {formData.algaehighreefintake ? "Yes" : "No"}</li>
+                            <li><strong>Algae Low Reef:</strong> {formData.algaelowreefintake ? "Yes" : "No"}</li>
+                          </ul>
+                        </div>
+                        
+                        <div className={styles.SummarySection}>
+                          <h4>Comments</h4>
+                          {formData.generalcomments && (
+                            <div className={styles.CommentBlock}>
+                              <strong>General:</strong> {formData.generalcomments}
+                            </div>
+                          )}
+                          
+                          {formData.breakdown && formData.breakdowncomments && (
+                            <div className={styles.CommentBlock}>
+                              <strong>Breakdown:</strong> {formData.breakdowncomments}
+                            </div>
+                          )}
+                          
+                          {formData.defense && formData.defensecomments && (
+                            <div className={styles.CommentBlock}>
+                              <strong>Defense:</strong> {formData.defensecomments}
+                            </div>
+                          )}
+                          
+                          {!formData.generalcomments && !formData.breakdowncomments && !formData.defensecomments && (
+                            <p>No comments provided</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className={styles.SubmitConfirm}>
+                    <p>Are you sure you want to submit this data?</p>
+                    <div className={styles.SubmitButtons}>
+                      <button 
+                        onClick={submitDataOnline} 
+                        className={styles.SubmitButton} 
+                        disabled={!isOnline || isSubmitting}
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit"}
+                      </button>
+                      <button 
+                        onClick={handleCancelSubmit} 
+                        className={styles.CancelButton}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.SubmitResults}>
+                  <h3 className={submissionResult.success ? styles.SuccessText : styles.ErrorText}>
+                    {submissionResult.success ? "Submission Successful!" : "Submission Failed"}
+                  </h3>
+                  <p>{uploadStatus}</p>
+                  <button onClick={handleSubmitClose} className={styles.SubmitButton}>
+                    {submissionResult.success ? "Done" : "Close"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Auth Dialog */}
+        <AuthDialog 
+          isOpen={showAuthDialog} 
+          onClose={handleAuthClose}
+          onLogin={handleAuthSuccess}
+          errorMessage={authError}
+        />
+      </div>
+    </ClientSearchParamsWrapper>
   );
 }
