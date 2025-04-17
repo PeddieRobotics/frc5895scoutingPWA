@@ -3,10 +3,27 @@ import { sql } from '@vercel/postgres';
 import _ from 'lodash';
 import { tidy, mutate, mean, select, summarizeAll, groupBy, summarize, first, n, median, total, arrange, asc, slice } from '@tidyjs/tidy';
 import { calcEPA, calcAuto, calcTele, calcEnd } from "../../../util/calculations.js";
+import { validateAuthToken } from "../../../lib/auth";
 
-export const revalidate = 300; // Cache for 5 minutes
+export const revalidate = 0; // Disable cache to ensure fresh data
 
 export async function GET(request) {
+  // First validate the auth token
+  const { isValid, teamName: authTeamName, error } = await validateAuthToken(request);
+  
+  if (!isValid) {
+    return NextResponse.json({ 
+      message: error || "Authentication required"
+    }, { 
+      status: 401,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+  }
+
   const { searchParams } = new URL(request.url);
   const team = searchParams.get('team');
   const includeRows = searchParams.get('includeRows') === 'true';

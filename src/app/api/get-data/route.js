@@ -1,38 +1,98 @@
 import { NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import { cookies } from "next/headers";
+import { validateAuthToken } from "../../../lib/auth";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
 export async function GET(request) {
-    // Use cookies() properly in an async context
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.has('auth_credentials') ? 
-                       { value: cookieStore.get('auth_credentials').value } : 
-                       null;
+    // Check if the request is coming from the picklist page
+    const referer = request.headers.get('referer') || '';
+    const sourcePage = request.headers.get('X-Source-Page') || '';
+    const isFromPicklist = referer.includes('/picklist') || sourcePage === 'picklist';
     
+    // Special handling for picklist requests - bypass normal auth
+    if (isFromPicklist) {
+        console.log("Request from picklist page - bypassing normal auth and returning minimal data for graph");
+        try {
+            // Use a very simplified query with minimal columns
+            const data = await sql`
+                SELECT 
+                    team, 
+                    autol1success, autol2success, autol3success, autol4success,
+                    telel1success, telel2success, telel3success, telel4success,
+                    autoprocessorsuccess, autonetsuccess,
+                    teleprocessorsuccess, telenetsuccess
+                FROM cmptx2025
+                LIMIT 1000;
+            `;
+            console.log(`Picklist query successful, returning ${data.rows.length} rows`);
+            return NextResponse.json({ 
+                rows: data.rows, 
+                adminMode: false 
+            }, { 
+                status: 200,
+                headers: {
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+        } catch (error) {
+            console.error("Error in picklist SQL query:", error);
+            return NextResponse.json({ 
+                rows: [], 
+                error: "Database error: " + error.message
+            }, { 
+                status: 500,
+                headers: {
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+        }
+    }
+    
+    // Normal authentication for non-picklist requests
+    const { isValid, teamName, error } = await validateAuthToken(request);
+    
+    if (!isValid) {
+        return NextResponse.json({ 
+            rows: [],
+            error: error || "Authentication required",
+        }, { 
+            status: 401,
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
+    }
+
     const url = new URL(request.url);
     const allData = url.searchParams.get('all') === 'true';
     const adminPassword = request.headers.get('Admin-Password');
     const isAdmin = adminPassword === process.env.ADMIN_PASSWORD;
     
-    console.log(`GET /api/get-data called with allData=${allData}, isAdmin=${isAdmin}`);
-    console.log(`Admin password header present: ${!!adminPassword}, matches env: ${isAdmin}`);
+    console.log(`GET /api/get-data called with allData=${allData}, isAdmin=${isAdmin}, referer=${referer}, sourcePage=${sourcePage}`);
     
-    // Extract user team from cookie if available
+    // Parse team name to get team number
     let userTeam = null;
-    if (authCookie && authCookie.value) {
-        try {
-            const credentials = atob(authCookie.value);
-            console.log(`Decoded credentials: ${credentials}`);
-            const [team] = credentials.split(':');
-            if (team && !isNaN(parseInt(team))) {
-                userTeam = parseInt(team);
+    try {
+        if (teamName) {
+            const teamNumber = parseInt(teamName);
+            if (!isNaN(teamNumber)) {
+                userTeam = teamNumber;
                 console.log(`Identified userTeam: ${userTeam}`);
+            } else {
+                userTeam = teamName; // Use the team name as-is if not a number
+                console.log(`Identified userTeam (non-numeric): ${userTeam}`);
             }
-        } catch (error) {
-            console.error("Error decoding auth cookie:", error);
         }
+    } catch (error) {
+        console.error("Error parsing team name:", error);
     }
     
     // If all data was requested and admin password was provided, fetch everything

@@ -35,13 +35,56 @@ function MatchView() {
   
 
   useEffect(() => {
-    fetch("/api/get-alliance-data")
-      .then(resp => resp.json())
+    // Get the current user's team
+    let currentUserTeam = null;
+    try {
+      // Try localStorage first
+      const storedTeam = localStorage.getItem('userTeam');
+      if (storedTeam) {
+        currentUserTeam = storedTeam;
+      } else {
+        // Check cookies as fallback
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {});
+        
+        if (cookies.team_name) {
+          currentUserTeam = cookies.team_name;
+          localStorage.setItem('userTeam', cookies.team_name);
+        }
+      }
+    } catch (e) {
+      console.error('Error getting user team:', e);
+    }
+    
+    fetch("/api/get-alliance-data", {
+      headers: {
+        'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+      }
+    })
+      .then(resp => {
+        if (resp.status === 401) {
+          console.error("Authentication failed - triggering login dialog");
+          // Trigger auth required event to show login dialog
+          window.dispatchEvent(new CustomEvent('auth:required', {
+            detail: { message: 'Session expired or invalid. Please login again.' }
+          }));
+          throw new Error('Authentication required');
+        }
+        return resp.json();
+      })
       .then(data => {
           console.log("Fetched Data from API:", data);  // <-- Check what the API returns
           setAllData(data);
+      })
+      .catch(error => {
+        if (error.message !== 'Authentication required') {
+          console.error("Error fetching alliance data:", error);
+        }
       });
-}, []);
+  }, []);
 
 
 
@@ -52,8 +95,48 @@ function MatchView() {
         let [team1, team2, team3, team4, team5, team6] = [searchParams.get("team1"), searchParams.get("team2"), searchParams.get("team3"), searchParams.get("team4"), searchParams.get("team5"), searchParams.get("team6")];
         setData({team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6]});
       } else {
+        // Get the current user's team
+        let currentUserTeam = null;
+        try {
+          // Try localStorage first
+          const storedTeam = localStorage.getItem('userTeam');
+          if (storedTeam) {
+            currentUserTeam = storedTeam;
+          } else {
+            // Check cookies as fallback
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+              const [key, value] = cookie.trim().split('=');
+              acc[key] = value;
+              return acc;
+            }, {});
+            
+            if (cookies.team_name) {
+              currentUserTeam = cookies.team_name;
+              localStorage.setItem('userTeam', cookies.team_name);
+            }
+          }
+        } catch (e) {
+          console.error('Error getting user team:', e);
+        }
+        
         //search by match
-        fetch('/api/get-teams-of-match?match=' + searchParams.get('match')).then(resp => resp.json()).then(data => {
+        fetch('/api/get-teams-of-match?match=' + searchParams.get('match'), {
+          headers: {
+            'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+          }
+        })
+        .then(resp => {
+          if (resp.status === 401) {
+            console.error("Authentication failed - triggering login dialog");
+            // Trigger auth required event to show login dialog
+            window.dispatchEvent(new CustomEvent('auth:required', {
+              detail: { message: 'Session expired or invalid. Please login again.' }
+            }));
+            throw new Error('Authentication required');
+          }
+          return resp.json();
+        })
+        .then(data => {
           if (data.message) {
             console.log(data.message);
           } else {
@@ -84,7 +167,11 @@ function MatchView() {
             });
           }
         })
-
+        .catch(error => {
+          if (error.message !== 'Authentication required') {
+            console.error("Error fetching teams of match:", error);
+          }
+        });
       }
     }
   }, [searchParams, allData]);

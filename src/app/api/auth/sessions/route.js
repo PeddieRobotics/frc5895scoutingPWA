@@ -61,8 +61,28 @@ export async function GET(request) {
           expires_at TIMESTAMP NOT NULL,
           ip_address TEXT,
           user_agent TEXT,
-          device_info TEXT
+          device_info TEXT,
+          token_version INTEGER DEFAULT 1,
+          revoked BOOLEAN DEFAULT FALSE
         )
+      `);
+
+      // Add revoked and token_version columns if they don't exist
+      await client.query(`
+        DO $$ 
+        BEGIN 
+          BEGIN
+            ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 1;
+          EXCEPTION
+            WHEN duplicate_column THEN NULL;
+          END;
+          
+          BEGIN
+            ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS revoked BOOLEAN DEFAULT FALSE;
+          EXCEPTION
+            WHEN duplicate_column THEN NULL;
+          END;
+        END $$;
       `);
 
       // Query active sessions

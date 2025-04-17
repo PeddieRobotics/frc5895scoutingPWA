@@ -92,109 +92,203 @@ export async function GET(request) {
     });
   }
   
-  // Get the Authorization header
+  // Get auth from cookies
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = Object.fromEntries(
+    cookieHeader.split(';')
+      .map(cookie => cookie.trim())
+      .filter(Boolean)
+      .map(cookie => {
+        const [name, value] = cookie.split('=').map(part => part.trim());
+        return [name, value];
+      })
+  );
+  
+  // Check for token-based authentication first
   const authHeader = request.headers.get('Authorization');
   
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    recordFailedAttempt(clientId);
-    return NextResponse.json({ 
-      authenticated: false,
-      message: 'Authentication required'
-    }, { 
-      status: 401,
-      headers
-    });
-  }
-  
-  try {
-    // Extract and decode credentials
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = atob(base64Credentials);
-    const [username, password] = credentials.split(':');
+  // Check for Bearer token (new token-based auth)
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    let tokenData;
     
-    console.log(`Validation request for team: ${username} with params: ${request.nextUrl.search}`);
-    
-    // Basic validation
-    if (!username || !password) {
-      recordFailedAttempt(clientId);
-      console.error(`Invalid credential format: username=${!!username}, password=${!!password}`);
+    try {
+      // Parse the token
+      tokenData = JSON.parse(token);
+      if (!tokenData.id || !tokenData.team) {
+        throw new Error('Invalid token format');
+      }
+      
+      console.log(`Token validation for team: ${tokenData.team} with session ID: ${tokenData.id.substring(0, 8)}...`);
+      
+      // Validate session in database
+      const client = await pool.connect();
+      try {
+        // Check if the session exists and is valid
+        const sessionResult = await client.query(`
+          SELECT s.team_name, s.token_version, t.token_version as current_version
+          FROM user_sessions s
+          JOIN team_auth t ON s.team_name = t.team_name
+          WHERE s.session_id = $1 AND s.expires_at > NOW()
+        `, [tokenData.id]);
+        
+        if (sessionResult.rowCount === 0) {
+          console.log(`Session not found or expired: ${tokenData.id.substring(0, 8)}...`);
+          return NextResponse.json({ 
+            authenticated: false,
+            message: 'Invalid or expired session'
+          }, { 
+            status: 401,
+            headers
+          });
+        }
+        
+        const session = sessionResult.rows[0];
+        
+        // Check if token version matches
+        if (session.token_version !== session.current_version) {
+          console.log(`Token version mismatch. Session: ${session.token_version}, Current: ${session.current_version}`);
+          return NextResponse.json({ 
+            authenticated: false,
+            message: 'Session has been invalidated'
+          }, { 
+            status: 401,
+            headers
+          });
+        }
+        
+        // Update last accessed time
+        await client.query(`
+          UPDATE user_sessions SET last_accessed = NOW()
+          WHERE session_id = $1
+        `, [tokenData.id]);
+        
+        console.log(`Token validation successful for team: ${session.team_name}`);
+        
+        return NextResponse.json({ 
+          authenticated: true,
+          message: 'Authentication successful',
+          scoutTeam: session.team_name
+        }, { 
+          headers
+        });
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error("Token validation error:", error);
       return NextResponse.json({ 
         authenticated: false,
-        message: 'Invalid credentials format'
+        message: 'Invalid token format'
       }, { 
         status: 401,
         headers
       });
     }
-
-    // Always check team authentication from database - no caching
-    const client = await pool.connect();
+  }
+  
+  // Fall back to Basic authentication
+  if (authHeader && authHeader.startsWith('Basic ')) {
     try {
-      console.log(`Checking database for team: ${username}`);
-      const result = await client.query(
-        'SELECT password_hash FROM team_auth WHERE team_name = $1',
-        [username]
-      );
+      // Extract and decode credentials
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = atob(base64Credentials);
+      const [username, password] = credentials.split(':');
       
-      if (result.rowCount === 0) {
-        // Team not found
-        console.log(`Team not found: ${username}`);
+      console.log(`Validation request for team: ${username} with params: ${request.nextUrl.search}`);
+      
+      // Basic validation
+      if (!username || !password) {
         recordFailedAttempt(clientId);
+        console.error(`Invalid credential format: username=${!!username}, password=${!!password}`);
         return NextResponse.json({ 
           authenticated: false,
-          message: 'Invalid credentials'
+          message: 'Invalid credentials format'
         }, { 
           status: 401,
           headers
         });
       }
-      
-      // Check password using bcrypt
-      const { password_hash } = result.rows[0];
-      const passwordMatches = await bcrypt.compare(password, password_hash);
-      
-      if (passwordMatches) {
-        // Update last login timestamp
-        await client.query(
-          'UPDATE team_auth SET last_login = CURRENT_TIMESTAMP WHERE team_name = $1',
+
+      // Always check team authentication from database - no caching
+      const client = await pool.connect();
+      try {
+        console.log(`Checking database for team: ${username}`);
+        const result = await client.query(
+          'SELECT password_hash FROM team_auth WHERE team_name = $1',
           [username]
         );
         
-        console.log(`Successful authentication for team: ${username}`);
+        if (result.rowCount === 0) {
+          // Team not found
+          console.log(`Team not found: ${username}`);
+          recordFailedAttempt(clientId);
+          return NextResponse.json({ 
+            authenticated: false,
+            message: 'Invalid credentials'
+          }, { 
+            status: 401,
+            headers
+          });
+        }
         
-        return NextResponse.json({ 
-          authenticated: true,
-          message: 'Authentication successful',
-          scoutTeam: username
-        }, { 
-          headers
-        });
-      } else {
-        // Password incorrect
-        console.log(`Password mismatch for team: ${username}`);
-        recordFailedAttempt(clientId);
-        return NextResponse.json({ 
-          authenticated: false,
-          message: 'Invalid credentials'
-        }, { 
-          status: 401,
-          headers
-        });
+        // Check password using bcrypt
+        const { password_hash } = result.rows[0];
+        const passwordMatches = await bcrypt.compare(password, password_hash);
+        
+        if (passwordMatches) {
+          // Update last login timestamp
+          await client.query(
+            'UPDATE team_auth SET last_login = CURRENT_TIMESTAMP WHERE team_name = $1',
+            [username]
+          );
+          
+          console.log(`Successful authentication for team: ${username}`);
+          
+          return NextResponse.json({ 
+            authenticated: true,
+            message: 'Authentication successful',
+            scoutTeam: username
+          }, { 
+            headers
+          });
+        } else {
+          // Password incorrect
+          console.log(`Password mismatch for team: ${username}`);
+          recordFailedAttempt(clientId);
+          return NextResponse.json({ 
+            authenticated: false,
+            message: 'Invalid credentials'
+          }, { 
+            status: 401,
+            headers
+          });
+        }
+      } finally {
+        client.release();
       }
-    } finally {
-      client.release();
+    } catch (error) {
+      console.error("Auth error:", error);
+      recordFailedAttempt(clientId);
+      return NextResponse.json({ 
+        authenticated: false,
+        message: 'Authentication error'
+      }, { 
+        status: 400,
+        headers
+      });
     }
-  } catch (error) {
-    console.error("Auth error:", error);
-    recordFailedAttempt(clientId);
-    return NextResponse.json({ 
-      authenticated: false,
-      message: 'Authentication error'
-    }, { 
-      status: 400,
-      headers
-    });
   }
+  
+  // No valid authentication method found
+  recordFailedAttempt(clientId);
+  return NextResponse.json({ 
+    authenticated: false,
+    message: 'Authentication required'
+  }, { 
+    status: 401,
+    headers
+  });
 }
 
 // Add a new POST endpoint for server-side cookie setting

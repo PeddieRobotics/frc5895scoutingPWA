@@ -9,6 +9,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
     team3: 0,
     alliance: 0
   });
+  const [error, setError] = useState(false);
 
   // Helper function to get defense played value from a row
   const getDefensePlayed = (row) => {
@@ -44,37 +45,80 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
 
   // Fetch and process defense ratings for each team
   useEffect(() => {
-    const fetchTeamData = async (teamNumber) => {
-      if (!teamNumber || teamNumber === "N/A") return { rows: [] };
+    // Skip if no valid team numbers
+    if (!teamNumbers || teamNumbers.length === 0) return;
+    
+    // Filter out invalid team numbers
+    const validTeamNumbers = teamNumbers.filter(num => num && num !== "N/A");
+    if (validTeamNumbers.length === 0) return;
+    
+    // Get the current user's team
+    let currentUserTeam = null;
+    try {
+      // Try localStorage first
+      const storedTeam = localStorage.getItem('userTeam');
+      if (storedTeam) {
+        currentUserTeam = storedTeam;
+      } else {
+        // Check cookies as fallback
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {});
+        
+        if (cookies.team_name) {
+          currentUserTeam = cookies.team_name;
+          localStorage.setItem('userTeam', cookies.team_name);
+        }
+      }
+    } catch (e) {
+      console.error('Error getting user team:', e);
+    }
+
+    // Function to fetch team ratings data
+    async function fetchData(teamNumber) {
+      if (!teamNumber) return;
       
       try {
-        const response = await fetch(`/api/get-team-data?team=${teamNumber}&includeRows=true`);
+        const response = await fetch(`/api/get-team-data?team=${teamNumber}&includeRows=true`, {
+          headers: {
+            'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+          }
+        });
         if (!response.ok) {
           console.error(`Failed to fetch data for team ${teamNumber}`);
-          return { rows: [] };
+          setError(true);
+          return null;
         }
         return await response.json();
       } catch (error) {
         console.error(`Error fetching data for team ${teamNumber}:`, error);
-        return { rows: [] };
+        setError(true);
+        return null;
       }
     };
 
     const fetchAllTeamData = async () => {
-      // Only fetch data for valid team numbers
-      const validTeamNumbers = teamNumbers.filter(num => num && num !== "N/A");
-      if (validTeamNumbers.length === 0) return;
-      
-      const teamData = await Promise.all(
-        validTeamNumbers.map(teamNumber => fetchTeamData(teamNumber))
+      const results = await Promise.all(
+        validTeamNumbers.map(teamNumber => fetchData(teamNumber))
       );
       
-      // Calculate defense ratings
+      // Process results
       const ratings = {
-        team1: validTeamNumbers[0] ? calculateTeamDefenseRating(teamData[0].rows, validTeamNumbers[0]) : 0,
-        team2: validTeamNumbers[1] ? calculateTeamDefenseRating(teamData[1].rows, validTeamNumbers[1]) : 0,
-        team3: validTeamNumbers[2] ? calculateTeamDefenseRating(teamData[2].rows, validTeamNumbers[2]) : 0
+        team1: 0,
+        team2: 0,
+        team3: 0,
+        alliance: 0
       };
+      
+      results.forEach((data, index) => {
+        if (data && data.rows) {
+          const teamNumber = validTeamNumbers[index];
+          const rating = calculateTeamDefenseRating(data.rows, teamNumber);
+          ratings[`team${index + 1}`] = rating;
+        }
+      });
       
       // Calculate alliance average from valid ratings (those greater than 0)
       const validRatings = Object.values(ratings).filter(rating => rating > 0);

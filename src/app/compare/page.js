@@ -68,8 +68,36 @@ function Compare() {
       setError(null);
 
       try {
+        // Get the current user's team
+        let currentUserTeam = null;
+        try {
+          // Try localStorage first
+          const storedTeam = localStorage.getItem('userTeam');
+          if (storedTeam) {
+            currentUserTeam = storedTeam;
+          } else {
+            // Check cookies as fallback
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+              const [key, value] = cookie.trim().split('=');
+              acc[key] = value;
+              return acc;
+            }, {});
+            
+            if (cookies.team_name) {
+              currentUserTeam = cookies.team_name;
+              localStorage.setItem('userTeam', cookies.team_name);
+            }
+          }
+        } catch (e) {
+          console.error('Error getting user team:', e);
+        }
+        
         const teamDataPromises = teams.map(team => 
-          fetch(`/api/get-team-data?team=${team}&includeRows=true`)
+          fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+            headers: {
+              'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
+            }
+          })
             .then(async response => {
               if (!response.ok) {
                 console.error(`Error fetching team ${team} data:`, response.status);

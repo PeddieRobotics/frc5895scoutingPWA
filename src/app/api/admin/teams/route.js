@@ -165,6 +165,13 @@ export async function DELETE(request) {
     
     const client = await pool.connect();
     try {
+      // First mark all sessions for this team as revoked
+      await client.query(
+        'UPDATE user_sessions SET revoked = TRUE WHERE team_name = $1',
+        [teamName]
+      );
+      
+      // Then delete the team
       const result = await client.query(
         'DELETE FROM team_auth WHERE team_name = $1 RETURNING id',
         [teamName]

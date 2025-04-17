@@ -2,8 +2,25 @@ import { NextResponse } from "next/server";
 import { sql } from '@vercel/postgres';
 import { tidy, mutate, arrange, desc, mean, select, summarizeAll, max, groupBy } from '@tidyjs/tidy';
 import { calcAuto, calcTele, calcEnd, calcEPA } from "@/util/calculations";
+import { validateAuthToken } from "../../../lib/auth";
 
 export async function POST(request) {
+  // First validate the auth token
+  const { isValid, teamName: authTeamName, error } = await validateAuthToken(request);
+  
+  if (!isValid) {
+    return NextResponse.json({ 
+      message: error || "Authentication required"
+    }, { 
+      status: 401,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+  }
+
   const requestBody = await request.json(); // Weight inputs
 
   let data = await sql`SELECT * FROM cmptx2025;`;

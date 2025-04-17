@@ -53,6 +53,7 @@ export default function AdminPage() {
   const [activeSessions, setActiveSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formError, setFormError] = useState('');
   const [newTeam, setNewTeam] = useState({ teamName: '', password: '' });
   const [cookieDebug, setCookieDebug] = useState('');
@@ -309,25 +310,35 @@ export default function AdminPage() {
 
   // Add function to delete all sessions for a team
   const handleDeleteTeamSessions = async (teamName) => {
-    if (!confirm(`Are you sure you want to terminate all sessions for team ${teamName}?`)) {
-      return;
-    }
-    
     setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
       const response = await fetch(`/api/auth/sessions/team/${teamName}`, {
         method: 'DELETE',
         credentials: 'include'
       });
       
+      const result = await response.json();
+      
       if (response.ok) {
+        setSuccess(`Successfully invalidated all sessions for team ${teamName}`);
         // Refresh sessions list
         fetchActiveSessions();
+        
+        // Add a slight delay before showing success message
+        setTimeout(() => {
+          window.scrollTo({
+            top: document.querySelector(`.${styles.tokenManagementContainer}`).offsetTop - 100,
+            behavior: 'smooth'
+          });
+        }, 100);
       } else {
-        setError('Failed to delete team sessions');
+        setError(result.error || 'Failed to delete team sessions');
       }
     } catch (err) {
-      setError('Network error deleting team sessions');
+      setError('Failed to delete team sessions');
       console.error('Delete team sessions error:', err);
     } finally {
       setLoading(false);
@@ -661,6 +672,105 @@ export default function AdminPage() {
                           title="Delete team"
                         >
                           <TrashIcon /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.section}>
+          <h2>Token Management</h2>
+          <p>Use this to invalidate all sessions for a team by incrementing their token version.</p>
+          
+          {success && <p className={styles.successText}>{success}</p>}
+          
+          <div className={styles.tokenManagementContainer}>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Token Version</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teams.map((team) => (
+                  <tr key={team.team_name || team.id}>
+                    <td>{team.team_name}</td>
+                    <td>{team.token_version || 1}</td>
+                    <td>
+                      <button 
+                        onClick={() => handleDeleteTeamSessions(team.team_name)}
+                        className={styles.dangerButton}
+                        disabled={loading}
+                      >
+                        <TrashIcon /> Invalidate All Sessions
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>
+              <UserCircleIcon /> Active Sessions
+            </h2>
+            <button 
+              onClick={fetchActiveSessions}
+              className={styles.refreshButton}
+              disabled={loading}
+            >
+              Refresh
+            </button>
+          </div>
+          
+          {loading ? (
+            <p className={styles.loadingText}>Loading sessions...</p>
+          ) : activeSessions.length === 0 ? (
+            <p className={styles.emptyState}>No active sessions found.</p>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.teamTable}>
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Session Token</th>
+                    <th>Token Version</th>
+                    <th>Current Version</th>
+                    <th>Created</th>
+                    <th>Last Active</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeSessions.map((session) => (
+                    <tr key={session.session_id}>
+                      <td>{session.team_name}</td>
+                      <td title={session.session_id}>{session.session_id.substring(0, 8)}...</td>
+                      <td>{session.token_version || 1}</td>
+                      <td>
+                        {teams.find(t => t.team_name === session.team_name)?.token_version || 1}
+                        {(session.token_version || 1) !== (teams.find(t => t.team_name === session.team_name)?.token_version || 1) && 
+                          <span className={styles.errorText}> (Outdated!)</span>}
+                      </td>
+                      <td>{new Date(session.created_at).toLocaleString()}</td>
+                      <td>{new Date(session.last_accessed).toLocaleString()}</td>
+                      <td>
+                        <button 
+                          onClick={() => handleDeleteSession(session.session_id)}
+                          className={styles.deleteButton}
+                          disabled={loading}
+                          title="Delete session"
+                        >
+                          <TrashIcon /> Terminate
                         </button>
                       </td>
                     </tr>

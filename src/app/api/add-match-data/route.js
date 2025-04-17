@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import _ from "lodash";
+import { validateAuthToken } from "../../../lib/auth";
 
 const FIELD_DEFAULTS = {
   // Pre-Match
@@ -73,6 +74,22 @@ const FIELD_DEFAULTS = {
 
 export async function POST(req) {
   try {
+    // First validate the auth token
+    const { isValid, teamName: authTeamName, error } = await validateAuthToken(req);
+    
+    if (!isValid) {
+      return NextResponse.json({ 
+        message: error || "Authentication required"
+      }, { 
+        status: 401,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+
     let body = await req.json();
     body = { ...FIELD_DEFAULTS, ...body };
     const processedData = { ...FIELD_DEFAULTS, ...body };

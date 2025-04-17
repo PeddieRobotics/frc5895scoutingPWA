@@ -493,6 +493,40 @@ export default function Home() {
     }
   }, []);
 
+  // Add auth event listener for 401 responses
+  useEffect(() => {
+    const handleAuthRequiredEvent = (event) => {
+      console.log('Received auth:required event, showing auth dialog');
+      setAuthCredentials(null);
+      clearAuthCookies();
+      
+      if (event.detail && event.detail.message) {
+        setAuthError(event.detail.message);
+      } else {
+        setAuthError('Authentication required');
+      }
+      
+      setShowAuthDialog(true);
+    };
+    
+    // Listen for the custom event
+    window.addEventListener('auth:required', handleAuthRequiredEvent);
+    
+    // Also check the URL for authRequired when the component mounts
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('authRequired') === 'true') {
+      const errorMsg = urlParams.get('error');
+      if (errorMsg) {
+        setAuthError(errorMsg);
+      }
+      setShowAuthDialog(true);
+    }
+    
+    return () => {
+      window.removeEventListener('auth:required', handleAuthRequiredEvent);
+    };
+  }, []);
+
   const generateTabSeparatedString = (data) => {
     const boolToSheets = (value) => value ? "TRUE" : "FALSE";
     

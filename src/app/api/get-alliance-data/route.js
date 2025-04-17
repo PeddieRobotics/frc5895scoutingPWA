@@ -1,11 +1,28 @@
 import { NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import { calcAuto, calcTele, calcEnd } from "@/util/calculations";
+import { validateAuthToken } from "../../../lib/auth";
 
-export const revalidate = 300; // Cache for 5 minutes
+export const revalidate = 0; // Disable cache to ensure fresh data
 
-export async function GET() {
+export async function GET(request) {
   try {
+    // First validate the auth token
+    const { isValid, teamName: authTeamName, error } = await validateAuthToken(request);
+    
+    if (!isValid) {
+      return NextResponse.json({ 
+        message: error || "Authentication required"
+      }, { 
+        status: 401,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    }
+
     const { rows } = await sql`SELECT * FROM cmptx2025;`;
     let responseObject = {};
 

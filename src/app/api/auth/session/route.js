@@ -158,32 +158,84 @@ export async function POST(request) {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30); // 30 days from now
       
+      // Try to add token_version to team_auth if it doesn't exist
+      try {
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name='team_auth' AND column_name='token_version'
+            ) THEN
+              ALTER TABLE team_auth ADD COLUMN token_version INTEGER DEFAULT 1;
+            END IF;
+          END $$;
+        `);
+      } catch (error) {
+        console.error("Failed to update team_auth schema:", error);
+        // Continue anyway, we'll use default version
+      }
+      
+      // Get token version
+      const versionResult = await client.query(
+        'SELECT COALESCE(token_version, 1) as token_version FROM team_auth WHERE team_name = $1',
+        [username]
+      );
+      
+      const tokenVersion = versionResult.rows[0]?.token_version || 1;
+      
       // Check if the user_sessions table exists, create if not
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS user_sessions (
-          session_id TEXT PRIMARY KEY,
-          team_name TEXT NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-          last_accessed TIMESTAMP NOT NULL DEFAULT NOW(),
-          expires_at TIMESTAMP NOT NULL,
-          ip_address TEXT,
-          user_agent TEXT,
-          device_info TEXT
-        )
-      `);
+      try {
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS user_sessions (
+            session_id TEXT PRIMARY KEY,
+            team_name TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            last_accessed TIMESTAMP NOT NULL DEFAULT NOW(),
+            expires_at TIMESTAMP NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            device_info TEXT
+          )
+        `);
+        
+        // Add token_version column if it doesn't exist
+        await client.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name='user_sessions' AND column_name='token_version'
+            ) THEN
+              ALTER TABLE user_sessions ADD COLUMN token_version INTEGER DEFAULT 1;
+            END IF;
+          END $$;
+        `);
+      } catch (error) {
+        console.error("Error setting up user_sessions table:", error);
+        throw error;
+      }
       
       // Create a new session
-      await client.query(`
-        INSERT INTO user_sessions (
-          session_id, team_name, expires_at, ip_address, user_agent
-        ) VALUES ($1, $2, $3, $4, $5)
-      `, [
-        sessionId,
-        username,
-        expiresAt,
-        clientId,
-        userAgent
-      ]);
+      try {
+        await client.query(`
+          INSERT INTO user_sessions (
+            session_id, team_name, expires_at, ip_address, user_agent, token_version
+          ) VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+          sessionId,
+          username,
+          expiresAt,
+          clientId,
+          userAgent,
+          tokenVersion
+        ]);
+      } catch (error) {
+        console.error("Session insertion error:", error);
+        throw error;
+      }
       
       // Update last login timestamp
       await client.query(
@@ -191,21 +243,50 @@ export async function POST(request) {
         [username]
       );
       
-      // Create response with session cookie
+      // Create auth token object
+      const authToken = JSON.stringify({
+        id: sessionId,
+        v: tokenVersion,
+        team: username
+      });
+      
+      // Create response with auth token
       let response = NextResponse.json({ 
         success: true,
         message: 'Session created successfully',
-        team: username
+        team: username,
+        token: authToken,
+        expires: expiresAt.getTime()
       }, { 
         headers
       });
       
-      // Set the session cookie with multiple approaches for cross-platform support
-      response = setCrossPlatformCookie(response, 'auth_session', sessionId, {
-        expires: expiresAt,
-        // Safari/iOS needs these settings to work properly
-        sameSite: 'lax' 
+      // Set HTTP-only cookie as backup security measure
+      response.cookies.set('auth_token', authToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: expiresAt
       });
+      
+      // Create a session data object for cookies
+      const sessionData = JSON.stringify({
+        id: sessionId,
+        team: username,
+        v: '1'
+      });
+      
+      console.log(`Setting auth cookies for team ${username}, isProduction=${process.env.NODE_ENV === 'production'}`);
+      
+      // For backward compatibility, also set session cookies
+      response = setCrossPlatformCookie(response, 'auth_session', sessionData, {
+        expires: expiresAt,
+        sameSite: 'lax'
+      });
+      
+      // Set special header for client detection
+      response.headers.set('X-Auth-Token', 'enabled');
       
       return response;
     } finally {
@@ -216,7 +297,7 @@ export async function POST(request) {
     
     return NextResponse.json({ 
       success: false,
-      message: 'Session creation error'
+      message: 'Session creation error: ' + (error.message || 'Unknown error')
     }, { 
       status: 500,
       headers: {
@@ -233,19 +314,49 @@ export async function DELETE(request) {
       'Cache-Control': 'no-store'
     });
     
-    // Get the session cookie
-    const cookieHeader = request.headers.get('cookie') || '';
-    const cookies = Object.fromEntries(
-      cookieHeader.split(';')
-        .map(cookie => cookie.trim())
-        .filter(Boolean)
-        .map(cookie => {
-          const [name, value] = cookie.split('=').map(part => part.trim());
-          return [name, value];
-        })
-    );
+    // Get token from Authorization header or cookie
+    let token = null;
     
-    const sessionId = cookies['auth_session'];
+    // Check Authorization header first (client-side logout)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+    
+    // If no token in header, check cookie
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie') || '';
+      const cookies = Object.fromEntries(
+        cookieHeader.split(';')
+          .map(cookie => cookie.trim())
+          .filter(Boolean)
+          .map(cookie => {
+            const [name, value] = cookie.split('=').map(part => part.trim());
+            return [name, value];
+          })
+      );
+      
+      token = cookies['auth_token'];
+      
+      // For backward compatibility
+      if (!token && cookies['auth_session']) {
+        // Synthesize a simple token from the session ID
+        token = JSON.stringify({ id: cookies['auth_session'] });
+      }
+    }
+    
+    // Parse the token if found
+    let sessionId = null;
+    if (token) {
+      try {
+        const parsedToken = JSON.parse(token);
+        sessionId = parsedToken.id;
+      } catch (e) {
+        // If token isn't JSON, use it directly (old format)
+        sessionId = token;
+        console.error('Invalid token format during logout:', e);
+      }
+    }
     
     if (sessionId) {
       // Connect to database
@@ -269,19 +380,26 @@ export async function DELETE(request) {
       headers
     });
     
-    // Clear all session cookie variants
+    // Clear auth token cookie
+    response.cookies.set('auth_token', '', {
+      maxAge: 0,
+      path: '/',
+      expires: new Date(0)
+    });
+    
+    // For backward compatibility, clear the old cookie formats too
     response.cookies.set('auth_session', '', {
       maxAge: 0,
       path: '/',
       expires: new Date(0)
     });
-
+    
     response.cookies.set('auth_session_lax', '', {
       maxAge: 0,
       path: '/',
       expires: new Date(0)
     });
-
+    
     response.cookies.set('auth_session_secure', '', {
       maxAge: 0,
       path: '/',

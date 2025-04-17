@@ -62,16 +62,58 @@ export async function DELETE(request, { params }) {
     // Connect to database
     const client = await pool.connect();
     try {
-      // Delete all sessions for the team
-      const result = await client.query(
-        'DELETE FROM user_sessions WHERE team_name = $1 RETURNING *',
-        [teamName]
-      );
+      // Ensure token_version column exists
+      await client.query(`
+        ALTER TABLE IF EXISTS team_auth 
+        ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 1
+      `);
+      
+      // Instead of deleting sessions, increment the token version
+      // This will invalidate all existing tokens
+      const result = await client.query(`
+        UPDATE team_auth 
+        SET token_version = COALESCE(token_version, 1) + 1 
+        WHERE team_name = $1
+        RETURNING token_version
+      `, [teamName]);
+      
+      if (result.rowCount === 0) {
+        return NextResponse.json({ 
+          error: 'Team not found' 
+        }, { 
+          status: 404,
+          headers
+        });
+      }
+      
+      const newTokenVersion = result.rows[0].token_version;
+      
+      // BUGFIX: Also set revoked flag to TRUE for all sessions of this team
+      // This ensures sessions are immediately invalidated even if token version check is bypassed
+      const revokeResult = await client.query(`
+        UPDATE user_sessions 
+        SET revoked = TRUE
+        WHERE team_name = $1 AND expires_at > NOW() AND revoked = FALSE
+        RETURNING session_id
+      `, [teamName]);
+      
+      const revokedCount = revokeResult.rowCount;
+      console.log(`[TeamSessions] Revoked ${revokedCount} sessions for team ${teamName}`);
+      
+      // Optionally, count the active sessions that will be invalidated
+      const sessionsResult = await client.query(`
+        SELECT COUNT(*) FROM user_sessions 
+        WHERE team_name = $1 AND expires_at > NOW()
+      `, [teamName]);
+      
+      const sessionCount = parseInt(sessionsResult.rows[0].count, 10);
 
       return NextResponse.json({ 
         success: true, 
-        message: `Deleted ${result.rowCount} sessions for team ${teamName}`,
-        count: result.rowCount
+        message: `Invalidated all sessions for team ${teamName}`,
+        tokenVersion: newTokenVersion,
+        sessionsAffected: sessionCount,
+        revokedCount: revokedCount
       }, { 
         headers
       });
@@ -79,10 +121,10 @@ export async function DELETE(request, { params }) {
       client.release();
     }
   } catch (error) {
-    console.error("Error deleting team sessions:", error);
+    console.error("Error invalidating team sessions:", error);
     
     return NextResponse.json({ 
-      error: 'Failed to delete team sessions' 
+      error: 'Failed to invalidate team sessions' 
     }, { 
       status: 500,
       headers

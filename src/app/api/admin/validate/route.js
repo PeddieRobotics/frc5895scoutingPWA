@@ -11,7 +11,7 @@ export async function GET(request) {
     
     // Get admin auth cookie
     const cookieStore = cookies();
-    const adminAuth = cookieStore.get('admin_auth');
+    const adminAuth = await cookieStore.get('admin_auth');
     
     console.log('Admin validation attempt, cookie found:', !!adminAuth);
     

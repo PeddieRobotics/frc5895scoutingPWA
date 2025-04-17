@@ -147,6 +147,7 @@ export default function Picklist() {
   const [teamData, setTeamData] = useState([]);
   const [eventCode, setEventCode] = useState('2025mil'); // Default event code
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
+  const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
 
   const weightsFormRef = useRef();
   const alliancesFormRef = useRef();
@@ -155,10 +156,29 @@ export default function Picklist() {
 
   // Function to process raw match data into coral vs algae scatter plot data
   function processTeamData(rows) {
+    console.log('Processing team data with', rows.length, 'rows');
+    // Check if rows is valid
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      console.error('Invalid or empty rows data:', rows);
+      return [];
+    }
+    
+    // Log a sample row to see the structure
+    console.log('Sample data row:', JSON.stringify(rows[0]));
+    
     // Group by team
     const teamMap = {};
     
+    let processedCount = 0;
+    let skippedCount = 0;
+    
     rows.forEach(row => {
+      // Skip invalid rows
+      if (!row || typeof row !== 'object' || !row.team) {
+        skippedCount++;
+        return;
+      }
+      
       if (!teamMap[row.team]) {
         teamMap[row.team] = {
           team: row.team,
@@ -169,23 +189,28 @@ export default function Picklist() {
       }
       
       // Sum up coral successes (auto and tele)
-      const autoCoralSuccesses = (row.autol1success || 0) + (row.autol2success || 0) + 
-                                (row.autol3success || 0) + (row.autol4success || 0);
-                                
-      const teleCoralSuccesses = (row.telel1success || 0) + (row.telel2success || 0) + 
-                                (row.telel3success || 0) + (row.telel4success || 0);
+      // Safely access properties with fallbacks to 0
+      const autoCoralSuccesses = (Number(row.autol1success) || 0) + (Number(row.autol2success) || 0) + 
+                               (Number(row.autol3success) || 0) + (Number(row.autol4success) || 0);
+                               
+      const teleCoralSuccesses = (Number(row.telel1success) || 0) + (Number(row.telel2success) || 0) + 
+                                (Number(row.telel3success) || 0) + (Number(row.telel4success) || 0);
                                 
       // Sum up algae (auto and tele)
-      const autoAlgae = (row.autonetprocessorsuccess || 0) + (row.autonetsuccess || 0);
-      const teleAlgae = (row.teleprocessorsuccess || 0) + (row.telenetsuccess || 0);
+      const autoAlgae = (Number(row.autonetprocessorsuccess) || 0) + (Number(row.autonetsuccess) || 0);
+      const teleAlgae = (Number(row.teleprocessorsuccess) || 0) + (Number(row.telenetsuccess) || 0);
       
       teamMap[row.team].totalCoral += (autoCoralSuccesses + teleCoralSuccesses);
       teamMap[row.team].totalAlgae += (autoAlgae + teleAlgae);
       teamMap[row.team].matches += 1;
+      processedCount++;
     });
     
+    console.log(`Processed ${processedCount} rows, skipped ${skippedCount} invalid rows`);
+    console.log(`Created data for ${Object.keys(teamMap).length} teams`);
+    
     // Convert to array and filter out teams with no matches
-    return Object.values(teamMap)
+    const result = Object.values(teamMap)
       .filter(team => team.matches > 0)
       .map(team => ({
         team: team.team,
@@ -193,26 +218,102 @@ export default function Picklist() {
         y: team.totalAlgae, // Y-axis: Algae
         z: team.matches     // Z-axis (size): Number of matches
       }));
+    
+    console.log(`Final result has ${result.length} teams`);
+    
+    // Log a sample processed team
+    if (result.length > 0) {
+      console.log('Sample processed team:', result[0]);
+    }
+    
+    return result;
   }
 
-  // Function to fetch data for all teams - moved outside of useEffect
+  // Function to fetch data for all teams
   async function fetchTeamData() {
     try {
-      const response = await fetch('/api/get-data');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data with status: ${response.status}`);
+      console.log('Fetching team data for coral vs algae graph');
+      
+      // Create headers for the request
+      const headers = {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'X-Source-Page': 'picklist' // Custom header to identify requests from picklist
+      };
+      
+      // Add Authorization header with team information if available
+      if (currentUserTeam) {
+        // Use the same Basic auth format as other requests in the app
+        headers['Authorization'] = `Basic ${btoa(`${currentUserTeam}:`)}`;
+        console.log(`Adding Authorization header for team: ${currentUserTeam}`);
       }
       
-      const data = await response.json();
-      if (!data || !data.rows) {
-        throw new Error('Invalid data format received');
+      console.log('Sending request to /api/get-data with headers:', JSON.stringify(headers));
+      
+      // Use credentials: 'include' to send cookies with the request
+      const response = await fetch('/api/get-data', {
+        method: 'GET',
+        credentials: 'include', // Keep this to include cookies
+        headers,
+        // Add cache busting parameter
+        cache: 'no-store'
+      });
+      
+      // Log the response status and headers
+      console.log(`Response status: ${response.status}, statusText: ${response.statusText}`);
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch data with status: ${response.status}, statusText: ${response.statusText}`);
+        
+        // Try to read the error message from the response
+        try {
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
+          throw new Error(`Failed to fetch data: ${errorData.error || response.statusText}`);
+        } catch (parseError) {
+          throw new Error(`Failed to fetch data with status: ${response.status}`);
+        }
+      }
+      
+      // Parse the response as text first to debug
+      const responseText = await response.text();
+      console.log(`Response text (first 100 chars): ${responseText.substring(0, 100)}...`);
+      
+      // Then parse as JSON
+      const data = JSON.parse(responseText);
+      
+      if (data.error) {
+        console.error('Error in fetch response:', data.error);
+        setTeamData([]);
+        return;
+      }
+      
+      if (!data.rows || data.rows.length === 0) {
+        console.log('No data rows returned');
+        setTeamData([]);
+        return;
+      }
+      
+      console.log(`Fetched ${data.rows.length} data rows for graph`);
+      
+      // Log a sample row to see the structure
+      if (data.rows.length > 0) {
+        console.log('Sample row:', JSON.stringify(data.rows[0]));
       }
       
       // Process data to calculate total coral and algae per team
       const processedData = processTeamData(data.rows);
+      console.log(`Processed team data into ${processedData.length} teams`);
       setTeamData(processedData);
+      
+      // If there's a user team in the response, update the state
+      if (data.userTeam && !currentUserTeam) {
+        setCurrentUserTeam(data.userTeam);
+        console.log('Updated current user team to:', data.userTeam);
+      }
     } catch (error) {
       console.error('Error fetching team data:', error);
+      setTeamData([]);
     }
   }
 
@@ -223,6 +324,89 @@ export default function Picklist() {
 
   useEffect(() => {
     if (!isClient) return;
+
+    // Get the current user's team from auth cookie or localStorage
+    try {
+      // Try to get the current user team from localStorage
+      const storedTeam = localStorage.getItem('userTeam');
+      if (storedTeam) {
+        console.log('Using stored team from localStorage:', storedTeam);
+        setCurrentUserTeam(storedTeam);
+      } else {
+        // Updated auth cookie parsing logic
+        console.log('Checking auth cookies...');
+        const cookies = {};
+        document.cookie.split(';').forEach(cookie => {
+          const parts = cookie.trim().split('=');
+          if (parts.length >= 2) {
+            const key = parts[0].trim();
+            // Join with = in case the value itself contains = characters
+            const value = parts.slice(1).join('=');
+            cookies[key] = value;
+          }
+        });
+        
+        console.log('Available cookies:', Object.keys(cookies));
+        
+        // Check for auth_session cookie in any of its variants
+        const possibleAuthCookies = ['auth_session', 'auth_session_lax', 'auth_session_secure'];
+        let foundTokenData = null;
+        
+        for (const cookieName of possibleAuthCookies) {
+          if (cookies[cookieName]) {
+            try {
+              console.log(`Found ${cookieName} cookie`);
+              // Try to decode and parse
+              const decodedCookie = decodeURIComponent(cookies[cookieName]);
+              const tokenData = JSON.parse(decodedCookie);
+              
+              if (tokenData && tokenData.team) {
+                console.log(`Valid team found in ${cookieName}:`, tokenData.team);
+                foundTokenData = tokenData;
+                break;
+              }
+            } catch (e) {
+              console.log(`Error parsing ${cookieName}:`, e.message);
+            }
+          }
+        }
+        
+        // If we found valid token data, use it
+        if (foundTokenData && foundTokenData.team) {
+          console.log('Setting current user team to:', foundTokenData.team);
+          setCurrentUserTeam(foundTokenData.team);
+          localStorage.setItem('userTeam', foundTokenData.team);
+        } else {
+          // No valid auth cookie found - default to a value or try hardcoding a team for testing
+          console.log('No valid auth cookie found. Using default team.');
+          // For testing, you can uncomment and set a default team:
+          // setCurrentUserTeam('5895');
+          
+          // Check for any cookie that might have team info
+          for (const [key, value] of Object.entries(cookies)) {
+            if (key.includes('auth') || key.includes('team') || key.includes('session')) {
+              console.log(`Potential auth cookie ${key}:`, value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+              // Try to extract "team" from the value if it looks like JSON
+              if (value.includes('"team"')) {
+                try {
+                  const jsonValue = JSON.parse(decodeURIComponent(value));
+                  if (jsonValue && jsonValue.team) {
+                    console.log('Found team in cookie value:', jsonValue.team);
+                    setCurrentUserTeam(jsonValue.team);
+                    localStorage.setItem('userTeam', jsonValue.team);
+                    break;
+                  }
+                } catch (e) {
+                  // Ignore parse errors for non-JSON cookies
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error getting user team:', e);
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlWeights = Object.fromEntries(urlParams);
@@ -295,7 +479,8 @@ export default function Picklist() {
       const response = await fetch('/api/compute-picklist', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
         },
         body: JSON.stringify(weightEntries)
       });
@@ -348,8 +533,11 @@ export default function Picklist() {
   async function fetchTBAAlliances() {
     try {
       setFetchingAlliances(true);
-      // Create a new API route to handle the request to avoid exposing API keys
-      const response = await fetch(`/api/get-alliance-selections?eventCode=${eventCode}`);
+      const response = await fetch(`/api/get-alliance-selections?eventCode=${eventCode}`, {
+        headers: {
+          'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+        }
+      });
       
       if (!response.ok) {
         const errorData = await response.json();

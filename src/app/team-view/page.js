@@ -31,6 +31,7 @@ function TeamView() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentUserTeam, setCurrentUserTeam] = useState('');
     const searchParams = useSearchParams();
     const team = searchParams.get("team");
     const hasTopBar = searchParams.get('team1') !== null;
@@ -130,11 +131,46 @@ function TeamView() {
     function fetchTeamData(team) {
       setLoading(true);
       setError(null);
+
+      // Try to get the current user's team
+      if (!currentUserTeam) {
+        try {
+          // Try localStorage first
+          const storedTeam = localStorage.getItem('userTeam');
+          if (storedTeam) {
+            setCurrentUserTeam(storedTeam);
+          } else {
+            // Check cookies as fallback
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+              const [key, value] = cookie.trim().split('=');
+              acc[key] = value;
+              return acc;
+            }, {});
+            
+            if (cookies.team_name) {
+              setCurrentUserTeam(cookies.team_name);
+              localStorage.setItem('userTeam', cookies.team_name);
+            }
+          }
+        } catch (e) {
+          console.error('Error getting user team:', e);
+        }
+      }
   
-      fetch(`/api/get-team-data?team=${team}&includeRows=true`)
+      fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+          headers: {
+              // Include the Authorization header with the current user's credentials
+              'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
+          }
+      })
           .then(response => {
-              if (!response.ok) {
-                  throw new Error("Failed to fetch data");
+              if (response.status === 401) {
+                  console.error("Authentication failed - triggering login dialog");
+                  // Trigger auth required event to show login dialog
+                  window.dispatchEvent(new CustomEvent('auth:required', {
+                      detail: { message: 'Your session has expired. Please login again.' }
+                  }));
+                  throw new Error('Authentication required');
               }
               return response.json();
           })
@@ -159,8 +195,10 @@ function TeamView() {
               setLoading(false);
           })
           .catch(error => {
-              console.error("Fetch error:", error);
-              
+              if (error.message !== 'Authentication required') {
+                  console.error("Error fetching team data:", error);
+                  // Handle other errors
+              }
               setError(error.message);
               setLoading(false);
           });
