@@ -38,9 +38,12 @@ export async function middleware(request) {
     'Expires': '0'
   };
   
+  console.log(`[Middleware] Processing request for ${pathname}`);
+  
   // Allow public paths without auth
   if (PUBLIC_PATHS.includes(pathname) || 
       PUBLIC_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+    console.log(`[Middleware] Public path access: ${pathname}`);
     const response = NextResponse.next();
     // Add cache prevention headers
     Object.entries(cacheHeaders).forEach(([key, value]) => {
@@ -126,16 +129,15 @@ export async function middleware(request) {
       console.error(`[Middleware] Error processing auth cookie in ADMIN_COOKIE_ROUTES for ${pathname}:`, e);
     }
     
-    // If we get here, there were no valid auth cookies, but we still proceed
-    // since the API endpoint should handle authentication requirements
-    console.log(`[Middleware] No valid auth data found for ${pathname}, but allowing request to proceed`);
-    const response = NextResponse.next();
-    
-    // Add cache prevention headers
-    Object.entries(cacheHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value);
+    // If we get here, there were no valid auth cookies
+    console.log(`[Middleware] No valid auth data found for ${pathname}, blocking access`);
+    return new NextResponse(JSON.stringify({ error: 'Authentication required' }), {
+      status: 401,
+      headers: { 
+        'Content-Type': 'application/json',
+        ...cacheHeaders
+      }
     });
-    return response;
   }
 
   // Special handling for API routes
@@ -205,7 +207,7 @@ export async function middleware(request) {
           tokenData = {
             id: decodedTokenStr,
             team: 'pending_lookup', // Special marker to indicate we need to look up the team
-            v: '1'                  // Use a default version
+            v: '2'                  // Use a default version of 2 instead of 1
           };
         }
       }
@@ -215,6 +217,7 @@ export async function middleware(request) {
     
     // If admin auth cookie exists, proceed (admin validation happens in the routes)
     if (adminAuthCookie?.value) {
+      console.log(`[Middleware] Admin auth cookie found for ${pathname}`);
       const response = NextResponse.next();
       // Add cache prevention headers
       Object.entries(cacheHeaders).forEach(([key, value]) => {
@@ -262,7 +265,7 @@ export async function middleware(request) {
           
           if (!validationResponse.ok) {
             console.log(`[Middleware] API token validation HTTP error: ${validationResponse.status}`);
-            // Return 401 but DON'T clear cookies - let the client handle the error
+            // Return 401
             return new NextResponse(JSON.stringify({ error: 'Authentication failed' }), {
               status: 401,
               headers: { 
@@ -276,7 +279,7 @@ export async function middleware(request) {
           
           if (!validationResult.valid) {
             console.log(`[Middleware] API token invalid: ${validationResult.message}`);
-            // Return 401 but DON'T clear cookies - let the client handle the error
+            // Return 401
             return new NextResponse(JSON.stringify({ error: validationResult.message || 'Authentication failed' }), {
               status: 401,
               headers: { 
@@ -289,7 +292,7 @@ export async function middleware(request) {
           // Token is valid, proceed with the request
           const requestHeaders = new Headers(request.headers);
           requestHeaders.set('X-Auth-Validated', 'true');
-          requestHeaders.set('X-Auth-Team', tokenData.team);
+          requestHeaders.set('X-Auth-Team', validationResult.team || tokenData.team);
           requestHeaders.set('X-Auth-Session', tokenData.id);
           
           console.log(`[Middleware] API token validation successful, proceeding`);
@@ -304,19 +307,13 @@ export async function middleware(request) {
           clearTimeout(timeoutId);
           console.log(`[Middleware] Fetch error during API validation:`, fetchError.message);
           
-          // For fetch errors, just continue with the API call with some basic headers
-          // This prevents false negatives from validation service failures
-          console.log(`[Middleware] Allowing API request despite validation error`);
-          
-          const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('X-Auth-Team', tokenData.team);
-          requestHeaders.set('X-Auth-Session', tokenData.id);
-          
-          return NextResponse.next({
-            request: {
-              headers: requestHeaders
-            },
-            headers: cacheHeaders
+          // CRITICAL CHANGE: No longer allowing requests to proceed on validation errors
+          return new NextResponse(JSON.stringify({ error: 'Authentication service unavailable' }), {
+            status: 503,
+            headers: { 
+              'Content-Type': 'application/json',
+              ...cacheHeaders
+            }
           });
         }
       } catch (error) {
@@ -332,6 +329,7 @@ export async function middleware(request) {
     }
     
     // If no auth header or valid cookie for API routes, return 401
+    console.log(`[Middleware] No valid authentication found for API request: ${pathname}`);
     return new NextResponse(JSON.stringify({ error: 'Authentication required' }), {
       status: 401,
       headers: { 
@@ -349,6 +347,7 @@ export async function middleware(request) {
   
   // If admin auth cookie exists, proceed (admin validation happens in the routes)
   if (adminAuthCookie?.value) {
+    console.log(`[Middleware] Admin auth cookie found for ${pathname}`);
     return NextResponse.next();
   }
   
@@ -379,7 +378,7 @@ export async function middleware(request) {
         tokenData = {
           id: decodedTokenStr,
           team: 'pending_lookup', // Special marker to indicate we need to look up the team
-          v: '1'                  // Use a default version
+          v: '2'                  // Use a default version of 2 instead of 1
         };
       }
       
@@ -468,7 +467,8 @@ export async function middleware(request) {
         // Token is valid, proceed with the request
         const requestHeaders = new Headers(request.headers);
         requestHeaders.set('X-Auth-Validated', 'true');
-        requestHeaders.set('X-Auth-Team', tokenData.team);
+        // Use the team from validation result if available
+        requestHeaders.set('X-Auth-Team', validationResult.team || tokenData.team);
         requestHeaders.set('X-Auth-Session', tokenData.id);
         
         console.log(`[Middleware] Token validation successful, proceeding`);
@@ -482,20 +482,20 @@ export async function middleware(request) {
         clearTimeout(timeoutId);
         console.log(`[Middleware] Fetch error during validation:`, fetchError.message);
         
-        // In case of validation service error, let the request proceed
-        // This prevents login loops when the validation service is down
-        console.log(`[Middleware] Allowing request to proceed despite validation error`);
+        // CRITICAL CHANGE: No longer allowing requests to proceed on validation errors
+        // Clear invalid auth cookies before redirecting
+        const response = NextResponse.redirect(new URL('/', request.url));
+        response.cookies.delete('auth_session');
+        response.cookies.delete('auth_session_lax');
+        response.cookies.delete('auth_session_secure');
         
-        // Set headers with what we have from the token
-        const requestHeaders = new Headers(request.headers);
-        requestHeaders.set('X-Auth-Team', tokenData.team);
-        requestHeaders.set('X-Auth-Session', tokenData.id);
+        // Add error message as query params
+        const url = new URL('/', request.url);
+        url.searchParams.set('authRequired', 'true');
+        url.searchParams.set('redirect', pathname);
+        url.searchParams.set('error', 'Authentication service unavailable');
         
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
+        return NextResponse.redirect(url);
       }
     } catch (error) {
       // Token validation failed, redirect to login

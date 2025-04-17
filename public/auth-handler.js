@@ -3,11 +3,12 @@
 // including iOS where cookie-based approaches often fail
 
 (function() {
-  console.log('Auth Handler: Initializing');
+  console.log('Auth Handler: Initializing v2.0');
   
   // Auth token storage key
   const AUTH_TOKEN_KEY = 'auth_token';
   const AUTH_EXPIRY_KEY = 'auth_token_expiry';
+  const AUTH_VERSION_KEY = 'auth_token_version';
   
   // Auth validation interval (in ms) - check every 5 minutes
   const VALIDATION_INTERVAL = 5 * 60 * 1000;
@@ -22,14 +23,23 @@
     return expiry ? parseInt(expiry, 10) : null;
   }
   
-  function setStoredToken(token, expiry) {
+  function getTokenVersion() {
+    // Always default to version 2 if not set
+    return localStorage.getItem(AUTH_VERSION_KEY) || '2';
+  }
+  
+  function setStoredToken(token, expiry, version) {
     if (token) {
       localStorage.setItem(AUTH_TOKEN_KEY, token);
       
       if (expiry) {
         localStorage.setItem(AUTH_EXPIRY_KEY, expiry.toString());
       }
-      console.log('Auth Handler: Saved auth token to localStorage');
+      
+      // Always store token version, default to '2'
+      localStorage.setItem(AUTH_VERSION_KEY, version || '2');
+      
+      console.log(`Auth Handler: Saved auth token to localStorage with version ${version || '2'}`);
     } else {
       clearStoredToken();
     }
@@ -38,6 +48,7 @@
   function clearStoredToken() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_EXPIRY_KEY);
+    localStorage.removeItem(AUTH_VERSION_KEY);
     console.log('Auth Handler: Cleared auth token from localStorage');
   }
   
@@ -54,17 +65,58 @@
       const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
       if (isSameOrigin && !options.headers['Authorization']) {
         options.headers['Authorization'] = `Bearer ${token}`;
+        
+        // Add version header
+        const tokenVersion = getTokenVersion();
+        options.headers['X-Token-Version'] = tokenVersion;
+        
+        // Add version to URL
+        if (!url.includes('v=')) {
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}v=${tokenVersion}`;
+        }
+        
+        // Special handling for validate-token endpoint
+        if (url.includes('/api/auth/validate-token')) {
+          console.log('Auth Handler: Detected token validation request, ensuring version=2');
+          
+          // If this is a POST to validate-token, override the body with version=2
+          if (options.method === 'POST' && options.body) {
+            try {
+              const bodyData = JSON.parse(options.body);
+              bodyData.version = '2'; // Force version 2
+              options.body = JSON.stringify(bodyData);
+            } catch (e) {
+              console.error('Auth Handler: Failed to update validate-token request body:', e);
+            }
+          }
+        }
       }
     }
     
     return originalFetch.apply(this, [url, options]).then(response => {
+      // Check for version header and update if needed
+      const newVersion = response.headers.get('X-Token-Version');
+      if (newVersion) {
+        console.log(`Auth Handler: Updating token version from header: ${newVersion}`);
+        localStorage.setItem(AUTH_VERSION_KEY, newVersion);
+        sessionStorage.setItem(AUTH_VERSION_KEY, newVersion);
+      }
+      
       // Check for auth token header
       if (response.headers.get('X-Auth-Token') === 'enabled') {
         // We need to clone the response to read its JSON
         // This won't affect the original response
         response.clone().json().then(data => {
           if (data.token) {
-            setStoredToken(data.token, data.expires);
+            setStoredToken(data.token, data.expires, data.tokenVersion || '2');
+          }
+          
+          // Also check for tokenVersion in response body
+          if (data.tokenVersion) {
+            console.log(`Auth Handler: Updating token version from response: ${data.tokenVersion}`);
+            localStorage.setItem(AUTH_VERSION_KEY, data.tokenVersion);
+            sessionStorage.setItem(AUTH_VERSION_KEY, data.tokenVersion);
           }
         }).catch(err => {
           console.error('Failed to parse auth response:', err);
@@ -85,12 +137,19 @@
         if (window.location.pathname === '/' || window.location.pathname === '') {
           const urlParams = new URLSearchParams(window.location.search);
           urlParams.set('authRequired', 'true');
+          
+          // Add token version parameter
+          urlParams.set('tokenVersion', '2');
+          
           const newUrl = window.location.pathname + '?' + urlParams.toString();
           window.history.pushState(null, '', newUrl);
           
           // Trigger the login dialog by dispatching a custom event
           window.dispatchEvent(new CustomEvent('auth:required', {
-            detail: { message: 'Your session has expired or is invalid' }
+            detail: { 
+              message: 'Your session has expired or is invalid',
+              tokenVersion: '2'
+            }
           }));
         } 
         // 2. Otherwise, redirect to the main page with auth dialog flags
@@ -98,6 +157,7 @@
           const params = new URLSearchParams();
           params.set('authRequired', 'true');
           params.set('redirect', window.location.pathname + window.location.search);
+          params.set('tokenVersion', '2'); // Add version parameter
           window.location.href = '/?' + params.toString();
         }
       }
@@ -122,15 +182,42 @@
         return false;
       }
       
+      // Get current token version
+      const tokenVersion = getTokenVersion();
+      console.log(`Auth Handler: Validating token with version ${tokenVersion}`);
+      
+      // Add timestamp to prevent caching
+      const timestamp = Date.now();
+      
       // Validate with server
-      const response = await fetch('/api/auth/validate', {
+      const response = await fetch(`/api/auth/validate?t=${timestamp}&v=${tokenVersion}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'X-Token-Version': tokenVersion,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
       });
+      
+      // Update token version if provided in response headers
+      const newVersion = response.headers.get('X-Token-Version');
+      if (newVersion) {
+        console.log(`Auth Handler: Updating token version from validate response header: ${newVersion}`);
+        localStorage.setItem(AUTH_VERSION_KEY, newVersion);
+        sessionStorage.setItem(AUTH_VERSION_KEY, newVersion);
+      }
       
       if (response.status === 200) {
         const data = await response.json();
+        
+        // Update token version if provided in response body
+        if (data.tokenVersion) {
+          console.log(`Auth Handler: Updating token version from validate data: ${data.tokenVersion}`);
+          localStorage.setItem(AUTH_VERSION_KEY, data.tokenVersion);
+          sessionStorage.setItem(AUTH_VERSION_KEY, data.tokenVersion);
+        }
+        
         return data.valid === true;
       } else {
         console.log('Auth Handler: Server rejected token');
@@ -151,10 +238,14 @@
     if (!token) return;
     
     try {
+      // Get current token version
+      const tokenVersion = getTokenVersion();
+      
       await fetch('/api/auth/session', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Token-Version': tokenVersion
         }
       });
     } catch (error) {
@@ -171,21 +262,33 @@
   function checkUrlForToken() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('token');
+    const tokenVersion = urlParams.get('tokenVersion') || '2';
     
     if (urlToken) {
       try {
         // Verify it's a valid JSON token
         JSON.parse(urlToken);
-        setStoredToken(urlToken);
+        setStoredToken(urlToken, null, tokenVersion);
         
         // Clean URL by removing token parameter
         urlParams.delete('token');
+        urlParams.delete('tokenVersion');
         const newUrl = window.location.pathname + 
                       (urlParams.toString() ? '?' + urlParams.toString() : '');
         window.history.replaceState({}, document.title, newUrl);
       } catch (e) {
         console.error('Auth Handler: Invalid token in URL', e);
       }
+    } else if (urlParams.get('tokenVersion')) {
+      // If only version is provided, update stored version
+      localStorage.setItem(AUTH_VERSION_KEY, tokenVersion);
+      sessionStorage.setItem(AUTH_VERSION_KEY, tokenVersion);
+      
+      // Clean URL
+      urlParams.delete('tokenVersion');
+      const newUrl = window.location.pathname + 
+                    (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, document.title, newUrl);
     }
   }
   
@@ -213,6 +316,8 @@
         const params = new URLSearchParams();
         params.set('authRequired', 'true');
         params.set('redirect', window.location.pathname + window.location.search);
+        params.set('tokenVersion', '2'); // Always use version 2
+        
         if (event.detail && event.detail.message) {
           params.set('error', event.detail.message);
         }
@@ -236,6 +341,7 @@
   window.AuthHandler = {
     isAuthenticated: () => !!getStoredToken(),
     getToken: getStoredToken,
+    getTokenVersion: getTokenVersion,
     setToken: setStoredToken,
     logout: logout,
     validateToken: validateToken,
@@ -251,6 +357,10 @@
     setupAuthEventListeners();
     startValidationInterval();
     
-    console.log('Auth Handler: Initialized');
+    // Force token version to be 2
+    localStorage.setItem(AUTH_VERSION_KEY, '2');
+    sessionStorage.setItem(AUTH_VERSION_KEY, '2');
+    
+    console.log('Auth Handler: Initialized with token version 2');
   });
 })(); 

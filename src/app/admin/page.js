@@ -4,6 +4,58 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './admin.module.css';
 
+// Client-side-only date formatter component
+function ClientDate({ date }) {
+  const [formattedDate, setFormattedDate] = useState('');
+  
+  useEffect(() => {
+    if (!date) {
+      setFormattedDate('Never');
+      return;
+    }
+    
+    try {
+      // Parse the date string
+      const dateObj = new Date(date);
+      
+      // Log raw date info for debugging
+      console.log({
+        inputDate: date,
+        parsedDate: dateObj.toString(),
+        isoString: dateObj.toISOString(),
+        localString: dateObj.toLocaleString(),
+        timestamp: dateObj.getTime()
+      });
+      
+      // Simple offset calculation - get local time offset in minutes
+      const offsetMinutes = new Date().getTimezoneOffset();
+      
+      // Apply the offset to create a date adjusted to local time
+      // (negative because getTimezoneOffset returns minutes WEST of UTC)
+      const adjustedDate = new Date(dateObj.getTime() - (offsetMinutes * 60 * 1000));
+      
+      console.log('Time offset (minutes):', offsetMinutes);
+      console.log('Adjusted date:', adjustedDate.toString());
+      
+      // Format the date in user locale
+      setFormattedDate(adjustedDate.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true
+      }));
+    } catch (e) {
+      console.error('Date formatting error:', e);
+      setFormattedDate('Invalid date');
+    }
+  }, [date]);
+  
+  return <span suppressHydrationWarning>{formattedDate}</span>;
+}
+
 // Local SVG icon components
 const TeamIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -84,7 +136,7 @@ export default function AdminPage() {
   const fetchActiveSessions = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/sessions');
+      const response = await fetch('/api/auth/sessions?includeRevoked=true');
       if (response.ok) {
         const data = await response.json();
         setActiveSessions(data.sessions || []);
@@ -264,12 +316,27 @@ export default function AdminPage() {
     setLoading(true);
     
     try {
+      // First invalidate all sessions for this team
+      const sessionResponse = await fetch(`/api/auth/sessions/team/${teamName}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!sessionResponse.ok) {
+        const data = await sessionResponse.json();
+        setError(data.error || 'Failed to invalidate team sessions');
+        setLoading(false);
+        return;
+      }
+      
+      // Then delete the team
       const response = await fetch(`/api/admin/teams?team=${encodeURIComponent(teamName)}`, {
         method: 'DELETE',
       });
       
       if (response.ok) {
         fetchTeams();
+        fetchActiveSessions(); // Refresh the sessions list as well
       } else {
         const data = await response.json();
         setError(data.message || 'Failed to delete team');
@@ -296,13 +363,19 @@ export default function AdminPage() {
       });
       
       if (response.ok) {
-        setActiveSessions(prev => prev.filter(session => session.session_id !== sessionId));
+        const data = await response.json();
+        // Update the session in the UI instead of removing it
+        setActiveSessions(prev => prev.map(session => 
+          session.session_id === sessionId 
+            ? { ...session, revoked: true }
+            : session
+        ));
       } else {
-        setError('Failed to delete session');
+        setError('Failed to revoke session');
       }
     } catch (err) {
-      setError('Network error deleting session');
-      console.error('Delete session error:', err);
+      setError('Network error revoking session');
+      console.error('Revoke session error:', err);
     } finally {
       setLoading(false);
     }
@@ -518,17 +591,19 @@ export default function AdminPage() {
           <form onSubmit={handleAdminAuth} className={styles.loginForm}>
             <div className={styles.formGroup}>
               <label htmlFor="adminPassword" className={styles.formLabel}>ADMIN Password</label>
-              <input
-                type="password"
-                id="adminPassword"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                className={styles.formInput}
-                disabled={loading}
-                autoComplete="off"
-                autoFocus
-                placeholder="Enter administrator password"
-              />
+              <div suppressHydrationWarning>
+                <input
+                  type="password"
+                  id="adminPassword"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className={styles.formInput}
+                  disabled={loading}
+                  autoComplete="off"
+                  autoFocus
+                  placeholder="Enter administrator password"
+                />
+              </div>
             </div>
             <button 
               type="submit" 
@@ -549,22 +624,6 @@ export default function AdminPage() {
         <h1 className={styles.adminTitle}>Team Authentication Management</h1>
         <div>
           <button 
-            onClick={dumpCookiesToConsole}
-            className={styles.debugButton || styles.refreshButton}
-            title="Dump cookies to console"
-            style={{ marginRight: '10px' }}
-          >
-            Console Log
-          </button>
-          <button 
-            onClick={() => setShowDebugUI(!showDebugUI)}
-            className={styles.debugButton || styles.refreshButton}
-            title="Toggle debug info"
-            style={{ marginRight: '10px' }}
-          >
-            {showDebugUI ? 'Hide Debug' : 'Show Debug'}
-          </button>
-          <button 
             onClick={handleLogout}
             className={styles.logoutButton}
           >
@@ -572,22 +631,6 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
-      
-      {cookieDebug && showDebugUI && (
-        <div className={styles.debugInfo}>
-          <h3>Cookie Debug Info</h3>
-          <pre>{cookieDebug || 'No cookies found'}</pre>
-          <button 
-            onClick={() => {
-              const allCookies = dumpCookiesToConsole();
-              setCookieDebug(allCookies);
-            }}
-            className={styles.refreshButton}
-          >
-            Refresh Cookie Info
-          </button>
-        </div>
-      )}
       
       <div className={styles.adminContent}>
         <div className={styles.card}>
@@ -614,15 +657,17 @@ export default function AdminPage() {
             </div>
             <div className={styles.formGroup}>
               <label htmlFor="password" className={styles.formLabel}>Password</label>
-              <input
-                type="password"
-                id="password"
-                value={newTeam.password}
-                onChange={(e) => setNewTeam({...newTeam, password: e.target.value})}
-                className={styles.formInput}
-                disabled={loading}
-                placeholder="Enter team password (min 6 characters)"
-              />
+              <div suppressHydrationWarning>
+                <input
+                  type="password"
+                  id="password"
+                  value={newTeam.password}
+                  onChange={(e) => setNewTeam({...newTeam, password: e.target.value})}
+                  className={styles.formInput}
+                  disabled={loading}
+                  placeholder="Enter team password (min 6 characters)"
+                />
+              </div>
             </div>
             <button 
               type="submit" 
@@ -662,8 +707,8 @@ export default function AdminPage() {
                   {teams.map((team) => (
                     <tr key={team.id}>
                       <td>{team.team_name}</td>
-                      <td>{new Date(team.created_at).toLocaleString()}</td>
-                      <td>{team.last_login ? new Date(team.last_login).toLocaleString() : 'Never'}</td>
+                      <td><ClientDate date={team.created_at} /></td>
+                      <td><ClientDate date={team.last_login} /></td>
                       <td>
                         <button 
                           onClick={() => handleDeleteTeam(team.team_name)}
@@ -721,7 +766,7 @@ export default function AdminPage() {
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>
-              <UserCircleIcon /> Active Sessions
+              <UserCircleIcon /> Session Management
             </h2>
             <button 
               onClick={fetchActiveSessions}
@@ -744,34 +789,46 @@ export default function AdminPage() {
                     <th>Team</th>
                     <th>Session Token</th>
                     <th>Token Version</th>
-                    <th>Current Version</th>
                     <th>Created</th>
                     <th>Last Active</th>
+                    <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activeSessions.map((session) => (
-                    <tr key={session.session_id}>
+                    <tr key={session.session_id} className={session.revoked ? styles.revokedSession : ''}>
                       <td>{session.team_name}</td>
                       <td title={session.session_id}>{session.session_id.substring(0, 8)}...</td>
                       <td>{session.token_version || 1}</td>
+                      <td><ClientDate date={session.created_at} /></td>
+                      <td><ClientDate date={session.last_accessed} /></td>
                       <td>
-                        {teams.find(t => t.team_name === session.team_name)?.token_version || 1}
-                        {(session.token_version || 1) !== (teams.find(t => t.team_name === session.team_name)?.token_version || 1) && 
-                          <span className={styles.errorText}> (Outdated!)</span>}
+                        {session.revoked ? (
+                          <span className={styles.errorText}>Revoked</span>
+                        ) : (
+                          <span className={styles.successText}>Active</span>
+                        )}
                       </td>
-                      <td>{new Date(session.created_at).toLocaleString()}</td>
-                      <td>{new Date(session.last_accessed).toLocaleString()}</td>
                       <td>
-                        <button 
-                          onClick={() => handleDeleteSession(session.session_id)}
-                          className={styles.deleteButton}
-                          disabled={loading}
-                          title="Delete session"
-                        >
-                          <TrashIcon /> Terminate
-                        </button>
+                        {session.revoked ? (
+                          <button 
+                            className={`${styles.deleteButton} ${styles.revokedButton}`}
+                            disabled={true}
+                            title="Session revoked"
+                          >
+                            <TrashIcon /> Revoked
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleDeleteSession(session.session_id)}
+                            className={styles.deleteButton}
+                            disabled={loading}
+                            title="Revoke session"
+                          >
+                            <TrashIcon /> Terminate
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

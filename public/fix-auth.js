@@ -1,0 +1,151 @@
+// Auth cookie fix script
+// This can be loaded via script tag or run in the console
+// It forcefully updates all auth cookies and localStorage items to use token version 2
+
+(function fixAuthVersion() {
+  // Define constants
+  const AUTH_VERSION_KEY = 'auth_token_version';
+  const TARGET_VERSION = '2';
+
+  console.log('Auth Fix: Starting version update to', TARGET_VERSION);
+
+  // Set version in localStorage
+  localStorage.setItem(AUTH_VERSION_KEY, TARGET_VERSION);
+  console.log('Auth Fix: Updated localStorage token version to', TARGET_VERSION);
+
+  // Set version in sessionStorage
+  sessionStorage.setItem(AUTH_VERSION_KEY, TARGET_VERSION);
+  console.log('Auth Fix: Updated sessionStorage token version to', TARGET_VERSION);
+
+  // Update all possible cookies
+  document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000`;
+  document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000; SameSite=Lax`;
+  
+  if (window.location.protocol === 'https:') {
+    document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000; SameSite=None; Secure`;
+  }
+  
+  console.log('Auth Fix: Updated auth_token_version cookies');
+
+  // Parse auth_session cookies and update their version
+  try {
+    const cookies = document.cookie.split(';');
+    let authSessionCookies = [];
+    
+    // Find auth session cookies
+    cookies.forEach(cookie => {
+      const trimmed = cookie.trim();
+      if (trimmed.startsWith('auth_session=')) {
+        authSessionCookies.push({
+          name: 'auth_session',
+          value: trimmed.substring('auth_session='.length)
+        });
+      } else if (trimmed.startsWith('auth_session_lax=')) {
+        authSessionCookies.push({
+          name: 'auth_session_lax',
+          value: trimmed.substring('auth_session_lax='.length)
+        });
+      } else if (trimmed.startsWith('auth_session_secure=')) {
+        authSessionCookies.push({
+          name: 'auth_session_secure',
+          value: trimmed.substring('auth_session_secure='.length)
+        });
+      }
+    });
+    
+    console.log('Auth Fix: Found', authSessionCookies.length, 'auth session cookies');
+    
+    // Process each auth session cookie
+    authSessionCookies.forEach(cookie => {
+      try {
+        // Try to decode and parse as JSON
+        let decodedValue = decodeURIComponent(cookie.value);
+        let tokenData = JSON.parse(decodedValue);
+        
+        // Update version
+        if (tokenData.v !== TARGET_VERSION) {
+          console.log(`Auth Fix: Updating ${cookie.name} version from ${tokenData.v || 'undefined'} to ${TARGET_VERSION}`);
+          tokenData.v = TARGET_VERSION;
+          
+          // Save back to cookie
+          const newValue = encodeURIComponent(JSON.stringify(tokenData));
+          
+          document.cookie = `${cookie.name}=${newValue}; path=/; max-age=2592000`;
+          document.cookie = `${cookie.name}=${newValue}; path=/; max-age=2592000; SameSite=Lax`;
+          
+          if (window.location.protocol === 'https:') {
+            document.cookie = `${cookie.name}=${newValue}; path=/; max-age=2592000; SameSite=None; Secure`;
+          }
+        }
+      } catch (e) {
+        console.error(`Auth Fix: Error processing ${cookie.name}:`, e);
+      }
+    });
+  } catch (e) {
+    console.error('Auth Fix: Error processing cookies:', e);
+  }
+
+  // Check for a raw session ID in cookies and force it to use version 2
+  try {
+    // If we find a session ID in local/sessionStorage, ensure it has version 2
+    const authCredentials = localStorage.getItem('auth_credentials') || 
+                           sessionStorage.getItem('auth_credentials');
+                           
+    if (authCredentials) {
+      console.log('Auth Fix: Found auth_credentials, ensuring version 2 is used with it');
+      
+      // Store version 2 in all storages
+      localStorage.setItem(AUTH_VERSION_KEY, TARGET_VERSION);
+      sessionStorage.setItem(AUTH_VERSION_KEY, TARGET_VERSION);
+      
+      // Set cookies with version
+      document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000`;
+      document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000; SameSite=Lax`;
+      
+      if (window.location.protocol === 'https:') {
+        document.cookie = `auth_token_version=${TARGET_VERSION}; path=/; max-age=2592000; SameSite=None; Secure`;
+      }
+    }
+  } catch (e) {
+    console.error('Auth Fix: Error processing auth_credentials:', e);
+  }
+  
+  console.log('Auth Fix: Version update complete');
+  console.log('Auth Fix: Please hard refresh the page (Ctrl+Shift+R or Cmd+Shift+R) to load updated scripts');
+  
+  return {
+    reset: function() {
+      // Function to completely reset auth
+      localStorage.removeItem('auth_credentials');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token_expiry');
+      localStorage.removeItem('auth_token_version');
+      
+      sessionStorage.removeItem('auth_credentials');
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token_expiry');
+      sessionStorage.removeItem('auth_token_version');
+      
+      // Clear cookies
+      document.cookie = `auth_credentials=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token_version=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      
+      console.log('Auth Fix: Complete auth reset performed');
+      console.log('Auth Fix: Please reload the page to login again');
+      
+      return 'Auth reset complete';
+    },
+    forceVersion: function(version) {
+      localStorage.setItem(AUTH_VERSION_KEY, version);
+      sessionStorage.setItem(AUTH_VERSION_KEY, version);
+      document.cookie = `auth_token_version=${version}; path=/; max-age=2592000`;
+      
+      console.log(`Auth Fix: Forced version to ${version}`);
+      return `Version set to ${version}`;
+    }
+  };
+})(); 

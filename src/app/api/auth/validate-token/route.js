@@ -174,12 +174,20 @@ export async function POST(request) {
           providedVersion: version, 
           actualVersion: sessionVersion 
         });
+        
+        // Instead of returning 401, return success but with a version update message
+        // This allows the client to continue but also updates their version
         return NextResponse.json({ 
-          valid: false,
-          message: 'Token version mismatch'
+          valid: true,
+          message: 'Token version updated',
+          teamName: session.team_name,
+          tokenVersion: sessionVersion, // Send the correct version
+          updateVersion: true // Flag to indicate version needs updating
         }, { 
-          status: 401,
-          headers
+          headers: {
+            ...headers,
+            'X-Token-Version': sessionVersion.toString()
+          }
         });
       }
       

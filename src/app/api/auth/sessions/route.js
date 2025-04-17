@@ -46,6 +46,10 @@ export async function GET(request) {
       headers
     });
   }
+  
+  // Check if revoked sessions should be included
+  const { searchParams } = new URL(request.url);
+  const includeRevoked = searchParams.get('includeRevoked') === 'true';
 
   try {
     // Connect to database
@@ -85,12 +89,15 @@ export async function GET(request) {
         END $$;
       `);
 
-      // Query active sessions
-      const result = await client.query(`
+      // Query sessions, including revoked ones if requested
+      let query = `
         SELECT * FROM user_sessions 
         WHERE expires_at > NOW() 
+        ${includeRevoked ? '' : 'AND revoked = FALSE'} 
         ORDER BY last_accessed DESC
-      `);
+      `;
+      
+      const result = await client.query(query);
 
       return NextResponse.json({ 
         sessions: result.rows 
