@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 export default function EPALineChart({ 
-  data.last3epa, 
+  data, 
   color = "#116677", 
   width = 380, 
   height = 275 
