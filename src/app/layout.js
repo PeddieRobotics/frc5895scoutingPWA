@@ -34,8 +34,8 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,
-  maximumScale: 1,
-  userScalable: 'no',
+  maximumScale: 5,
+  userScalable: 'yes',
   viewportFit: 'cover'
 }
 

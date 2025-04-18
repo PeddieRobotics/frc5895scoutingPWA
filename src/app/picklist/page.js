@@ -42,13 +42,21 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
     }
   }, [teamHighlight, teamData]);
   
-  // Handle team click with authentication check
+  // Handle team click with authentication check and mobile detection
   const handleTeamClick = (data) => {
     if (!isAuthenticated) {
       alert('Please log in to view team details');
       return;
     }
-    window.open(`/team-view?team=${data.team}`, '_blank');
+    
+    // Check if device is mobile based on screen width
+    const isMobile = window.innerWidth <= 768;
+    
+    if (!isMobile) {
+      // Only navigate to team view on non-mobile devices
+      window.open(`/team-view?team=${data.team}`, '_blank');
+    }
+    // No alert or action for mobile - just show the tooltip which is already handled by hover
   };
   
   // Show authentication required message if not authenticated
@@ -649,43 +657,46 @@ export default function Picklist() {
       setWeights(prevWeights => ({ ...prevWeights, [name]: parseFloat(value) }));
     }
 
-    // BIG MUST: CHANGE THE BACKEND LOGIC FOR EACH OF THESE NEW VALUE NAMES
-    return <table className={styles.weightsTable}>
-      <tbody>
-        <tr style={{ height: '50px' }}>
-          <td><label htmlFor="epa">EPA:</label></td>
-          <td><input id="epa" type="number" value={weights.epa || 0} name="epa" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="epa3">3 EPA:</label></td>
-          <td><input id="epa3" type="number" value={weights.epa3 || 0} name="epa3" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="auto">Auto Pts:</label></td>
-          <td><input id="auto" type="number" value={weights.auto || 0} name="auto" onChange={handleWeightChange}></input></td>
-        </tr>
-        <tr style={{ height: '50px' }}>
-          <td><label htmlFor="tele">Tele Pts:</label></td>
-          <td><input id="tele" type="number" value={weights.tele || 0} name="tele" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="consistency">Cnstcy:</label></td>
-          <td><input id="consistency" type="number" value={weights.consistency || 0} name="consistency" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="coral">Coral Focus:</label></td>
-          <td><input id="coral" type="number" value={weights.coral || 0} name="coral" onChange={handleWeightChange}></input></td>
-        </tr>
-        <tr style={{ height: '50px' }}>
-          <td><label htmlFor="algae">Algae Focus:</label></td>
-          <td><input id="algae" type="number" value={weights.algae || 0} name="algae" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="defense">Defense:</label></td>
-          <td><input id="defense" type="number" value={weights.defense || 0} name="defense" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="breakdown">Break %:</label></td>
-          <td><input id="breakdown" type="number" value={weights.breakdown || 0} name="breakdown" onChange={handleWeightChange}></input></td>
-        </tr>
-        <tr style={{ height: '50px' }}>
-          <td><label htmlFor="avgCoral">Avg Coral:</label></td>
-          <td><input id="avgCoral" type="number" value={weights.avgCoral || 0} name="avgCoral" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="avgNet">Avg Net:</label></td>
-          <td><input id="avgNet" type="number" value={weights.avgNet || 0} name="avgNet" onChange={handleWeightChange}></input></td>
-          <td><label htmlFor="avgProcessor">Avg Prcsr:</label></td>
-          <td><input id="avgProcessor" type="number" value={weights.avgProcessor || 0} name="avgProcessor" onChange={handleWeightChange}></input></td>
-        </tr>
-      </tbody>
-    </table>
+    return (
+      <div className={styles.weightsTableContainer}>
+        <table className={styles.weightsTable}>
+          <tbody>
+            <tr style={{ height: '50px' }}>
+              <td><label htmlFor="epa">EPA:</label></td>
+              <td><input id="epa" type="number" value={weights.epa || 0} name="epa" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="epa3">3 EPA:</label></td>
+              <td><input id="epa3" type="number" value={weights.epa3 || 0} name="epa3" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="auto">Auto Pts:</label></td>
+              <td><input id="auto" type="number" value={weights.auto || 0} name="auto" onChange={handleWeightChange}></input></td>
+            </tr>
+            <tr style={{ height: '50px' }}>
+              <td><label htmlFor="tele">Tele Pts:</label></td>
+              <td><input id="tele" type="number" value={weights.tele || 0} name="tele" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="consistency">Cnstcy:</label></td>
+              <td><input id="consistency" type="number" value={weights.consistency || 0} name="consistency" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="coral">Coral Focus:</label></td>
+              <td><input id="coral" type="number" value={weights.coral || 0} name="coral" onChange={handleWeightChange}></input></td>
+            </tr>
+            <tr style={{ height: '50px' }}>
+              <td><label htmlFor="algae">Algae Focus:</label></td>
+              <td><input id="algae" type="number" value={weights.algae || 0} name="algae" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="defense">Defense:</label></td>
+              <td><input id="defense" type="number" value={weights.defense || 0} name="defense" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="breakdown">Break %:</label></td>
+              <td><input id="breakdown" type="number" value={weights.breakdown || 0} name="breakdown" onChange={handleWeightChange}></input></td>
+            </tr>
+            <tr style={{ height: '50px' }}>
+              <td><label htmlFor="avgCoral">Avg Coral:</label></td>
+              <td><input id="avgCoral" type="number" value={weights.avgCoral || 0} name="avgCoral" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="avgNet">Avg Net:</label></td>
+              <td><input id="avgNet" type="number" value={weights.avgNet || 0} name="avgNet" onChange={handleWeightChange}></input></td>
+              <td><label htmlFor="avgProcessor">Avg Prcsr:</label></td>
+              <td><input id="avgProcessor" type="number" value={weights.avgProcessor || 0} name="avgProcessor" onChange={handleWeightChange}></input></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   function CommentCell({ team }) {
@@ -809,7 +820,7 @@ export default function Picklist() {
     return (
       <div className={styles.picklistContainer}>
         <h1>Picklist</h1>
-        {/* <div className={styles.picklistTableContainer}> */}
+        <div className={styles.picklistTableContainer}>
           <table className={styles.picklistTable} id="teamTable">
           <thead>
           <tr>
@@ -883,7 +894,7 @@ export default function Picklist() {
               })}
             </tbody>
           </table>
-        {/* </div> */}
+        </div>
       </div>
     );
   };
@@ -920,11 +931,11 @@ export default function Picklist() {
         <div className={styles.allianceMatchView}>
           <div className={styles.red}>
             <label style={{color: "red"}} htmlFor="redAlliance">Red:</label>
-            <input className={styles.redInput} name="redAlliance" type="number" min="1" max="8" ></input>
+            <input className={styles.redInput} name="redAlliance" type="number" min="1" max="8" />
           </div>
           <div className={styles.blue}>
             <label style={{color: "blue"}} htmlFor="blueAlliance">Blue:</label>
-            <input className={styles.blueInput} name="blueAlliance" type="number" min="1" max="8" ></input>
+            <input className={styles.blueInput} name="blueAlliance" type="number" min="1" max="8" />
           </div>
           <button type="submit">Go!</button>
         </div>
@@ -937,75 +948,79 @@ export default function Picklist() {
   }
 
   return (
-    <div className={styles.MainDiv}>
-      <div>
-        <form ref={weightsFormRef} className={styles.weightsForm}>
-          <div className={styles.weights}>
-            <h1>Weights</h1>
-            <Weights></Weights>
-          </div>
-          <button type="button" onClick={recalculate} style={{
-            marginBottom: '30px',
-            fontSize: "20px",
-          }} className={weightsChanged ? styles.recalculateIsMad : ""}>Recalculate Picklist</button>
-        </form>
-        
-        {/* Pass isAuthenticated to ScatterPlot */}
-        <MemoizedScatterPlot 
-          teamData={teamData} 
-          isAuthenticated={isAuthenticated} 
-        />
-        
-        <div className={styles.alliances}>
-          <h1>Alliances</h1>
-          <div className={styles.tbaFetchContainer}>
-            <div className={styles.eventCodeInput}>
-              <label htmlFor="eventCode">Event Code:</label>
-              <input 
-                id="eventCode" 
-                type="text" 
-                value={eventCode} 
-                onChange={(e) => setEventCode(e.target.value)}
-                placeholder="e.g. 2025mil"
-              />
+    <div style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
+      <div className={styles.MainDiv}>
+        <div className={styles.configSection}>
+          <form ref={weightsFormRef} className={styles.weightsForm}>
+            <div className={styles.weights}>
+              <h1>Weights</h1>
+              <Weights></Weights>
             </div>
-            <button 
-              type="button" 
-              onClick={fetchTBAAlliances}
-              disabled={fetchingAlliances}
-              className={styles.tbaFetchButton}
-            >
-              {fetchingAlliances ? 'Fetching...' : 'TBA Fetch'}
-            </button>
-          </div>
-          <div className={styles.wholeAlliance}>
-            <form ref={alliancesFormRef}>
-              <table className={styles.allianceTable}>
-                <thead>
-                  <tr key="head">
-                    <th></th>
-                    <th>T1</th>
-                    <th>T2</th>
-                    <th>T3</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AllianceRow allianceNumber={"1"} allianceData={allianceData["1"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"2"} allianceData={allianceData["2"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"3"} allianceData={allianceData["3"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"4"} allianceData={allianceData["4"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"5"} allianceData={allianceData["5"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"6"} allianceData={allianceData["6"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"7"} allianceData={allianceData["7"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                  <AllianceRow allianceNumber={"8"} allianceData={allianceData["8"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
-                </tbody>
-              </table>
-            </form>
-            <AllianceMatchView/>
+            <button type="button" onClick={recalculate} style={{
+              marginBottom: '30px',
+              fontSize: "20px",
+            }} className={weightsChanged ? styles.recalculateIsMad : ""}>Recalculate Picklist</button>
+          </form>
+          
+          {/* Pass isAuthenticated to ScatterPlot */}
+          <MemoizedScatterPlot 
+            teamData={teamData} 
+            isAuthenticated={isAuthenticated} 
+          />
+          
+          <div className={styles.alliances}>
+            <h1>Alliances</h1>
+            <div className={styles.tbaFetchContainer}>
+              <div className={styles.eventCodeInput}>
+                <label htmlFor="eventCode">Event Code:</label>
+                <input 
+                  id="eventCode" 
+                  type="text" 
+                  value={eventCode} 
+                  onChange={(e) => setEventCode(e.target.value)}
+                  placeholder="e.g. 2025mil"
+                />
+              </div>
+              <button 
+                type="button" 
+                onClick={fetchTBAAlliances}
+                disabled={fetchingAlliances}
+                className={styles.tbaFetchButton}
+              >
+                {fetchingAlliances ? 'Fetching...' : 'TBA Fetch'}
+              </button>
+            </div>
+            <div className={styles.wholeAlliance}>
+              <form ref={alliancesFormRef}>
+                <div className={styles.allianceTableContainer}>
+                  <table className={styles.allianceTable}>
+                    <thead>
+                      <tr key="head">
+                        <th></th>
+                        <th>T1</th>
+                        <th>T2</th>
+                        <th>T3</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <AllianceRow allianceNumber={"1"} allianceData={allianceData["1"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"2"} allianceData={allianceData["2"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"3"} allianceData={allianceData["3"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"4"} allianceData={allianceData["4"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"5"} allianceData={allianceData["5"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"6"} allianceData={allianceData["6"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"7"} allianceData={allianceData["7"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                      <AllianceRow allianceNumber={"8"} allianceData={allianceData["8"]} handleAllianceChange={handleAllianceChange}></AllianceRow>
+                    </tbody>
+                  </table>
+                </div>
+              </form>
+              <AllianceMatchView/>
+            </div>
           </div>
         </div>
+        <PicklistTable></PicklistTable>
       </div>
-      <PicklistTable></PicklistTable>
     </div>
   )
 }
