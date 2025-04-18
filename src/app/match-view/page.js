@@ -511,41 +511,22 @@ function AllianceButtons({t1, t2, t3, colors}) {
     return sum;
   }
 
-  let getlast3 = (alliance, thing) => {
-    for (let i = alliance.length; i < 0; i--) {
-      if(count < 3){
-        count++;
-      if (alliance[i] && alliance[i][thing] !== null) {
-        sum += alliance[i][thing];
-      }
-      }
-    }
-
-    let sum = 0;
-    let count = 0;
-
-    for (let i = 0; i < alliance.length; i++) {
-      if (alliance[i] && alliance[i][thing] !== null) {
-        sum += alliance[i][thing];
-      }
-    }
-    return sum;
-  }
-
+  
+  
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
   const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-  let blueScores = [0, get(blueAlliance, "auto")]
-  blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
-  blueScores.push(blueScores[2] + get(blueAlliance, "end"))
-  let redScores = [0, get(redAlliance, "auto")]
-  redScores.push(redScores[1] + get(redAlliance, "tele"))
-  redScores.push(redScores[2] + get(redAlliance, "end"));
+  let blueScores = [0, get(blueAlliance, "autolast3")] //last 3?
+  blueScores.push(blueScores[1] + get(blueAlliance, "telelast3"))
+  blueScores.push(blueScores[2] + get(blueAlliance, "endlast3"))
+  let redScores = [0, get(redAlliance, "autolast3")]
+  redScores.push(redScores[1] + get(redAlliance, "telelast3"))
+  redScores.push(redScores[2] + get(redAlliance, "endlast3"));
   let epaData = [
     {name: "Start", blue: 0, red: 0},
     {name: "Auto", blue: blueScores[1], red: redScores[1]},
     {name: "Tele", blue: blueScores[2], red: redScores[2]},
     {name: "End", blue: blueScores[3], red: redScores[3]},
-  ]; //i literally have no idea if this will work
+  ]; 
 
   //getting radar data
   let radarData = [];
