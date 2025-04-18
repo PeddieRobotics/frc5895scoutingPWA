@@ -522,6 +522,7 @@ function AllianceButtons({t1, t2, t3, colors}) {
       }
       }
     }
+    console.log(sum)
     return sum;
   }
 
