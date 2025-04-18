@@ -52,6 +52,13 @@ export async function middleware(request) {
     return response;
   }
 
+  // Check if this is a client-initiated validation request
+  const clientValidating = request.headers.get('x-client-validating') === 'true';
+  if (clientValidating) {
+    console.log(`[Middleware] Client-side validation in progress, skipping middleware validation`);
+    return NextResponse.next();
+  }
+
   // Special handling for admin API routes that use cookies
   if (ADMIN_COOKIE_ROUTES.includes(pathname)) {
     console.log(`[Middleware] Processing cookie-based API route: ${pathname}`);

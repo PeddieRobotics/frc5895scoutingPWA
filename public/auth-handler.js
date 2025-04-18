@@ -13,6 +13,10 @@
   // Auth validation interval (in ms) - check every 5 minutes
   const VALIDATION_INTERVAL = 5 * 60 * 1000;
   
+  // Add validation lock to prevent concurrent validation attempts
+  let validationInProgress = false;
+  let validationLockTimeout = null;
+  
   // Helpers to manage auth state
   function getStoredToken() {
     return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -69,6 +73,11 @@
         // Add version header
         const tokenVersion = getTokenVersion();
         options.headers['X-Token-Version'] = tokenVersion;
+        
+        // For validation endpoints, add client-validating header to prevent middleware validation
+        if (url.includes('/api/auth/validate') || url.includes('/api/auth/validate-token')) {
+          options.headers['X-Client-Validating'] = 'true';
+        }
         
         // Add version to URL
         if (!url.includes('v=')) {
@@ -171,7 +180,26 @@
     const token = getStoredToken();
     if (!token) return false;
     
+    // Prevent concurrent validation attempts
+    if (validationInProgress) {
+      console.log('Auth Handler: Validation already in progress, skipping');
+      return true; // Assume valid to prevent loops
+    }
+    
     try {
+      validationInProgress = true;
+      
+      // Clear any existing lock timeout
+      if (validationLockTimeout) {
+        clearTimeout(validationLockTimeout);
+      }
+      
+      // Add a safety timeout to release the lock after 10 seconds
+      validationLockTimeout = setTimeout(() => {
+        console.log('Auth Handler: Validation lock timeout exceeded, releasing lock');
+        validationInProgress = false;
+      }, 10000);
+      
       // Check if token is expired locally first
       const expiry = getTokenExpiry();
       if (expiry && Date.now() > expiry) {
@@ -229,6 +257,10 @@
     } catch (error) {
       console.error('Auth Handler: Validation error', error);
       return false;
+    } finally {
+      // Always clear the lock and timeout
+      clearTimeout(validationLockTimeout);
+      validationInProgress = false;
     }
   }
   
