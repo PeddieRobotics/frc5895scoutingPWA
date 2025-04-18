@@ -445,6 +445,9 @@ export async function middleware(request) {
           url.searchParams.set('redirect', pathname);
           url.searchParams.set('error', 'Your session has expired or been invalidated');
           
+          // Add timestamp to prevent redirect loops
+          url.searchParams.set('t', Date.now().toString());
+          
           // Create response with the URL and delete cookies
           const response = NextResponse.redirect(url);
           response.cookies.delete('auth_session');
@@ -465,6 +468,9 @@ export async function middleware(request) {
           url.searchParams.set('authRequired', 'true');
           url.searchParams.set('redirect', pathname);
           url.searchParams.set('error', validationResult.message || 'Your session has expired or been invalidated');
+          
+          // Add timestamp to prevent redirect loops
+          url.searchParams.set('t', Date.now().toString());
           
           // Create response with the URL and delete cookies
           const response = NextResponse.redirect(url);
@@ -500,6 +506,9 @@ export async function middleware(request) {
         url.searchParams.set('redirect', pathname);
         url.searchParams.set('error', 'Authentication service unavailable');
         
+        // Add timestamp to prevent redirect loops
+        url.searchParams.set('t', Date.now().toString());
+        
         // Create response with the URL and delete cookies
         const response = NextResponse.redirect(url);
         response.cookies.delete('auth_session');
@@ -518,6 +527,9 @@ export async function middleware(request) {
       url.searchParams.set('redirect', pathname);
       url.searchParams.set('error', 'Your session has expired or been invalidated');
       
+      // Add timestamp to prevent redirect loops
+      url.searchParams.set('t', Date.now().toString());
+      
       // Create response with the URL and delete cookies
       const response = NextResponse.redirect(url);
       response.cookies.delete('auth_session');
@@ -534,5 +546,9 @@ export async function middleware(request) {
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', pathname);
+  
+  // Add a timestamp to prevent redirect loops
+  url.searchParams.set('t', Date.now().toString());
+  
   return NextResponse.redirect(url);
 } 

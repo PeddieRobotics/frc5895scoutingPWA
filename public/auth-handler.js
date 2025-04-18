@@ -10,8 +10,11 @@
   const AUTH_EXPIRY_KEY = 'auth_token_expiry';
   const AUTH_VERSION_KEY = 'auth_token_version';
   
-  // Auth validation interval (in ms) - check every 5 minutes
-  const VALIDATION_INTERVAL = 5 * 60 * 1000;
+  // Auth validation interval (in ms) - check every 10 minutes (increased from 5 min)
+  const VALIDATION_INTERVAL = 10 * 60 * 1000;
+  
+  // Delay for first validation to prevent immediate loops
+  const INITIAL_VALIDATION_DELAY = 5000; // 5 seconds
   
   // Add validation lock to prevent concurrent validation attempts
   let validationInProgress = false;
@@ -50,10 +53,41 @@
   }
   
   function clearStoredToken() {
+    // Clear localStorage items
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_EXPIRY_KEY);
     localStorage.removeItem(AUTH_VERSION_KEY);
-    console.log('Auth Handler: Cleared auth token from localStorage');
+    
+    // Clear any legacy keys that might exist
+    localStorage.removeItem('auth_credentials');
+    localStorage.removeItem('auth_session');
+    
+    // Clear sessionStorage items
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(AUTH_EXPIRY_KEY);
+    sessionStorage.removeItem(AUTH_VERSION_KEY);
+    sessionStorage.removeItem('auth_credentials');
+    sessionStorage.removeItem('auth_session');
+    
+    // Clear all possible auth cookies with different paths and domains
+    // Standard cookies
+    document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_token_expiry=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_token_version=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = `auth_credentials=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    
+    // For any cookie that might be set with specific SameSite attributes
+    document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+    document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+    document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+    document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+    document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+    document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+    
+    console.log('Auth Handler: Cleared all auth tokens and cookies');
   }
   
   // Add auth token to all fetch requests
@@ -366,13 +400,68 @@
   
   // Periodic validation to ensure token is still valid
   function startValidationInterval() {
-    // Validate immediately
-    validateToken();
-    
-    // Then set up periodic validation
-    setInterval(() => {
+    // Delay the first validation to prevent immediate loops after page load
+    console.log(`Auth Handler: Scheduling initial validation in ${INITIAL_VALIDATION_DELAY/1000} seconds`);
+    setTimeout(() => {
       validateToken();
-    }, VALIDATION_INTERVAL);
+      
+      // Then set up periodic validation at a longer interval
+      console.log(`Auth Handler: Setting up validation interval every ${VALIDATION_INTERVAL/60000} minutes`);
+      setInterval(() => {
+        validateToken();
+      }, VALIDATION_INTERVAL);
+    }, INITIAL_VALIDATION_DELAY);
+  }
+  
+  // Check for malformed or legacy auth cookies and clear them
+  function detectAndCleanLegacyCookies() {
+    try {
+      // Parse all cookies
+      const cookies = document.cookie.split(';');
+      let hasLegacyCookies = false;
+      
+      // Check each cookie for potential auth cookies
+      for (const cookie of cookies) {
+        const trimmed = cookie.trim();
+        const [name, value] = trimmed.split('=').map(part => part.trim());
+        
+        // Check if it's an auth-related cookie
+        if (name.includes('auth_') || name.includes('session')) {
+          try {
+            // Try to decode the cookie value
+            const decodedValue = decodeURIComponent(value);
+            
+            // For auth_session cookies, they should be valid JSON with expected format
+            if (name === 'auth_session' || name === 'auth_session_lax' || name === 'auth_session_secure') {
+              try {
+                const tokenData = JSON.parse(decodedValue);
+                // Check if it has the expected properties
+                if (!tokenData.id || !tokenData.v) {
+                  console.log(`Auth Handler: Detected malformed auth session cookie: ${name}`);
+                  hasLegacyCookies = true;
+                }
+              } catch (parseError) {
+                // If it's not valid JSON, it's a legacy format
+                console.log(`Auth Handler: Detected legacy auth session cookie (not JSON): ${name}`);
+                hasLegacyCookies = true;
+              }
+            }
+          } catch (e) {
+            // If we can't decode it, it's probably malformed
+            console.log(`Auth Handler: Detected potential malformed auth cookie: ${name}`);
+            hasLegacyCookies = true;
+          }
+        }
+      }
+      
+      // If we found any legacy or malformed cookies, clear them all
+      if (hasLegacyCookies) {
+        console.log('Auth Handler: Clearing all auth cookies due to detected legacy formats');
+        clearStoredToken();
+      }
+    } catch (e) {
+      console.error('Auth Handler: Error checking for legacy cookies:', e);
+    }
   }
   
   // The public API
@@ -390,6 +479,10 @@
   
   // Initialize when DOM is loaded
   window.addEventListener('DOMContentLoaded', () => {
+    // First detect and clean legacy cookies
+    detectAndCleanLegacyCookies();
+    
+    // Then proceed with normal initialization
     checkUrlForToken();
     checkForSignOutRequest();
     setupAuthEventListeners();

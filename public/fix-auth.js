@@ -116,23 +116,37 @@
   return {
     reset: function() {
       // Function to completely reset auth
+      // Clear localStorage
       localStorage.removeItem('auth_credentials');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_token_expiry');
       localStorage.removeItem('auth_token_version');
+      localStorage.removeItem('auth_session');
       
+      // Clear sessionStorage
       sessionStorage.removeItem('auth_credentials');
       sessionStorage.removeItem('auth_token');
       sessionStorage.removeItem('auth_token_expiry');
       sessionStorage.removeItem('auth_token_version');
+      sessionStorage.removeItem('auth_session');
       
-      // Clear cookies
+      // Clear all possible auth cookies with all variations
+      // Standard cookies
       document.cookie = `auth_credentials=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token_expiry=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       document.cookie = `auth_token_version=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
       document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      
+      // SameSite variations
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+      document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
       
       console.log('Auth Fix: Complete auth reset performed');
       console.log('Auth Fix: Please reload the page to login again');
@@ -159,6 +173,45 @@
   
   // Global flag to prevent infinite recursion
   window.__authFixAttempted = true;
+  
+  // Initial cleanup of any malformed cookies
+  function cleanupMalformedCookies() {
+    console.log('Auth Fix: Checking for malformed auth cookies');
+    const cookies = document.cookie.split(';');
+    
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      const name = trimmed.split('=')[0];
+      
+      // If it's an auth cookie, check if it's properly formatted
+      if (name.includes('auth_') || name.includes('session')) {
+        try {
+          const value = trimmed.split('=')[1];
+          if (name === 'auth_session' || name === 'auth_session_lax' || name === 'auth_session_secure') {
+            try {
+              // Try to parse as JSON
+              const decoded = decodeURIComponent(value);
+              JSON.parse(decoded);
+              // If it parses correctly, it's probably valid
+            } catch (e) {
+              // If it doesn't parse as JSON, it's probably a legacy cookie
+              console.log(`Auth Fix: Clearing malformed auth cookie: ${name}`);
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+            }
+          }
+        } catch (e) {
+          // Any error probably means the cookie is malformed
+          console.log(`Auth Fix: Clearing potentially malformed cookie: ${name}`);
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        }
+      }
+    }
+  }
+  
+  // Run initial cleanup
+  cleanupMalformedCookies();
   
   function loadAuthScript(retry = 0) {
     if (retry > 3) {
@@ -193,6 +246,42 @@
   function createFallbackAuth() {
     console.log('Auth Fix: Creating fallback auth handler');
     
+    // Function to clear all auth data thoroughly
+    function clearAllAuthData() {
+      // Clear localStorage
+      localStorage.removeItem('auth_credentials');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token_expiry');
+      localStorage.removeItem('auth_token_version');
+      localStorage.removeItem('auth_session');
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('auth_credentials');
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token_expiry');
+      sessionStorage.removeItem('auth_token_version');
+      sessionStorage.removeItem('auth_session');
+      
+      // Clear all possible auth cookies
+      document.cookie = `auth_credentials=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token_expiry=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_token_version=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      
+      // SameSite variations
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+      document.cookie = `auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      document.cookie = `auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure`;
+      
+      console.log('Auth Fix: Fallback auth handler cleared all auth data');
+    }
+    
     // Create minimal AuthHandler API
     window.AuthHandler = {
       isAuthenticated: () => false,
@@ -200,12 +289,15 @@
       getTokenVersion: () => '2',
       setToken: () => console.log('Auth Fix: Fallback setToken called'),
       logout: () => {
+        clearAllAuthData();
         window.location.href = '/?logout=true';
       },
       validateToken: () => false,
       showLoginDialog: () => {
+        clearAllAuthData();
         window.location.href = '/?authRequired=true&error=Authentication%20is%20required';
-      }
+      },
+      clearAllAuth: clearAllAuthData
     };
     
     // Add a custom event to signal fallback was used
