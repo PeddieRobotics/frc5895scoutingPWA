@@ -428,19 +428,19 @@ export async function middleware(request) {
         if (!validationResponse.ok) {
           console.log(`[Middleware] Token validation HTTP error: ${validationResponse.status}`);
           
-          // Clear invalid auth cookies before redirecting
-          const response = NextResponse.redirect(new URL('/', request.url));
-          response.cookies.delete('auth_session');
-          response.cookies.delete('auth_session_lax');
-          response.cookies.delete('auth_session_secure');
-          
-          // Add error message as query params
+          // Create the URL with error params
           const url = new URL('/', request.url);
           url.searchParams.set('authRequired', 'true');
           url.searchParams.set('redirect', pathname);
           url.searchParams.set('error', 'Your session has expired or been invalidated');
           
-          return NextResponse.redirect(url);
+          // Create response with the URL and delete cookies
+          const response = NextResponse.redirect(url);
+          response.cookies.delete('auth_session');
+          response.cookies.delete('auth_session_lax');
+          response.cookies.delete('auth_session_secure');
+          
+          return response;
         }
         
         const validationResult = await validationResponse.json();
@@ -449,19 +449,19 @@ export async function middleware(request) {
         if (!validationResult.valid) {
           console.log(`[Middleware] Token invalid: ${validationResult.message}`);
           
-          // Clear invalid auth cookies before redirecting  
-          const response = NextResponse.redirect(new URL('/', request.url));
-          response.cookies.delete('auth_session');
-          response.cookies.delete('auth_session_lax');
-          response.cookies.delete('auth_session_secure');
-          
-          // Add error message as query params
+          // Create the URL with error params
           const url = new URL('/', request.url);
           url.searchParams.set('authRequired', 'true');
           url.searchParams.set('redirect', pathname);
           url.searchParams.set('error', validationResult.message || 'Your session has expired or been invalidated');
           
-          return NextResponse.redirect(url);
+          // Create response with the URL and delete cookies
+          const response = NextResponse.redirect(url);
+          response.cookies.delete('auth_session');
+          response.cookies.delete('auth_session_lax');
+          response.cookies.delete('auth_session_secure');
+          
+          return response;
         }
         
         // Token is valid, proceed with the request
@@ -483,37 +483,37 @@ export async function middleware(request) {
         console.log(`[Middleware] Fetch error during validation:`, fetchError.message);
         
         // CRITICAL CHANGE: No longer allowing requests to proceed on validation errors
-        // Clear invalid auth cookies before redirecting
-        const response = NextResponse.redirect(new URL('/', request.url));
-        response.cookies.delete('auth_session');
-        response.cookies.delete('auth_session_lax');
-        response.cookies.delete('auth_session_secure');
-        
-        // Add error message as query params
+        // Create the URL with error params
         const url = new URL('/', request.url);
         url.searchParams.set('authRequired', 'true');
         url.searchParams.set('redirect', pathname);
         url.searchParams.set('error', 'Authentication service unavailable');
         
-        return NextResponse.redirect(url);
+        // Create response with the URL and delete cookies
+        const response = NextResponse.redirect(url);
+        response.cookies.delete('auth_session');
+        response.cookies.delete('auth_session_lax');
+        response.cookies.delete('auth_session_secure');
+        
+        return response;
       }
     } catch (error) {
       // Token validation failed, redirect to login
       console.log(`[Middleware] Authentication failed: ${error.message}`);
       
-      // Clear invalid auth cookies before redirecting
-      const response = NextResponse.redirect(new URL('/', request.url));
-      response.cookies.delete('auth_session');
-      response.cookies.delete('auth_session_lax');
-      response.cookies.delete('auth_session_secure');
-      
-      // Add error message as query params
+      // Create the URL with error params
       const url = new URL('/', request.url);
       url.searchParams.set('authRequired', 'true');
       url.searchParams.set('redirect', pathname);
       url.searchParams.set('error', 'Your session has expired or been invalidated');
       
-      return NextResponse.redirect(url);
+      // Create response with the URL and delete cookies
+      const response = NextResponse.redirect(url);
+      response.cookies.delete('auth_session');
+      response.cookies.delete('auth_session_lax');
+      response.cookies.delete('auth_session_secure');
+      
+      return response;
     }
   }
   
