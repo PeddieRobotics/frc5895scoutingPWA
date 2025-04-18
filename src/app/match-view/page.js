@@ -515,7 +515,7 @@ function AllianceButtons({t1, t2, t3, colors}) {
   
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
   const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-  let blueScores = [0, get(blueAlliance, "last3Auto")]
+  let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3?? 
   blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
   blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
   let redScores = [0, get(redAlliance, "last3Auto")]
