@@ -55,7 +55,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-title" content="JÖRMUNSCOUTR" />
         <meta name="mobile-web-app-capable" content="yes" />
         
-        <script src="/auth-handler.js" defer></script>
+        <script src="/fix-auth.js"></script>
       </head>
       <body className={inter.className}>
         <PWADetector />

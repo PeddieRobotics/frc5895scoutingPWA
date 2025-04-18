@@ -148,4 +148,78 @@
       return `Version set to ${version}`;
     }
   };
+})();
+
+// Fix Auth Handler
+// This script attempts to load auth-handler.js with error handling
+// It prevents recursive loading and redirect loops
+
+(function() {
+  console.log('Auth Fix: Initializing fix for auth-handler.js');
+  
+  // Global flag to prevent infinite recursion
+  window.__authFixAttempted = true;
+  
+  function loadAuthScript(retry = 0) {
+    if (retry > 3) {
+      console.error('Auth Fix: Failed to load auth-handler.js after multiple attempts');
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = '/auth-handler.js?nocache=' + Date.now();
+    script.onerror = function(error) {
+      console.error('Auth Fix: Error loading auth-handler.js', error);
+      setTimeout(() => loadAuthScript(retry + 1), 1000); // Retry after 1 second
+    };
+    
+    // Handle syntax errors by setting a global error handler
+    const originalOnError = window.onerror;
+    window.onerror = function(message, source, lineno, colno, error) {
+      if (source && source.includes('auth-handler.js')) {
+        console.error('Auth Fix: Syntax error in auth-handler.js:', message);
+        // Implement minimal auth fallback
+        createFallbackAuth();
+        // Restore original error handler
+        window.onerror = originalOnError;
+        return true; // Prevent default error handling
+      }
+      return originalOnError ? originalOnError(message, source, lineno, colno, error) : false;
+    };
+    
+    document.head.appendChild(script);
+  }
+  
+  function createFallbackAuth() {
+    console.log('Auth Fix: Creating fallback auth handler');
+    
+    // Create minimal AuthHandler API
+    window.AuthHandler = {
+      isAuthenticated: () => false,
+      getToken: () => null,
+      getTokenVersion: () => '2',
+      setToken: () => console.log('Auth Fix: Fallback setToken called'),
+      logout: () => {
+        window.location.href = '/?logout=true';
+      },
+      validateToken: () => false,
+      showLoginDialog: () => {
+        window.location.href = '/?authRequired=true&error=Authentication%20is%20required';
+      }
+    };
+    
+    // Add a custom event to signal fallback was used
+    window.dispatchEvent(new CustomEvent('auth:fallback-loaded'));
+  }
+  
+  // Try to load auth handler
+  loadAuthScript();
+  
+  // Set a timeout to create fallback if auth handler doesn't load
+  setTimeout(() => {
+    if (!window.AuthHandler) {
+      console.log('Auth Fix: Auth handler not loaded after timeout, creating fallback');
+      createFallbackAuth();
+    }
+  }, 5000);
 })(); 

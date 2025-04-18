@@ -10,7 +10,11 @@ const PUBLIC_PATHS = [
   '/favicon.ico',
   '/manifest.json',
   '/api/admin/debug',
-  '/api/auth/validate-token'
+  '/api/auth/validate-token',
+  '/auth-handler.js',
+  '/fix-auth.js',
+  '/ios-auth.js',
+  '/reset-auth.html'
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -18,7 +22,8 @@ const PUBLIC_PATH_PREFIXES = [
   '/icons/',
   '/apple-touch-icon',
   '/api/auth/',
-  '/auth/'
+  '/auth/',
+  '/ios-auth/'
 ];
 
 // Admin API routes that use cookies instead of Authorization headers
