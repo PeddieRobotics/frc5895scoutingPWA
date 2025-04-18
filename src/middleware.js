@@ -23,7 +23,8 @@ const PUBLIC_PATH_PREFIXES = [
   '/icons/',
   '/apple-touch-icon',
   '/api/auth/',
-  '/ios-auth/'
+  '/ios-auth/',
+  '/api/admin/' // Added to completely whitelist admin routes
 ];
 
 // Admin API routes that use cookies instead of Authorization headers
