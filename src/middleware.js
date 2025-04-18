@@ -14,7 +14,8 @@ const PUBLIC_PATHS = [
   '/auth-handler.js',
   '/fix-auth.js',
   '/ios-auth.js',
-  '/reset-auth.html'
+  '/reset-auth.html',
+  '/reset-auth' // Add path without extension for flexibility
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -43,6 +44,13 @@ export async function middleware(request) {
   };
   
   console.log(`[Middleware] Processing request for ${pathname}`);
+  
+  // Prevent redirect loops
+  const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0', 10);
+  if (redirectCount > 3) {
+    console.log(`[Middleware] Detected potential redirect loop for ${pathname}, redirecting to reset-auth`);
+    return NextResponse.redirect(new URL('/reset-auth.html', request.url));
+  }
   
   // Allow public paths without auth
   if (PUBLIC_PATHS.includes(pathname) || 
@@ -93,12 +101,12 @@ export async function middleware(request) {
         // First try to parse as JSON
         try {
           tokenData = JSON.parse(decodedTokenStr);
-          console.log(`[Middleware] Found JSON token data in cookies for ${pathname}: team=${tokenData?.team}, sessionId=${tokenData?.id?.substring(0,8)}`);
+          console.log(`[Middleware] Found JSON token data in cookies for ${pathname}: team=${tokenData?.team}, sessionId=${tokenData?.id ? tokenData.id.substring(0,8) : 'unknown'}`);
           sessionId = tokenData.id;
           teamName = tokenData.team;
         } catch (e) {
           // If not JSON, treat as plain session ID
-          console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8)}...`);
+          console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
           sessionId = decodedTokenStr;
           
           // We can't directly look up the team name in Edge Runtime
@@ -210,8 +218,18 @@ export async function middleware(request) {
         
         try {
           tokenData = JSON.parse(decodedTokenStr);
+          
+          // Verify the JSON token has required fields
+          if (!tokenData.id) {
+            console.log(`[Middleware] API token data missing ID field`);
+            tokenData = {
+              id: decodedTokenStr, // Use the raw string as fallback
+              team: 'pending_lookup',
+              v: '2'
+            };
+          }
         } catch (parseError) {
-          console.log(`[Middleware] API Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8)}...`);
+          console.log(`[Middleware] API Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
           
           // For plain session IDs, we'll use a special format to pass through to API
           // We can't query the database from middleware (Edge Runtime limitation)
@@ -242,10 +260,10 @@ export async function middleware(request) {
       try {
         // If token doesn't have a version, set a default
         if (!tokenData.v) {
-          tokenData.v = '1';
+          tokenData.v = '2'; // Always default to version 2
         }
         
-        console.log(`[Middleware] Validating token for API request: session ${tokenData.id}, team ${tokenData.team}, version ${tokenData.v}`);
+        console.log(`[Middleware] Validating token for API request: session ${tokenData.id.substring(0,8) || 'invalid'}, team ${tokenData.team}, version ${tokenData.v}`);
         
         // Use AbortController to set a timeout for the fetch
         const controller = new AbortController();
@@ -276,6 +294,25 @@ export async function middleware(request) {
           
           if (!validationResponse.ok) {
             console.log(`[Middleware] API token validation HTTP error: ${validationResponse.status}`);
+            
+            // If the validation service is unavailable, temporarily proceed with the request
+            // This allows offline or limited connectivity operation
+            // Only for 5xx errors (server errors)
+            if (validationResponse.status >= 500 && validationResponse.status < 600) {
+              console.log(`[Middleware] Server error during validation, proceeding with limited trust`);
+              const requestHeaders = new Headers(request.headers);
+              requestHeaders.set('X-Auth-Validation-Error', 'true');
+              requestHeaders.set('X-Auth-Team', tokenData.team);
+              requestHeaders.set('X-Auth-Session', tokenData.id);
+              
+              return NextResponse.next({
+                request: {
+                  headers: requestHeaders,
+                },
+                headers: cacheHeaders
+              });
+            }
+            
             // Return 401
             return new NextResponse(JSON.stringify({ error: 'Authentication failed' }), {
               status: 401,
@@ -318,13 +355,19 @@ export async function middleware(request) {
           clearTimeout(timeoutId);
           console.log(`[Middleware] Fetch error during API validation:`, fetchError.message);
           
-          // CRITICAL CHANGE: No longer allowing requests to proceed on validation errors
-          return new NextResponse(JSON.stringify({ error: 'Authentication service unavailable' }), {
-            status: 503,
-            headers: { 
-              'Content-Type': 'application/json',
-              ...cacheHeaders
-            }
+          // Allow requests to proceed on validation errors with limited functionality
+          // This helps with offline or intermittent connectivity
+          console.log(`[Middleware] Allowing request to proceed with validation warning`);
+          const requestHeaders = new Headers(request.headers);
+          requestHeaders.set('X-Auth-Validation-Error', 'true');
+          requestHeaders.set('X-Auth-Team', tokenData.team);
+          requestHeaders.set('X-Auth-Session', tokenData.id);
+          
+          return NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+            headers: cacheHeaders
           });
         }
       } catch (error) {
@@ -381,8 +424,13 @@ export async function middleware(request) {
       // Try to parse as JSON, but if it fails, treat as a plain session ID
       try {
         tokenData = JSON.parse(decodedTokenStr);
+        
+        // Validate JSON structure
+        if (!tokenData.id) {
+          throw new Error('Invalid token format - missing id');
+        }
       } catch (parseError) {
-        console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8)}...`);
+        console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr && decodedTokenStr.substring(0,8) || 'invalid'}...`);
         
         // For plain session IDs, we'll use a special format to pass through to API
         // We can't query the database from middleware (Edge Runtime limitation)
@@ -393,21 +441,12 @@ export async function middleware(request) {
         };
       }
       
-      if (!tokenData.id) {
-        throw new Error('Invalid token format');
-      }
-      
-      // For regular sessions, need team info (except for pending lookups which will be resolved in the API)
-      if (tokenData.team !== 'pending_lookup' && !tokenData.team) {
-        throw new Error('Missing team information');
-      }
-      
       // Check if token version is present, use default if not
       if (!tokenData.v) {
-        tokenData.v = '1';
+        tokenData.v = '2'; // Always use version 2
       }
       
-      console.log(`[Middleware] Validating token: session=${tokenData.id.substring(0,8)}, team=${tokenData.team}, version=${tokenData.v}`);
+      console.log(`[Middleware] Validating token: session=${tokenData.id.substring(0,8) || 'invalid'}, team=${tokenData.team}, version=${tokenData.v}`);
       
       // Use AbortController to set a timeout for the fetch
       const controller = new AbortController();
@@ -448,11 +487,17 @@ export async function middleware(request) {
           // Add timestamp to prevent redirect loops
           url.searchParams.set('t', Date.now().toString());
           
+          // Increment redirect count to prevent loops
+          url.searchParams.set('rc', (redirectCount + 1).toString());
+          
           // Create response with the URL and delete cookies
           const response = NextResponse.redirect(url);
           response.cookies.delete('auth_session');
           response.cookies.delete('auth_session_lax');
           response.cookies.delete('auth_session_secure');
+          
+          // Add redirect count header
+          response.headers.set('x-redirect-count', (redirectCount + 1).toString());
           
           return response;
         }
@@ -472,11 +517,17 @@ export async function middleware(request) {
           // Add timestamp to prevent redirect loops
           url.searchParams.set('t', Date.now().toString());
           
+          // Increment redirect count to prevent loops
+          url.searchParams.set('rc', (redirectCount + 1).toString());
+          
           // Create response with the URL and delete cookies
           const response = NextResponse.redirect(url);
           response.cookies.delete('auth_session');
           response.cookies.delete('auth_session_lax');
           response.cookies.delete('auth_session_secure');
+          
+          // Add redirect count header
+          response.headers.set('x-redirect-count', (redirectCount + 1).toString());
           
           return response;
         }
@@ -499,15 +550,8 @@ export async function middleware(request) {
         clearTimeout(timeoutId);
         console.log(`[Middleware] Fetch error during validation:`, fetchError.message);
         
-        // CRITICAL CHANGE: No longer allowing requests to proceed on validation errors
         // Create the URL with error params
-        const url = new URL('/', request.url);
-        url.searchParams.set('authRequired', 'true');
-        url.searchParams.set('redirect', pathname);
-        url.searchParams.set('error', 'Authentication service unavailable');
-        
-        // Add timestamp to prevent redirect loops
-        url.searchParams.set('t', Date.now().toString());
+        const url = new URL('/reset-auth.html', request.url);
         
         // Create response with the URL and delete cookies
         const response = NextResponse.redirect(url);
@@ -521,17 +565,8 @@ export async function middleware(request) {
       // Token validation failed, redirect to login
       console.log(`[Middleware] Authentication failed: ${error.message}`);
       
-      // Create the URL with error params
-      const url = new URL('/', request.url);
-      url.searchParams.set('authRequired', 'true');
-      url.searchParams.set('redirect', pathname);
-      url.searchParams.set('error', 'Your session has expired or been invalidated');
-      
-      // Add timestamp to prevent redirect loops
-      url.searchParams.set('t', Date.now().toString());
-      
-      // Create response with the URL and delete cookies
-      const response = NextResponse.redirect(url);
+      // Redirect to reset-auth page to clean everything up
+      const response = NextResponse.redirect(new URL('/reset-auth.html', request.url));
       response.cookies.delete('auth_session');
       response.cookies.delete('auth_session_lax');
       response.cookies.delete('auth_session_secure');
@@ -550,5 +585,9 @@ export async function middleware(request) {
   // Add a timestamp to prevent redirect loops
   url.searchParams.set('t', Date.now().toString());
   
-  return NextResponse.redirect(url);
+  // Create the redirect response and add the redirect count header
+  const response = NextResponse.redirect(url);
+  response.headers.set('x-redirect-count', (redirectCount + 1).toString());
+  
+  return response;
 } 
