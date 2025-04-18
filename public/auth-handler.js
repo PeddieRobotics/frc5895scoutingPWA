@@ -65,8 +65,11 @@
         options.headers = {};
       }
       
+      // Ensure url is a string to avoid TypeError
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      
       // Only add the token if it's a same-origin request
-      const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+      const isSameOrigin = urlStr.startsWith('/') || urlStr.startsWith(window.location.origin);
       if (isSameOrigin && !options.headers['Authorization']) {
         options.headers['Authorization'] = `Bearer ${token}`;
         
@@ -75,18 +78,21 @@
         options.headers['X-Token-Version'] = tokenVersion;
         
         // For validation endpoints, add client-validating header to prevent middleware validation
-        if (url.includes('/api/auth/validate') || url.includes('/api/auth/validate-token')) {
+        if (urlStr.includes('/api/auth/validate') || urlStr.includes('/api/auth/validate-token')) {
           options.headers['X-Client-Validating'] = 'true';
         }
         
         // Add version to URL
-        if (!url.includes('v=')) {
-          const separator = url.includes('?') ? '&' : '?';
-          url = `${url}${separator}v=${tokenVersion}`;
+        if (!urlStr.includes('v=')) {
+          const separator = urlStr.includes('?') ? '&' : '?';
+          url = `${urlStr}${separator}v=${tokenVersion}`;
+        } else {
+          // Make sure url gets updated if we didn't modify it
+          url = urlStr;
         }
         
         // Special handling for validate-token endpoint
-        if (url.includes('/api/auth/validate-token')) {
+        if (urlStr.includes('/api/auth/validate-token')) {
           console.log('Auth Handler: Detected token validation request, ensuring version=2');
           
           // If this is a POST to validate-token, override the body with version=2

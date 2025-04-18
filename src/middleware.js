@@ -22,7 +22,6 @@ const PUBLIC_PATH_PREFIXES = [
   '/icons/',
   '/apple-touch-icon',
   '/api/auth/',
-  '/auth/',
   '/ios-auth/'
 ];
 
