@@ -411,65 +411,68 @@ function MatchView() {
         { x: 'N/A', y: 100 }
       ];
 
-      return <div className={styles.lightBorderBox}>
-        <h1 style={{color: colors[3]}}>{teamData.team}</h1>
-        <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
-        <div className={styles.scoreBreakdownContainer}>
-        <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
-          {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
-        </div>
-        <div className={styles.EPABreakdown}>
-          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
-          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
-          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
-        </div>
-        </div>
-        <div className={styles.barchartContainer}>
-          <h2>Average Piece Placement</h2>
-          <PiecePlacement 
-            colors={colors}
-            matchMax={matchMax} 
-            L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
-            L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
-            L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
-            L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
-            net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
-            processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
-            HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
-          />
-        </div>
-        <div className={styles.chartContainer}>
-          <h2 style={{marginBottom: "-40px"}}>Endgame %</h2>
-          <Endgame 
-            colors={colors}
-            endgameData={endgameData}
-          />
-        </div>
+    return <div className={styles.lightBorderBox}>
+      <h1 style={{color: colors[3]}}>{teamData.team}</h1>
+      <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
+      <div className={styles.scoreBreakdownContainer}>
+      <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
+        {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
       </div>
-    }
-      let get = (alliance, thing) => {
-      let sum = 0;
-      for (let i = 0; i < alliance.length; i++) {
-        if (alliance[i] && alliance[i][thing] !== null) {
-          sum += alliance[i][thing];
-        }
+      <div className={styles.EPABreakdown}>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
+        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
+      </div>
+      </div>
+      <div className={styles.barchartContainer}>
+        <h2>Average Piece Placement</h2>
+        <PiecePlacement 
+          colors={colors}
+          matchMax={matchMax} 
+          L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
+          L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
+          L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
+          L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
+          net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
+          processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
+          HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
+        />
+      </div>
+      <div className={styles.chartContainer}>
+        <h2 style={{marginBottom: "-40px"}}>Endgame %</h2>
+        <Endgame 
+          colors={colors}
+          endgameData={endgameData}
+        />
+      </div>
+    </div>
+  }
+    let get = (alliance, thing) => {
+    let sum = 0;
+    for (let i = 0; i < alliance.length; i++) {
+      if (alliance[i] && alliance[i][thing] !== null) {
+        sum += alliance[i][thing];
       }
-      return sum;
     }
-    const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
-    const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-    let blueScores = [0, get(blueAlliance, "auto")]
-    blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
-    blueScores.push(blueScores[2] + get(blueAlliance, "end"))
-    let redScores = [0, get(redAlliance, "auto")]
-    redScores.push(redScores[1] + get(redAlliance, "tele"))
-    redScores.push(redScores[2] + get(redAlliance, "end"));
-    let epaData = [
-      {name: "Start", blue: 0, red: 0},
-      {name: "Auto", blue: blueScores[1], red: redScores[1]},
-      {name: "Tele", blue: blueScores[2], red: redScores[2]},
-      {name: "End", blue: blueScores[3], red: redScores[3]},
-    ];
+    return sum;
+  }
+
+  
+  
+  const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
+  const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
+  let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3?? 
+  blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
+  blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
+  let redScores = [0, get(redAlliance, "last3Auto")]
+  redScores.push(redScores[1] + get(redAlliance, "last3Tele"))
+  redScores.push(redScores[2] + get(redAlliance, "last3End"));
+  let epaData = [
+    {name: "Start", blue: 0, red: 0},
+    {name: "Auto", blue: blueScores[1], red: redScores[1]},
+    {name: "Tele", blue: blueScores[2], red: redScores[2]},
+    {name: "End", blue: blueScores[3], red: redScores[3]},
+  ]; 
 
     //getting radar data
     let radarData = [];
