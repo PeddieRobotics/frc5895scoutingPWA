@@ -1,8 +1,6 @@
 "use client";
 import styles from "./page.module.css";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import Link from "next/link";
 import VBox from "./components/VBox";
 import HBox from "./components/HBox";
@@ -18,35 +16,55 @@ import Qualitative from "./components/Qualitative";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 
 export default function TeamViewPage() {
-    return (
-        <Suspense>
-            <TeamView />
-        </Suspense>
-    );
+    return <TeamView />;
 }
 
 function TeamView() {
-
     //for backend
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentUserTeam, setCurrentUserTeam] = useState('');
-    const searchParams = useSearchParams();
-    const team = searchParams.get("team");
-    const hasTopBar = searchParams.get('team1') !== null;
-    const source = searchParams.get('source');
+    const [urlParams, setUrlParams] = useState({});
+    const [team, setTeam] = useState(null);
+    const [hasTopBar, setHasTopBar] = useState(false);
+    const [source, setSource] = useState(null);
+
+    // Initialize URL parameters on the client side
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const teamParam = params.get("team");
+            setTeam(teamParam);
+            setHasTopBar(params.get('team1') !== null);
+            setSource(params.get('source'));
+            
+            // Store all URL parameters
+            const paramsObj = {};
+            for (const [key, value] of params.entries()) {
+                paramsObj[key] = value;
+            }
+            setUrlParams(paramsObj);
+        }
+    }, []);
+
+    // Effect to fetch data when team changes
+    useEffect(() => {
+        if (team) {
+            fetchTeamData(team);
+        }
+    }, [team, currentUserTeam]);
 
     function AllianceButtons({t1, t2, t3, colors}) {
-      console.log(searchParams.get('team6'))
+      const searchParamsString = new URLSearchParams(urlParams).toString();
       return <div className={styles.allianceBoard}>
-        <Link href={`/team-view?team=${t1 || ""}&${searchParams.toString()}`}>
+        <Link href={`/team-view?team=${t1 || ""}&${searchParamsString}`}>
           <button style={team == t1 ? {background: 'black', color: 'yellow'} : {background: colors[0][1]}}>{t1 || 404}</button>
         </Link>
-        <Link href={`/team-view?team=${t2 || ""}&${searchParams.toString()}`}>
+        <Link href={`/team-view?team=${t2 || ""}&${searchParamsString}`}>
           <button style={team == t2 ? {background: 'black', color: 'yellow'} : {background: colors[1][1]}}>{t2 || 404}</button>
         </Link>
-        <Link href={`/team-view?team=${t3 || ""}&${searchParams.toString()}`}>
+        <Link href={`/team-view?team=${t3 || ""}&${searchParamsString}`}>
           <button style={team == t3 ? {background: 'black', color: 'yellow'} : {background: colors[2][1]}}>{t3 || 404}</button>
         </Link>
       </div>
@@ -62,11 +80,11 @@ function TeamView() {
       
       // Get teams from URL parameters
       const compareTeams = [
-        searchParams.get('team1'),
-        searchParams.get('team2'),
-        searchParams.get('team3'),
-        searchParams.get('team4')
-      ].filter(t => t !== null && t !== "");
+        urlParams.team1,
+        urlParams.team2,
+        urlParams.team3,
+        urlParams.team4
+      ].filter(t => t !== undefined && t !== null && t !== "");
       
       if (source !== 'compare' || compareTeams.length === 0) {
         return <></>;
@@ -106,22 +124,22 @@ function TeamView() {
       
       // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
       // when viewing a match by match number
-      const fromMatch = searchParams.get('from_match') === 'true';
+      const fromMatch = urlParams.from_match === 'true';
 
       return <div className={styles.matchNav}>
         <AllianceButtons 
-          t1={searchParams.get('team1')} 
-          t2={searchParams.get('team2')} 
-          t3={searchParams.get('team3')} 
+          t1={urlParams.team1} 
+          t2={urlParams.team2} 
+          t3={urlParams.team3} 
           colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
         />
-        <Link href={`/match-view?team1=${searchParams.get('team1') || ""}&team2=${searchParams.get('team2') || ""}&team3=${searchParams.get('team3') || ""}&team4=${searchParams.get('team4') || ""}&team5=${searchParams.get('team5') || ""}&team6=${searchParams.get('team6') || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
+        <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
           <button style={{background: "#ffff88", color: "black"}}>Match</button>
         </Link>
         <AllianceButtons 
-          t1={searchParams.get('team4')} 
-          t2={searchParams.get('team5')} 
-          t3={searchParams.get('team6')} 
+          t1={urlParams.team4} 
+          t2={urlParams.team5} 
+          t3={urlParams.team6} 
           colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
         />
       </div>
@@ -207,18 +225,7 @@ function TeamView() {
               setError(error.message);
               setLoading(false);
           });
-  }
-
-  
-
-    useEffect(() => {
-        if (team) {
-            fetchTeamData(team);
-        } else {
-            // Clear error state when on the input form
-            setError(null);
-        }
-    }, [team]);
+    }
 
     if (!team) {
         return (

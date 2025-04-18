@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import styles from '../page.module.css';
 
 export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
@@ -12,11 +12,16 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
   const [attempts, setAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
-  const searchParams = useSearchParams();
+  const [redirectUrl, setRedirectUrl] = useState(null);
   const router = useRouter();
   
-  // Get redirect URL from query params if available
-  const redirectUrl = searchParams?.get('redirect') || null;
+  // Get redirect URL from query params using window object instead of useSearchParams
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setRedirectUrl(urlParams.get('redirect') || null);
+    }
+  }, []);
 
   // Reset error when errorMessage prop changes
   useEffect(() => {

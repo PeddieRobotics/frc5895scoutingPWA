@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import styles from "./page.module.css";
 import Link from "next/link";
@@ -24,28 +23,29 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function ComparePage() {
-  return (
-    <Suspense>
-      <Compare />
-    </Suspense>
-  );
+  return <Compare />;
 }
 
 function Compare() {
   const [teamsData, setTeamsData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const searchParams = useSearchParams();
+  const [teams, setTeams] = useState([]);
   
-  // Memoize the teams array to prevent re-rendering loops
-  const teams = useMemo(() => {
-    return [
-      searchParams.get('team1'),
-      searchParams.get('team2'),
-      searchParams.get('team3'),
-      searchParams.get('team4')
-    ].filter(team => team !== null && team !== "");
-  }, [searchParams]);
+  // Parse URL parameters on the client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const parsedTeams = [
+        urlParams.get('team1'),
+        urlParams.get('team2'),
+        urlParams.get('team3'),
+        urlParams.get('team4')
+      ].filter(team => team !== null && team !== "");
+      
+      setTeams(parsedTeams);
+    }
+  }, []);
 
   // Colors for each team (same as match-view)
   const COLORS = [

@@ -1,10 +1,9 @@
 'use client';
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, Rectangle, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, ResponsiveContainer, Cell, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 import { VictoryPie } from "victory";
 import Link from "next/link";
 import styles from "./page.module.css"
-import { useSearchParams } from "next/navigation";
 import PiecePlacement from "./components/PiecePlacement";
 import dynamic from 'next/dynamic';
 import Endgame from "./components/Endgame";
@@ -13,15 +12,13 @@ import EPALineChart from "./components/EPALineChart";
 
 
 export default function MatchViewPage() {
-  return <Suspense>
-    <MatchView></MatchView>
-  </Suspense>
+  return <MatchView />;
 }
 
 function MatchView() {
   const [allData, setAllData] = useState(null);
   const [data, setData] = useState(false);
-  const searchParams = useSearchParams();
+  const [urlParams, setUrlParams] = useState({});
   //light to dark
   const COLORS = [
     ["#A4E5DF", "#6FDCD3", "#93C8C4", "#73CEC7", "#5EACB5"], //green
@@ -33,6 +30,17 @@ function MatchView() {
     
   ];
   
+  // Get URL parameters on client-side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const paramsObj = {};
+      for (const [key, value] of searchParams.entries()) {
+        paramsObj[key] = value;
+      }
+      setUrlParams(paramsObj);
+    }
+  }, []);
 
   useEffect(() => {
     // Get the current user's team
@@ -86,13 +94,18 @@ function MatchView() {
       });
   }, []);
 
-
-
   useEffect(() => {
-    if (searchParams && allData) {
-      if (searchParams.get('match') == null || searchParams.get('match') == "") {
+    if (Object.keys(urlParams).length > 0 && allData) {
+      if (!urlParams.match) {
         //search by teams
-        let [team1, team2, team3, team4, team5, team6] = [searchParams.get("team1"), searchParams.get("team2"), searchParams.get("team3"), searchParams.get("team4"), searchParams.get("team5"), searchParams.get("team6")];
+        let [team1, team2, team3, team4, team5, team6] = [
+          urlParams.team1, 
+          urlParams.team2, 
+          urlParams.team3, 
+          urlParams.team4, 
+          urlParams.team5, 
+          urlParams.team6
+        ];
         setData({team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6]});
       } else {
         // Get the current user's team
@@ -120,7 +133,7 @@ function MatchView() {
         }
         
         //search by match
-        fetch('/api/get-teams-of-match?match=' + searchParams.get('match'), {
+        fetch('/api/get-teams-of-match?match=' + urlParams.match, {
           headers: {
             'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
           }
@@ -141,7 +154,7 @@ function MatchView() {
             console.log(data.message);
           } else {
             //update url with teams
-            const newParams = new URLSearchParams(searchParams);
+            const newParams = new URLSearchParams();
             // Swap team positions as requested: team1<->team4, team2<->team5, team3<->team6
             newParams.set('team1', data.team4);
             newParams.set('team2', data.team5);
@@ -149,12 +162,23 @@ function MatchView() {
             newParams.set('team4', data.team1);
             newParams.set('team5', data.team2);
             newParams.set('team6', data.team3);
-            newParams.delete('match');
             // Add a flag to indicate the teams were loaded from a match and swapped
             newParams.set('from_match', 'true');
 
             const newUrl = `${window.location.pathname}?${newParams.toString()}`;
             window.history.replaceState(null, 'Picklist', newUrl);
+            
+            // Update our local urlParams state
+            const updatedParams = {
+              team1: data.team4,
+              team2: data.team5,
+              team3: data.team6,
+              team4: data.team1,
+              team5: data.team2,
+              team6: data.team3,
+              from_match: 'true'
+            };
+            setUrlParams(updatedParams);
             
             // Also swap the data assignment
             setData({
@@ -174,10 +198,10 @@ function MatchView() {
         });
       }
     }
-  }, [searchParams, allData]);
+  }, [urlParams, allData]);
 
   //until url loads show loading
-  if (!data || searchParams == null) {
+  if (!data || Object.keys(urlParams).length === 0) {
     return <div>
       <h1>Loading...</h1>
     </div>
@@ -205,501 +229,336 @@ function MatchView() {
     qualitative: { coralspeed: null, processorspeed: null, netspeed: null, algaeremovalspeed: null, climbspeed: null, maneuverability: null, defenseplayed: null, defenseevasion: null, aggression: null, cagehazard: null }
   };
 
-  // // Static data instead of fetching
-  // const data = {
-  //   team1: {
-  //     team: 2485,
-  //     teamName: "Overclocked",
-  //     auto: 30,
-  //     tele: 22,
-  //     end: 10,
-  //     avgPieces: {
-  //       L1: 3,
-  //       L2: 2,
-  //       L3: 5,
-  //       L4: 7,
-  //       net:10, 
-  //       processor: 1,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 4,
-  //     endgame: { none: 10, park: 13, shallow: 35, deep: 7, fail: 15},
-  //     qualitative: { coralspeed: 5, processorspeed: 2, netspeed: 3, algaeremovalspeed: 5, climbspeed: 0, maneuverability: 1, defenseplayed: 4, defenseevasion: 2, aggression: 4, cagehazard: 3 }
-  //   },
-  //   team2: {
-  //     team: 1234,
-  //     teamName: "Invisibotics 👻",
-  //     auto: 0,
-  //     tele: 0,
-  //     end: 4,
-  //     avgPieces: {
-  //       L1: 1,
-  //       L2: 2,
-  //       L3: 0,
-  //       L4: 0,
-  //       net:0, 
-  //       processor: 0,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 0,
-  //     endgame: { none: 9, park: 2, shallow: 1, deep: 4, fail: 5},
-  //     qualitative: { coralspeed: 3, processorspeed: 1, netspeed: 4, algaeremovalspeed: 5, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
-  //   },
-  //   team3: {
-  //     team: 4321,
-  //     teamName: "Invisibotics 👻",
-  //     auto: 0,
-  //     tele: 0,
-  //     end: 0,
-  //     avgPieces: {
-  //       L1: 3,
-  //       L2: 2,
-  //       L3: 0,
-  //       L4: 0,
-  //       net:0, 
-  //       processor: 0,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 0,
-  //     endgame: { none: 5, park: 6, shallow: 7, deep: 8, fail: 9},
-  //     qualitative: { coralspeed: 0, processorspeed: 0, netspeed: 0, algaeremovalspeed: 0, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
-  //   },
-  //   team4: {
-  //     team: 4,
-  //     teamName: "Invisibotics 👻",
-  //     auto: 0,
-  //     tele: 0,
-  //     end: 0,
-  //     avgPieces: {
-  //       L1: 4,
-  //       L2: 3,
-  //       L3: 2,
-  //       L4: 1,
-  //       net:0, 
-  //       processor: 0,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 0,
-  //     endgame: { none: 3, park: 2, shallow: 1, deep: 2, fail: 3},
-  //     qualitative: { coralspeed: 0, processorspeed: 0, netspeed: 0, algaeremovalspeed: 0, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
-  //   },
-  //   team5: {
-  //     team: 5,
-  //     teamName: "Invisibotics 👻",
-  //     auto: 1,
-  //     tele: 11,
-  //     end: 12,
-  //     avgPieces: {
-  //       L1: 1,
-  //       L2: 2,
-  //       L3: 3,
-  //       L4: 0,
-  //       net:0, 
-  //       processor: 0,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 0,
-  //     endgame: { none: 10, park: 12, shallow: 17, deep: 18, fail: 4},
-  //     qualitative: { coralspeed: 0, processorspeed: 0, netspeed: 0, algaeremovalspeed: 0, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
-  //   },
-  //   team6: {
-  //     team: 6,
-  //     teamName: "Invisibotics 👻",
-  //     auto: 0,
-  //     tele: 0,
-  //     end: 0,
-  //     avgPieces: {
-  //       L1: 0,
-  //       L2: 0,
-  //       L3: 0,
-  //       L4: 0,
-  //       net:0, 
-  //       processor: 0,
-  //       HP: 0,
-  //     },
-  //     leave: true,
-  //     autoCoral: 0,
-  //     removedAlgae: 0,
-  //     endgame: { none: 7, park: 17, shallow: 21, deep: 23, fail: 10},
-  //     qualitative: { coralspeed: 0, processorspeed: 0, netspeed: 0, algaeremovalspeed: 0, climbspeed: 0, maneuverability: 0, defenseplayed: 0, defenseevasion: 0, aggression: 0, cagehazard: 0 }
-  //   },
-  // };
-
-
-//setData based on teams selected
-// useEffect(() => {
-//   if (searchParams && allData) {
-//     //search by teams
-//     let [team1, team2, team3, team4, team5, team6] = [
-//       searchParams.get("team1"),
-//       searchParams.get("team2"),
-//       searchParams.get("team3"),
-//       searchParams.get("team4"),
-//       searchParams.get("team5"),
-//       searchParams.get("team6")
-//     ];
-//     setData({
-//       team1: allData[team1],
-//       team2: allData[team2],
-//       team3: allData[team3],
-//       team4: allData[team4],
-//       team5: allData[team5],
-//       team6: allData[team6]
-//     });
-//   }
-// }, [searchParams, allData]);
-
-//until url loads show loading
-
-if (!data || searchParams == null) {
-  return (
-    <div>
-      <h1>Loading...</h1>
-    </div>
-  );
-}
-
-//show form if systems are not a go
-if (searchParams.get("go") != "go") {
-  return (
-    <div>
-      <form className={styles.teamForm}>
-        <span>View by Teams...</span>
-        <div className={styles.horizontalBox}>
-        <div className={styles.RedInputs}>
-          <div>
-            <label htmlFor="team1">Red 1:</label>
-            <br />
-            <input id="team1" name="team1" defaultValue={searchParams.get("team1")}></input>
+  //show form if systems are not a go
+  if (urlParams.go != "go") {
+    return (
+      <div>
+        <form className={styles.teamForm}>
+          <span>View by Teams...</span>
+          <div className={styles.horizontalBox}>
+          <div className={styles.RedInputs}>
+            <div>
+              <label htmlFor="team1">Red 1:</label>
+              <br />
+              <input id="team1" name="team1" defaultValue={urlParams.team1}></input>
+            </div>
+            <div>
+              <label htmlFor="team2">Red 2:</label>
+              <br />
+              <input id="team2" name="team2" defaultValue={urlParams.team2}></input>
+            </div>
+            <div>
+              <label htmlFor="team3">Red 3:</label>
+              <br />
+              <input id="team3" name="team3" defaultValue={urlParams.team3}></input>
+            </div>
           </div>
-          <div>
-            <label htmlFor="team2">Red 2:</label>
-            <br />
-            <input id="team2" name="team2" defaultValue={searchParams.get("team2")}></input>
+          <div className={styles.BlueInputs}>
+            <div>
+              <label htmlFor="team4">Blue 1:</label>
+              <br />
+              <input id="team4" name="team4" defaultValue={urlParams.team4}></input>
+            </div>
+            <div>
+              <label htmlFor="team5">Blue 2:</label>
+              <br />
+              <input id="team5" name="team5" defaultValue={urlParams.team5}></input>
+            </div>
+            <div>
+              <label htmlFor="team6">Blue 3:</label>
+              <br />
+              <input id="team6" name="team6" defaultValue={urlParams.team6}></input>
+            </div>
+            </div>
+            <input type="hidden" name="go" value="go"></input>
           </div>
-          <div>
-            <label htmlFor="team3">Red 3:</label>
-            <br />
-            <input id="team3" name="team3" defaultValue={searchParams.get("team3")}></input>
-          </div>
-        </div>
-        <div className={styles.BlueInputs}>
-          <div>
-            <label htmlFor="team4">Blue 1:</label>
-            <br />
-            <input id="team4" name="team4" defaultValue={searchParams.get("team4")}></input>
-          </div>
-          <div>
-            <label htmlFor="team5">Blue 2:</label>
-            <br />
-            <input id="team5" name="team5" defaultValue={searchParams.get("team5")}></input>
-          </div>
-          <div>
-            <label htmlFor="team6">Blue 3:</label>
-            <br />
-            <input id="team6" name="team6" defaultValue={searchParams.get("team6")}></input>
-          </div>
-          </div>
-          <input type="hidden" name="go" value="go"></input>
-        </div>
-        <span>Or by Match...</span>
-        <label htmlFor="match">Match #</label>
-        <input id="match" name="match" type="number"></input>
-        <button className={styles.goButton}>Go!</button>
-      </form>
-    </div>
-  );
-}
-
-
-function AllianceButtons({t1, t2, t3, colors}) {
-  // Check if we're viewing a match that was loaded by match number
-  const fromMatch = searchParams.get('match') !== null || searchParams.toString().includes('from_match=true');
-  
-  // Preserve original team order in the URL by getting team values from the current URL params
-  // This maintains consistency when teams were swapped due to match number lookup
-  return <div className={styles.allianceBoard}>
-    <Link href={`/team-view?team=${t1.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
-      <button style={{background: colors[0][1]}}>{t1.team}</button>
-    </Link>
-    <Link href={`/team-view?team=${t2.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
-      <button style={{background: colors[1][1]}}>{t2.team}</button>
-    </Link>
-    <Link href={`/team-view?team=${t3.team}&team1=${searchParams.get("team1") || ""}&team2=${searchParams.get("team2") || ""}&team3=${searchParams.get("team3") || ""}&team4=${searchParams.get("team4") || ""}&team5=${searchParams.get("team5") || ""}&team6=${searchParams.get("team6") || ""}&from_match=true`}>
-      <button style={{background: colors[2][1]}}>{t3.team}</button>
-    </Link>
-  </div>
-}
-
-  function AllianceDisplay({teams, opponents, colors}) {
-    //calc alliance espm breakdown
-    const validTeams = teams.filter(team => team && team.last3Auto !== null);
-    const auto = validTeams.reduce((sum, team) => sum + (team.last3Auto || 0), 0);
-    const tele = validTeams.reduce((sum, team) => sum + (team.last3Tele || 0), 0);
-    const end = validTeams.reduce((sum, team) => sum + (team.last3End || 0), 0);
-
-    console.log(auto)
-    console.log(tele)
-    console.log(end)
-
-
-
-
-    //calc ranking points
-    const RGBColors = {
-      red: "#FF9393",
-      green: "#BFFEC1",
-      yellow: "#FFDD9A"
-    }
-    //win = higher espm than opponents
-    const teamEPA = (team) => team && team.auto !== null ? team.auto + team.tele + team.end : 0;
-    const validOpponents = opponents.filter(opponent => opponent && opponent.auto !== null);
-    const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
-    const currentAllianceEPA = auto + tele + end;
-    let RP_WIN = RGBColors.red;
-    if (currentAllianceEPA > opponentsEPA) RP_WIN = RGBColors.green;
-    else if (currentAllianceEPA == opponentsEPA) RP_WIN = RGBColors.yellow;
-
-    //auto rp = all robots leave and alliance scores one coral
-    const allianceCoral = teams.reduce((sum, team) => {
-      return sum + (team && team.autoCoral !== null ? Math.floor(team.autoCoral) : 0);
-    }, 0);
-    
-    let RP_AUTO = RGBColors.red;
-    if ((allianceCoral >= 1) && 
-        teams.every(team => team && team.leave === true)) {
-      RP_AUTO = RGBColors.green;
-    }
-
-    //coral rp = 5 coral scored on each level (5 on 3 levels is yellow)
-    const sumValidPieces = (pieceType) => {
-      return teams.reduce((sum, team) => {
-        return sum + (team && team.avgPieces && team.avgPieces[pieceType] !== null ? team.avgPieces[pieceType] : 0);
-      }, 0);
-    };
-    
-    const allianceL1 = sumValidPieces('L1');
-    const allianceL2 = sumValidPieces('L2'); 
-    const allianceL3 = sumValidPieces('L3');
-    const allianceL4 = sumValidPieces('L4');
-    
-    let RP_CORAL = RGBColors.red;
-    const conditions = [
-      allianceL1 >= 5,
-      allianceL2 >= 5,
-      allianceL3 >= 5,
-      allianceL4 >= 5
-    ];
-    //count the number of true conditions
-    const trueCount = conditions.filter(Boolean).length;
-    //if all 4 conditions are true
-    if (trueCount == 4) RP_CORAL = RGBColors.green;
-    //if 3 conditions are true
-    else if (trueCount == 3) RP_CORAL = RGBColors.yellow;
-  
-    //barge rp = 14 points in the barge
-    const endgamePoints = teams.reduce((sum, team) => {
-      return sum + (team && team.end !== null ? Math.floor(team.end) : 0);
-    }, 0);
-    
-    let RP_BARGE = RGBColors.red;
-    if (endgamePoints >= 14) RP_BARGE = RGBColors.green;
-
-    return <div className={styles.lightBorderBox}>
-      <div className={styles.scoreBreakdownContainer}>
-      <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>{((auto + tele + end) || 0).toFixed(1)}</div>        <div className={styles.EPABreakdown}>
-          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {(auto || 0).toFixed(1)}</div>
-          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {(tele || 0).toFixed(1)}</div>
-          <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {(end || 0).toFixed(1)}</div>
-        </div>
+          <span>Or by Match...</span>
+          <label htmlFor="match">Match #</label>
+          <input id="match" name="match" type="number"></input>
+          <button className={styles.goButton}>Go!</button>
+        </form>
       </div>
-      <div className={styles.RPs}>
-        <div style={{background: colors[1]}}>RPs:</div>
-        <div style={{background: RP_WIN}}>Victory</div>
-        <div style={{background: RP_AUTO}}>Auto</div>
-        <div style={{background: RP_CORAL}}>Coral</div>
-        <div style={{background: RP_BARGE}}>Barge</div>
-      </div>
-    </div>
-    
+    );
   }
 
-  function TeamDisplay({teamData, colors, matchMax}) {
-
-    const PiecePlacement = dynamic(() => import('./components/PiecePlacement'), { ssr: false });
+  function AllianceButtons({t1, t2, t3, colors}) {
+    // Check if we're viewing a match that was loaded by match number
+    const fromMatch = urlParams.match !== null || urlParams.toString().includes('from_match=true');
     
-    // Check if endgame data is valid
-    const hasEndgameData = teamData.endgame && 
-      Object.values(teamData.endgame).some(value => value !== null && value > 0);
-    
-    const endgameData = hasEndgameData ? [
-      { x: 'None', y: teamData.endgame.none },
-      { x: 'Fail', y: teamData.endgame.fail},
-      { x: 'Park', y: teamData.endgame.park },
-      { x: 'Shallow', y: teamData.endgame.shallow },
-      { x: 'Deep', y: teamData.endgame.deep },
-    ] : [
-      { x: 'N/A', y: 100 }
-    ];
-
-    return <div className={styles.lightBorderBox}>
-      <h1 style={{color: colors[3]}}>{teamData.team}</h1>
-      <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
-      <div className={styles.scoreBreakdownContainer}>
-      <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
-        {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
-      </div>
-      <div className={styles.EPABreakdown}>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
-        <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
-      </div>
-      </div>
-      <div className={styles.barchartContainer}>
-        <h2>Average Piece Placement</h2>
-        <PiecePlacement 
-          colors={colors}
-          matchMax={matchMax} 
-          L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
-          L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
-          L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
-          L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
-          net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
-          processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
-          HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
-        />
-      </div>
-      <div className={styles.chartContainer}>
-        <h2 style={{marginBottom: "-40px"}}>Endgame %</h2>
-        <Endgame 
-          colors={colors}
-          endgameData={endgameData}
-        />
-      </div>
+    // Preserve original team order in the URL by getting team values from the current URL params
+    // This maintains consistency when teams were swapped due to match number lookup
+    return <div className={styles.allianceBoard}>
+      <Link href={`/team-view?team=${t1.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
+        <button style={{background: colors[0][1]}}>{t1.team}</button>
+      </Link>
+      <Link href={`/team-view?team=${t2.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
+        <button style={{background: colors[1][1]}}>{t2.team}</button>
+      </Link>
+      <Link href={`/team-view?team=${t3.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
+        <button style={{background: colors[2][1]}}>{t3.team}</button>
+      </Link>
     </div>
   }
-    let get = (alliance, thing) => {
-    let sum = 0;
-    for (let i = 0; i < alliance.length; i++) {
-      if (alliance[i] && alliance[i][thing] !== null) {
-        sum += alliance[i][thing];
+
+    function AllianceDisplay({teams, opponents, colors}) {
+      //calc alliance espm breakdown
+      const validTeams = teams.filter(team => team && team.last3Auto !== null);
+      const auto = validTeams.reduce((sum, team) => sum + (team.last3Auto || 0), 0);
+      const tele = validTeams.reduce((sum, team) => sum + (team.last3Tele || 0), 0);
+      const end = validTeams.reduce((sum, team) => sum + (team.last3End || 0), 0);
+
+      console.log(auto)
+      console.log(tele)
+      console.log(end)
+
+
+
+
+      //calc ranking points
+      const RGBColors = {
+        red: "#FF9393",
+        green: "#BFFEC1",
+        yellow: "#FFDD9A"
       }
-    }
-    return sum;
-  }
-  const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
-  const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-  let blueScores = [0, get(blueAlliance, "auto")]
-  blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
-  blueScores.push(blueScores[2] + get(blueAlliance, "end"))
-  let redScores = [0, get(redAlliance, "auto")]
-  redScores.push(redScores[1] + get(redAlliance, "tele"))
-  redScores.push(redScores[2] + get(redAlliance, "end"));
-  let epaData = [
-    {name: "Start", blue: 0, red: 0},
-    {name: "Auto", blue: blueScores[1], red: redScores[1]},
-    {name: "Tele", blue: blueScores[2], red: redScores[2]},
-    {name: "End", blue: blueScores[3], red: redScores[3]},
-  ];
+      //win = higher espm than opponents
+      const teamEPA = (team) => team && team.auto !== null ? team.auto + team.tele + team.end : 0;
+      const validOpponents = opponents.filter(opponent => opponent && opponent.auto !== null);
+      const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
+      const currentAllianceEPA = auto + tele + end;
+      let RP_WIN = RGBColors.red;
+      if (currentAllianceEPA > opponentsEPA) RP_WIN = RGBColors.green;
+      else if (currentAllianceEPA == opponentsEPA) RP_WIN = RGBColors.yellow;
 
-  //getting radar data
-  let radarData = [];
-  for (let qual of ['coralspeed', 'processorspeed', 'netspeed', 'algaeremovalspeed', 'climbspeed', 'maneuverability', 'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard']) {
-    radarData.push({qual, 
-      team1: data?.team1?.qualitative?.[qual] !== undefined ? data.team1.qualitative[qual] : null,
-      team2: data?.team2?.qualitative?.[qual] !== undefined ? data.team2.qualitative[qual] : null,
-      team3: data?.team3?.qualitative?.[qual] !== undefined ? data.team3.qualitative[qual] : null,
-      team4: data?.team4?.qualitative?.[qual] !== undefined ? data.team4.qualitative[qual] : null,
-      team5: data?.team5?.qualitative?.[qual] !== undefined ? data.team5.qualitative[qual] : null,
-      team6: data?.team6?.qualitative?.[qual] !== undefined ? data.team6.qualitative[qual] : null,
-      fullMark: 5});
-  }
-  console.log(radarData);
+      //auto rp = all robots leave and alliance scores one coral
+      const allianceCoral = teams.reduce((sum, team) => {
+        return sum + (team && team.autoCoral !== null ? Math.floor(team.autoCoral) : 0);
+      }, 0);
+      
+      let RP_AUTO = RGBColors.red;
+      if ((allianceCoral >= 1) && 
+          teams.every(team => team && team.leave === true)) {
+        RP_AUTO = RGBColors.green;
+      }
 
-  let matchMax = 0;
-  for (let teamData of [data.team1, data.team2, data.team3, data.team4, data.team5, data.team6]) {
-   if (teamData && teamData.avgPieces) {
-    const pieceValues = [
-      teamData.avgPieces.L4, 
-      teamData.avgPieces.L3, 
-      teamData.avgPieces.L2, 
-      teamData.avgPieces.L1, 
-      teamData.avgPieces.net, 
-      teamData.avgPieces.processor, 
-      teamData.avgPieces.HP
-    ].filter(value => value !== null);
+      //coral rp = 5 coral scored on each level (5 on 3 levels is yellow)
+      const sumValidPieces = (pieceType) => {
+        return teams.reduce((sum, team) => {
+          return sum + (team && team.avgPieces && team.avgPieces[pieceType] !== null ? team.avgPieces[pieceType] : 0);
+        }, 0);
+      };
+      
+      const allianceL1 = sumValidPieces('L1');
+      const allianceL2 = sumValidPieces('L2'); 
+      const allianceL3 = sumValidPieces('L3');
+      const allianceL4 = sumValidPieces('L4');
+      
+      let RP_CORAL = RGBColors.red;
+      const conditions = [
+        allianceL1 >= 5,
+        allianceL2 >= 5,
+        allianceL3 >= 5,
+        allianceL4 >= 5
+      ];
+      //count the number of true conditions
+      const trueCount = conditions.filter(Boolean).length;
+      //if all 4 conditions are true
+      if (trueCount == 4) RP_CORAL = RGBColors.green;
+      //if 3 conditions are true
+      else if (trueCount == 3) RP_CORAL = RGBColors.yellow;
     
-    if (pieceValues.length > 0) {
-      matchMax = Math.max(...pieceValues, matchMax);
+      //barge rp = 14 points in the barge
+      const endgamePoints = teams.reduce((sum, team) => {
+        return sum + (team && team.end !== null ? Math.floor(team.end) : 0);
+      }, 0);
+      
+      let RP_BARGE = RGBColors.red;
+      if (endgamePoints >= 14) RP_BARGE = RGBColors.green;
+
+      return <div className={styles.lightBorderBox}>
+        <div className={styles.scoreBreakdownContainer}>
+        <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>{((auto + tele + end) || 0).toFixed(1)}</div>        <div className={styles.EPABreakdown}>
+            <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {(auto || 0).toFixed(1)}</div>
+            <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {(tele || 0).toFixed(1)}</div>
+            <div style={{background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {(end || 0).toFixed(1)}</div>
+          </div>
+        </div>
+        <div className={styles.RPs}>
+          <div style={{background: colors[1]}}>RPs:</div>
+          <div style={{background: RP_WIN}}>Victory</div>
+          <div style={{background: RP_AUTO}}>Auto</div>
+          <div style={{background: RP_CORAL}}>Coral</div>
+          <div style={{background: RP_BARGE}}>Barge</div>
+        </div>
+      </div>
+      
     }
-   }
+
+    function TeamDisplay({teamData, colors, matchMax}) {
+
+      const PiecePlacement = dynamic(() => import('./components/PiecePlacement'), { ssr: false });
+      
+      // Check if endgame data is valid
+      const hasEndgameData = teamData.endgame && 
+        Object.values(teamData.endgame).some(value => value !== null && value > 0);
+      
+      const endgameData = hasEndgameData ? [
+        { x: 'None', y: teamData.endgame.none },
+        { x: 'Fail', y: teamData.endgame.fail},
+        { x: 'Park', y: teamData.endgame.park },
+        { x: 'Shallow', y: teamData.endgame.shallow },
+        { x: 'Deep', y: teamData.endgame.deep },
+      ] : [
+        { x: 'N/A', y: 100 }
+      ];
+
+      return <div className={styles.lightBorderBox}>
+        <h1 style={{color: colors[3]}}>{teamData.team}</h1>
+        <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
+        <div className={styles.scoreBreakdownContainer}>
+        <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
+          {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
+        </div>
+        <div className={styles.EPABreakdown}>
+          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
+          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
+          <div style={{background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center"}}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
+        </div>
+        </div>
+        <div className={styles.barchartContainer}>
+          <h2>Average Piece Placement</h2>
+          <PiecePlacement 
+            colors={colors}
+            matchMax={matchMax} 
+            L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
+            L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
+            L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
+            L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
+            net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
+            processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
+            HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
+          />
+        </div>
+        <div className={styles.chartContainer}>
+          <h2 style={{marginBottom: "-40px"}}>Endgame %</h2>
+          <Endgame 
+            colors={colors}
+            endgameData={endgameData}
+          />
+        </div>
+      </div>
+    }
+      let get = (alliance, thing) => {
+      let sum = 0;
+      for (let i = 0; i < alliance.length; i++) {
+        if (alliance[i] && alliance[i][thing] !== null) {
+          sum += alliance[i][thing];
+        }
+      }
+      return sum;
+    }
+    const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
+    const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
+    let blueScores = [0, get(blueAlliance, "auto")]
+    blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
+    blueScores.push(blueScores[2] + get(blueAlliance, "end"))
+    let redScores = [0, get(redAlliance, "auto")]
+    redScores.push(redScores[1] + get(redAlliance, "tele"))
+    redScores.push(redScores[2] + get(redAlliance, "end"));
+    let epaData = [
+      {name: "Start", blue: 0, red: 0},
+      {name: "Auto", blue: blueScores[1], red: redScores[1]},
+      {name: "Tele", blue: blueScores[2], red: redScores[2]},
+      {name: "End", blue: blueScores[3], red: redScores[3]},
+    ];
+
+    //getting radar data
+    let radarData = [];
+    for (let qual of ['coralspeed', 'processorspeed', 'netspeed', 'algaeremovalspeed', 'climbspeed', 'maneuverability', 'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard']) {
+      radarData.push({qual, 
+        team1: data?.team1?.qualitative?.[qual] !== undefined ? data.team1.qualitative[qual] : null,
+        team2: data?.team2?.qualitative?.[qual] !== undefined ? data.team2.qualitative[qual] : null,
+        team3: data?.team3?.qualitative?.[qual] !== undefined ? data.team3.qualitative[qual] : null,
+        team4: data?.team4?.qualitative?.[qual] !== undefined ? data.team4.qualitative[qual] : null,
+        team5: data?.team5?.qualitative?.[qual] !== undefined ? data.team5.qualitative[qual] : null,
+        team6: data?.team6?.qualitative?.[qual] !== undefined ? data.team6.qualitative[qual] : null,
+        fullMark: 5});
+    }
+    console.log(radarData);
+
+    let matchMax = 0;
+    for (let teamData of [data.team1, data.team2, data.team3, data.team4, data.team5, data.team6]) {
+     if (teamData && teamData.avgPieces) {
+      const pieceValues = [
+        teamData.avgPieces.L4, 
+        teamData.avgPieces.L3, 
+        teamData.avgPieces.L2, 
+        teamData.avgPieces.L1, 
+        teamData.avgPieces.net, 
+        teamData.avgPieces.processor, 
+        teamData.avgPieces.HP
+      ].filter(value => value !== null);
+      
+      if (pieceValues.length > 0) {
+        matchMax = Math.max(...pieceValues, matchMax);
+      }
+     }
+    }
+    matchMax = Math.floor(matchMax) + 2; 
+    console.log("Team 1 Data:", data.team1);
+    console.log("Team 2 Data:", data.team2);
+    console.log("Team 3 Data:", data.team3);
+
+
+    return (
+      <div>
+        <div className={styles.matchNav}>
+          <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
+          <Link href={`/match-view?team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}><button style={{background: "#ffff88", color: "black"}}>Edit</button></Link>
+          <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} colors={[COLORS[0], COLORS[1], COLORS[2]]}></AllianceButtons>
+        </div>
+        <div className={styles.allianceEPAs}>
+          <AllianceDisplay teams={redAlliance} opponents={blueAlliance} colors={["#FFD5E1", "#F29FA6"]}></AllianceDisplay>
+          <AllianceDisplay teams={blueAlliance} opponents={redAlliance} colors={["#D3DFFF", "#8FA5F5"]}></AllianceDisplay>
+        </div>
+        <div className={styles.allianceGraphs}>
+          <div className={styles.graphContainer}>
+            <DefenseBarChart 
+              allianceData={redAlliance}
+              colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
+              teamNumbers={[
+                (data.team1 || defaultTeam).team,
+                (data.team2 || defaultTeam).team,
+                (data.team3 || defaultTeam).team
+              ]}
+            />
+          </div>
+          <div className={styles.lineGraphContainer}>
+            <h2>EPA / time</h2>
+            <br></br>
+            <EPALineChart data={epaData}/>
+          </div>
+          <div className={styles.graphContainer}>
+            <DefenseBarChart 
+              allianceData={blueAlliance}
+              colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
+              teamNumbers={[
+                (data.team4 || defaultTeam).team,
+                (data.team5 || defaultTeam).team,
+                (data.team6 || defaultTeam).team
+              ]}
+            />
+          </div>
+        </div>
+        <div className={styles.matches}>
+          <TeamDisplay teamData={data.team1 || defaultTeam} colors={COLORS[3]} matchMax={matchMax}></TeamDisplay>
+          <TeamDisplay teamData={data.team2 || defaultTeam} colors={COLORS[4]} matchMax={matchMax}></TeamDisplay>
+          <TeamDisplay teamData={data.team3 || defaultTeam} colors={COLORS[5]} matchMax={matchMax}></TeamDisplay>
+        </div>
+        <div className={styles.matches}>
+          <TeamDisplay teamData={data.team4 || defaultTeam} colors={COLORS[0]} matchMax={matchMax}></TeamDisplay>
+          <TeamDisplay teamData={data.team5 || defaultTeam} colors={COLORS[1]} matchMax={matchMax}></TeamDisplay>
+          <TeamDisplay teamData={data.team6 || defaultTeam} colors={COLORS[2]} matchMax={matchMax}></TeamDisplay>
+        </div>
+      </div>
+    )
   }
-  matchMax = Math.floor(matchMax) + 2; 
-  console.log("Team 1 Data:", data.team1);
-  console.log("Team 2 Data:", data.team2);
-  console.log("Team 3 Data:", data.team3);
-
-
-  return (
-    <div>
-      <div className={styles.matchNav}>
-        <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
-        <Link href={`/match-view?team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}><button style={{background: "#ffff88", color: "black"}}>Edit</button></Link>
-        <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} colors={[COLORS[0], COLORS[1], COLORS[2]]}></AllianceButtons>
-      </div>
-      <div className={styles.allianceEPAs}>
-        <AllianceDisplay teams={redAlliance} opponents={blueAlliance} colors={["#FFD5E1", "#F29FA6"]}></AllianceDisplay>
-        <AllianceDisplay teams={blueAlliance} opponents={redAlliance} colors={["#D3DFFF", "#8FA5F5"]}></AllianceDisplay>
-      </div>
-      <div className={styles.allianceGraphs}>
-        <div className={styles.graphContainer}>
-          <DefenseBarChart 
-            allianceData={redAlliance}
-            colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
-            teamNumbers={[
-              (data.team1 || defaultTeam).team,
-              (data.team2 || defaultTeam).team,
-              (data.team3 || defaultTeam).team
-            ]}
-          />
-        </div>
-        <div className={styles.lineGraphContainer}>
-          <h2>EPA / time</h2>
-          <br></br>
-          <EPALineChart data={epaData}/>
-        </div>
-        <div className={styles.graphContainer}>
-          <DefenseBarChart 
-            allianceData={blueAlliance}
-            colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
-            teamNumbers={[
-              (data.team4 || defaultTeam).team,
-              (data.team5 || defaultTeam).team,
-              (data.team6 || defaultTeam).team
-            ]}
-          />
-        </div>
-      </div>
-      <div className={styles.matches}>
-        <TeamDisplay teamData={data.team1 || defaultTeam} colors={COLORS[3]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team2 || defaultTeam} colors={COLORS[4]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team3 || defaultTeam} colors={COLORS[5]} matchMax={matchMax}></TeamDisplay>
-      </div>
-      <div className={styles.matches}>
-        <TeamDisplay teamData={data.team4 || defaultTeam} colors={COLORS[0]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team5 || defaultTeam} colors={COLORS[1]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team6 || defaultTeam} colors={COLORS[2]} matchMax={matchMax}></TeamDisplay>
-      </div>
-    </div>
-  )
-}
