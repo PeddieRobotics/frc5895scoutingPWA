@@ -2,10 +2,12 @@
 import Link from "next/link";
 import styles from "./NavBar.module.css";
 import {useState, useEffect} from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function NavBar() {
     const [sudo, setSudo] = useState(false);
     const [authCredentials, setAuthCredentials] = useState(null);
+    const router = useRouter();
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -26,13 +28,55 @@ export default function NavBar() {
     // Create a custom Link component that passes auth in headers
     const AuthLink = ({ href, children }) => {
         // Function to handle navigation with auth credentials
-        const linkProps = {
-            href,
-            // Custom headers or attributes for page transitions
-            passHref: true
+        const handleClick = (e) => {
+            // Check if we have auth credentials
+            const credentials = sessionStorage.getItem('auth_credentials') || 
+                                localStorage.getItem('auth_credentials');
+            
+            if (!credentials) {
+                e.preventDefault();
+                // No credentials, redirect to home with auth params
+                window.location.href = `/?authRequired=true&redirect=${href}&t=${Date.now().toString()}`;
+                return;
+            }
+            
+            // If we already have credentials, perform a quick client-side validation
+            const validateToken = async () => {
+                try {
+                    // Add client-validating header to prevent middleware validation loop
+                    const timestamp = new Date().getTime();
+                    const response = await fetch(`/api/auth/validate?_t=${timestamp}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Basic ${credentials}`,
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'x-client-validating': 'true'
+                        },
+                        cache: 'no-store'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.authenticated) {
+                        // Credentials are valid, proceed with full page navigation
+                        window.location.href = href;
+                    } else {
+                        // Credentials invalid, redirect to home with auth params
+                        window.location.href = `/?authRequired=true&redirect=${href}&t=${Date.now().toString()}`;
+                    }
+                } catch (error) {
+                    console.error("Auth validation error:", error);
+                    // On error, redirect to home with auth params
+                    window.location.href = `/?authRequired=true&redirect=${href}&t=${Date.now().toString()}`;
+                }
+            };
+            
+            e.preventDefault();
+            validateToken();
         };
         
-        return <Link {...linkProps}>{children}</Link>;
+        return <Link href={href} onClick={handleClick}>{children}</Link>;
     };
 
     return <nav className={styles.navbar}>
