@@ -515,12 +515,12 @@ function AllianceButtons({t1, t2, t3, colors}) {
   
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
   const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-  let blueScores = [0, get(blueAlliance, "autolast3")] //last 3?
-  blueScores.push(blueScores[1] + get(blueAlliance, "telelast3"))
-  blueScores.push(blueScores[2] + get(blueAlliance, "endlast3"))
-  let redScores = [0, get(redAlliance, "autolast3")]
-  redScores.push(redScores[1] + get(redAlliance, "telelast3"))
-  redScores.push(redScores[2] + get(redAlliance, "endlast3"));
+  let blueScores = [0, get(blueAlliance, "last3Auto")]
+  blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
+  blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
+  let redScores = [0, get(redAlliance, "last3Auto")]
+  redScores.push(redScores[1] + get(redAlliance, "last3Tele"))
+  redScores.push(redScores[2] + get(redAlliance, "last3End"));
   let epaData = [
     {name: "Start", blue: 0, red: 0},
     {name: "Auto", blue: blueScores[1], red: redScores[1]},
