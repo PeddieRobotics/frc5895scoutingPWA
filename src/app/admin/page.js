@@ -154,10 +154,12 @@ export default function AdminPage() {
   // Update checkAuth to also fetch sessions
   const checkAuth = async () => {
     try {
+      // Add a special header to tell the auth-handler not to redirect
       const response = await fetch('/api/admin/validate', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Auth-Check': 'true' // Signal this is an admin page auth check
         },
         credentials: 'include'
       });
@@ -167,9 +169,14 @@ export default function AdminPage() {
         // Only fetch teams and sessions after setting authenticated to true
         fetchTeams();
         fetchActiveSessions();
+      } else {
+        // Handle auth failure locally
+        console.log('Admin auth validation failed, showing login form');
+        setAuthenticated(false);
       }
     } catch (err) {
       console.error('Auth validation error:', err);
+      setAuthenticated(false);
     }
   };
 
@@ -710,14 +717,16 @@ export default function AdminPage() {
                       <td><ClientDate date={team.created_at} /></td>
                       <td><ClientDate date={team.last_login} /></td>
                       <td>
-                        <button 
-                          onClick={() => handleDeleteTeam(team.team_name)}
-                          className={styles.deleteButton}
-                          disabled={loading}
-                          title="Delete team"
-                        >
-                          <TrashIcon /> Delete
-                        </button>
+                        <div className={styles.actionButtons}>
+                          <button 
+                            onClick={() => handleDeleteTeam(team.team_name)}
+                            className={styles.deleteButton}
+                            disabled={loading}
+                            title="Delete team"
+                          >
+                            <TrashIcon /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -13,25 +13,119 @@ const pool = new Pool({
 // Verify admin authentication
 async function verifyAdminAuth(request) {
   try {
-    const cookieStore = await cookies();
+    // Retrieve the admin password from environment variable
+    const adminPassword = process.env.ADMIN_PASSWORD;
     
-    if (!cookieStore.has('admin_auth')) {
+    if (!adminPassword) {
+      console.error('Admin authentication error: ADMIN_PASSWORD environment variable not set');
       return false;
     }
     
+    // cookies() is not a promise, so don't use await
+    const cookieStore = cookies();
+    
+    // Check for admin_auth cookie first
     const adminAuthCookie = cookieStore.get('admin_auth');
-    if (!adminAuthCookie) return false;
     
-    const adminAuth = adminAuthCookie.value;
+    if (adminAuthCookie) {
+      try {
+        // First try to decode URI component (for %3D etc.)
+        const decodedValue = decodeURIComponent(adminAuthCookie.value);
+        
+        // Use Buffer for Node.js environments instead of atob
+        const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
+        const [username, password] = decoded.split(':');
+        
+        if (username === 'admin' && password === adminPassword) {
+          console.log('Admin authenticated via admin_auth cookie');
+          return true;
+        }
+      } catch (e) {
+        console.error('Admin auth decode error:', e.message || e);
+      }
+    }
     
-    // First try to decode URI component (for %3D etc.)
-    const decodedValue = decodeURIComponent(adminAuth);
+    // If admin_auth failed, check for regular user auth that has admin privileges
+    const authCookie = cookieStore.get('auth_session');
+    const authCookieLax = cookieStore.get('auth_session_lax');
+    const authCookieSecure = cookieStore.get('auth_session_secure');
     
-    // Use Buffer for Node.js environments instead of atob
-    const decoded = Buffer.from(decodedValue, 'base64').toString('utf-8');
-    const [username, password] = decoded.split(':');
+    // Get the token from any available auth cookie
+    const tokenStr = authCookie?.value || authCookieLax?.value || authCookieSecure?.value;
     
-    return username === 'admin' && password === process.env.ADMIN_PASSWORD;
+    if (tokenStr) {
+      try {
+        // Try to URL decode and parse the cookie
+        let decodedTokenStr = tokenStr;
+        try {
+          decodedTokenStr = decodeURIComponent(tokenStr);
+        } catch (e) {
+          console.log('Failed to decode auth cookie, using as-is');
+        }
+        
+        // Try to parse the JSON
+        let tokenData;
+        try {
+          tokenData = JSON.parse(decodedTokenStr);
+          console.log('Parsed token data:', { team: tokenData.team });
+          
+          if (tokenData.team) {
+            // Check if the team has admin access by looking up in database
+            // Connect to database
+            const client = await pool.connect();
+            try {
+              // Create admin_teams table if it doesn't exist (this should have been created in validate route)
+              await client.query(`
+                CREATE TABLE IF NOT EXISTS admin_teams (
+                  team_name TEXT PRIMARY KEY,
+                  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+              `);
+              
+              // Check if team is in admin_teams table
+              const result = await client.query(
+                'SELECT team_name FROM admin_teams WHERE team_name = $1',
+                [tokenData.team]
+              );
+              
+              if (result.rowCount > 0) {
+                console.log(`Team ${tokenData.team} has admin access (database)`);
+                return true;
+              }
+            } finally {
+              client.release();
+            }
+          }
+        } catch (e) {
+          console.log('Failed to parse token as JSON, trying as direct session ID');
+        }
+      } catch (e) {
+        console.error('Error processing auth cookie:', e);
+      }
+    }
+    
+    // Check for X-Auth headers that might have been added by the middleware
+    const authTeam = request.headers.get('X-Auth-Team');
+    if (authTeam) {
+      // Check if the team has admin access by looking up in database
+      const client = await pool.connect();
+      try {
+        // Check if team is in admin_teams table
+        const result = await client.query(
+          'SELECT team_name FROM admin_teams WHERE team_name = $1',
+          [authTeam]
+        );
+        
+        if (result.rowCount > 0) {
+          console.log(`Team ${authTeam} has admin access via X-Auth-Team header (database)`);
+          return true;
+        }
+      } finally {
+        client.release();
+      }
+    }
+    
+    return false;
   } catch (e) {
     console.error('Admin auth verification error:', e.message || e);
     return false;

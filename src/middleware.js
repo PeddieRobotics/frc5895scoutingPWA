@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 // PUBLIC PATHS - no auth needed
 const PUBLIC_PATHS = [
   '/',
-  '/admin',
+  '/admin',  // Admin page is public, authentication happens client-side
   '/login',
   '/register',
   '/favicon.ico',
@@ -23,8 +23,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/icons/',
   '/apple-touch-icon',
   '/api/auth/',
-  '/ios-auth/',
-  '/api/admin/' // Added to completely whitelist admin routes
+  '/api/admin/' // All admin API routes are allowed through middleware
 ];
 
 // Admin API routes that use cookies instead of Authorization headers

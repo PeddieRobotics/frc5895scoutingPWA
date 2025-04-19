@@ -174,6 +174,14 @@
       
       // Handle unauthorized responses
       if (response.status === 401) {
+        // Check if this is an admin page authentication check that should be handled locally
+        const isAdminCheck = options.headers && options.headers['X-Admin-Auth-Check'] === 'true';
+        
+        if (isAdminCheck) {
+          console.log('Auth Handler: Skipping redirect for admin auth check');
+          return response;
+        }
+        
         // Unauthorized response may mean our token is invalid
         console.log('Auth Handler: Received 401 Unauthorized, showing login dialog');
         

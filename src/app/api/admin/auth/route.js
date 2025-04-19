@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { Pool } from 'pg';
 
-// DEVELOPMENT HARDCODED PASSWORD - remove in production
-const DEV_PASSWORD = 'admin123';
+// Create a database connection pool for checking admin permissions
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
+});
 
 export async function POST(request) {
   try {
     const { sudoPassword } = await request.json();
     
-    // Simple authentication logic for development
-    const adminPassword = process.env.ADMIN_PASSWORD || DEV_PASSWORD;
+    // Required: admin password must be set in environment variables
+    const adminPassword = process.env.ADMIN_PASSWORD;
     
-    // Debug log
+    if (!adminPassword) {
+      return NextResponse.json(
+        { success: false, message: 'Server configuration error: ADMIN_PASSWORD not set' },
+        { status: 500 }
+      );
+    }
+    
+    // Debug log (no password content)
     console.log(`Auth attempt with password: ${sudoPassword?.length || 0} chars`);
     
     // Simple password check
@@ -48,6 +61,25 @@ export async function POST(request) {
       maxAge: 60 * 60 * 24, // 24 hours
       path: '/'
     });
+    
+    // Create admin_teams table if it doesn't exist yet (bootstrap solution)
+    try {
+      const client = await pool.connect();
+      try {
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS admin_teams (
+            team_name TEXT PRIMARY KEY,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+          )
+        `);
+        console.log('Admin table created or verified');
+      } finally {
+        client.release();
+      }
+    } catch (dbError) {
+      console.error('Could not create admin_teams table:', dbError);
+      // We continue anyway - this is just a convenience setup
+    }
     
     return response;
   } catch (error) {

@@ -162,6 +162,11 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  min-width: 100px;
 }
 
 .deleteButton:hover {
@@ -252,6 +257,11 @@
 .teamTable th:nth-child(4),
 .teamTable td:nth-child(4) {
   width: 20%;
+}
+
+.teamTable th:last-child,
+.teamTable td:last-child {
+  text-align: left;
 }
 
 .emptyState {
@@ -526,5 +536,37 @@
 
 .revokedButton {
   background-color: #666 !important;
+  cursor: not-allowed;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.adminButton {
+  padding: 6px 10px;
+  border-radius: 4px;
+  background-color: #8a63d2;
+  color: white;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background-color 0.2s;
+}
+
+.adminButton:hover {
+  background-color: #7146c2;
+}
+
+.adminButton:disabled {
+  background-color: #aaa;
   cursor: not-allowed;
 } 

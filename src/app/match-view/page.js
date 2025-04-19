@@ -19,6 +19,9 @@ function MatchView() {
   const [allData, setAllData] = useState(null);
   const [data, setData] = useState(false);
   const [urlParams, setUrlParams] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
   //light to dark
   const COLORS = [
     ["#A4E5DF", "#6FDCD3", "#93C8C4", "#73CEC7", "#5EACB5"], //green
@@ -27,7 +30,6 @@ function MatchView() {
     ["#F6C1D8", "#F2A8C9", "#D883A2", "#D883AC", "#B55E7B"], //pink
     ["#FFD1D0", "#F7B7B7", "#DC8683", "#BE5151", "#B55E5E"], //red
     ["#FFD4AB", "#FABD7C", "#FFAF72", "#FFA75A", "#FF9F4B"], //orange
-    
   ];
   
   // Get URL parameters on client-side
@@ -39,10 +41,22 @@ function MatchView() {
         paramsObj[key] = value;
       }
       setUrlParams(paramsObj);
+      
+      // If no parameters are provided, set data to empty object to show the form
+      if (Object.keys(paramsObj).length === 0) {
+        setData({});
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    // Only fetch data if we have URL parameters
+    if (Object.keys(urlParams).length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    
     // Get the current user's team
     let currentUserTeam = null;
     try {
@@ -81,18 +95,24 @@ function MatchView() {
           }));
           throw new Error('Authentication required');
         }
+        if (!resp.ok) {
+          throw new Error(`HTTP error! status: ${resp.status}`);
+        }
         return resp.json();
       })
       .then(data => {
           console.log("Fetched Data from API:", data);  // <-- Check what the API returns
           setAllData(data);
+          setLoading(false);
       })
       .catch(error => {
         if (error.message !== 'Authentication required') {
           console.error("Error fetching alliance data:", error);
+          setError(error.message);
         }
+        setLoading(false);
       });
-  }, []);
+  }, [urlParams]);
 
   useEffect(() => {
     if (Object.keys(urlParams).length > 0 && allData) {
@@ -107,6 +127,7 @@ function MatchView() {
           urlParams.team6
         ];
         setData({team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6]});
+        setLoading(false);
       } else {
         // Get the current user's team
         let currentUserTeam = null;
@@ -132,7 +153,6 @@ function MatchView() {
           console.error('Error getting user team:', e);
         }
         
-        //search by match
         fetch('/api/get-teams-of-match?match=' + urlParams.match, {
           headers: {
             'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
@@ -147,11 +167,16 @@ function MatchView() {
             }));
             throw new Error('Authentication required');
           }
+          if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+          }
           return resp.json();
         })
         .then(data => {
           if (data.message) {
             console.log(data.message);
+            setError(data.message);
+            setLoading(false);
           } else {
             //update url with teams
             const newParams = new URLSearchParams();
@@ -189,48 +214,37 @@ function MatchView() {
               team5: allData[data.team2], 
               team6: allData[data.team3]
             });
+            setLoading(false);
           }
         })
         .catch(error => {
           if (error.message !== 'Authentication required') {
             console.error("Error fetching teams of match:", error);
+            setError(error.message);
           }
+          setLoading(false);
         });
       }
     }
   }, [urlParams, allData]);
 
-  //until url loads show loading
-  if (!data || Object.keys(urlParams).length === 0) {
+  //show loading state
+  if (loading) {
     return <div>
       <h1>Loading...</h1>
     </div>
   }
 
-  const defaultTeam = {
-    team: "N/A",
-    teamName: "No Data",
-    auto: null,
-    tele: null,
-    end: null,
-    avgPieces: {
-      L1: null,
-      L2: null,
-      L3: null,
-      L4: null,
-      net: null, 
-      processor: null,
-      HP: null,
-    },
-    leave: null,
-    autoCoral: null,
-    removedAlgae: null,
-    endgame: { none: 100, park: 0, shallow: 0, deep: 0, fail: 0},
-    qualitative: { coralspeed: null, processorspeed: null, netspeed: null, algaeremovalspeed: null, climbspeed: null, maneuverability: null, defenseplayed: null, defenseevasion: null, aggression: null, cagehazard: null }
-  };
+  //show error state
+  if (error) {
+    return <div>
+      <h1>Error: {error}</h1>
+      <p>Please try again or contact support if the problem persists.</p>
+    </div>
+  }
 
-  //show form if systems are not a go
-  if (urlParams.go != "go") {
+  //show form if no parameters or data not loaded yet
+  if (!data || Object.keys(urlParams).length === 0) {
     return (
       <div>
         <form className={styles.teamForm}>
@@ -280,6 +294,28 @@ function MatchView() {
       </div>
     );
   }
+
+  const defaultTeam = {
+    team: "N/A",
+    teamName: "No Data",
+    auto: null,
+    tele: null,
+    end: null,
+    avgPieces: {
+      L1: null,
+      L2: null,
+      L3: null,
+      L4: null,
+      net: null, 
+      processor: null,
+      HP: null,
+    },
+    leave: null,
+    autoCoral: null,
+    removedAlgae: null,
+    endgame: { none: 100, park: 0, shallow: 0, deep: 0, fail: 0},
+    qualitative: { coralspeed: null, processorspeed: null, netspeed: null, algaeremovalspeed: null, climbspeed: null, maneuverability: null, defenseplayed: null, defenseevasion: null, aggression: null, cagehazard: null }
+  };
 
   function AllianceButtons({t1, t2, t3, colors}) {
     // Check if we're viewing a match that was loaded by match number
