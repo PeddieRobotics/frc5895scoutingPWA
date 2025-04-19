@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 
 // Verify we're running on the server
 const isServer = typeof window === 'undefined';
-
-// Create a database connection pool with the same configuration as your other routes
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false,
-  // Add schema specification
-  schema: 'public'
-});
 
 // Add connection error logging
 pool.on('error', (err) => {
@@ -39,9 +29,9 @@ export async function GET(request) {
       : 'not available',
     pgPoolConfig: {
       ssl: process.env.NODE_ENV === 'production' ? 'configured with rejectUnauthorized:false' : 'disabled',
-      max: pool.options.max,
-      idleTimeoutMillis: pool.options.idleTimeoutMillis,
-      schema: pool.options.schema || 'default'
+      max: pool.options?.max,
+      idleTimeoutMillis: pool.options?.idleTimeoutMillis,
+      schema: pool.options?.schema || 'default'
     },
     teamAuthTest: null
   };

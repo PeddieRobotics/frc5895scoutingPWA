@@ -18,7 +18,7 @@ const nextConfig = {
       config.resolve.alias = {
         ...config.resolve.alias,
         bcrypt: path.resolve(__dirname, './src/mocks/bcrypt.js'),
-        pg: path.resolve(__dirname, './src/mocks/pg.js'),
+        '@neondatabase/serverless': path.resolve(__dirname, './src/mocks/pg.js'),
       };
       
       // This ensures that Next.js API routes still use the real modules, not the mocks
@@ -44,7 +44,8 @@ const nextConfig = {
       crypto: false,
       stream: false,
       child_process: false,
-      'pg-native': false
+      'pg-native': false,
+      ws: false // Add this for WebSocket support
     };
     
     return config;
