@@ -35,35 +35,44 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
   const defaultOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
     path: '/',
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
     httpOnly: true
   };
   
   const cookieOptions = { ...defaultOptions, ...options };
   
+  // Ensure Secure is always set for production or preview environments
+  const isSecureEnv = process.env.NODE_ENV === 'production' || 
+                      process.env.VERCEL_ENV === 'preview' || 
+                      process.env.FORCE_SECURE === 'true';
+  
   // First: Standard cookie with no SameSite attribute for maximum compatibility
   // This is especially important for iOS Safari
   response.cookies.set(name, value, {
     ...cookieOptions,
-    sameSite: undefined // Explicitly unset SameSite
+    sameSite: undefined, // Explicitly unset SameSite
+    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
   });
   
   // Second: Set with SameSite=Lax for standard browsers
   response.cookies.set(`${name}_lax`, value, {
     ...cookieOptions,
-    sameSite: 'lax'
+    sameSite: 'lax',
+    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
   });
   
-  // Third: Set with SameSite=None+Secure for cross-origin contexts
-  if (process.env.NODE_ENV === 'production' || process.env.FORCE_SECURE === 'true') {
+  // Third: Set with SameSite=None+Secure for cross-origin contexts (preview deployments)
+  // Always use this approach in production or preview environments
+  if (isSecureEnv) {
     response.cookies.set(`${name}_secure`, value, {
       ...cookieOptions,
       sameSite: 'none',
-      secure: true
+      secure: true,
+      expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
     });
   }
   
-  console.log(`Setting cookies for ${name} with multiple compatibility approaches`);
+  console.log(`Setting cookies for ${name} with multiple compatibility approaches (secure env: ${isSecureEnv ? 'yes' : 'no'})`);
   
   return response;
 }

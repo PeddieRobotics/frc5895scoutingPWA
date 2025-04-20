@@ -165,13 +165,56 @@ export async function GET(request) {
         
         console.log(`Token validation successful for team: ${session.team_name}`);
         
-        return NextResponse.json({ 
+        // Create response with success message
+        const response = NextResponse.json({ 
           authenticated: true,
           message: 'Authentication successful',
           scoutTeam: session.team_name
         }, { 
           headers
         });
+        
+        // Refresh the cookie with each successful validation to extend session
+        const cookieValue = JSON.stringify({
+          id: tokenData.id,
+          team: session.team_name,
+          v: session.token_version
+        });
+        
+        // Set cookie with various attributes for best cross-browser compatibility
+        const expires = new Date();
+        expires.setDate(expires.getDate() + 30); // 30 days
+        
+        // Standard cookie
+        response.cookies.set('auth_token', token, {
+          expires: expires,
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
+          sameSite: 'lax'
+        });
+        
+        // Also set session cookie
+        response.cookies.set('auth_session', cookieValue, {
+          expires: expires,
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
+          sameSite: 'lax'
+        });
+        
+        // For cross-site contexts
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview') {
+          response.cookies.set('auth_session_secure', cookieValue, {
+            expires: expires,
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none'
+          });
+        }
+        
+        return response;
       } finally {
         client.release();
       }

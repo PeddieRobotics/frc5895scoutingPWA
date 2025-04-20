@@ -153,19 +153,33 @@ export default function Home() {
     // Store in sessionStorage for session persistence
     sessionStorage.setItem('auth_credentials', credentials);
     
-    // Set as normal cookie with path=/
-    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000`;
+    // Determine if we're in a secure context (HTTPS or localhost)
+    const isSecureContext = window.location.protocol === 'https:' || 
+                           window.location.hostname === 'localhost' ||
+                           window.location.hostname.includes('.vercel.app');
+    
+    // Create a JSON string with auth data to be more explicit
+    const authData = JSON.stringify({
+      id: credentials,
+      timestamp: Date.now(),
+      version: 2 // Incrementing version to avoid conflicts with older formats
+    });
+    
+    // Encode for safe cookie storage
+    const encodedAuthData = encodeURIComponent(authData);
+    
+    // Set cookie with path=/ (standard cookie, works in most browsers)
+    document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000`;
     
     // Set as SameSite=Lax cookie (best for cross-page navigation and localhost)
-    document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=Lax`;
+    document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=Lax`;
     
-    // Set as SameSite=None+Secure cookie (needed for production HTTPS)
-    try {
-      if (window.location.protocol === 'https:') {
-        document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
-      }
-    } catch (e) {
-      console.error('Error setting secure cookie:', e);
+    // Set as SameSite=None+Secure cookie (needed for production/preview HTTPS)
+    if (isSecureContext) {
+      document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=None; Secure`;
+      console.log("Set secure cookie for HTTPS/preview environment");
+    } else {
+      console.log("Not setting Secure cookie as we're not in a secure context");
     }
     
     // Dispatch a custom event to notify other pages that auth has been updated
@@ -1154,6 +1168,85 @@ export default function Home() {
       }
     }
   }, [handleAuthRequired, handleRedirectTarget]);
+
+  // Add cookie synchronization effect
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Function to synchronize auth state from cookies to storage
+    const syncAuthFromCookies = () => {
+      try {
+        // Check for auth cookies
+        const cookies = document.cookie.split(';');
+        let authCredentialsCookie = null;
+        let authTokenCookie = null;
+        
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'auth_credentials' && value) {
+            authCredentialsCookie = decodeURIComponent(value);
+          } else if (name === 'auth_token' && value) {
+            authTokenCookie = decodeURIComponent(value);
+          }
+        }
+        
+        // If we have auth cookies but not in storage, restore them
+        if (authCredentialsCookie && !localStorage.getItem('auth_credentials')) {
+          console.log("Found auth_credentials in cookies but not in storage, restoring");
+          localStorage.setItem('auth_credentials', authCredentialsCookie);
+          sessionStorage.setItem('auth_credentials', authCredentialsCookie);
+          setAuthCredentials(authCredentialsCookie);
+        }
+        
+        // If we have auth token but not in localStorage, restore it
+        if (authTokenCookie && !localStorage.getItem('auth_token')) {
+          console.log("Found auth_token in cookies but not in storage, restoring");
+          localStorage.setItem('auth_token', authTokenCookie);
+          
+          // Try to parse token expiry from cookie if available
+          try {
+            const tokenData = JSON.parse(authTokenCookie);
+            if (tokenData && tokenData.exp) {
+              localStorage.setItem('auth_token_expiry', tokenData.exp);
+            }
+          } catch (e) {
+            console.log("Could not parse auth token JSON");
+          }
+        }
+        
+        // If we have credentials in storage but not in cookies, restore them to cookies
+        const credentialsInStorage = localStorage.getItem('auth_credentials') || 
+                                    sessionStorage.getItem('auth_credentials');
+        
+        if (credentialsInStorage && !authCredentialsCookie) {
+          console.log("Found credentials in storage but not in cookies, restoring");
+          setAuthCookies(credentialsInStorage);
+        }
+      } catch (e) {
+        console.error("Error synchronizing auth state:", e);
+      }
+    };
+    
+    // Run synchronization on load
+    syncAuthFromCookies();
+    
+    // Set up synchronization to run periodically
+    const syncInterval = setInterval(syncAuthFromCookies, 10000); // Check every 10 seconds
+    
+    // Also run synchronization on visibility change (when tab is focused)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncAuthFromCookies();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(syncInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>

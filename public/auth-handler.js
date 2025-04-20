@@ -273,7 +273,8 @@
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache'
         },
-        cache: 'no-store'
+        cache: 'no-store',
+        credentials: 'include' // Ensure cookies are sent
       });
       
       // Update token version if provided in response headers
@@ -294,17 +295,36 @@
           sessionStorage.setItem(AUTH_VERSION_KEY, data.tokenVersion);
         }
         
+        // Ensure client-side storage is updated with any cookies from server
+        try {
+          // Parse cookie to extract auth_token if it exists
+          document.cookie.split(';').forEach(cookie => {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'auth_token' && value) {
+              console.log('Auth Handler: Found auth_token in cookies, updating localStorage');
+              localStorage.setItem(AUTH_TOKEN_KEY, decodeURIComponent(value));
+            }
+          });
+        } catch (e) {
+          console.error('Auth Handler: Error syncing cookies with localStorage:', e);
+        }
+        
         return data.valid === true;
       } else {
         console.log('Auth Handler: Server rejected token');
-        if (forceLogout) {
+        if (forceLogout && response.status === 401) {
           logout();
+        } else if (response.status >= 500) {
+          // Don't logout on server errors
+          console.log('Auth Handler: Server error during validation, assuming token is valid');
+          return true;
         }
         return false;
       }
     } catch (error) {
       console.error('Auth Handler: Validation error', error);
-      return false;
+      // Don't logout on network errors - assume token is valid for now
+      return true;
     } finally {
       // Always clear the lock and timeout
       clearTimeout(validationLockTimeout);
@@ -409,16 +429,25 @@
   // Periodic validation to ensure token is still valid
   function startValidationInterval() {
     // Delay the first validation to prevent immediate loops after page load
+    // Use a longer initial delay to ensure the page has fully loaded
     console.log(`Auth Handler: Scheduling initial validation in ${INITIAL_VALIDATION_DELAY/1000} seconds`);
     setTimeout(() => {
-      validateToken();
+      // Only validate token if user appears to be logged in
+      if (getStoredToken()) {
+        validateToken(false);
+      } else {
+        console.log('Auth Handler: Skipping validation as no token exists');
+      }
       
       // Then set up periodic validation at a longer interval
       console.log(`Auth Handler: Setting up validation interval every ${VALIDATION_INTERVAL/60000} minutes`);
       setInterval(() => {
-        validateToken();
+        // Only validate if a token exists
+        if (getStoredToken()) {
+          validateToken(false);
+        }
       }, VALIDATION_INTERVAL);
-    }, INITIAL_VALIDATION_DELAY);
+    }, INITIAL_VALIDATION_DELAY * 2); // Double the delay to ensure page is fully loaded
   }
   
   // Check for malformed or legacy auth cookies and clear them

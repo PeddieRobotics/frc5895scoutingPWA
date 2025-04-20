@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import crypto from 'crypto';
 
 // Create a database connection pool
 const pool = new Pool({
@@ -15,6 +16,27 @@ const pool = new Pool({
 pool.on('error', (err) => {
   console.error('Unexpected database error:', err);
 });
+
+/**
+ * Generate a dynamic build ID based on environment variables
+ * This helps ensure that preview deployments have consistent build IDs
+ * @returns {string} A unique build ID for this deployment
+ */
+export function getDynamicBuildId() {
+  // Start with environment-specific values
+  const envValues = [
+    process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+    process.env.VERCEL_GIT_COMMIT_SHA || '',
+    process.env.VERCEL_GIT_COMMIT_MESSAGE || '',
+    process.env.VERCEL_URL || ''
+  ];
+  
+  // Create a hash of these values
+  const hash = crypto.createHash('md5').update(envValues.join('-')).digest('hex');
+  
+  // Return a prefixed hash to make it identifiable
+  return `build_${hash.substring(0, 8)}`;
+}
 
 /**
  * Validates the auth token for protected pages/routes

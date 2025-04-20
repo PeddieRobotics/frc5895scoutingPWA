@@ -7,11 +7,37 @@ const withPWA = require('next-pwa')({
 });
 
 const path = require('path');
+const crypto = require('crypto');
+
+/**
+ * Generate a dynamic build ID based on environment variables
+ * This helps ensure that preview deployments have consistent build IDs
+ */
+function generateDynamicBuildId() {
+  // Start with environment-specific values
+  const envValues = [
+    process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+    process.env.VERCEL_GIT_COMMIT_SHA || '',
+    process.env.VERCEL_GIT_COMMIT_MESSAGE || '',
+    process.env.VERCEL_URL || '',
+    process.env.VERCEL_GIT_REPO_SLUG || '',
+    // Add a timestamp for local development to ensure rebuilds get different IDs
+    ...(process.env.NODE_ENV === 'development' ? [Date.now().toString()] : [])
+  ];
+  
+  // Create a hash of these values
+  const hash = crypto.createHash('md5').update(envValues.join('-')).digest('hex');
+  
+  // Return a prefixed hash to make it identifiable
+  const buildId = `scout-app-${hash.substring(0, 8)}`;
+  console.log(`Generated dynamic build ID: ${buildId}`);
+  return buildId;
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  generateBuildId: () => 'scout-app-v1',
+  generateBuildId: generateDynamicBuildId,
   webpack: (config, { isServer }) => {
     // Use mock modules for client-side only, but NOT for API routes
     if (!isServer) {

@@ -33,8 +33,39 @@ const ADMIN_COOKIE_ROUTES = [
   '/api/admin/teams'
 ];
 
+// Detect environment type
+function getEnvironmentType(request) {
+  const hostname = request.headers.get('host') || '';
+  
+  // Check for Vercel preview deployments
+  const isVercelPreview = 
+    hostname.includes('.vercel.app') || 
+    process.env.VERCEL_ENV === 'preview';
+  
+  // Check for production
+  const isProduction = 
+    process.env.NODE_ENV === 'production' && 
+    !isVercelPreview;
+  
+  // Check for development
+  const isDevelopment = 
+    process.env.NODE_ENV === 'development' || 
+    hostname === 'localhost' || 
+    hostname.includes('127.0.0.1');
+  
+  return {
+    isVercelPreview,
+    isProduction,
+    isDevelopment
+  };
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const { isVercelPreview, isProduction, isDevelopment } = getEnvironmentType(request);
+  
+  // Log environment type for debugging
+  console.log(`[Middleware] Environment: preview=${isVercelPreview}, prod=${isProduction}, dev=${isDevelopment}`);
   
   // Create headers for cache prevention
   const cacheHeaders = {
@@ -75,10 +106,11 @@ export async function middleware(request) {
   if (ADMIN_COOKIE_ROUTES.includes(pathname)) {
     console.log(`[Middleware] Processing cookie-based API route: ${pathname}`);
     
-    // Check for valid session cookies
+    // Check for valid session cookies - try multiple cookie names for compatibility
     const authCookie = request.cookies.get('auth_session');
     const authCookieLax = request.cookies.get('auth_session_lax');
     const authCookieSecure = request.cookies.get('auth_session_secure');
+    const authCredentials = request.cookies.get('auth_credentials');
     
     // Try to extract token data from cookies
     let tokenData = null;
@@ -86,9 +118,13 @@ export async function middleware(request) {
     let teamName = null;
     
     try {
-      if (authCookie?.value || authCookieLax?.value || authCookieSecure?.value) {
-        const tokenStr = authCookie?.value || authCookieLax?.value || authCookieSecure?.value;
-        
+      // Check all possible auth cookies
+      const tokenStr = authCookie?.value || 
+                      authCookieLax?.value || 
+                      authCookieSecure?.value || 
+                      authCredentials?.value;
+      
+      if (tokenStr) {
         // URL decode the cookie value first (handles cases where JSON is URL encoded)
         let decodedTokenStr = tokenStr;
         try {
@@ -101,28 +137,32 @@ export async function middleware(request) {
         // First try to parse as JSON
         try {
           tokenData = JSON.parse(decodedTokenStr);
-          console.log(`[Middleware] Found JSON token data in cookies for ${pathname}: team=${tokenData?.team}, sessionId=${tokenData?.id ? tokenData.id.substring(0,8) : 'unknown'}`);
+          console.log(`[Middleware] Found JSON token data in cookies for ${pathname}: team=${tokenData?.team}, sessionId=${tokenData?.id ? tokenData.id.substring(0,8) : 'unknown'}, version=${tokenData?.version || 'none'}`);
           sessionId = tokenData.id;
           teamName = tokenData.team;
         } catch (e) {
-          // If not JSON, treat as plain session ID
-          console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
-          sessionId = decodedTokenStr;
+          // If not JSON, treat as plain session ID or credentials
+          console.log(`[Middleware] Cookie is not JSON, treating as plain credential: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
           
-          // We can't directly look up the team name in Edge Runtime
-          // Set a special header to indicate we need to look up the team name
-          const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('X-Auth-Session', sessionId);
-          requestHeaders.set('X-Auth-Team-Lookup-Needed', 'true');
-          
-          console.log(`[Middleware] Added auth headers with pending team lookup for ${pathname}`);
-          
-          return NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-            headers: cacheHeaders
-          });
+          // For auth_credentials cookie, it contains the basic auth credentials
+          if (decodedTokenStr) {
+            sessionId = decodedTokenStr;
+            
+            // We can't directly get the team name from just a session ID in middleware
+            // Set a special header to indicate we need to look it up in the route handler
+            const requestHeaders = new Headers(request.headers);
+            requestHeaders.set('X-Auth-Session', sessionId);
+            requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+            
+            console.log(`[Middleware] Added session headers for ${pathname}`);
+            
+            return NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+              headers: cacheHeaders
+            });
+          }
         }
         
         if (sessionId && teamName) {
@@ -131,6 +171,7 @@ export async function middleware(request) {
           requestHeaders.set('X-Auth-Validated', 'true');
           requestHeaders.set('X-Auth-Team', teamName);
           requestHeaders.set('X-Auth-Session', sessionId);
+          requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
           
           console.log(`[Middleware] Added auth headers for ${pathname}`);
           
@@ -149,13 +190,16 @@ export async function middleware(request) {
     }
     
     // If we get here, there were no valid auth cookies
-    console.log(`[Middleware] No valid auth data found for ${pathname}, blocking access`);
-    return new NextResponse(JSON.stringify({ error: 'Authentication required' }), {
-      status: 401,
-      headers: { 
-        'Content-Type': 'application/json',
-        ...cacheHeaders
-      }
+    console.log(`[Middleware] No valid auth data found for ${pathname}, allowing access anyway for API routes`);
+    
+    // For API routes, we'll let the route handler make the final decision
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+      headers: cacheHeaders
     });
   }
 
@@ -295,32 +339,40 @@ export async function middleware(request) {
           if (!validationResponse.ok) {
             console.log(`[Middleware] API token validation HTTP error: ${validationResponse.status}`);
             
-            // If the validation service is unavailable, temporarily proceed with the request
-            // This allows offline or limited connectivity operation
-            // Only for 5xx errors (server errors)
-            if (validationResponse.status >= 500 && validationResponse.status < 600) {
-              console.log(`[Middleware] Server error during validation, proceeding with limited trust`);
+            // For server errors, allow the request through
+            if (validationResponse.status >= 500) {
+              console.log('[Middleware] Server error during validation, allowing request');
               const requestHeaders = new Headers(request.headers);
-              requestHeaders.set('X-Auth-Validation-Error', 'true');
-              requestHeaders.set('X-Auth-Team', tokenData.team);
-              requestHeaders.set('X-Auth-Session', tokenData.id);
-              
+              requestHeaders.set('X-Auth-Warning', 'validation-server-error');
               return NextResponse.next({
                 request: {
                   headers: requestHeaders,
-                },
-                headers: cacheHeaders
+                }
               });
             }
             
-            // Return 401
-            return new NextResponse(JSON.stringify({ error: 'Authentication failed' }), {
-              status: 401,
-              headers: { 
-                'Content-Type': 'application/json',
-                ...cacheHeaders
-              }
-            });
+            // Create the URL with error params
+            const url = new URL('/', request.url);
+            url.searchParams.set('authRequired', 'true');
+            url.searchParams.set('redirect', pathname);
+            url.searchParams.set('error', 'Your session has expired or been invalidated');
+            
+            // Add timestamp to prevent redirect loops
+            url.searchParams.set('t', Date.now().toString());
+            
+            // Increment redirect count to prevent loops
+            url.searchParams.set('rc', (redirectCount + 1).toString());
+            
+            // Create response with the URL and delete cookies
+            const response = NextResponse.redirect(url);
+            response.cookies.delete('auth_session');
+            response.cookies.delete('auth_session_lax');
+            response.cookies.delete('auth_session_secure');
+            
+            // Add redirect count header
+            response.headers.set('x-redirect-count', (redirectCount + 1).toString());
+            
+            return response;
           }
           
           const validationResult = await validationResponse.json();
@@ -477,6 +529,18 @@ export async function middleware(request) {
         
         if (!validationResponse.ok) {
           console.log(`[Middleware] Token validation HTTP error: ${validationResponse.status}`);
+          
+          // For server errors, allow the request through
+          if (validationResponse.status >= 500) {
+            console.log('[Middleware] Server error during validation, allowing request');
+            const requestHeaders = new Headers(request.headers);
+            requestHeaders.set('X-Auth-Warning', 'validation-server-error');
+            return NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              }
+            });
+          }
           
           // Create the URL with error params
           const url = new URL('/', request.url);

@@ -1,3 +1,183 @@
+/**
+ * This script runs on every page load to help with authentication issues
+ * Particularly for preview deployments and cross-domain scenarios
+ */
+(function() {
+  console.log('[Auth Fix] Initializing v2.1');
+  
+  // Constants for storage keys
+  const AUTH_CREDENTIAL_KEY = 'auth_credentials';
+  const AUTH_TOKEN_KEY = 'auth_token';
+  
+  function isPreviewEnvironment() {
+    return window.location.hostname.includes('vercel') || 
+           window.location.hostname.includes('preview');
+  }
+  
+  // Function to get auth from storage
+  function getAuthFromStorage() {
+    return localStorage.getItem(AUTH_CREDENTIAL_KEY) || 
+           sessionStorage.getItem(AUTH_CREDENTIAL_KEY) ||
+           localStorage.getItem(AUTH_TOKEN_KEY);
+  }
+  
+  // Function to check if auth cookies exist
+  function hasCookiesSet() {
+    const cookies = document.cookie.split(';');
+    
+    for (const cookie of cookies) {
+      const [name] = cookie.trim().split('=');
+      if (name === 'auth_credentials' || 
+          name === 'auth_token' || 
+          name === 'auth_session' || 
+          name === 'auth_session_lax' || 
+          name === 'auth_session_secure') {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  function ensureAuthCookies() {
+    // Check if we have credentials in storage but not in cookies
+    const authFromStorage = getAuthFromStorage();
+    const hasCookie = hasCookiesSet();
+    
+    // If we have auth in storage but not cookies, try to restore it
+    if (authFromStorage && !hasCookie) {
+      console.log('[Auth Fix] Detected auth in storage but not in cookies, restoring...');
+      
+      try {
+        // Create a JSON string with auth data
+        const authData = JSON.stringify({
+          id: authFromStorage,
+          timestamp: Date.now(),
+          version: 2 // Version 2 of our auth format
+        });
+        
+        // Encode for safe cookie storage
+        const encodedAuthData = encodeURIComponent(authData);
+        
+        // Set cookies with different approaches for compatibility
+        
+        // Default cookie (works in most browsers)
+        document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000`;
+        
+        // SameSite=Lax cookie (works for cross-page navigation)
+        document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=Lax`;
+        
+        // For HTTPS/preview contexts, also set Secure+SameSite=None
+        if (window.location.protocol === 'https:' || isPreviewEnvironment()) {
+          document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=None; Secure`;
+          console.log('[Auth Fix] Set Secure cookie for HTTPS/preview environment');
+        }
+        
+        console.log('[Auth Fix] Restored auth cookies from storage');
+        
+        // Try to validate and refresh the session
+        refreshSession(authFromStorage);
+      } catch (e) {
+        console.error('[Auth Fix] Error restoring auth cookies:', e);
+      }
+    } else if (!authFromStorage && hasCookie) {
+      // We have cookies but no local storage - restore from cookies
+      extractAuthFromCookies();
+    }
+  }
+  
+  // Extract auth data from cookies to localStorage
+  function extractAuthFromCookies() {
+    try {
+      const cookies = document.cookie.split(';');
+      
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        
+        if (name === 'auth_credentials' && value) {
+          const decodedValue = decodeURIComponent(value);
+          console.log('[Auth Fix] Restoring auth from cookies to localStorage');
+          localStorage.setItem(AUTH_CREDENTIAL_KEY, decodedValue);
+          sessionStorage.setItem(AUTH_CREDENTIAL_KEY, decodedValue);
+          return true;
+        } else if (name === 'auth_token' && value) {
+          const decodedValue = decodeURIComponent(value);
+          console.log('[Auth Fix] Restoring auth token from cookies to localStorage');
+          localStorage.setItem(AUTH_TOKEN_KEY, decodedValue);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.error('[Auth Fix] Error extracting auth from cookies:', e);
+    }
+    
+    return false;
+  }
+  
+  // Validate and refresh the session if needed
+  async function refreshSession(authData) {
+    try {
+      // Only do this in preview or production environments
+      if (window.location.hostname === 'localhost') {
+        console.log('[Auth Fix] Skipping session refresh on localhost');
+        return;
+      }
+      
+      console.log('[Auth Fix] Attempting to refresh session');
+      
+      // Add cache-busting parameters
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2);
+      
+      const response = await fetch(`/api/auth/validate?t=${timestamp}&r=${randomStr}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${authData}`,
+          'X-Client-Refresh': 'true',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Pragma': 'no-cache'
+        },
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        console.log('[Auth Fix] Session refreshed successfully');
+      } else {
+        console.log('[Auth Fix] Session refresh failed, status:', response.status);
+      }
+    } catch (e) {
+      console.error('[Auth Fix] Error refreshing session:', e);
+    }
+  }
+  
+  // Run auth fix on page load and periodically
+  function initialize() {
+    // First run immediately
+    ensureAuthCookies();
+    
+    // Then check periodically
+    setInterval(ensureAuthCookies, 10000);
+    
+    // Also check when tab becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        ensureAuthCookies();
+      }
+    });
+    
+    // Check when network status changes
+    window.addEventListener('online', ensureAuthCookies);
+  }
+  
+  // Initialize when DOM is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+})();
+
 // Auth cookie fix script
 // This can be loaded via script tag or run in the console
 // It forcefully updates all auth cookies and localStorage items to use token version 2
