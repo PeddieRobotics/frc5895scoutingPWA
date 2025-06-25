@@ -21,8 +21,8 @@ async function verifyAdminAuth(request) {
       return false;
     }
     
-    // cookies() is not a promise, so don't use await
-    const cookieStore = cookies();
+    // cookies() is async in Next.js 15
+    const cookieStore = await cookies();
     
     // Check for admin_auth cookie first
     const adminAuthCookie = cookieStore.get('admin_auth');

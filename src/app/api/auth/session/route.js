@@ -46,6 +46,13 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
                       process.env.VERCEL_ENV === 'preview' || 
                       process.env.FORCE_SECURE === 'true';
   
+  // Primary cookie without suffix (helps some browsers/extensions)
+  response.cookies.set(`${name}`, value, {
+    ...cookieOptions,
+    sameSite: 'lax',
+    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
+  });
+
   // 1) SameSite=Lax works for normal same-origin navigation and API calls.
   response.cookies.set(`${name}_lax`, value, {
     ...cookieOptions,
