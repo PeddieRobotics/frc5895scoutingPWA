@@ -46,23 +46,15 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
                       process.env.VERCEL_ENV === 'preview' || 
                       process.env.FORCE_SECURE === 'true';
   
-  // First: Standard cookie with no SameSite attribute for maximum compatibility
-  // This is especially important for iOS Safari
-  response.cookies.set(name, value, {
-    ...cookieOptions,
-    sameSite: undefined, // Explicitly unset SameSite
-    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
-  });
-  
-  // Second: Set with SameSite=Lax for standard browsers
+  // 1) SameSite=Lax works for normal same-origin navigation and API calls.
   response.cookies.set(`${name}_lax`, value, {
     ...cookieOptions,
     sameSite: 'lax',
     expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
   });
-  
-  // Third: Set with SameSite=None+Secure for cross-origin contexts (preview deployments)
-  // Always use this approach in production or preview environments
+
+  // 2) SameSite=None + Secure is required when the site is embedded or served from a
+  //    different origin (e.g. Vercel preview on *.vercel.app).
   if (isSecureEnv) {
     response.cookies.set(`${name}_secure`, value, {
       ...cookieOptions,
@@ -72,7 +64,7 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
     });
   }
   
-  console.log(`Setting cookies for ${name} with multiple compatibility approaches (secure env: ${isSecureEnv ? 'yes' : 'no'})`);
+  console.log(`setCrossPlatformCookie → wrote ${name}_lax and${isSecureEnv ? ` ${name}_secure` : ''}`);
   
   return response;
 }

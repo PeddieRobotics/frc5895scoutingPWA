@@ -77,7 +77,10 @@ export async function middleware(request) {
   console.log(`[Middleware] Processing request for ${pathname}`);
   
   // Prevent redirect loops
-  const redirectCount = parseInt(request.headers.get('x-redirect-count') || '0', 10);
+  // Use the "rc" (redirect count) search-parameter. Unlike custom headers, query parameters
+  // survive a browser-initiated redirect, so the counter works consistently in both
+  // development (http) and production/preview (https) environments.
+  const redirectCount = parseInt(request.nextUrl.searchParams.get('rc') || '0', 10);
   if (redirectCount > 3) {
     console.log(`[Middleware] Detected potential redirect loop for ${pathname}, redirecting to reset-auth`);
     return NextResponse.redirect(new URL('/reset-auth.html', request.url));
