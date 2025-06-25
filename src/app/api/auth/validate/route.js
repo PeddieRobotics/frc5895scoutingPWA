@@ -256,6 +256,16 @@ export async function GET(request) {
       // Always check team authentication from database - no caching
       const client = await pool.connect();
       try {
+        console.log(`Ensuring team_auth table exists before querying`);
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS team_auth (
+            team_name TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            last_login TIMESTAMP,
+            token_version INTEGER DEFAULT 1
+          )
+        `);
+
         console.log(`Checking database for team: ${username}`);
         const result = await client.query(
           'SELECT password_hash FROM team_auth WHERE team_name = $1',
@@ -368,6 +378,16 @@ export async function POST(request) {
     // Authenticate with database
     const client = await pool.connect();
     try {
+      // Ensure table exists
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS team_auth (
+          team_name TEXT PRIMARY KEY,
+          password_hash TEXT NOT NULL,
+          last_login TIMESTAMP,
+          token_version INTEGER DEFAULT 1
+        )
+      `);
+
       const result = await client.query(
         'SELECT password_hash FROM team_auth WHERE team_name = $1',
         [username]

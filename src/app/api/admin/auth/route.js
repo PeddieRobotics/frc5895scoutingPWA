@@ -38,8 +38,8 @@ export async function POST(request) {
     // Create the admin auth token
     const adminAuth = Buffer.from(`admin:${adminPassword}`).toString('base64');
     
-    // Get cookie store
-    const cookieStore = cookies();
+    // Get cookie store (await required in Next.js 15)
+    const cookieStore = await cookies();
     
     // Set the cookie directly
     cookieStore.set('admin_auth', adminAuth, {

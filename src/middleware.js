@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { nanoid } from 'nanoid';
 
 // PUBLIC PATHS - no auth needed
 const PUBLIC_PATHS = [

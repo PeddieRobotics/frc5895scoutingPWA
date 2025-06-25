@@ -124,6 +124,16 @@ export async function POST(request) {
     // Connect to database
     const client = await pool.connect();
     try {
+      // Ensure team_auth table exists
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS team_auth (
+          team_name TEXT PRIMARY KEY,
+          password_hash TEXT NOT NULL,
+          last_login TIMESTAMP,
+          token_version INTEGER DEFAULT 1
+        )
+      `);
+
       // Verify credentials against team_auth table
       const authResult = await client.query(
         'SELECT password_hash FROM team_auth WHERE team_name = $1',
