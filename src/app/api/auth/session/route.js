@@ -31,50 +31,56 @@ function getClientIdentifier(request) {
 }
 
 // Helper to set a secure cross-platform cookie
-function setCrossPlatformCookie(response, name, value, options = {}) {
-  const defaultOptions = {
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-    path: '/',
-    secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
-    httpOnly: true
-  };
-  
-  const cookieOptions = { ...defaultOptions, ...options };
-  
-  // Ensure Secure is always set for production or preview environments
+function setCrossPlatformCookie(response, name, value, options = {}, request = null) {
   const isSecureEnv = process.env.NODE_ENV === 'production' || 
                       process.env.VERCEL_ENV === 'preview' || 
                       process.env.FORCE_SECURE === 'true';
   
+  const defaultOptions = {
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    path: '/',
+    secure: isSecureEnv,
+    httpOnly: true,
+    sameSite: isSecureEnv ? 'none' : 'lax' // Use 'none' for secure environments, 'lax' for development
+  };
+  
+  // In production, log the host for debugging
+  if (request && isSecureEnv) {
+    const host = request.headers.get('host');
+    console.log(`Production cookie setting for host: ${host}`);
+  }
+  
+  const cookieOptions = { ...defaultOptions, ...options };
+  const expires = options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 days default
+  
   // Encode the value consistently - use single encoding to avoid double-encoding issues
   const encodedValue = encodeURIComponent(value);
 
-  // Primary cookie without suffix (helps some browsers/extensions)
-  response.cookies.set(`${name}`, encodedValue, {
+  // Set primary cookie
+  response.cookies.set(name, encodedValue, {
     ...cookieOptions,
-    sameSite: 'lax',
-    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
+    expires
   });
 
-  // 1) SameSite=Lax works for normal same-origin navigation and API calls.
+  // For compatibility, also set _lax variant
   response.cookies.set(`${name}_lax`, encodedValue, {
     ...cookieOptions,
     sameSite: 'lax',
-    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
+    expires
   });
 
-  // 2) SameSite=None + Secure is required when the site is embedded or served from a
-  //    different origin (e.g. Vercel preview on *.vercel.app).
+  // For secure environments, also set _secure variant with SameSite=None
   if (isSecureEnv) {
     response.cookies.set(`${name}_secure`, encodedValue, {
       ...cookieOptions,
       sameSite: 'none',
       secure: true,
-      expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
+      expires
     });
   }
   
   console.log(`setCrossPlatformCookie → wrote ${name} (primary), ${name}_lax${isSecureEnv ? `, and ${name}_secure` : ''}`);
+  console.log(`Cookie options used:`, { ...cookieOptions, isSecureEnv, expires: expires.toISOString() });
   
   return response;
 }
@@ -310,12 +316,14 @@ export async function POST(request) {
       });
       
       console.log(`Setting consolidated auth cookies for team ${username}${isAutoCleanup ? ' (auto-cleanup)' : ''}`);
+      console.log(`Environment detection: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
+      console.log(`Session data being set:`, sessionData);
       
       // Use the consolidated cookie approach - this eliminates conflicts
       response = setCrossPlatformCookie(response, 'auth_session', JSON.stringify(sessionData), {
         expires: expiresAt,
         sameSite: 'lax'
-      });
+      }, request);
       
       // Clear any conflicting cookies that might exist
       const conflictingCookies = ['auth_credentials', 'auth_token'];
