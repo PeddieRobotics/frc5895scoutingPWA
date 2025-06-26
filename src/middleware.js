@@ -309,7 +309,8 @@ export async function middleware(request) {
           sessionId: authData.sessionId,
           team: authData.team,
           version: authData.version
-        })
+        }),
+        cache: 'no-store'
       });
       
       const validationResult = await validationResponse.json();
@@ -353,22 +354,18 @@ export async function middleware(request) {
       
     } catch (error) {
       console.error(`[Middleware] API validation error:`, error);
-      // On API error, allow through but let the route handle validation
-      // This prevents the middleware from blocking access due to temporary API issues
-      console.log(`[Middleware] Allowing request through due to validation API error`);
+      // On API error, we should fail closed and redirect to login.
+      // Allowing requests to pass through is a security risk.
+      console.log(`[Middleware] Redirecting to login due to validation API error`);
       
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('X-Auth-Session', authData.sessionId);
-      requestHeaders.set('X-Auth-Team', authData.team);
-      requestHeaders.set('X-Auth-Version', authData.version);
-      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-      requestHeaders.set('X-Auth-Validation-Failed', 'true'); // Signal that validation failed
+      const url = new URL('/', request.url);
+      url.searchParams.set('authRequired', 'true');
+      url.searchParams.set('redirect', pathname);
+      url.searchParams.set('error', 'validation_api_failed');
+      url.searchParams.set('t', Date.now().toString());
+      url.searchParams.set('rc', (redirectCount + 1).toString());
       
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+      return NextResponse.redirect(url);
     }
   }
   
