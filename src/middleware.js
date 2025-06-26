@@ -309,8 +309,7 @@ export async function middleware(request) {
           sessionId: authData.sessionId,
           team: authData.team,
           version: authData.version
-        }),
-        cache: 'no-store'
+        })
       });
       
       const validationResult = await validationResponse.json();
