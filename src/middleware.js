@@ -291,25 +291,85 @@ export async function middleware(request) {
     });
   }
   
-  // For non-API protected routes, we have auth data, so validate it by making a simple check
-  // Instead of making a fetch call (which can be problematic in Edge Runtime), 
-  // we'll do a lightweight validation and let the route handle detailed validation
+    // For non-API protected routes, we have auth data, so validate it using an API call
+  // We can't use direct database connections in Edge Runtime, so we'll use the validation API
   
-  if (authData.sessionId && (authData.team !== 'pending_lookup' || authData.team)) {
-    console.log(`[Middleware] Auth data found, allowing access to ${pathname}`);
+  if (authData.sessionId && authData.team && authData.team !== 'pending_lookup') {
+    console.log(`[Middleware] Auth data found, validating session ${authData.sessionId.substring(0,8)}... for team ${authData.team} via API`);
     
-    // Add auth headers to the request for the route to use
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('X-Auth-Session', authData.sessionId);
-    requestHeaders.set('X-Auth-Team', authData.team);
-    requestHeaders.set('X-Auth-Version', authData.version);
-    requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-    
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    try {
+      // Use the validation API to check if the session is still valid
+      const validationResponse = await fetch(new URL('/api/auth/validate-token', request.url), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Middleware-Validation': 'true'
+        },
+        body: JSON.stringify({
+          sessionId: authData.sessionId,
+          team: authData.team,
+          version: authData.version
+        })
+      });
+      
+      const validationResult = await validationResponse.json();
+      
+      if (!validationResponse.ok || !validationResult.valid) {
+        console.log(`[Middleware] Session validation failed: ${validationResult.message || 'Unknown error'}`);
+        
+        // Determine the specific error type
+        let errorParam = 'authRequired';
+        if (validationResult.message?.includes('revoked')) {
+          errorParam = 'sessionRevoked';
+        } else if (validationResult.message?.includes('invalidated')) {
+          errorParam = 'tokenInvalidated';
+        }
+        
+        // Session is invalid, redirect to login
+        const url = new URL('/', request.url);
+        url.searchParams.set('authRequired', 'true');
+        url.searchParams.set('redirect', pathname);
+        url.searchParams.set(errorParam, 'true');
+        url.searchParams.set('t', Date.now().toString());
+        url.searchParams.set('rc', (redirectCount + 1).toString());
+        
+        return NextResponse.redirect(url);
+      }
+      
+      console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${authData.team}`);
+      
+      // Session is valid, add auth headers to the request
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('X-Auth-Session', authData.sessionId);
+      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Version', authData.version);
+      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+      
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+      
+    } catch (error) {
+      console.error(`[Middleware] API validation error:`, error);
+      // On API error, allow through but let the route handle validation
+      // This prevents the middleware from blocking access due to temporary API issues
+      console.log(`[Middleware] Allowing request through due to validation API error`);
+      
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('X-Auth-Session', authData.sessionId);
+      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Version', authData.version);
+      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+      requestHeaders.set('X-Auth-Validation-Failed', 'true'); // Signal that validation failed
+      
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+    }
   }
   
   console.log(`[Middleware] Auth data incomplete, redirecting to login`);

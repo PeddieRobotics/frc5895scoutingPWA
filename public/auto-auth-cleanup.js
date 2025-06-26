@@ -105,50 +105,42 @@
     console.log('[Auto Auth Cleanup] ✅ Conflicting cookies cleared');
   }
   
-  // Function to trigger a fresh authentication
-  function triggerFreshAuth() {
-    console.log('[Auto Auth Cleanup] 🔄 Triggering fresh authentication...');
+  // Function to handle authentication issues - NO MORE AUTO-SESSION CREATION
+  function handleAuthIssues() {
+    console.log('[Auto Auth Cleanup] 🚫 Authentication issues detected - clearing invalid auth data');
     
-    // Check if we have credentials in storage
-    const credentials = localStorage.getItem('auth_credentials') || sessionStorage.getItem('auth_credentials');
+    // Check if the current page indicates specific auth issues
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionRevoked = urlParams.get('sessionRevoked') === 'true';
+    const tokenInvalidated = urlParams.get('tokenInvalidated') === 'true';
+    const dbError = urlParams.get('dbError') === 'true';
     
-    if (credentials) {
-      // Try to create a fresh session with existing credentials
-      fetch('/api/auth/session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'X-Auto-Cleanup': 'true'
-        },
-        credentials: 'include'
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          console.log('[Auto Auth Cleanup] ✅ Fresh session created successfully');
-          
-          // Show a subtle notification to the user
-          showCleanupNotification('Authentication refreshed successfully!', 'success');
-          
-          // Reload the page to ensure everything is fresh (but only if needed)
-          if (window.location.search.includes('authRequired')) {
-            setTimeout(() => {
-              window.location.href = window.location.pathname;
-            }, 1500);
-          }
-        } else {
-          console.log('[Auto Auth Cleanup] ❌ Fresh session creation failed');
-          showCleanupNotification('Please log in again', 'info');
-        }
-      })
-      .catch(error => {
-        console.log('[Auto Auth Cleanup] ❌ Fresh session request failed:', error);
-        showCleanupNotification('Please log in again', 'info');
-      });
-    } else {
-      console.log('[Auto Auth Cleanup] No stored credentials found');
+    if (sessionRevoked || tokenInvalidated) {
+      console.log('[Auto Auth Cleanup] 🚫 Session was explicitly revoked/invalidated by admin');
+      
+      // Clear stored credentials since the session was revoked
+      localStorage.removeItem('auth_credentials');
+      sessionStorage.removeItem('auth_credentials');
+      
+      showCleanupNotification('Your session was revoked. Please log in again.', 'warning', true);
+      return;
     }
+    
+    if (dbError) {
+      console.log('[Auto Auth Cleanup] 🚫 Database error detected');
+      showCleanupNotification('Authentication system temporarily unavailable. Please try again.', 'warning', true);
+      return;
+    }
+    
+    // For any other auth issues, just clear invalid data and ask user to log in
+    console.log('[Auto Auth Cleanup] 🧹 Clearing potentially invalid auth data');
+    
+    // Clear invalid session cookies but keep credentials for manual login
+    document.cookie = 'auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    document.cookie = 'auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+    document.cookie = 'auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure';
+    
+    showCleanupNotification('Please log in to continue', 'info');
   }
   
   // Function to show a subtle notification to the user (only for significant issues)
@@ -213,6 +205,35 @@
     }
     window.authCleanupRunning = true;
     
+    // Check if we're on a page that indicates session revocation or auth errors
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionRevoked = urlParams.get('sessionRevoked') === 'true';
+    const tokenInvalidated = urlParams.get('tokenInvalidated') === 'true';
+    const dbError = urlParams.get('dbError') === 'true';
+    
+    if (sessionRevoked || tokenInvalidated) {
+      console.log('[Auto Auth Cleanup] 🚫 Session revocation detected - clearing all auth data');
+      
+      // Clear all authentication data
+      localStorage.removeItem('auth_credentials');
+      sessionStorage.removeItem('auth_credentials');
+      cleanupConflictingCookies();
+      
+      // Clear session cookies too
+      document.cookie = 'auth_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      document.cookie = 'auth_session_lax=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+      document.cookie = 'auth_session_secure=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure';
+      
+      window.authCleanupRunning = false;
+      return;
+    }
+    
+    if (dbError) {
+      console.log('[Auto Auth Cleanup] 🚫 Database error detected - not running cleanup');
+      window.authCleanupRunning = false;
+      return;
+    }
+    
     const issues = detectConflictingCookies();
     
     if (issues.length === 0) {
@@ -231,12 +252,9 @@
     // Clean up conflicting cookies
     cleanupConflictingCookies();
     
-    // If we have storage/cookie mismatches, try to create a fresh session
-    if (issues.includes('storage_cookie_mismatch')) {
-      triggerFreshAuth();
-    } else if (hasSignificantIssues) {
-      // Only show notification for significant issues
-      showCleanupNotification('Authentication system optimized', 'success');
+    // If we have any auth issues, just clean up and ask user to log in manually
+    if (issues.includes('storage_cookie_mismatch') || hasSignificantIssues) {
+      handleAuthIssues();
     }
     
     window.authCleanupRunning = false;

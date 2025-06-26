@@ -90,15 +90,18 @@ export async function DELETE(request, { params }) {
       
       // BUGFIX: Also set revoked flag to TRUE for all sessions of this team
       // This ensures sessions are immediately invalidated even if token version check is bypassed
+      // Also update last_accessed to track revocation time
       const revokeResult = await client.query(`
         UPDATE user_sessions 
-        SET revoked = TRUE
+        SET revoked = TRUE, last_accessed = NOW()
         WHERE team_name = $1 AND expires_at > NOW() AND revoked = FALSE
         RETURNING session_id
       `, [teamName]);
       
       const revokedCount = revokeResult.rowCount;
       console.log(`[TeamSessions] Revoked ${revokedCount} sessions for team ${teamName}`);
+      
+      // Admin action logging removed - auto-session creation is now completely disabled
       
       // Optionally, count the active sessions that will be invalidated
       const sessionsResult = await client.query(`

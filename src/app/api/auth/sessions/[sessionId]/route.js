@@ -86,9 +86,9 @@ export async function DELETE(request, { params }) {
       
       console.log(`[Revoke] Current session state:`, checkResult.rows[0]);
       
-      // Mark the session as revoked instead of deleting it
+      // Mark the session as revoked and update last_accessed to track revocation time
       const result = await client.query(
-        'UPDATE user_sessions SET revoked = TRUE WHERE session_id = $1 RETURNING *',
+        'UPDATE user_sessions SET revoked = TRUE, last_accessed = NOW() WHERE session_id = $1 RETURNING *',
         [sessionId]
       );
 
@@ -103,6 +103,8 @@ export async function DELETE(request, { params }) {
       }
       
       console.log(`[Revoke] Session successfully revoked:`, result.rows[0]);
+      
+      // Admin action logging removed - auto-session creation is now completely disabled
       
       // Force invalidation by incrementing token version for this session's team
       // This ensures any cached tokens are invalidated immediately

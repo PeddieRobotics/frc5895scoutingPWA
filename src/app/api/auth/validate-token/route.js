@@ -23,6 +23,9 @@ export async function POST(request) {
     'Expires': '0',
     'Surrogate-Control': 'no-store'
   });
+  
+  // Check if this is a middleware validation request
+  const isMiddlewareValidation = request.headers.get('X-Middleware-Validation') === 'true';
 
   try {
     // Parse the token data from the request body

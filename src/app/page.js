@@ -1122,9 +1122,25 @@ export default function Home() {
         if (redirect) {
           handleRedirectTarget(redirect);
         }
-        const errorMsg = urlParams.get('error');
+        
+        // Check for specific auth error types
+        let errorMsg = urlParams.get('error');
+        if (urlParams.get('sessionRevoked') === 'true') {
+          errorMsg = 'Your session has been revoked by an administrator. Please log in again.';
+        } else if (urlParams.get('tokenInvalidated') === 'true') {
+          errorMsg = 'Your session has been invalidated. Please log in again.';
+        } else if (urlParams.get('dbError') === 'true') {
+          errorMsg = 'Authentication system temporarily unavailable. Please try again.';
+        }
+        
         if (errorMsg) {
           setAuthError(errorMsg);
+        }
+        
+        // Clear the URL parameters to avoid showing the message repeatedly
+        if (window.history && window.history.replaceState) {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
         }
       }
     }

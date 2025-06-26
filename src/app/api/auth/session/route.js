@@ -179,6 +179,19 @@ export async function POST(request) {
         });
       }
       
+      // SECURITY FIX: Block ALL auto-cleanup session creation
+      // Sessions should only be created during explicit user login, never automatically
+      if (isAutoCleanup) {
+        console.log(`[Session] 🚫 BLOCKING auto-cleanup session creation for ${username} - automatic session creation disabled for security`);
+        return NextResponse.json({ 
+          success: false,
+          message: 'Automatic session creation is disabled. Please log in manually.'
+        }, { 
+          status: 403, // Forbidden
+          headers
+        });
+      }
+      
       // Generate a unique session ID
       const sessionId = nanoid(32);
       const expiresAt = new Date();
@@ -226,7 +239,7 @@ export async function POST(request) {
           )
         `);
         
-        // Add token_version column if it doesn't exist
+        // Add token_version and revoked columns if they don't exist
         await client.query(`
           DO $$
           BEGIN
@@ -236,6 +249,14 @@ export async function POST(request) {
               WHERE table_name='user_sessions' AND column_name='token_version'
             ) THEN
               ALTER TABLE user_sessions ADD COLUMN token_version INTEGER DEFAULT 1;
+            END IF;
+            
+            IF NOT EXISTS (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name='user_sessions' AND column_name='revoked'
+            ) THEN
+              ALTER TABLE user_sessions ADD COLUMN revoked BOOLEAN DEFAULT FALSE;
             END IF;
           END $$;
         `);

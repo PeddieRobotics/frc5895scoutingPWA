@@ -265,6 +265,8 @@ export async function DELETE(request) {
         [teamName]
       );
       
+      // Admin action logging removed - auto-session creation is now completely disabled
+      
       // Then delete the team
       const result = await client.query(
         'DELETE FROM team_auth WHERE team_name = $1 RETURNING id',
