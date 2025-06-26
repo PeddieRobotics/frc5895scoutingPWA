@@ -7,6 +7,11 @@
 (function() {
   console.log('[Auto Auth Cleanup] Checking authentication state...');
   
+  // Disable notifications for normal page navigation (only show for real problems)
+  const SHOW_NOTIFICATIONS = window.location.search.includes('authRequired') || 
+                             window.location.search.includes('cleaned') ||
+                             window.location.pathname.includes('reset-auth');
+  
   // Function to get all cookies as an object
   function getAllCookies() {
     const cookies = {};
@@ -61,9 +66,13 @@
     const hasStorageAuth = localStorage.getItem('auth_credentials') || sessionStorage.getItem('auth_credentials');
     const hasValidSessionCookie = cookies['auth_session'] || cookies['auth_session_lax'] || cookies['auth_session_secure'];
     
-    if (hasStorageAuth && !hasValidSessionCookie) {
+    // Only flag this as an issue if we're on a page that requires auth and user seems to expect to be logged in
+    const isAuthRequiredPage = window.location.search.includes('authRequired') || 
+                              window.location.pathname !== '/';
+    
+    if (hasStorageAuth && !hasValidSessionCookie && isAuthRequiredPage) {
       issues.push('storage_cookie_mismatch');
-      console.log('[Auto Auth Cleanup] ⚠️ Auth in storage but no session cookies');
+      console.log('[Auto Auth Cleanup] ⚠️ Auth in storage but no session cookies on auth-required page');
     }
     
     return issues;
@@ -142,9 +151,20 @@
     }
   }
   
-  // Function to show a subtle notification to the user
-  function showCleanupNotification(message, type = 'info') {
-    // Only show notifications if there's an actual issue being fixed
+  // Function to show a subtle notification to the user (only for significant issues)
+  function showCleanupNotification(message, type = 'info', force = false) {
+    // Only show notifications when explicitly enabled or forced
+    if (!SHOW_NOTIFICATIONS && !force) {
+      console.log('[Auto Auth Cleanup] Notifications disabled for normal navigation:', message);
+      return;
+    }
+    
+    // Only show notifications for major issues or when forced
+    if (!force && type === 'success' && !message.includes('refreshed')) {
+      console.log('[Auto Auth Cleanup] Skipping notification (minor cleanup):', message);
+      return;
+    }
+    
     const notification = document.createElement('div');
     notification.style.cssText = `
       position: fixed;
@@ -186,14 +206,27 @@
   
   // Main cleanup logic
   function runAutoCleanup() {
+    // Prevent double-running from multiple scripts
+    if (window.authCleanupRunning) {
+      console.log('[Auto Auth Cleanup] Already running, skipping...');
+      return;
+    }
+    window.authCleanupRunning = true;
+    
     const issues = detectConflictingCookies();
     
     if (issues.length === 0) {
       console.log('[Auto Auth Cleanup] ✅ Authentication state looks good');
+      window.authCleanupRunning = false;
       return;
     }
     
     console.log('[Auto Auth Cleanup] 🔧 Issues detected, running automatic cleanup:', issues);
+    
+    // Only show notifications for significant issues
+    const hasSignificantIssues = issues.includes('multiple_auth_types') || 
+                                 issues.includes('malformed_session_cookie') ||
+                                 issues.includes('invalid_session_format');
     
     // Clean up conflicting cookies
     cleanupConflictingCookies();
@@ -201,24 +234,40 @@
     // If we have storage/cookie mismatches, try to create a fresh session
     if (issues.includes('storage_cookie_mismatch')) {
       triggerFreshAuth();
+    } else if (hasSignificantIssues) {
+      // Only show notification for significant issues
+      showCleanupNotification('Authentication system optimized', 'success');
     }
     
-    // Show a subtle notification that cleanup happened
-    showCleanupNotification('Authentication system optimized', 'success');
+    window.authCleanupRunning = false;
+  }
+  
+  // Throttle cleanup to prevent excessive runs
+  let lastCleanupTime = 0;
+  const CLEANUP_THROTTLE = 5000; // 5 seconds minimum between cleanups
+  
+  function throttledCleanup() {
+    const now = Date.now();
+    if (now - lastCleanupTime < CLEANUP_THROTTLE) {
+      console.log('[Auto Auth Cleanup] Throttled - too soon since last cleanup');
+      return;
+    }
+    lastCleanupTime = now;
+    runAutoCleanup();
   }
   
   // Run cleanup when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runAutoCleanup);
+    document.addEventListener('DOMContentLoaded', throttledCleanup);
   } else {
-    // DOM is already ready
-    runAutoCleanup();
+    // DOM is already ready, but wait a moment to avoid conflicts
+    setTimeout(throttledCleanup, 1000);
   }
   
   // Also run cleanup when the page becomes visible (handles tab switching)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      setTimeout(runAutoCleanup, 500); // Small delay to ensure page is fully loaded
+      setTimeout(throttledCleanup, 1000); // Longer delay and throttled
     }
   });
   
