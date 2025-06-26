@@ -72,52 +72,103 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
     setError('');
     
     try {
-      console.log("=== AUTH DIALOG DEBUG START ===");
-      console.log("AuthDialog: Attempting login for team:", username);
-      
       // Create Base64 credentials
       const credentials = btoa(`${username}:${password}`);
-      console.log("AuthDialog: Credentials created, calling parent login handler");
       
-      // Call the parent's login handler which has enhanced debugging
-      await onLogin(credentials, username);
+      // Get a timestamp for cache-busting
+      const timestamp = Date.now();
       
-      console.log("AuthDialog: Parent login handler completed");
+      // First, validate the credentials
+      const validateResponse = await fetch(`/api/auth/validate?t=${timestamp}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
+      });
       
-      // Reset attempts on successful login (assuming success if no error thrown)
-      setAttempts(0);
+      const validateData = await validateResponse.json();
       
-      console.log("=== AUTH DIALOG DEBUG END ===");
-      
-    } catch (error) {
-      console.error('AuthDialog: Login error:', error);
-      
-      // Handle failed login
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      // Implement lockout after 5 failed attempts
-      if (newAttempts >= 5) {
-        setIsLocked(true);
-        setLockTimer(60);
+      if (validateResponse.ok && validateData.authenticated === true) {
+        // Credentials are valid, now create a session
+        const sessionResponse = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache'
+          },
+          credentials: 'include', // Important for cookies
+          cache: 'no-store'
+        });
         
-        // Start a countdown timer
-        const interval = setInterval(() => {
-          setLockTimer(prev => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              setIsLocked(false);
-              setAttempts(0);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        const sessionData = await sessionResponse.json();
         
-        setError('Too many failed attempts. Please wait.');
+        if (sessionResponse.ok && sessionData.success) {
+          // Reset attempts on successful login
+          setAttempts(0);
+          
+          // Store the basic auth for API calls
+          sessionStorage.setItem('auth_credentials', credentials);
+          
+          // Store scout team in localStorage for form auto-fill
+          if (validateData.scoutTeam) {
+            localStorage.setItem('scout_team', validateData.scoutTeam);
+          }
+          
+          console.log("Login successful, handling redirect");
+          
+          // Call onLogin handler
+          onLogin(credentials, validateData.scoutTeam);
+          
+          // Handle redirection if a redirect URL is provided
+          if (redirectUrl) {
+            console.log(`Redirecting to: ${redirectUrl}`);
+            
+            // Use a timeout to ensure the cookies are set before redirecting
+            // A slightly longer timeout helps ensure iOS Safari has processed the cookies
+            setTimeout(() => {
+              // Use window.location for a full page reload instead of router.push
+              // This ensures the browser has the latest cookies when loading the page
+              window.location.href = redirectUrl;
+            }, 300);
+          }
+        } else {
+          // Something went wrong creating the session
+          setError(sessionData.message || 'Error creating session');
+        }
       } else {
-        setError(error.message || 'Login failed. Please check your credentials.');
+        // Handle failed login
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        
+        // Implement lockout after 5 failed attempts
+        if (newAttempts >= 5) {
+          setIsLocked(true);
+          setLockTimer(60);
+          
+          // Start a countdown timer
+          const interval = setInterval(() => {
+            setLockTimer(prev => {
+              if (prev <= 1) {
+                clearInterval(interval);
+                setIsLocked(false);
+                setAttempts(0);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+        
+        setError(validateData.message || 'Invalid username or password');
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }

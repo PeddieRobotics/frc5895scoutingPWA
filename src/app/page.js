@@ -38,7 +38,6 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
-  const [debugInfo, setDebugInfo] = useState(null);
   
   const form = useRef();
   const router = useRouter();
@@ -1042,115 +1041,6 @@ export default function Home() {
     }
   };
 
-  // Debug function to check cookie status
-  const checkCookieStatus = async () => {
-    try {
-      console.log("=== COOKIE STATUS CHECK ===");
-      console.log("Client cookies:", document.cookie);
-      
-      // Call the debug API
-      const response = await fetch('/api/debug', {
-        credentials: 'include'
-      });
-      
-      const debugData = await response.json();
-      console.log("Server debug data:", debugData);
-      
-      // Display in UI for easier debugging
-      setDebugInfo(debugData);
-    } catch (error) {
-      console.error("Debug check failed:", error);
-      setDebugInfo({ error: error.message });
-    }
-  };
-
-  // Enhanced login function with better error handling and session management
-  const handleLogin = async (credentials, scoutTeam) => {
-    try {
-      console.log("=== LOGIN DEBUG START ===");
-      console.log("Login attempt for team:", scoutTeam);
-      console.log("Current URL:", window.location.href);
-      console.log("Current cookies before login:", document.cookie);
-      
-      // Validate credentials first
-      const isValid = await validateCredentials(credentials);
-      
-      if (!isValid) {
-        console.log("Credential validation failed");
-        throw new Error('Invalid credentials. Please check your team name and password.');
-      }
-      
-      console.log("Credentials validated successfully");
-      
-      // Create session
-      const sessionResponse = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache'
-        },
-        credentials: 'include', // Important for cookies
-        cache: 'no-store'
-      });
-      
-      const sessionData = await sessionResponse.json();
-      console.log("Session creation response:", sessionData);
-      console.log("Session response status:", sessionResponse.status);
-      console.log("Session response headers:", [...sessionResponse.headers.entries()]);
-      
-      if (!sessionResponse.ok || !sessionData.success) {
-        console.error("Session creation failed:", sessionData);
-        throw new Error(sessionData.message || 'Failed to create session. Please try again.');
-      }
-      
-      console.log("Session created successfully");
-      
-      // Wait a moment for cookies to be set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log("Cookies after session creation:", document.cookie);
-      
-      // Store credentials and team info
-      sessionStorage.setItem('auth_credentials', credentials);
-      localStorage.setItem('scout_team', scoutTeam);
-      
-      // Set auth state
-      setAuthCredentials(credentials);
-      setIsAuthenticated(true);
-      setScoutTeam(scoutTeam);
-      
-      console.log("Auth state updated, checking for redirect");
-      
-      // Handle redirect
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirectPath = urlParams.get('redirect');
-      
-      if (redirectPath && redirectPath !== '/') {
-        console.log(`Redirecting to: ${redirectPath}`);
-        
-        // Use a longer timeout to ensure cookies are fully set
-        setTimeout(() => {
-          console.log("Final cookies before redirect:", document.cookie);
-          window.location.href = redirectPath;
-        }, 500);
-      } else {
-        console.log("No redirect needed, staying on login page");
-        // Clear URL parameters
-        const newUrl = new URL(window.location);
-        newUrl.search = '';
-        window.history.replaceState({}, '', newUrl);
-      }
-      
-      console.log("=== LOGIN DEBUG END ===");
-    } catch (error) {
-      console.error("Login error:", error);
-      console.log("=== LOGIN DEBUG END (ERROR) ===");
-      throw error; // Re-throw so AuthDialog can catch it
-    }
-  };
-
   // Handle authentication success
   const handleAuthSuccess = useCallback((credentials, scoutTeam) => {
     setAuthCredentials(credentials);
@@ -1809,51 +1699,9 @@ export default function Home() {
       <AuthDialog 
         isOpen={showAuthDialog} 
         onClose={handleAuthClose}
-        onLogin={handleLogin}
+        onLogin={handleAuthSuccess}
         errorMessage={authError}
       />
-      
-      {/* Debug section for production troubleshooting */}
-      {(process.env.NODE_ENV === 'development' || typeof window !== 'undefined' && window.location.search.includes('debug=true')) && (
-        <div style={{
-          position: 'fixed',
-          bottom: '10px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px',
-          maxWidth: '400px',
-          maxHeight: '300px',
-          overflow: 'auto',
-          zIndex: 10000
-        }}>
-          <button 
-            onClick={checkCookieStatus}
-            style={{
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              padding: '5px 10px',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              marginBottom: '10px'
-            }}
-          >
-            Check Cookie Status
-          </button>
-          
-          {debugInfo && (
-            <div>
-              <h4>Debug Info:</h4>
-              <pre style={{ fontSize: '10px', whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

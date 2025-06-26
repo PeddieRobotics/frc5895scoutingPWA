@@ -189,52 +189,15 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  // ENHANCED DEBUGGING: Log all cookie-related information
-  console.log(`[Middleware] === COOKIE DEBUG START ===`);
-  console.log(`[Middleware] Request URL: ${request.url}`);
-  console.log(`[Middleware] Request host: ${request.headers.get('host')}`);
-  console.log(`[Middleware] User-Agent: ${request.headers.get('user-agent')?.substring(0, 100)}...`);
+  // Extract auth data from cookies
+  const authData = extractAuthFromCookies(request);
   
   // Debug: Log all cookies for troubleshooting
   const allCookies = request.cookies.getAll();
   const rawCookieHeader = request.headers.get('cookie');
   console.log(`[Middleware] Raw cookie header:`, rawCookieHeader);
-  console.log(`[Middleware] Parsed cookies count: ${allCookies.length}`);
-  
-  // Log each cookie individually
-  allCookies.forEach((cookie, index) => {
-    const valuePreview = cookie.value?.substring(0, 50) + (cookie.value?.length > 50 ? '...' : '');
-    console.log(`[Middleware] Cookie ${index}: ${cookie.name}=${valuePreview}`);
-    
-    // Special logging for auth cookies
-    if (cookie.name.includes('auth') || cookie.name.includes('session')) {
-      console.log(`[Middleware] AUTH COOKIE DETAILS: ${cookie.name}`);
-      console.log(`[Middleware] - Full value length: ${cookie.value?.length || 0}`);
-      console.log(`[Middleware] - Starts with: ${cookie.value?.substring(0, 20)}...`);
-      
-      // Try to decode and show structure
-      try {
-        const decoded = safeCookieDecode(cookie.value);
-        console.log(`[Middleware] - Decoded type: ${typeof decoded}`);
-        if (typeof decoded === 'object') {
-          console.log(`[Middleware] - Decoded keys: ${Object.keys(decoded)}`);
-        }
-      } catch (e) {
-        console.log(`[Middleware] - Decode error: ${e.message}`);
-      }
-    }
-  });
-
-  // Extract auth data from cookies
-  const authData = extractAuthFromCookies(request);
-  
-  console.log(`[Middleware] Auth data extracted:`, authData ? { 
-    sessionId: authData.sessionId?.substring(0,12) + '...', 
-    team: authData.team, 
-    source: authData.source,
-    version: authData.version 
-  } : null);
-  console.log(`[Middleware] === COOKIE DEBUG END ===`);
+  console.log(`[Middleware] All cookies received:`, allCookies.map(c => `${c.name}=${c.value?.substring(0,20)}...`));
+  console.log(`[Middleware] Auth data extracted:`, authData ? { sessionId: authData.sessionId?.substring(0,8) + '...', team: authData.team, source: authData.source } : null);
   
   if (!authData) {
     console.log(`[Middleware] No valid auth data found, redirecting to login`);
@@ -245,7 +208,6 @@ export async function middleware(request) {
     url.searchParams.set('redirect', pathname);
     url.searchParams.set('t', Date.now().toString());
     url.searchParams.set('rc', (redirectCount + 1).toString());
-    url.searchParams.set('debug', 'no-auth-data'); // Add debug parameter
     
     return NextResponse.redirect(url);
   }
@@ -336,7 +298,7 @@ export async function middleware(request) {
     });
   }
   
-  // For non-API protected routes, we have auth data, so validate it using an API call
+    // For non-API protected routes, we have auth data, so validate it using an API call
   // We can't use direct database connections in Edge Runtime, so we'll use the validation API
   
   if (authData.sessionId && authData.team && authData.team !== 'pending_lookup') {
@@ -382,7 +344,6 @@ export async function middleware(request) {
         url.searchParams.set(errorParam, 'true');
         url.searchParams.set('t', Date.now().toString());
         url.searchParams.set('rc', (redirectCount + 1).toString());
-        url.searchParams.set('debug', 'validation-failed'); // Add debug parameter
         
         return NextResponse.redirect(url);
       }
@@ -390,17 +351,17 @@ export async function middleware(request) {
       console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${authData.team}`);
       
       // Session is valid, add auth headers to the request
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('X-Auth-Session', authData.sessionId);
-      requestHeaders.set('X-Auth-Team', authData.team);
-      requestHeaders.set('X-Auth-Version', authData.version);
-      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-      
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('X-Auth-Session', authData.sessionId);
+    requestHeaders.set('X-Auth-Team', authData.team);
+    requestHeaders.set('X-Auth-Version', authData.version);
+    requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
       
     } catch (error) {
       console.error(`[Middleware] API validation error:`, error);
@@ -416,7 +377,6 @@ export async function middleware(request) {
       url.searchParams.set('validationError', 'true');
       url.searchParams.set('t', Date.now().toString());
       url.searchParams.set('rc', (redirectCount + 1).toString());
-      url.searchParams.set('debug', 'validation-error'); // Add debug parameter
       
       return NextResponse.redirect(url);
     }
@@ -430,7 +390,6 @@ export async function middleware(request) {
   url.searchParams.set('redirect', pathname);
   url.searchParams.set('t', Date.now().toString());
   url.searchParams.set('rc', (redirectCount + 1).toString());
-  url.searchParams.set('debug', 'incomplete-auth'); // Add debug parameter
   
   return NextResponse.redirect(url);
 } 
