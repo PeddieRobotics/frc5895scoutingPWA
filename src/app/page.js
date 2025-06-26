@@ -141,11 +141,11 @@ export default function Home() {
     }
   };
 
-  // Helper function to set auth cookies with multiple approaches
+  // Simplified helper function - let server handle cookies
   const setAuthCookies = (credentials) => {
     if (!credentials) return;
     
-    console.log("Setting auth cookies with multiple approaches");
+    console.log("Storing auth credentials in browser storage");
     
     // Store in localStorage for direct access
     localStorage.setItem('auth_credentials', credentials);
@@ -153,27 +153,8 @@ export default function Home() {
     // Store in sessionStorage for session persistence
     sessionStorage.setItem('auth_credentials', credentials);
     
-    // Determine if we're in a secure context (HTTPS or localhost)
-    const isSecureContext = window.location.protocol === 'https:' || 
-                           window.location.hostname === 'localhost' ||
-                           window.location.hostname.includes('.vercel.app');
-    
-    // Store raw base64 credentials in cookies (no JSON wrapper)
-    const rawCreds = credentials;
-
-    // Set cookie with path=/ (standard cookie)
-    document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000`;
-
-    // Set SameSite=Lax cookie
-    document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000; SameSite=Lax`;
-
-    // Set SameSite=None;Secure cookie if secure context
-    if (isSecureContext) {
-      document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000; SameSite=None; Secure`;
-      console.log("Set secure cookie for HTTPS/preview environment");
-    } else {
-      console.log("Not setting Secure cookie as we're not in a secure context");
-    }
+    // Don't set client-side cookies - let the server handle this to avoid conflicts
+    console.log("Client-side storage updated, server will handle cookies");
     
     // Dispatch a custom event to notify other pages that auth has been updated
     try {
@@ -183,35 +164,26 @@ export default function Home() {
     } catch (e) {
       console.error('Error dispatching auth event:', e);
     }
-    
-    console.log("Auth cookies set with multiple approaches for maximum compatibility");
   };
 
-  // Helper function to clear auth cookies
+  // Helper function to clear auth storage and notify server
   const clearAuthCookies = () => {
     // Clear all storage
     localStorage.removeItem('auth_credentials');
     sessionStorage.removeItem('auth_credentials');
-    console.log("Clearing auth cookies and storage");
+    console.log("Clearing auth storage");
     
-    // Clear cookies with all possible attributes
-    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-    document.cookie = `auth_credentials=; path=/; max-age=0`;
-    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
-    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=Lax`;
-    document.cookie = `auth_credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure`;
-    document.cookie = `auth_credentials=; path=/; max-age=0; SameSite=None; Secure`;
+    // Don't clear cookies directly - let the server handle this
+    console.log("Notifying server to clear session");
     
-    console.log("All auth cookies and storage cleared");
-    
-    // Also try to clear via server
+    // Notify server to clear session
     try {
-      fetch('/api/auth/validate', {
+      fetch('/api/auth/session', {
         method: 'DELETE',
         credentials: 'same-origin'
       });
     } catch (e) {
-      console.log("Server cookie clearing failed");
+      console.log("Server session clearing failed");
     }
   };
 
@@ -457,11 +429,7 @@ export default function Home() {
         validateCredentials(credentials).then(isValid => {
           if (isValid) {
             setAuthCredentials(credentials);
-            
-            // Ensure cookie is set with a long expiration (30 days)
-            console.log("Setting auth_credentials cookie in client-side with value");
-            document.cookie = `auth_credentials=${credentials}; path=/; max-age=2592000; SameSite=None; Secure`;
-            console.log("Client cookie set with SameSite=None; Secure");
+            console.log("Credentials validated successfully, server will handle cookies");
           } else {
             // If validation failed, clear credentials
             clearAuthCookies();

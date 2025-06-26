@@ -56,6 +56,7 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
         
         <script src="/fix-auth.js"></script>
+        <script src="/auto-auth-cleanup.js"></script>
       </head>
       <body className={inter.className}>
         <PWADetector />

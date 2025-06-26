@@ -274,4 +274,57 @@ export async function invalidateTeamSessions(teamName) {
     console.error("Error invalidating team sessions:", error);
     return { success: false, message: 'Failed to invalidate team sessions' };
   }
+}
+
+// Helper function to consolidate authentication cookies
+export function consolidateAuthCookies(response, sessionData, options = {}) {
+  const isSecureEnv = process.env.NODE_ENV === 'production' || 
+                      process.env.VERCEL_ENV === 'preview' || 
+                      process.env.FORCE_SECURE === 'true';
+  
+  const cookieOptions = {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    path: '/',
+    httpOnly: true,
+    secure: isSecureEnv,
+    ...options
+  };
+  
+  const encodedValue = encodeURIComponent(JSON.stringify(sessionData));
+  
+  // Clear any conflicting cookies first
+  const cookiesToClear = ['auth_credentials', 'auth_token'];
+  cookiesToClear.forEach(name => {
+    response.cookies.set(name, '', {
+      maxAge: 0,
+      path: '/',
+      expires: new Date(0)
+    });
+  });
+  
+  // Set the primary session cookie with different SameSite options
+  response.cookies.set('auth_session', encodedValue, {
+    ...cookieOptions,
+    sameSite: 'lax',
+    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+  });
+  
+  response.cookies.set('auth_session_lax', encodedValue, {
+    ...cookieOptions,
+    sameSite: 'lax',
+    expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+  });
+  
+  if (isSecureEnv) {
+    response.cookies.set('auth_session_secure', encodedValue, {
+      ...cookieOptions,
+      sameSite: 'none',
+      secure: true,
+      expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+    });
+  }
+  
+  console.log(`[Auth] Consolidated auth cookies: auth_session, auth_session_lax${isSecureEnv ? ', auth_session_secure' : ''}`);
+  
+  return response;
 } 

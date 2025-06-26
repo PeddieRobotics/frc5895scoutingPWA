@@ -134,6 +134,7 @@ export async function POST(request) {
     // Get client info for logging
     const clientId = getClientIdentifier(request);
     const userAgent = request.headers.get('user-agent') || 'unknown';
+    const isAutoCleanup = request.headers.get('x-auto-cleanup') === 'true';
     
     // Connect to database
     const client = await pool.connect();
@@ -268,46 +269,41 @@ export async function POST(request) {
         [username]
       );
       
-      // Create auth token object
-      const authToken = JSON.stringify({
+      // Create a unified session data object
+      const sessionData = {
         id: sessionId,
+        team: username,
         v: tokenVersion,
-        team: username
-      });
+        created: Date.now()
+      };
       
-      // Create response with auth token
+      // Create response with session info
       let response = NextResponse.json({ 
         success: true,
         message: 'Session created successfully',
         team: username,
-        token: authToken,
+        sessionId: sessionId,
         expires: expiresAt.getTime()
       }, { 
         headers
       });
       
-      // Set HTTP-only cookie as backup security measure
-      response.cookies.set('auth_token', encodeURIComponent(authToken), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        expires: expiresAt
-      });
+      console.log(`Setting consolidated auth cookies for team ${username}${isAutoCleanup ? ' (auto-cleanup)' : ''}`);
       
-      // Create a session data object for cookies (use current token version)
-      const sessionData = JSON.stringify({
-        id: sessionId,
-        team: username,
-        v: tokenVersion
-      });
-      
-      console.log(`Setting auth cookies for team ${username}, isProduction=${process.env.NODE_ENV === 'production'}`);
-      
-      // For backward compatibility, also set session cookies
-      response = setCrossPlatformCookie(response, 'auth_session', sessionData, {
+      // Use the consolidated cookie approach - this eliminates conflicts
+      response = setCrossPlatformCookie(response, 'auth_session', JSON.stringify(sessionData), {
         expires: expiresAt,
         sameSite: 'lax'
+      });
+      
+      // Clear any conflicting cookies that might exist
+      const conflictingCookies = ['auth_credentials', 'auth_token'];
+      conflictingCookies.forEach(cookieName => {
+        response.cookies.set(cookieName, '', {
+          maxAge: 0,
+          path: '/',
+          expires: new Date(0)
+        });
       });
       
       // Set special header for client detection
@@ -405,32 +401,39 @@ export async function DELETE(request) {
       headers
     });
     
-    // Clear auth token cookie
-    response.cookies.set('auth_token', '', {
-      maxAge: 0,
-      path: '/',
-      expires: new Date(0)
-    });
+    // Clear all possible auth cookies
+    const cookiesToClear = [
+      'auth_token', 
+      'auth_credentials', 
+      'auth_session', 
+      'auth_session_lax', 
+      'auth_session_secure'
+    ];
     
-    // For backward compatibility, clear the old cookie formats too
-    response.cookies.set('auth_session', '', {
-      maxAge: 0,
-      path: '/',
-      expires: new Date(0)
-    });
-    
-    response.cookies.set('auth_session_lax', '', {
-      maxAge: 0,
-      path: '/',
-      expires: new Date(0)
-    });
-    
-    response.cookies.set('auth_session_secure', '', {
-      maxAge: 0,
-      path: '/',
-      sameSite: 'none',
-      secure: true,
-      expires: new Date(0)
+    cookiesToClear.forEach(cookieName => {
+      // Clear with standard attributes
+      response.cookies.set(cookieName, '', {
+        maxAge: 0,
+        path: '/',
+        expires: new Date(0)
+      });
+      
+      // Clear with SameSite=Lax
+      response.cookies.set(cookieName, '', {
+        maxAge: 0,
+        path: '/',
+        sameSite: 'lax',
+        expires: new Date(0)
+      });
+      
+      // Clear with SameSite=None; Secure
+      response.cookies.set(cookieName, '', {
+        maxAge: 0,
+        path: '/',
+        sameSite: 'none',
+        secure: true,
+        expires: new Date(0)
+      });
     });
 
     return response;

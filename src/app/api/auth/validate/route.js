@@ -174,38 +174,50 @@ export async function GET(request) {
           headers
         });
         
-        // Refresh the cookie with each successful validation to extend session
-        const cookieValue = JSON.stringify({
+        // Refresh the session cookie with each successful validation to extend session
+        const sessionData = {
           id: tokenData.id,
           team: session.team_name,
-          v: session.token_version
-        });
+          v: session.token_version,
+          refreshed: Date.now()
+        };
         
-        // Set cookie with various attributes for best cross-browser compatibility
         const expires = new Date();
         expires.setDate(expires.getDate() + 30); // 30 days
         
-        // Standard cookie
-        response.cookies.set('auth_token', token, {
+        // Use consolidated cookie approach
+        const isSecureEnv = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview';
+        const encodedValue = encodeURIComponent(JSON.stringify(sessionData));
+        
+        // Clear conflicting cookies
+        const conflictingCookies = ['auth_credentials', 'auth_token'];
+        conflictingCookies.forEach(cookieName => {
+          response.cookies.set(cookieName, '', {
+            maxAge: 0,
+            path: '/',
+            expires: new Date(0)
+          });
+        });
+        
+        // Set consolidated session cookies
+        response.cookies.set('auth_session', encodedValue, {
           expires: expires,
           path: '/',
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
+          secure: isSecureEnv,
           sameSite: 'lax'
         });
         
-        // Also set session cookie
-        response.cookies.set('auth_session', cookieValue, {
+        response.cookies.set('auth_session_lax', encodedValue, {
           expires: expires,
           path: '/',
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview',
+          secure: isSecureEnv,
           sameSite: 'lax'
         });
         
-        // For cross-site contexts
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'preview') {
-          response.cookies.set('auth_session_secure', cookieValue, {
+        if (isSecureEnv) {
+          response.cookies.set('auth_session_secure', encodedValue, {
             expires: expires,
             path: '/',
             httpOnly: true,

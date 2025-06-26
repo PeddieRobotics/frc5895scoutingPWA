@@ -14,7 +14,9 @@ const PUBLIC_PATHS = [
   '/fix-auth.js',
   '/ios-auth.js',
   '/reset-auth.html',
-  '/reset-auth' // Add path without extension for flexibility
+  '/reset-auth', // Add path without extension for flexibility
+  '/auto-auth-cleanup.js',
+  '/clear-auth-conflicts.js'
 ];
 
 const PUBLIC_PATH_PREFIXES = [
@@ -92,7 +94,8 @@ function extractAuthFromCookies(request) {
   const authCookieSecure = request.cookies.get('auth_session_secure');
   const authCredentials = request.cookies.get('auth_credentials');
   
-  // Try to extract token data from cookies in order of preference
+  // Priority order: secure > lax > regular > credentials
+  // This ensures we use the most reliable cookie available
   const cookieValue = authCookieSecure?.value || authCookieLax?.value || authCookie?.value || authCredentials?.value;
   
   if (!cookieValue) {
@@ -102,18 +105,42 @@ function extractAuthFromCookies(request) {
   const decodedValue = safeCookieDecode(cookieValue);
   
   if (typeof decodedValue === 'object' && decodedValue.id) {
-    // It's a proper JSON token
+    // It's a proper JSON token (from server-side auth)
     return {
       sessionId: decodedValue.id,
       team: decodedValue.team,
-      version: decodedValue.v || decodedValue.version || '2'
+      version: decodedValue.v || decodedValue.version || '2',
+      source: 'session_cookie'
     };
   } else if (typeof decodedValue === 'string') {
-    // It's a plain session ID
+    // It's either a plain session ID or base64 credentials
+    
+    // Check if it looks like base64 credentials (contains = or is long enough)
+    if (decodedValue.includes('=') || decodedValue.length > 20) {
+      // Likely base64 credentials, try to decode
+      try {
+        const decoded = atob(decodedValue);
+        if (decoded.includes(':')) {
+          // It's username:password format
+          const [username] = decoded.split(':');
+          return {
+            sessionId: decodedValue, // Use the base64 as session ID
+            team: username,
+            version: '2',
+            source: 'credentials_cookie'
+          };
+        }
+      } catch (e) {
+        // Not valid base64, treat as plain session ID
+      }
+    }
+    
+    // Treat as plain session ID
     return {
       sessionId: decodedValue,
       team: 'pending_lookup',
-      version: '2'
+      version: '2',
+      source: 'plain_session'
     };
   }
   
