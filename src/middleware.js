@@ -165,7 +165,7 @@ export async function middleware(request) {
   
   // Prevent redirect loops - check for excessive redirects
   const redirectCount = parseInt(request.nextUrl.searchParams.get('rc') || '0', 10);
-  if (redirectCount > 2) { // Reduced from 3 to 2 for faster detection
+  if (redirectCount > 1) { // Reduced from 2 to 1 for faster detection
     console.log(`[Middleware] Detected potential redirect loop for ${pathname}, redirecting to reset-auth`);
     return NextResponse.redirect(new URL('/reset-auth.html', request.url));
   }

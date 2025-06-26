@@ -32,9 +32,21 @@ function getClientIdentifier(request) {
 
 // Helper to set a secure cross-platform cookie
 function setCrossPlatformCookie(response, name, value, options = {}, request = null) {
-  const isSecureEnv = process.env.NODE_ENV === 'production' || 
-                      process.env.VERCEL_ENV === 'preview' || 
-                      process.env.FORCE_SECURE === 'true';
+  // Determine whether we are genuinely being served over HTTPS.  
+  // We cannot rely on NODE_ENV alone because the scout app often runs on
+  // a plain-HTTP local network even when built in "production" mode.
+  // 
+  // Rules:
+  // 1.  If the connection/forwarded protocol is https → Secure cookie.
+  // 2.  If the admin explicitly forces secure via env → Secure cookie.
+  // 3.  Vercel preview deployments are always https → Secure cookie.
+  // 4.  Otherwise (http) we write a non-Secure cookie so the browser will
+  //     actually send it back.
+  const requestProtocol = (request?.headers?.get('x-forwarded-proto') || '').toLowerCase();
+  const isHttps = requestProtocol === 'https' || (request?.url?.startsWith('https://'));
+  const isSecureEnv = (process.env.FORCE_SECURE === 'true') ||
+                      (process.env.VERCEL_ENV === 'preview') ||
+                      isHttps;
   
   const defaultOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
@@ -295,10 +307,15 @@ export async function POST(request) {
       
       // Create a new session
       try {
-        await client.query(`
+        console.log(`[Session] Creating session for ${username} with ID: ${sessionId}`);
+        console.log(`[Session] Session expires at: ${expiresAt}`);
+        console.log(`[Session] Token version: ${tokenVersion}`);
+        
+        const insertResult = await client.query(`
           INSERT INTO user_sessions (
             session_id, team_name, expires_at, ip_address, user_agent, token_version
           ) VALUES ($1, $2, $3, $4, $5, $6)
+          RETURNING session_id, team_name, created_at, expires_at
         `, [
           sessionId,
           username,
@@ -307,8 +324,32 @@ export async function POST(request) {
           userAgent,
           tokenVersion
         ]);
+        
+        console.log(`[Session] Session inserted successfully:`, insertResult.rows[0]);
+        
+        // Verify the session was actually inserted
+        const verifyResult = await client.query(
+          'SELECT session_id, team_name, created_at, expires_at, token_version FROM user_sessions WHERE session_id = $1',
+          [sessionId]
+        );
+        
+        if (verifyResult.rows.length === 0) {
+          console.error(`[Session] ERROR: Session ${sessionId} was not found after insertion!`);
+          throw new Error('Session was not saved to database');
+        } else {
+          console.log(`[Session] Session verification successful:`, verifyResult.rows[0]);
+        }
+        
       } catch (error) {
         console.error("Session insertion error:", error);
+        console.error("Session insertion error details:", {
+          sessionId,
+          username,
+          expiresAt: expiresAt.toISOString(),
+          clientId,
+          userAgent,
+          tokenVersion
+        });
         throw error;
       }
       
