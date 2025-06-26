@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ant-design/plots": "^1.2.6",
+    "@ant-design/plots": "^2.5.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@neondatabase/serverless": "^1.0.0",
     "@tidyjs/tidy": "^2.5.2",
