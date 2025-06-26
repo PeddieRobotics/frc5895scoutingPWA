@@ -299,7 +299,7 @@ export async function middleware(request) {
     
     try {
       // Use the validation API to check if the session is still valid
-      const validationResponse = await fetch(new URL('/api/auth/validate-token', request.url), {
+      const validationResponse = await fetch(new URL('/api/auth/validate-token', request.nextUrl.origin), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
