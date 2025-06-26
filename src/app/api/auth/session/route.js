@@ -46,6 +46,7 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
                       process.env.VERCEL_ENV === 'preview' || 
                       process.env.FORCE_SECURE === 'true';
   
+  // Encode the value consistently - use single encoding to avoid double-encoding issues
   const encodedValue = encodeURIComponent(value);
 
   // Primary cookie without suffix (helps some browsers/extensions)
@@ -73,7 +74,7 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
     });
   }
   
-  console.log(`setCrossPlatformCookie → wrote ${name}_lax and${isSecureEnv ? ` ${name}_secure` : ''}`);
+  console.log(`setCrossPlatformCookie → wrote ${name} (primary), ${name}_lax${isSecureEnv ? `, and ${name}_secure` : ''}`);
   
   return response;
 }

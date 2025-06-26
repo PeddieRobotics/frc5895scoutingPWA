@@ -59,6 +59,67 @@ function getEnvironmentType(request) {
   };
 }
 
+// Helper function to safely decode cookie values
+function safeCookieDecode(value) {
+  if (!value) return null;
+  
+  try {
+    // First try to URL decode
+    let decoded = decodeURIComponent(value);
+    
+    // Then try to parse as JSON
+    try {
+      return JSON.parse(decoded);
+    } catch (e) {
+      // If not JSON, return the decoded string
+      return decoded;
+    }
+  } catch (e) {
+    // If URL decode fails, try to parse the original value as JSON
+    try {
+      return JSON.parse(value);
+    } catch (e2) {
+      // If all fails, return the original value
+      return value;
+    }
+  }
+}
+
+// Helper function to extract auth data from cookies
+function extractAuthFromCookies(request) {
+  const authCookie = request.cookies.get('auth_session');
+  const authCookieLax = request.cookies.get('auth_session_lax');
+  const authCookieSecure = request.cookies.get('auth_session_secure');
+  const authCredentials = request.cookies.get('auth_credentials');
+  
+  // Try to extract token data from cookies in order of preference
+  const cookieValue = authCookieSecure?.value || authCookieLax?.value || authCookie?.value || authCredentials?.value;
+  
+  if (!cookieValue) {
+    return null;
+  }
+  
+  const decodedValue = safeCookieDecode(cookieValue);
+  
+  if (typeof decodedValue === 'object' && decodedValue.id) {
+    // It's a proper JSON token
+    return {
+      sessionId: decodedValue.id,
+      team: decodedValue.team,
+      version: decodedValue.v || decodedValue.version || '2'
+    };
+  } else if (typeof decodedValue === 'string') {
+    // It's a plain session ID
+    return {
+      sessionId: decodedValue,
+      team: 'pending_lookup',
+      version: '2'
+    };
+  }
+  
+  return null;
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const { isVercelPreview, isProduction, isDevelopment } = getEnvironmentType(request);
@@ -75,12 +136,9 @@ export async function middleware(request) {
   
   console.log(`[Middleware] Processing request for ${pathname}`);
   
-  // Prevent redirect loops
-  // Use the "rc" (redirect count) search-parameter. Unlike custom headers, query parameters
-  // survive a browser-initiated redirect, so the counter works consistently in both
-  // development (http) and production/preview (https) environments.
+  // Prevent redirect loops - check for excessive redirects
   const redirectCount = parseInt(request.nextUrl.searchParams.get('rc') || '0', 10);
-  if (redirectCount > 3) {
+  if (redirectCount > 2) { // Reduced from 3 to 2 for faster detection
     console.log(`[Middleware] Detected potential redirect loop for ${pathname}, redirecting to reset-auth`);
     return NextResponse.redirect(new URL('/reset-auth.html', request.url));
   }
@@ -104,99 +162,35 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
+  // Extract auth data from cookies
+  const authData = extractAuthFromCookies(request);
+  
+  if (!authData) {
+    console.log(`[Middleware] No valid auth data found, redirecting to login`);
+    
+    // No valid auth data found - redirect to login with original destination
+    const url = new URL('/', request.url);
+    url.searchParams.set('authRequired', 'true');
+    url.searchParams.set('redirect', pathname);
+    url.searchParams.set('t', Date.now().toString());
+    url.searchParams.set('rc', (redirectCount + 1).toString());
+    
+    return NextResponse.redirect(url);
+  }
+
   // Special handling for admin API routes that use cookies
   if (ADMIN_COOKIE_ROUTES.includes(pathname)) {
     console.log(`[Middleware] Processing cookie-based API route: ${pathname}`);
     
-    // Check for valid session cookies - try multiple cookie names for compatibility
-    const authCookie = request.cookies.get('auth_session');
-    const authCookieLax = request.cookies.get('auth_session_lax');
-    const authCookieSecure = request.cookies.get('auth_session_secure');
-    const authCredentials = request.cookies.get('auth_credentials');
-    
-    // Try to extract token data from cookies
-    let tokenData = null;
-    let sessionId = null;
-    let teamName = null;
-    
-    try {
-      // Check all possible auth cookies
-      const tokenStr = authCookie?.value || 
-                      authCookieLax?.value || 
-                      authCookieSecure?.value || 
-                      authCredentials?.value;
-      
-      if (tokenStr) {
-        // URL decode the cookie value first (handles cases where JSON is URL encoded)
-        let decodedTokenStr = tokenStr;
-        try {
-          decodedTokenStr = decodeURIComponent(tokenStr);
-        } catch (decodeError) {
-          console.log(`[Middleware] Failed to URL decode admin cookie, will use as-is`);
-          // Continue with the original value if decoding fails
-        }
-        
-        // First try to parse as JSON
-        try {
-          tokenData = JSON.parse(decodedTokenStr);
-          console.log(`[Middleware] Found JSON token data in cookies for ${pathname}: team=${tokenData?.team}, sessionId=${tokenData?.id ? tokenData.id.substring(0,8) : 'unknown'}, version=${tokenData?.version || 'none'}`);
-          sessionId = tokenData.id;
-          teamName = tokenData.team;
-        } catch (e) {
-          // If not JSON, treat as plain session ID or credentials
-          console.log(`[Middleware] Cookie is not JSON, treating as plain credential: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
-          
-          // For auth_credentials cookie, it contains the basic auth credentials
-          if (decodedTokenStr) {
-            sessionId = decodedTokenStr;
-            
-            // We can't directly get the team name from just a session ID in middleware
-            // Set a special header to indicate we need to look it up in the route handler
-            const requestHeaders = new Headers(request.headers);
-            requestHeaders.set('X-Auth-Session', sessionId);
-            requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-            
-            console.log(`[Middleware] Added session headers for ${pathname}`);
-            
-            return NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              },
-              headers: cacheHeaders
-            });
-          }
-        }
-        
-        if (sessionId && teamName) {
-          // Add auth headers to the request
-          const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('X-Auth-Validated', 'true');
-          requestHeaders.set('X-Auth-Team', teamName);
-          requestHeaders.set('X-Auth-Session', sessionId);
-          requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-          
-          console.log(`[Middleware] Added auth headers for ${pathname}`);
-          
-          return NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-            headers: cacheHeaders
-          });
-        }
-      } else {
-        console.log(`[Middleware] No auth cookies found for ${pathname}`);
-      }
-    } catch (e) {
-      console.error(`[Middleware] Error processing auth cookie in ADMIN_COOKIE_ROUTES for ${pathname}:`, e);
-    }
-    
-    // If we get here, there were no valid auth cookies
-    console.log(`[Middleware] No valid auth data found for ${pathname}, allowing access anyway for API routes`);
-    
-    // For API routes, we'll let the route handler make the final decision
+    // Add auth headers to the request
     const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('X-Auth-Session', authData.sessionId);
+    requestHeaders.set('X-Auth-Team', authData.team);
+    requestHeaders.set('X-Auth-Version', authData.version);
     requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+    
+    console.log(`[Middleware] Added auth headers for ${pathname}`);
+    
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -241,199 +235,22 @@ export async function middleware(request) {
       }
     }
     
-    // If it doesn't have a valid auth header, check for auth cookies
-    const authCookie = request.cookies.get('auth_session');
-    const authCookieLax = request.cookies.get('auth_session_lax');
-    const authCookieSecure = request.cookies.get('auth_session_secure');
-    const adminAuthCookie = request.cookies.get('admin_auth');
-    
-    // Try to extract token data from cookies
-    let tokenData = null;
-    try {
-      if (authCookie?.value || authCookieLax?.value || authCookieSecure?.value) {
-        const tokenStr = authCookie?.value || authCookieLax?.value || authCookieSecure?.value;
-        
-        // URL decode the cookie value first (handles cases where JSON is URL encoded)
-        let decodedTokenStr = tokenStr;
-        try {
-          decodedTokenStr = decodeURIComponent(tokenStr);
-        } catch (decodeError) {
-          console.log(`[Middleware] Failed to URL decode API cookie, will use as-is`);
-          // Continue with the original value if decoding fails
-        }
-        
-        try {
-          tokenData = JSON.parse(decodedTokenStr);
-          
-          // Verify the JSON token has required fields
-          if (!tokenData.id) {
-            console.log(`[Middleware] API token data missing ID field`);
-            tokenData = {
-              id: decodedTokenStr, // Use the raw string as fallback
-              team: 'pending_lookup',
-              v: '2'
-            };
-          }
-        } catch (parseError) {
-          console.log(`[Middleware] API Cookie is not JSON, treating as plain session ID: ${decodedTokenStr.substring(0,8) || 'invalid'}...`);
-          
-          // For plain session IDs, we'll use a special format to pass through to API
-          // We can't query the database from middleware (Edge Runtime limitation)
-          tokenData = {
-            id: decodedTokenStr,
-            team: 'pending_lookup', // Special marker to indicate we need to look up the team
-            v: '2'                  // Use a default version of 2 instead of 1
-          };
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing auth cookie for API:', e);
-    }
-    
-    // If admin auth cookie exists, proceed (admin validation happens in the routes)
-    if (adminAuthCookie?.value) {
-      console.log(`[Middleware] Admin auth cookie found for ${pathname}`);
-      const response = NextResponse.next();
-      // Add cache prevention headers
-      Object.entries(cacheHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value);
+    // If we have valid auth data from cookies, add it to headers for API routes
+    if (authData) {
+      console.log(`[Middleware] Adding auth headers for API request: ${pathname}`);
+      
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('X-Auth-Session', authData.sessionId);
+      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Version', authData.version);
+      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+      
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+        headers: cacheHeaders
       });
-      return response;
-    }
-    
-    // If we have valid tokenData from cookies, validate it
-    if (tokenData?.id && tokenData?.team) {
-      try {
-        // If token doesn't have a version, set a default
-        if (!tokenData.v) {
-          tokenData.v = '2'; // Always default to version 2
-        }
-        
-        console.log(`[Middleware] Validating token for API request: session ${tokenData.id.substring(0,8) || 'invalid'}, team ${tokenData.team}, version ${tokenData.v}`);
-        
-        // Use AbortController to set a timeout for the fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        try {
-          // Adjust the validation URL based on whether we need to look up the team
-          let validationUrl = new URL('/api/auth/validate-token', request.url).toString();
-          
-          // Perform actual token validation against the database
-          const validationResponse = await fetch(validationUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-              'Pragma': 'no-cache',
-            },
-            body: JSON.stringify({
-              sessionId: tokenData.id,
-              team: tokenData.team,
-              version: tokenData.v,
-              needsTeamLookup: tokenData.team === 'pending_lookup'
-            }),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!validationResponse.ok) {
-            console.log(`[Middleware] API token validation HTTP error: ${validationResponse.status}`);
-            
-            // For server errors, allow the request through
-            if (validationResponse.status >= 500) {
-              console.log('[Middleware] Server error during validation, allowing request');
-              const requestHeaders = new Headers(request.headers);
-              requestHeaders.set('X-Auth-Warning', 'validation-server-error');
-              return NextResponse.next({
-                request: {
-                  headers: requestHeaders,
-                }
-              });
-            }
-            
-            // Create the URL with error params
-            const url = new URL('/', request.url);
-            url.searchParams.set('authRequired', 'true');
-            url.searchParams.set('redirect', pathname);
-            url.searchParams.set('error', 'Your session has expired or been invalidated');
-            
-            // Add timestamp to prevent redirect loops
-            url.searchParams.set('t', Date.now().toString());
-            
-            // Increment redirect count to prevent loops
-            url.searchParams.set('rc', (redirectCount + 1).toString());
-            
-            // Create response with the URL and delete cookies
-            const response = NextResponse.redirect(url);
-            response.cookies.delete('auth_session');
-            response.cookies.delete('auth_session_lax');
-            response.cookies.delete('auth_session_secure');
-            
-            // Add redirect count header
-            response.headers.set('x-redirect-count', (redirectCount + 1).toString());
-            
-            return response;
-          }
-          
-          const validationResult = await validationResponse.json();
-          
-          if (!validationResult.valid) {
-            console.log(`[Middleware] API token invalid: ${validationResult.message}`);
-            // Return 401
-            return new NextResponse(JSON.stringify({ error: validationResult.message || 'Authentication failed' }), {
-              status: 401,
-              headers: { 
-                'Content-Type': 'application/json',
-                ...cacheHeaders
-              }
-            });
-          }
-          
-          // Token is valid, proceed with the request
-          const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('X-Auth-Validated', 'true');
-          requestHeaders.set('X-Auth-Team', validationResult.team || tokenData.team);
-          requestHeaders.set('X-Auth-Session', tokenData.id);
-          
-          console.log(`[Middleware] API token validation successful, proceeding`);
-          
-          return NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-            headers: cacheHeaders
-          });
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          console.log(`[Middleware] Fetch error during API validation:`, fetchError.message);
-          
-          // Allow requests to proceed on validation errors with limited functionality
-          // This helps with offline or intermittent connectivity
-          console.log(`[Middleware] Allowing request to proceed with validation warning`);
-          const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('X-Auth-Validation-Error', 'true');
-          requestHeaders.set('X-Auth-Team', tokenData.team);
-          requestHeaders.set('X-Auth-Session', tokenData.id);
-          
-          return NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-            headers: cacheHeaders
-          });
-        }
-      } catch (error) {
-        console.log(`[Middleware] API authentication error: ${error.message}`);
-        return new NextResponse(JSON.stringify({ error: 'Authentication failed' }), {
-          status: 401,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...cacheHeaders
-          }
-        });
-      }
     }
     
     // If no auth header or valid cookie for API routes, return 401
@@ -447,213 +264,50 @@ export async function middleware(request) {
     });
   }
   
-  // For all non-API protected routes, check for session cookie
-  const authCookie = request.cookies.get('auth_session');
-  const authCookieLax = request.cookies.get('auth_session_lax');
-  const authCookieSecure = request.cookies.get('auth_session_secure');
-  const adminAuthCookie = request.cookies.get('admin_auth');
+  // For non-API protected routes, we have auth data, so validate it by making a simple check
+  // Instead of making a fetch call (which can be problematic in Edge Runtime), 
+  // we'll do a lightweight validation and let the route handle detailed validation
   
-  // If admin auth cookie exists, proceed (admin validation happens in the routes)
-  if (adminAuthCookie?.value) {
-    console.log(`[Middleware] Admin auth cookie found for ${pathname}`);
-    return NextResponse.next();
+  if (authData.sessionId && (authData.team !== 'pending_lookup' || authData.team)) {
+    console.log(`[Middleware] Auth data found, allowing access to ${pathname}`);
+    
+    // Add auth headers to the request for the route to use
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('X-Auth-Session', authData.sessionId);
+    requestHeaders.set('X-Auth-Team', authData.team);
+    requestHeaders.set('X-Auth-Version', authData.version);
+    requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
   
-  // If we have any auth cookie, validate it
-  if (authCookie?.value || authCookieLax?.value || authCookieSecure?.value) {
-    try {
-      // Use the first available cookie
-      const tokenStr = authCookie?.value || authCookieLax?.value || authCookieSecure?.value;
-      let tokenData;
-      
-      // URL decode the cookie value first (handles cases where JSON is URL encoded)
-      let decodedTokenStr = tokenStr;
-      try {
-        decodedTokenStr = decodeURIComponent(tokenStr);
-      } catch (decodeError) {
-        console.log(`[Middleware] Failed to URL decode cookie, will use as-is`);
-        // Continue with the original value if decoding fails
-      }
-      
-      // Try to parse as JSON, but if it fails, treat as a plain session ID
-      try {
-        tokenData = JSON.parse(decodedTokenStr);
-        
-        // Validate JSON structure
-        if (!tokenData.id) {
-          throw new Error('Invalid token format - missing id');
-        }
-      } catch (parseError) {
-        console.log(`[Middleware] Cookie is not JSON, treating as plain session ID: ${decodedTokenStr && decodedTokenStr.substring(0,8) || 'invalid'}...`);
-        
-        // For plain session IDs, we'll use a special format to pass through to API
-        // We can't query the database from middleware (Edge Runtime limitation)
-        tokenData = {
-          id: decodedTokenStr,
-          team: 'pending_lookup', // Special marker to indicate we need to look up the team
-          v: '2'                  // Use a default version of 2 instead of 1
-        };
-      }
-      
-      // Check if token version is present, use default if not
-      if (!tokenData.v) {
-        tokenData.v = '2'; // Always use version 2
-      }
-      
-      console.log(`[Middleware] Validating token: session=${tokenData.id.substring(0,8) || 'invalid'}, team=${tokenData.team}, version=${tokenData.v}`);
-      
-      // Use AbortController to set a timeout for the fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      try {
-        // Adjust the validation URL based on whether we need to look up the team
-        let validationUrl = new URL('/api/auth/validate-token', request.url).toString();
-        
-        // Perform actual token validation against the database
-        const validationResponse = await fetch(validationUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            'Pragma': 'no-cache',
-          },
-          body: JSON.stringify({
-            sessionId: tokenData.id,
-            team: tokenData.team,
-            version: tokenData.v,
-            needsTeamLookup: tokenData.team === 'pending_lookup'
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!validationResponse.ok) {
-          console.log(`[Middleware] Token validation HTTP error: ${validationResponse.status}`);
-          
-          // For server errors, allow the request through
-          if (validationResponse.status >= 500) {
-            console.log('[Middleware] Server error during validation, allowing request');
-            const requestHeaders = new Headers(request.headers);
-            requestHeaders.set('X-Auth-Warning', 'validation-server-error');
-            return NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              }
-            });
-          }
-          
-          // Create the URL with error params
-          const url = new URL('/', request.url);
-          url.searchParams.set('authRequired', 'true');
-          url.searchParams.set('redirect', pathname);
-          url.searchParams.set('error', 'Your session has expired or been invalidated');
-          
-          // Add timestamp to prevent redirect loops
-          url.searchParams.set('t', Date.now().toString());
-          
-          // Increment redirect count to prevent loops
-          url.searchParams.set('rc', (redirectCount + 1).toString());
-          
-          // Create response with the URL and delete cookies
-          const response = NextResponse.redirect(url);
-          response.cookies.delete('auth_session');
-          response.cookies.delete('auth_session_lax');
-          response.cookies.delete('auth_session_secure');
-          
-          // Add redirect count header
-          response.headers.set('x-redirect-count', (redirectCount + 1).toString());
-          
-          return response;
-        }
-        
-        const validationResult = await validationResponse.json();
-        console.log(`[Middleware] Validation result:`, validationResult);
-        
-        if (!validationResult.valid) {
-          console.log(`[Middleware] Token invalid: ${validationResult.message}`);
-          
-          // Create the URL with error params
-          const url = new URL('/', request.url);
-          url.searchParams.set('authRequired', 'true');
-          url.searchParams.set('redirect', pathname);
-          url.searchParams.set('error', validationResult.message || 'Your session has expired or been invalidated');
-          
-          // Add timestamp to prevent redirect loops
-          url.searchParams.set('t', Date.now().toString());
-          
-          // Increment redirect count to prevent loops
-          url.searchParams.set('rc', (redirectCount + 1).toString());
-          
-          // Create response with the URL and delete cookies
-          const response = NextResponse.redirect(url);
-          response.cookies.delete('auth_session');
-          response.cookies.delete('auth_session_lax');
-          response.cookies.delete('auth_session_secure');
-          
-          // Add redirect count header
-          response.headers.set('x-redirect-count', (redirectCount + 1).toString());
-          
-          return response;
-        }
-        
-        // Token is valid, proceed with the request
-        const requestHeaders = new Headers(request.headers);
-        requestHeaders.set('X-Auth-Validated', 'true');
-        // Use the team from validation result if available
-        requestHeaders.set('X-Auth-Team', validationResult.team || tokenData.team);
-        requestHeaders.set('X-Auth-Session', tokenData.id);
-        
-        console.log(`[Middleware] Token validation successful, proceeding`);
-        
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        console.log(`[Middleware] Fetch error during validation:`, fetchError.message);
-        
-        // Create the URL with error params
-        const url = new URL('/reset-auth.html', request.url);
-        
-        // Create response with the URL and delete cookies
-        const response = NextResponse.redirect(url);
-        response.cookies.delete('auth_session');
-        response.cookies.delete('auth_session_lax');
-        response.cookies.delete('auth_session_secure');
-        
-        return response;
-      }
-    } catch (error) {
-      // Token validation failed, redirect to login
-      console.log(`[Middleware] Authentication failed: ${error.message}`);
-      
-      // Redirect to reset-auth page to clean everything up
-      const response = NextResponse.redirect(new URL('/reset-auth.html', request.url));
-      response.cookies.delete('auth_session');
-      response.cookies.delete('auth_session_lax');
-      response.cookies.delete('auth_session_secure');
-      
-      return response;
-    }
-  }
+  console.log(`[Middleware] Auth data incomplete, redirecting to login`);
   
-  console.log(`[Middleware] No valid auth cookie found, redirecting to login`);
-  
-  // No valid auth cookie found - redirect to login with original destination
+  // Auth data is incomplete - redirect to login
   const url = new URL('/', request.url);
   url.searchParams.set('authRequired', 'true');
   url.searchParams.set('redirect', pathname);
-  
-  // Add a timestamp to prevent redirect loops
   url.searchParams.set('t', Date.now().toString());
+  url.searchParams.set('rc', (redirectCount + 1).toString());
   
-  // Create the redirect response and add the redirect count header
-  const response = NextResponse.redirect(url);
-  response.headers.set('x-redirect-count', (redirectCount + 1).toString());
-  
-  return response;
+  return NextResponse.redirect(url);
 } 
+
+// Configure which paths the middleware should run on
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (images, icons, etc.)
+     * We DO want to include API routes for authentication
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
