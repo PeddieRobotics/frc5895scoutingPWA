@@ -314,9 +314,6 @@ export async function middleware(request) {
       
       const validationResult = await validationResponse.json();
       
-      console.log(`[Middleware] Validation response - status: ${validationResponse.status}, ok: ${validationResponse.ok}`);
-      console.log(`[Middleware] Validation result:`, validationResult);
-      
       if (!validationResponse.ok || !validationResult.valid) {
         console.log(`[Middleware] Session validation failed: ${validationResult.message || 'Unknown error'}`);
         
@@ -326,8 +323,6 @@ export async function middleware(request) {
           errorParam = 'sessionRevoked';
         } else if (validationResult.message?.includes('invalidated')) {
           errorParam = 'tokenInvalidated';
-        } else if (validationResult.message?.includes('deleted')) {
-          errorParam = 'sessionDeleted';
         }
         
         // Session is invalid, redirect to login
@@ -344,34 +339,36 @@ export async function middleware(request) {
       console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${authData.team}`);
       
       // Session is valid, add auth headers to the request
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('X-Auth-Session', authData.sessionId);
-    requestHeaders.set('X-Auth-Team', authData.team);
-    requestHeaders.set('X-Auth-Version', authData.version);
-    requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
-    
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('X-Auth-Session', authData.sessionId);
+      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Version', authData.version);
+      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+      
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
       
     } catch (error) {
       console.error(`[Middleware] API validation error:`, error);
-      console.error(`[Middleware] Error details - name: ${error.name}, message: ${error.message}`);
+      // On API error, allow through but let the route handle validation
+      // This prevents the middleware from blocking access due to temporary API issues
+      console.log(`[Middleware] Allowing request through due to validation API error`);
       
-      // For security, when validation fails completely, redirect to login
-      // This prevents bypassing authentication when the validation API is unreachable
-      console.log(`[Middleware] Validation API error, redirecting to login for security`);
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('X-Auth-Session', authData.sessionId);
+      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Version', authData.version);
+      requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
+      requestHeaders.set('X-Auth-Validation-Failed', 'true'); // Signal that validation failed
       
-      const url = new URL('/', request.url);
-      url.searchParams.set('authRequired', 'true');
-      url.searchParams.set('redirect', pathname);
-      url.searchParams.set('validationError', 'true');
-      url.searchParams.set('t', Date.now().toString());
-      url.searchParams.set('rc', (redirectCount + 1).toString());
-      
-      return NextResponse.redirect(url);
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
     }
   }
   
