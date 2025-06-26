@@ -87,14 +87,6 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
       // Reset attempts on successful login (assuming success if no error thrown)
       setAttempts(0);
       
-      // Reset form state
-      setUsername('');
-      setPassword('');
-      setError('');
-      
-      // Note: Dialog closure is now handled by the parent login handler
-      // to ensure proper timing with redirects
-      
       console.log("=== AUTH DIALOG DEBUG END ===");
       
     } catch (error) {

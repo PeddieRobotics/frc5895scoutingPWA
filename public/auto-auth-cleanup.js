@@ -5,14 +5,6 @@
  */
 
 (function() {
-  // CRITICAL: This script is temporarily disabled because it's incompatible with HttpOnly session cookies.
-  // The script cannot see HttpOnly cookies from JavaScript, so it incorrectly thinks there's a mismatch
-  // and deletes the very session cookies that were just set, causing redirect loops and JSON parse errors.
-  // 
-  // The server-side middleware is now the single source of truth for authentication validation.
-  console.log('[Auto Auth Cleanup] Script disabled - HttpOnly cookies are handled server-side');
-  return;
-  
   console.log('[Auto Auth Cleanup] Checking authentication state...');
   
   // Disable notifications for normal page navigation (only show for real problems)

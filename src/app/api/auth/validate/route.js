@@ -446,61 +446,9 @@ export async function POST(request) {
       const passwordMatches = await bcrypt.compare(password, password_hash);
       
       if (passwordMatches) {
-        // If authenticated, create a proper session in the database
+        // If authenticated, create a secure response with cookies
         const isProduction = process.env.NODE_ENV === 'production';
         const now = Date.now();
-        
-        // Create user_sessions table if it doesn't exist
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS user_sessions (
-            session_id TEXT PRIMARY KEY,
-            team_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT NOW(),
-            expires_at TIMESTAMP NOT NULL,
-            last_accessed TIMESTAMP DEFAULT NOW(),
-            token_version INTEGER DEFAULT 1,
-            revoked BOOLEAN DEFAULT FALSE
-          )
-        `);
-        
-        // Generate a proper session ID
-        const sessionId = require('crypto').randomBytes(16).toString('hex');
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
-        
-        // Get current token version
-        const versionResult = await client.query(
-          'SELECT token_version FROM team_auth WHERE team_name = $1',
-          [username]
-        );
-        const tokenVersion = versionResult.rows[0]?.token_version || 1;
-        
-        // Get client IP and user agent
-        const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-                        request.headers.get('x-real-ip') || 
-                        'unknown';
-        const userAgent = request.headers.get('user-agent') || 'unknown';
-        
-        // Insert the session into the database with IP and user agent
-        await client.query(`
-          INSERT INTO user_sessions (session_id, team_name, expires_at, token_version, ip_address, user_agent)
-          VALUES ($1, $2, $3, $4, $5, $6)
-          ON CONFLICT (session_id) DO UPDATE SET
-            last_accessed = NOW(),
-            expires_at = $3,
-            ip_address = $5,
-            user_agent = $6
-        `, [sessionId, username, expiresAt, tokenVersion, clientIp, userAgent]);
-        
-        console.log(`Created session ${sessionId.substring(0, 8)}... for team ${username}`);
-        
-        // Create session data for cookies
-        const sessionData = {
-          id: sessionId,
-          team: username,
-          v: tokenVersion,
-          created: now
-        };
         
         // Create a response with authenticated cookies
         const response = NextResponse.json({ 
@@ -508,39 +456,16 @@ export async function POST(request) {
           message: 'Authentication successful',
           scoutTeam: username,
           cookiesSet: true,
-          sessionId: sessionId.substring(0, 8) + '...',
           timestamp: now
         }, { 
           status: 200,
           headers
         });
         
-        console.log(`Setting session cookies for team ${username}, isProduction=${isProduction}`);
+        console.log(`Setting auth cookies for team ${username}, isProduction=${isProduction}`);
         
-        // CRITICAL: Clear any existing credential cookies that might conflict
-        const conflictingCredentialCookies = ['auth_credentials'];
-        conflictingCredentialCookies.forEach(cookieName => {
-          // Clear with default settings
-          response.cookies.set(cookieName, '', {
-            maxAge: 0,
-            path: '/',
-            expires: new Date(0)
-          });
-          // Clear with secure settings
-          response.cookies.set(cookieName, '', {
-            maxAge: 0,
-            path: '/',
-            expires: new Date(0),
-            secure: true,
-            sameSite: 'none'
-          });
-        });
-        
-        // Set session cookies (like the consolidated approach in auth.js)
-        const encodedValue = encodeURIComponent(JSON.stringify(sessionData));
-        
-        // Set session cookie with SameSite=Lax (works on localhost)
-        response.cookies.set('auth_session', encodedValue, { 
+        // First set a cookie with SameSite=Lax (works on localhost)
+        response.cookies.set('auth_credentials', base64CredentialsRaw, { 
           maxAge: 2592000, // 30 days
           path: '/',
           httpOnly: false,
@@ -548,28 +473,17 @@ export async function POST(request) {
           sameSite: 'lax'
         });
         
-        // Set session cookie with SameSite=Lax explicitly
-        response.cookies.set('auth_session_lax', encodedValue, { 
+        // Also set a SameSite=None cookie with Secure (required for cross-site in production)
+        response.cookies.set('auth_credentials', base64CredentialsRaw, { 
           maxAge: 2592000, // 30 days
           path: '/',
-          httpOnly: false,
-          secure: isProduction,
-          sameSite: 'lax'
+          httpOnly: false, 
+          secure: true, // Always use secure when sameSite is 'none'
+          sameSite: 'none', // Changed from 'lax' to 'none' to fix cross-page issues
+          domain: null // Let browser determine the domain
         });
         
-        // Set session cookie with SameSite=None for cross-site (production)
-        if (isProduction) {
-          response.cookies.set('auth_session_secure', encodedValue, { 
-            maxAge: 2592000, // 30 days
-            path: '/',
-            httpOnly: false, 
-            secure: true, // Always use secure when sameSite is 'none'
-            sameSite: 'none'
-          });
-        }
-        
-        console.log(`Set session cookies for team: ${username} with session ID ${sessionId.substring(0, 8)}...`);
-        console.log(`Cleared conflicting credential cookies: ${conflictingCredentialCookies.join(', ')}`);
+        console.log(`Set server-side cookies for team: ${username} with both SameSite modes`);
         return response;
       } else {
         // Password incorrect
@@ -615,10 +529,10 @@ export async function DELETE(request) {
     headers
   });
   
-  // Clear all auth cookies
+  // Clear auth_credentials cookie
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Clear auth_credentials cookies
+  // Clear SameSite=Lax cookie (for localhost)
   response.cookies.set('auth_credentials', '', { 
     maxAge: 0,
     path: '/',
@@ -627,6 +541,7 @@ export async function DELETE(request) {
     secure: isProduction
   });
   
+  // Clear SameSite=None cookie (for production)
   response.cookies.set('auth_credentials', '', { 
     maxAge: 0,
     path: '/',
@@ -635,26 +550,6 @@ export async function DELETE(request) {
     secure: true // Always use secure when sameSite is 'none'
   });
   
-  // Clear session cookies as well
-  const sessionCookies = ['auth_session', 'auth_session_lax', 'auth_session_secure'];
-  sessionCookies.forEach(cookieName => {
-    // Clear with default settings
-    response.cookies.set(cookieName, '', {
-      maxAge: 0,
-      path: '/',
-      expires: new Date(0)
-    });
-    // Clear with secure settings
-    response.cookies.set(cookieName, '', {
-      maxAge: 0,
-      path: '/',
-      expires: new Date(0),
-      secure: true,
-      sameSite: 'none'
-    });
-  });
-  
   console.log('Server-side logout: cleared authentication cookies with both SameSite modes');
-  console.log(`Cleared session cookies: ${sessionCookies.join(', ')}`);
   return response;
 } 

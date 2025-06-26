@@ -39,8 +39,6 @@ export default function Home() {
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
   const [debugInfo, setDebugInfo] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [scoutTeam, setScoutTeam] = useState(null);
   
   const form = useRef();
   const router = useRouter();
@@ -115,30 +113,21 @@ export default function Home() {
         // Set cookies with different SameSite attributes for maximum compatibility
         setAuthCookies(credentials);
         
-        // After successful validation, ensure a server-side session cookie exists
+        // Also try to ensure server-side cookies are set
         try {
-          // Skip if a session cookie is already present (auth_session or auth_session_lax)
-          const hasSessionCookie = document.cookie.includes('auth_session=') ||
-                                   document.cookie.includes('auth_session_lax=');
-          if (!hasSessionCookie && !window.__sessionCookieEnsured) {
-            console.log('No session cookie detected – requesting server to set one');
-            window.__sessionCookieEnsured = true; // prevent duplicates in this tab
-            await fetch('/api/auth/validate', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${credentials}`
-              },
-              body: JSON.stringify({ setCookie: true }),
-              credentials: 'same-origin'
-            });
-          }
+          console.log("Ensuring server-side cookies are set");
+          await fetch('/api/auth/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            body: JSON.stringify({ setCookie: true }),
+            credentials: 'same-origin'
+          });
         } catch (e) {
-          console.error('Failed to ensure session cookie:', e);
+          console.log("Server cookie setting failed, using client-side cookies");
         }
-        
-        // Note: Do NOT call POST /api/auth/validate here - that creates new sessions
-        // Session creation should only happen during actual login, not during validation polling
         
         console.log("Successfully validated credentials in client-side");
         return true;
@@ -234,14 +223,6 @@ export default function Home() {
         return;
       }
       
-      // CRITICAL: Don't run polling checks if user is not on the home page
-      // The home page is the only place that should run credential polling
-      // Protected pages should rely on middleware validation, not client polling
-      if (window.location.pathname !== '/') {
-        console.log(`Not on home page (${window.location.pathname}), skipping credential polling`);
-        return;
-      }
-      
       // Skip if checked successfully within the last 10 seconds (unless forced)
       // Reducing from 30s to 10s to check more frequently
       const timeSinceLastCheck = Date.now() - lastSuccessfulValidation;
@@ -293,10 +274,9 @@ export default function Home() {
     
     // Force a credential check when user navigates within the app 
     const handleNavigation = () => {
-      // Don't validate on navigation - let middleware handle it
-      // This was causing issues where navigation would trigger auth checks
-      // that would create new sessions and cause redirect loops
-      console.log("Navigation detected, but skipping credential check (middleware handles this)");
+      // Always validate on navigation
+      console.log("Navigation detected, checking credentials");
+      checkCredentials(true);
     };
     
     // Handle page visibility changes
@@ -1087,50 +1067,87 @@ export default function Home() {
   // Enhanced login function with better error handling and session management
   const handleLogin = async (credentials, scoutTeam) => {
     try {
-      console.log("=== LOGIN ATTEMPT START ===");
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirectPath = urlParams.get('redirect');
-
-      // Directly attempt to create a session.
-      // The POST endpoint handles validation internally.
-      const sessionResponse = await fetch('/api/auth/validate', {
+      console.log("=== LOGIN DEBUG START ===");
+      console.log("Login attempt for team:", scoutTeam);
+      console.log("Current URL:", window.location.href);
+      console.log("Current cookies before login:", document.cookie);
+      
+      // Validate credentials first
+      const isValid = await validateCredentials(credentials);
+      
+      if (!isValid) {
+        console.log("Credential validation failed");
+        throw new Error('Invalid credentials. Please check your team name and password.');
+      }
+      
+      console.log("Credentials validated successfully");
+      
+      // Create session
+      const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
         headers: {
+          'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
         },
-        body: JSON.stringify({ setCookie: true }),
-        credentials: 'same-origin'
+        credentials: 'include', // Important for cookies
+        cache: 'no-store'
       });
-
-      const sessionData = await sessionResponse.json();
-
-      if (!sessionResponse.ok || !sessionData.authenticated) {
-        console.error("handleLogin: Session creation failed", sessionData);
-        throw new Error(sessionData.message || 'Login failed. Please check credentials.');
-      }
-
-      console.log("handleLogin: Session created successfully.");
       
-      // Update state
+      const sessionData = await sessionResponse.json();
+      console.log("Session creation response:", sessionData);
+      console.log("Session response status:", sessionResponse.status);
+      console.log("Session response headers:", [...sessionResponse.headers.entries()]);
+      
+      if (!sessionResponse.ok || !sessionData.success) {
+        console.error("Session creation failed:", sessionData);
+        throw new Error(sessionData.message || 'Failed to create session. Please try again.');
+      }
+      
+      console.log("Session created successfully");
+      
+      // Wait a moment for cookies to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log("Cookies after session creation:", document.cookie);
+      
+      // Store credentials and team info
+      sessionStorage.setItem('auth_credentials', credentials);
+      localStorage.setItem('scout_team', scoutTeam);
+      
+      // Set auth state
       setAuthCredentials(credentials);
       setIsAuthenticated(true);
       setScoutTeam(scoutTeam);
       
-      // Close dialog
-      setShowAuthDialog(false);
-      setAuthError('');
+      console.log("Auth state updated, checking for redirect");
       
-      // Redirect using the router to preserve state
-      if (redirectPath) {
-        router.push(redirectPath);
+      // Handle redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectPath = urlParams.get('redirect');
+      
+      if (redirectPath && redirectPath !== '/') {
+        console.log(`Redirecting to: ${redirectPath}`);
+        
+        // Use a longer timeout to ensure cookies are fully set
+        setTimeout(() => {
+          console.log("Final cookies before redirect:", document.cookie);
+          window.location.href = redirectPath;
+        }, 500);
+      } else {
+        console.log("No redirect needed, staying on login page");
+        // Clear URL parameters
+        const newUrl = new URL(window.location);
+        newUrl.search = '';
+        window.history.replaceState({}, '', newUrl);
       }
-
-      console.log("=== LOGIN ATTEMPT END ===");
-
+      
+      console.log("=== LOGIN DEBUG END ===");
     } catch (error) {
       console.error("Login error:", error);
-      throw error; // Re-throw for AuthDialog to display the message
+      console.log("=== LOGIN DEBUG END (ERROR) ===");
+      throw error; // Re-throw so AuthDialog can catch it
     }
   };
 
@@ -1140,17 +1157,18 @@ export default function Home() {
     setShowAuthDialog(false);
     setAuthError('');
     
-    // Clear URL parameters immediately
-    const newUrl = new URL(window.location);
-    const redirectTarget = newUrl.searchParams.get('redirect');
-    newUrl.search = '';
-    window.history.replaceState({}, '', newUrl);
-    console.log("URL parameters cleared");
-
     // If we have a redirect target, navigate there
-    if (redirectTarget) {
-      console.log(`Auth success, redirecting to: ${redirectTarget}`);
-      router.push(redirectTarget);
+    if (authRedirectTarget) {
+      console.log(`Auth success, redirecting to: ${authRedirectTarget}`);
+      
+      // Instead of immediately redirecting, wait a moment to ensure cookies are set
+      // and recognized by the browser, especially on iOS
+      setTimeout(() => {
+        // Use window.location for a hard navigation rather than the router
+        // This forces a complete page load with the new auth state
+        window.location.href = authRedirectTarget;
+      }, 300);
+      
       return;
     }
     
@@ -1165,7 +1183,7 @@ export default function Home() {
       setScoutProfile(updatedProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(updatedProfile));
     }
-  }, [authRedirectTarget, scoutProfile, router]);
+  }, [authRedirectTarget, scoutProfile]);
 
   // Handle auth dialog close
   const handleAuthClose = () => {
@@ -1229,9 +1247,11 @@ export default function Home() {
           setAuthError(errorMsg);
         }
         
-        // Don't clear URL parameters here - let the login process handle it
-        // This prevents interference with the redirect logic
-        console.log("Auth required detected, showing login dialog");
+        // Clear the URL parameters to avoid showing the message repeatedly
+        if (window.history && window.history.replaceState) {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        }
       }
     }
   }, [handleAuthRequired, handleRedirectTarget]);
@@ -1818,29 +1838,10 @@ export default function Home() {
               padding: '5px 10px',
               borderRadius: '3px',
               cursor: 'pointer',
-              marginBottom: '10px',
-              marginRight: '5px'
-            }}
-          >
-            Check Cookie Status
-          </button>
-          
-          <button 
-            onClick={() => {
-              console.log("Testing redirect to /team-view");
-              window.location.href = '/team-view';
-            }}
-            style={{
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              padding: '5px 10px',
-              borderRadius: '3px',
-              cursor: 'pointer',
               marginBottom: '10px'
             }}
           >
-            Test Redirect
+            Check Cookie Status
           </button>
           
           {debugInfo && (
