@@ -44,43 +44,65 @@ function setCrossPlatformCookie(response, name, value, options = {}, request = n
     sameSite: isSecureEnv ? 'none' : 'lax' // Use 'none' for secure environments, 'lax' for development
   };
   
-  // In production, log the host for debugging
-  if (request && isSecureEnv) {
-    const host = request.headers.get('host');
-    console.log(`Production cookie setting for host: ${host}`);
-  }
+  // ENHANCED DEBUGGING: Log environment and host details
+  const host = request?.headers.get('host') || 'unknown';
+  const userAgent = request?.headers.get('user-agent')?.substring(0, 100) || 'unknown';
+  
+  console.log(`[Session Cookie] === COOKIE SETTING DEBUG START ===`);
+  console.log(`[Session Cookie] Environment: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
+  console.log(`[Session Cookie] isSecureEnv: ${isSecureEnv}`);
+  console.log(`[Session Cookie] Host: ${host}`);
+  console.log(`[Session Cookie] User-Agent: ${userAgent}`);
+  console.log(`[Session Cookie] Setting cookie: ${name}`);
   
   const cookieOptions = { ...defaultOptions, ...options };
   const expires = options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 days default
   
   // Encode the value consistently - use single encoding to avoid double-encoding issues
   const encodedValue = encodeURIComponent(value);
+  console.log(`[Session Cookie] Original value length: ${value.length}`);
+  console.log(`[Session Cookie] Encoded value length: ${encodedValue.length}`);
+  console.log(`[Session Cookie] Value preview: ${value.substring(0, 100)}...`);
 
   // Set primary cookie
-  response.cookies.set(name, encodedValue, {
+  const primaryCookieOptions = {
     ...cookieOptions,
     expires
-  });
+  };
+  console.log(`[Session Cookie] Primary cookie options:`, primaryCookieOptions);
+  response.cookies.set(name, encodedValue, primaryCookieOptions);
 
   // For compatibility, also set _lax variant
-  response.cookies.set(`${name}_lax`, encodedValue, {
+  const laxCookieOptions = {
     ...cookieOptions,
     sameSite: 'lax',
     expires
-  });
+  };
+  console.log(`[Session Cookie] Lax cookie options:`, laxCookieOptions);
+  response.cookies.set(`${name}_lax`, encodedValue, laxCookieOptions);
 
   // For secure environments, also set _secure variant with SameSite=None
   if (isSecureEnv) {
-    response.cookies.set(`${name}_secure`, encodedValue, {
+    const secureCookieOptions = {
       ...cookieOptions,
       sameSite: 'none',
       secure: true,
       expires
-    });
+    };
+    console.log(`[Session Cookie] Secure cookie options:`, secureCookieOptions);
+    response.cookies.set(`${name}_secure`, encodedValue, secureCookieOptions);
   }
   
-  console.log(`setCrossPlatformCookie → wrote ${name} (primary), ${name}_lax${isSecureEnv ? `, and ${name}_secure` : ''}`);
-  console.log(`Cookie options used:`, { ...cookieOptions, isSecureEnv, expires: expires.toISOString() });
+  console.log(`[Session Cookie] Successfully set cookies: ${name} (primary), ${name}_lax${isSecureEnv ? `, and ${name}_secure` : ''}`);
+  
+  // Log what cookies should be in the response
+  const responseCookies = response.cookies.getAll();
+  console.log(`[Session Cookie] Response cookies count: ${responseCookies.length}`);
+  responseCookies.forEach((cookie, index) => {
+    console.log(`[Session Cookie] Response cookie ${index}: ${cookie.name}=${cookie.value?.substring(0, 30)}...`);
+  });
+  
+  console.log(`[Session Cookie] === COOKIE SETTING DEBUG END ===`);
   
   return response;
 }
