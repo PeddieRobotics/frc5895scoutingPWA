@@ -83,7 +83,12 @@ function MatchView() {
     
     fetch("/api/get-alliance-data", {
       headers: {
-        'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+        'Authorization': (() => {
+          try {
+            const creds = sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials');
+            return creds ? `Basic ${creds}` : undefined;
+          } catch (_) { return undefined; }
+        })()
       }
     })
       .then(resp => {
@@ -155,7 +160,12 @@ function MatchView() {
         
         fetch('/api/get-teams-of-match?match=' + urlParams.match, {
           headers: {
-            'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
+            'Authorization': (() => {
+              try {
+                const creds = sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials');
+                return creds ? `Basic ${creds}` : undefined;
+              } catch (_) { return undefined; }
+            })()
           }
         })
         .then(resp => {

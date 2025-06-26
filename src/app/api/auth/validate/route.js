@@ -234,8 +234,24 @@ export async function GET(request) {
   if (authHeader && authHeader.startsWith('Basic ')) {
     try {
       // Extract and decode credentials
-      const base64Credentials = authHeader.split(' ')[1];
-      const credentials = atob(base64Credentials);
+      const base64CredentialsRaw = authHeader.split(' ')[1];
+      let credentials;
+      try {
+        credentials = atob(base64CredentialsRaw);
+      } catch (e) {
+        try {
+          credentials = atob(decodeURIComponent(base64CredentialsRaw));
+        } catch (e2) {
+          // Do not count decoding errors against rate limits to avoid accidental lockouts
+          return NextResponse.json({ 
+            authenticated: false,
+            message: 'Authentication error'
+          }, { 
+            status: 400,
+            headers
+          });
+        }
+      }
       const [username, password] = credentials.split(':');
       
       console.log(`Validation request for team: ${username} with params: ${request.nextUrl.search}`);
@@ -371,8 +387,17 @@ export async function POST(request) {
   
   try {
     // Extract and decode credentials
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = atob(base64Credentials);
+    const base64CredentialsRaw = authHeader.split(' ')[1];
+    let credentials;
+    try {
+      credentials = atob(base64CredentialsRaw);
+    } catch (e) {
+      try {
+        credentials = atob(decodeURIComponent(base64CredentialsRaw));
+      } catch (e2) {
+        throw e; // rethrow original
+      }
+    }
     const [username, password] = credentials.split(':');
     
     // Authenticate with database
@@ -428,7 +453,7 @@ export async function POST(request) {
         console.log(`Setting auth cookies for team ${username}, isProduction=${isProduction}`);
         
         // First set a cookie with SameSite=Lax (works on localhost)
-        response.cookies.set('auth_credentials', base64Credentials, { 
+        response.cookies.set('auth_credentials', base64CredentialsRaw, { 
           maxAge: 2592000, // 30 days
           path: '/',
           httpOnly: false,
@@ -437,7 +462,7 @@ export async function POST(request) {
         });
         
         // Also set a SameSite=None cookie with Secure (required for cross-site in production)
-        response.cookies.set('auth_credentials', base64Credentials, { 
+        response.cookies.set('auth_credentials', base64CredentialsRaw, { 
           maxAge: 2592000, // 30 days
           path: '/',
           httpOnly: false, 

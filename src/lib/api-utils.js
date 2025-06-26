@@ -34,14 +34,23 @@ export async function authenticatedFetch(url, options = {}) {
       currentTeam = 'guest';
     }
     
-    // Set up default options
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${currentTeam}:`)}`,
-        'Cache-Control': 'no-store'
-      }
+    let defaultHeaders = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store'
     };
+
+    // Add Basic auth header only if credentials are available
+    try {
+      const storedCreds = sessionStorage.getItem('auth_credentials') ||
+                          localStorage.getItem('auth_credentials');
+      if (storedCreds) {
+        defaultHeaders['Authorization'] = `Basic ${storedCreds}`;
+      }
+    } catch (e) {
+      // Ignore storage access errors
+    }
+
+    const defaultOptions = { headers: defaultHeaders };
     
     // Merge options
     const mergedOptions = {

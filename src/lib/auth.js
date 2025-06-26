@@ -132,28 +132,35 @@ export async function validateAuthToken(request) {
         authData = JSON.parse(authCookie);
         console.log(`[Auth] Found JSON auth data in cookies: team=${authData?.team}, sessionId=${authData?.id?.substring(0,8) || 'none'}`);
       } catch (e) {
-        // If parsing fails, treat as a plain session ID (old format)
-        console.log(`[Auth] Cookie is not JSON, treating as plain session ID: ${authCookie.substring(0,8)}...`);
-        
-        // Create basic auth data with just the session ID
-        authData = { id: authCookie };
-        
-        // Try to look up the session in the database to get the team
-        const client = await pool.connect();
+        // May be double-encoded. Try one more pass.
         try {
-          const sessionResult = await client.query(`
-            SELECT s.team_name FROM user_sessions s
-            WHERE s.session_id = $1 AND s.expires_at > NOW() AND s.revoked = FALSE
-          `, [authCookie]);
+          const secondDecode = decodeURIComponent(authCookie);
+          authData = JSON.parse(secondDecode);
+          console.log(`[Auth] Found JSON auth data after second decode: team=${authData?.team}, sessionId=${authData?.id?.substring(0,8)}`);
+        } catch (_ignored) {
+          // If parsing fails, treat as a plain session ID (old format)
+          console.log(`[Auth] Cookie is not JSON, treating as plain session ID: ${authCookie.substring(0,8)}...`);
           
-          if (sessionResult.rowCount > 0) {
-            authData.team = sessionResult.rows[0].team_name;
-            console.log(`[Auth] Found team ${authData.team} for session ID ${authCookie.substring(0,8)}...`);
-          } else {
-            console.log(`[Auth] No valid session found for ID ${authCookie.substring(0,8)}...`);
+          // Create basic auth data with just the session ID
+          authData = { id: authCookie };
+          
+          // Try to look up the session in the database to get the team
+          const client = await pool.connect();
+          try {
+            const sessionResult = await client.query(`
+              SELECT s.team_name FROM user_sessions s
+              WHERE s.session_id = $1 AND s.expires_at > NOW() AND s.revoked = FALSE
+            `, [authCookie]);
+            
+            if (sessionResult.rowCount > 0) {
+              authData.team = sessionResult.rows[0].team_name;
+              console.log(`[Auth] Found team ${authData.team} for session ID ${authCookie.substring(0,8)}...`);
+            } else {
+              console.log(`[Auth] No valid session found for ID ${authCookie.substring(0,8)}...`);
+            }
+          } finally {
+            client.release();
           }
-        } finally {
-          client.release();
         }
       }
       

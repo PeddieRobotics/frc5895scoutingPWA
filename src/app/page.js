@@ -158,25 +158,18 @@ export default function Home() {
                            window.location.hostname === 'localhost' ||
                            window.location.hostname.includes('.vercel.app');
     
-    // Create a JSON string with auth data to be more explicit
-    const authData = JSON.stringify({
-      id: credentials,
-      timestamp: Date.now(),
-      version: 2 // Incrementing version to avoid conflicts with older formats
-    });
-    
-    // Encode for safe cookie storage
-    const encodedAuthData = encodeURIComponent(authData);
-    
-    // Set cookie with path=/ (standard cookie, works in most browsers)
-    document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000`;
-    
-    // Set as SameSite=Lax cookie (best for cross-page navigation and localhost)
-    document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=Lax`;
-    
-    // Set as SameSite=None+Secure cookie (needed for production/preview HTTPS)
+    // Store raw base64 credentials in cookies (no JSON wrapper)
+    const rawCreds = credentials;
+
+    // Set cookie with path=/ (standard cookie)
+    document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000`;
+
+    // Set SameSite=Lax cookie
+    document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000; SameSite=Lax`;
+
+    // Set SameSite=None;Secure cookie if secure context
     if (isSecureContext) {
-      document.cookie = `auth_credentials=${encodedAuthData}; path=/; max-age=2592000; SameSite=None; Secure`;
+      document.cookie = `auth_credentials=${rawCreds}; path=/; max-age=2592000; SameSite=None; Secure`;
       console.log("Set secure cookie for HTTPS/preview environment");
     } else {
       console.log("Not setting Secure cookie as we're not in a secure context");

@@ -176,10 +176,17 @@ function TeamView() {
       }
   
       fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
-          headers: {
-              // Include the Authorization header with the current user's credentials
-              'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
-          }
+          headers: (() => {
+            const hdrs = {};
+            try {
+              const storedCreds = sessionStorage.getItem('auth_credentials') ||
+                                  localStorage.getItem('auth_credentials');
+              if (storedCreds) {
+                hdrs['Authorization'] = `Basic ${storedCreds}`;
+              }
+            } catch (_) {/* ignore */}
+            return hdrs;
+          })()
       })
           .then(response => {
               if (response.status === 401) {

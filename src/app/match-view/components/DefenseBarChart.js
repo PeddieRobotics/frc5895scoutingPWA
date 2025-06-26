@@ -82,9 +82,14 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
       
       try {
         const response = await fetch(`/api/get-team-data?team=${teamNumber}&includeRows=true`, {
-          headers: {
-            'Authorization': `Basic ${btoa(`${currentUserTeam || 'guest'}:`)}`
-          }
+          headers: (() => {
+            const hdr = {};
+            try {
+              const creds = sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials');
+              if (creds) hdr['Authorization'] = `Basic ${creds}`;
+            } catch (_) {}
+            return hdr;
+          })()
         });
         if (!response.ok) {
           console.error(`Failed to fetch data for team ${teamNumber}`);

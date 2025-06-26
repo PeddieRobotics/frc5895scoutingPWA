@@ -46,15 +46,17 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
                       process.env.VERCEL_ENV === 'preview' || 
                       process.env.FORCE_SECURE === 'true';
   
+  const encodedValue = encodeURIComponent(value);
+
   // Primary cookie without suffix (helps some browsers/extensions)
-  response.cookies.set(`${name}`, value, {
+  response.cookies.set(`${name}`, encodedValue, {
     ...cookieOptions,
     sameSite: 'lax',
     expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
   });
 
   // 1) SameSite=Lax works for normal same-origin navigation and API calls.
-  response.cookies.set(`${name}_lax`, value, {
+  response.cookies.set(`${name}_lax`, encodedValue, {
     ...cookieOptions,
     sameSite: 'lax',
     expires: options.expires || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days default
@@ -63,7 +65,7 @@ function setCrossPlatformCookie(response, name, value, options = {}) {
   // 2) SameSite=None + Secure is required when the site is embedded or served from a
   //    different origin (e.g. Vercel preview on *.vercel.app).
   if (isSecureEnv) {
-    response.cookies.set(`${name}_secure`, value, {
+    response.cookies.set(`${name}_secure`, encodedValue, {
       ...cookieOptions,
       sameSite: 'none',
       secure: true,
@@ -104,11 +106,15 @@ export async function POST(request) {
     }
     
     // Extract and decode credentials
-    const base64Credentials = authHeader.split(' ')[1];
+    const base64CredentialsRaw = authHeader.split(' ')[1];
     let credentials, username, password;
     
     try {
-      credentials = atob(base64Credentials);
+      try {
+        credentials = atob(base64CredentialsRaw);
+      } catch (e) {
+        credentials = atob(decodeURIComponent(base64CredentialsRaw));
+      }
       [username, password] = credentials.split(':');
       
       if (!username || !password) {
@@ -280,7 +286,7 @@ export async function POST(request) {
       });
       
       // Set HTTP-only cookie as backup security measure
-      response.cookies.set('auth_token', authToken, {
+      response.cookies.set('auth_token', encodeURIComponent(authToken), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -288,11 +294,11 @@ export async function POST(request) {
         expires: expiresAt
       });
       
-      // Create a session data object for cookies
+      // Create a session data object for cookies (use current token version)
       const sessionData = JSON.stringify({
         id: sessionId,
         team: username,
-        v: '1'
+        v: tokenVersion
       });
       
       console.log(`Setting auth cookies for team ${username}, isProduction=${process.env.NODE_ENV === 'production'}`);

@@ -429,9 +429,9 @@ export default function Picklist() {
       };
       
       // Add Authorization header with team information if available
-      if (currentUserTeam) {
-        headers['Authorization'] = `Basic ${btoa(`${currentUserTeam}:`)}`;
-        console.log(`Adding Authorization header for team: ${currentUserTeam}`);
+      const storedCreds = (typeof window !== 'undefined') ? (sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials')) : null;
+      if (storedCreds) {
+        headers['Authorization'] = `Basic ${storedCreds}`;
       }
       
       // Use credentials: 'include' to send cookies with the request
@@ -504,8 +504,9 @@ export default function Picklist() {
       };
       
       // Add Authorization header if we have client-side team info
-      if (currentUserTeam) {
-        headers['Authorization'] = `Basic ${btoa(`${currentUserTeam}:`)}`;
+      const storedCreds = (typeof window !== 'undefined') ? (sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials')) : null;
+      if (storedCreds) {
+        headers['Authorization'] = `Basic ${storedCreds}`;
       }
       
       const response = await fetch('/api/compute-picklist', {
@@ -579,8 +580,9 @@ export default function Picklist() {
       };
       
       // Add Authorization header if we have client-side team info
-      if (currentUserTeam) {
-        headers['Authorization'] = `Basic ${btoa(`${currentUserTeam}:`)}`;
+      const storedCreds = (typeof window !== 'undefined') ? (sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials')) : null;
+      if (storedCreds) {
+        headers['Authorization'] = `Basic ${storedCreds}`;
       }
       
       const response = await fetch(`/api/get-alliance-selections?eventCode=${eventCode}`, {
