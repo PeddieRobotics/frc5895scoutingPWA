@@ -192,13 +192,6 @@ export async function middleware(request) {
   // Extract auth data from cookies
   const authData = extractAuthFromCookies(request);
   
-  // Debug: Log all cookies for troubleshooting
-  const allCookies = request.cookies.getAll();
-  const rawCookieHeader = request.headers.get('cookie');
-  console.log(`[Middleware] Raw cookie header:`, rawCookieHeader);
-  console.log(`[Middleware] All cookies received:`, allCookies.map(c => `${c.name}=${c.value?.substring(0,20)}...`));
-  console.log(`[Middleware] Auth data extracted:`, authData ? { sessionId: authData.sessionId?.substring(0,8) + '...', team: authData.team, source: authData.source } : null);
-  
   if (!authData) {
     console.log(`[Middleware] No valid auth data found, redirecting to login`);
     
