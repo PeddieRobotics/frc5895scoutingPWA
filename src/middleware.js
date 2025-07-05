@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   '/manifest.json',
   '/apple-touch-icon.png',
   '/apple-touch-icon-180x180.png',
+  '/sw.js',  // Service worker must be publicly accessible for PWA
   '/api/admin/debug',
   '/api/auth/validate-token',
   '/auth-handler.js',
@@ -26,6 +27,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/_next/',
   '/icons/',
   '/apple-touch-icon',
+  '/workbox-', // Workbox PWA files
   '/api/auth/',
   '/api/admin/' // All admin API routes are allowed through middleware
 ];
