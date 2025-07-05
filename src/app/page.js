@@ -299,24 +299,6 @@ export default function Home() {
     
     // Force a credential check when user interacts with the page
     const handleUserInteraction = (e) => {
-      // Skip validation for PWA-related touch events
-      if (e.type === 'touchstart') {
-        // Skip if this might be a PWA installation gesture
-        // PWA gestures often happen on body/html or don't have specific targets
-        if (!e.target || 
-            e.target === document.body || 
-            e.target === document.documentElement ||
-            e.target.closest('meta') ||
-            e.target.closest('link')) {
-          return;
-        }
-        
-        // Skip if this is a Safari PWA gesture (often multi-touch)
-        if (e.touches && e.touches.length > 1) {
-          return;
-        }
-      }
-      
       // On form submission or navigation actions, always validate
       if (e.type === 'submit' || 
           (e.target && (
