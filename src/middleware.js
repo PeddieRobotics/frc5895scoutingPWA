@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   '/manifest.json',
   '/apple-touch-icon.png',
   '/apple-touch-icon-180x180.png',
+  '/apple-touch-icon-192x192.png',
   '/sw.js',  // Service worker must be publicly accessible for PWA
   '/api/admin/debug',
   '/api/auth/validate-token',
@@ -506,9 +507,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - manifest.json (PWA manifest)
+     * - apple-touch-icon.png (Apple touch icon)
      * - public files (images, icons, etc.)
      * We DO want to include API routes for authentication
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|apple-touch-icon\\.png|apple-touch-icon-180x180\\.png|apple-touch-icon-192x192\\.png|.*\\.(?:svg|jpg|jpeg|gif|webp)$).*)',
   ],
 }
