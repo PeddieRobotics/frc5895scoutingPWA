@@ -7,7 +7,9 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
   } : false,
-  schema: 'public'
+  schema: 'public',
+  // Add connection timeout to avoid hanging
+  connectionTimeoutMillis: 10000
 });
 
 // Add connection error logging
@@ -223,4 +225,4 @@ export async function POST(request) {
       headers
     });
   }
-} 
+}

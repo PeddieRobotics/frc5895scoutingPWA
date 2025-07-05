@@ -299,6 +299,10 @@ export async function middleware(request) {
     
     try {
       // Use the validation API to check if the session is still valid
+      // Add timeout and better error handling for production
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       const validationResponse = await fetch(new URL('/api/auth/validate-token', request.nextUrl.origin), {
         method: 'POST',
         headers: {
@@ -309,8 +313,16 @@ export async function middleware(request) {
           sessionId: authData.sessionId,
           team: authData.team,
           version: authData.version
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      if (!validationResponse.ok) {
+        console.error(`[Middleware] Validation API returned ${validationResponse.status}: ${validationResponse.statusText}`);
+        throw new Error(`Validation API returned ${validationResponse.status}`);
+      }
       
       const validationResult = await validationResponse.json();
       
@@ -363,14 +375,31 @@ export async function middleware(request) {
       
     } catch (error) {
       console.error(`[Middleware] API validation error:`, error);
+      
+      // Log more specific error details for debugging
+      let errorDetail = 'unknown_error';
+      if (error.name === 'AbortError') {
+        errorDetail = 'timeout';
+        console.log(`[Middleware] Validation API timeout after 5 seconds`);
+      } else if (error.message?.includes('fetch')) {
+        errorDetail = 'fetch_failed';
+        console.log(`[Middleware] Fetch request failed: ${error.message}`);
+      } else if (error.message?.includes('JSON')) {
+        errorDetail = 'json_parse_failed';
+        console.log(`[Middleware] JSON parsing failed: ${error.message}`);
+      } else {
+        console.log(`[Middleware] Other validation error: ${error.message}`);
+      }
+      
       // On API error, we should fail closed and redirect to login.
       // Allowing requests to pass through is a security risk.
-      console.log(`[Middleware] Redirecting to login due to validation API error`);
+      console.log(`[Middleware] Redirecting to login due to validation API error: ${errorDetail}`);
       
       const url = new URL('/', request.url);
       url.searchParams.set('authRequired', 'true');
       url.searchParams.set('redirect', pathname);
       url.searchParams.set('error', 'validation_api_failed');
+      url.searchParams.set('errorDetail', errorDetail);
       url.searchParams.set('t', Date.now().toString());
       url.searchParams.set('rc', (redirectCount + 1).toString());
 
