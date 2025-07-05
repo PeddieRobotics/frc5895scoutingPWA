@@ -301,13 +301,29 @@ export async function middleware(request) {
       // Use the validation API to check if the session is still valid
       // Add timeout and better error handling for production
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutMs = (isProduction || isVercelPreview) ? 10000 : 5000; // Longer timeout for production
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
-      const validationResponse = await fetch(new URL('/api/auth/validate-token', request.nextUrl.origin), {
+      // Build the validation URL - handle production vs development differently
+      let validationUrl;
+      if (isProduction || isVercelPreview) {
+        // In production/preview, use the full URL with the correct protocol
+        const protocol = request.nextUrl.protocol;
+        const host = request.nextUrl.host;
+        validationUrl = `${protocol}//${host}/api/auth/validate-token`;
+      } else {
+        // In development, use the origin-based approach
+        validationUrl = new URL('/api/auth/validate-token', request.nextUrl.origin).toString();
+      }
+      
+      console.log(`[Middleware] Making validation request to: ${validationUrl}`);
+      
+      const validationResponse = await fetch(validationUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Middleware-Validation': 'true'
+          'X-Middleware-Validation': 'true',
+          'User-Agent': 'NextJS-Middleware/1.0'
         },
         body: JSON.stringify({
           sessionId: authData.sessionId,
@@ -319,12 +335,28 @@ export async function middleware(request) {
       
       clearTimeout(timeoutId);
       
+      console.log(`[Middleware] Validation response status: ${validationResponse.status}`);
+      
       if (!validationResponse.ok) {
         console.error(`[Middleware] Validation API returned ${validationResponse.status}: ${validationResponse.statusText}`);
+        // Try to read the response body for more details
+        try {
+          const errorText = await validationResponse.text();
+          console.error(`[Middleware] Validation API error body: ${errorText}`);
+        } catch (e) {
+          console.error(`[Middleware] Could not read error response body: ${e.message}`);
+        }
         throw new Error(`Validation API returned ${validationResponse.status}`);
       }
       
-      const validationResult = await validationResponse.json();
+      let validationResult;
+      try {
+        validationResult = await validationResponse.json();
+        console.log(`[Middleware] Validation response: ${JSON.stringify(validationResult)}`);
+      } catch (jsonError) {
+        console.error(`[Middleware] Failed to parse validation response as JSON: ${jsonError.message}`);
+        throw new Error(`Invalid JSON response from validation API`);
+      }
       
       if (!validationResponse.ok || !validationResult.valid) {
         console.log(`[Middleware] Session validation failed: ${validationResult.message || 'Unknown error'}`);
@@ -380,7 +412,7 @@ export async function middleware(request) {
       let errorDetail = 'unknown_error';
       if (error.name === 'AbortError') {
         errorDetail = 'timeout';
-        console.log(`[Middleware] Validation API timeout after 5 seconds`);
+        console.log(`[Middleware] Validation API timeout after ${timeoutMs}ms`);
       } else if (error.message?.includes('fetch')) {
         errorDetail = 'fetch_failed';
         console.log(`[Middleware] Fetch request failed: ${error.message}`);
