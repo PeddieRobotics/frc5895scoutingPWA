@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   '/register',
   '/favicon.ico',
   '/manifest.json',
+  '/apple-touch-icon.png',
   '/api/admin/debug',
   '/api/auth/validate-token',
   '/auth-handler.js',
@@ -179,7 +180,10 @@ export async function middleware(request) {
     
     // Only add cache prevention headers to non-icon files
     // Icons need to be cached for PWA functionality
-    const isIconFile = pathname.includes('icon') || pathname.includes('favicon') || pathname.includes('manifest');
+    const isIconFile = pathname.includes('icon') || 
+                      pathname.includes('favicon') || 
+                      pathname === '/manifest.json';
+    
     if (!isIconFile) {
       Object.entries(cacheHeaders).forEach(([key, value]) => {
         response.headers.set(key, value);
@@ -498,9 +502,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - manifest.json (PWA manifest)
      * - public files (images, icons, etc.)
      * We DO want to include API routes for authentication
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
