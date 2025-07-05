@@ -325,15 +325,25 @@ export async function middleware(request) {
           errorParam = 'tokenInvalidated';
         }
         
-        // Session is invalid, redirect to login
+        // Session is invalid, redirect to login and clear auth cookies
         const url = new URL('/', request.url);
         url.searchParams.set('authRequired', 'true');
         url.searchParams.set('redirect', pathname);
         url.searchParams.set(errorParam, 'true');
         url.searchParams.set('t', Date.now().toString());
         url.searchParams.set('rc', (redirectCount + 1).toString());
-        
-        return NextResponse.redirect(url);
+
+        const response = NextResponse.redirect(url);
+        ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
+          .forEach(name => {
+            response.cookies.set(name, '', {
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0)
+            });
+          });
+
+        return response;
       }
       
       console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${authData.team}`);
@@ -363,8 +373,18 @@ export async function middleware(request) {
       url.searchParams.set('error', 'validation_api_failed');
       url.searchParams.set('t', Date.now().toString());
       url.searchParams.set('rc', (redirectCount + 1).toString());
-      
-      return NextResponse.redirect(url);
+
+      const response = NextResponse.redirect(url);
+      ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
+        .forEach(name => {
+          response.cookies.set(name, '', {
+            maxAge: 0,
+            path: '/',
+            expires: new Date(0)
+          });
+        });
+
+      return response;
     }
   }
   
@@ -376,9 +396,19 @@ export async function middleware(request) {
   url.searchParams.set('redirect', pathname);
   url.searchParams.set('t', Date.now().toString());
   url.searchParams.set('rc', (redirectCount + 1).toString());
-  
-  return NextResponse.redirect(url);
-} 
+
+  const response = NextResponse.redirect(url);
+  ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
+    .forEach(name => {
+      response.cookies.set(name, '', {
+        maxAge: 0,
+        path: '/',
+        expires: new Date(0)
+      });
+    });
+
+  return response;
+}
 
 // Configure which paths the middleware should run on
 export const config = {
