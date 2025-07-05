@@ -511,6 +511,6 @@ export const config = {
      * - public files (images, icons, etc.)
      * We DO want to include API routes for authentication
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|apple-touch-icon\\.png|apple-touch-icon-180x180\\.png|apple-touch-icon-192x192\\.png|.*\\.(?:svg|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|apple-touch-icon.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
