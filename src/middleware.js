@@ -176,10 +176,16 @@ export async function middleware(request) {
       PUBLIC_PATH_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
     console.log(`[Middleware] Public path access: ${pathname}`);
     const response = NextResponse.next();
-    // Add cache prevention headers
-    Object.entries(cacheHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
+    
+    // Only add cache prevention headers to non-icon files
+    // Icons need to be cached for PWA functionality
+    const isIconFile = pathname.includes('icon') || pathname.includes('favicon') || pathname.includes('manifest');
+    if (!isIconFile) {
+      Object.entries(cacheHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+    }
+    
     return response;
   }
 
