@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
 
 // PUBLIC PATHS - no auth needed
 const PUBLIC_PATHS = [
@@ -291,89 +292,77 @@ export async function middleware(request) {
     });
   }
   
-    // For non-API protected routes, we have auth data, so validate it using an API call
-  // We can't use direct database connections in Edge Runtime, so we'll use the validation API
+    // For non-API protected routes, validate session directly in middleware
+  // This avoids internal API calls that get intercepted by Vercel SSO in production
   
   if (authData.sessionId && authData.team && authData.team !== 'pending_lookup') {
-    console.log(`[Middleware] Auth data found, validating session ${authData.sessionId.substring(0,8)}... for team ${authData.team} via API`);
+    console.log(`[Middleware] Auth data found, validating session ${authData.sessionId.substring(0,8)}... for team ${authData.team} via direct DB`);
     
     try {
-      // Use the validation API to check if the session is still valid
-      // Add timeout and better error handling for production
-      const controller = new AbortController();
-      const timeoutMs = (isProduction || isVercelPreview) ? 10000 : 5000; // Longer timeout for production
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      // Create direct database connection using neon serverless (Edge Runtime compatible)
+      const sql = neon(process.env.DATABASE_URL);
       
-      // Build the validation URL - handle production vs development differently
-      let validationUrl;
-      if (isProduction || isVercelPreview) {
-        // In production/preview, use the full URL with the correct protocol
-        const protocol = request.nextUrl.protocol;
-        const host = request.nextUrl.host;
-        validationUrl = `${protocol}//${host}/api/auth/validate-token`;
-      } else {
-        // In development, use the origin-based approach
-        validationUrl = new URL('/api/auth/validate-token', request.nextUrl.origin).toString();
-      }
+      // Handle the case where the middleware couldn't determine the team name
+      let teamName = authData.team;
       
-      console.log(`[Middleware] Making validation request to: ${validationUrl}`);
-      
-      const validationResponse = await fetch(validationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Middleware-Validation': 'true',
-          'User-Agent': 'NextJS-Middleware/1.0'
-        },
-        body: JSON.stringify({
-          sessionId: authData.sessionId,
-          team: authData.team,
-          version: authData.version
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      console.log(`[Middleware] Validation response status: ${validationResponse.status}`);
-      
-      if (!validationResponse.ok) {
-        console.error(`[Middleware] Validation API returned ${validationResponse.status}: ${validationResponse.statusText}`);
-        // Try to read the response body for more details
-        try {
-          const errorText = await validationResponse.text();
-          console.error(`[Middleware] Validation API error body: ${errorText}`);
-        } catch (e) {
-          console.error(`[Middleware] Could not read error response body: ${e.message}`);
-        }
-        throw new Error(`Validation API returned ${validationResponse.status}`);
-      }
-      
-      let validationResult;
-      try {
-        validationResult = await validationResponse.json();
-        console.log(`[Middleware] Validation response: ${JSON.stringify(validationResult)}`);
-      } catch (jsonError) {
-        console.error(`[Middleware] Failed to parse validation response as JSON: ${jsonError.message}`);
-        throw new Error(`Invalid JSON response from validation API`);
-      }
-      
-      if (!validationResponse.ok || !validationResult.valid) {
-        console.log(`[Middleware] Session validation failed: ${validationResult.message || 'Unknown error'}`);
+      if (authData.team === 'pending_lookup') {
+        console.log('[Middleware] Looking up team name for session ID:', authData.sessionId.substring(0,8));
         
-        // Determine the specific error type
-        let errorParam = 'authRequired';
-        if (validationResult.message?.includes('revoked')) {
-          errorParam = 'sessionRevoked';
-        } else if (validationResult.message?.includes('invalidated')) {
-          errorParam = 'tokenInvalidated';
+        // Look up the team name from the session ID
+        const teamLookupResult = await sql`
+          SELECT team_name 
+          FROM user_sessions 
+          WHERE session_id = ${authData.sessionId} AND expires_at > NOW() AND revoked = FALSE
+        `;
+        
+        if (teamLookupResult.length === 0) {
+          console.log('[Middleware] No team found for session ID:', authData.sessionId.substring(0,8));
+          
+          // Session not found, redirect to login
+          const url = new URL('/', request.url);
+          url.searchParams.set('authRequired', 'true');
+          url.searchParams.set('redirect', pathname);
+          url.searchParams.set('error', 'session_not_found');
+          url.searchParams.set('t', Date.now().toString());
+          url.searchParams.set('rc', (redirectCount + 1).toString());
+
+          const response = NextResponse.redirect(url);
+          ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
+            .forEach(name => {
+              response.cookies.set(name, '', {
+                maxAge: 0,
+                path: '/',
+                expires: new Date(0)
+              });
+            });
+
+          return response;
         }
         
-        // Session is invalid, redirect to login and clear auth cookies
+        teamName = teamLookupResult[0].team_name;
+        console.log('[Middleware] Found team name for session:', teamName);
+      }
+      
+      console.log('[Middleware] Checking database for session:', { sessionId: authData.sessionId, team: teamName });
+      
+      // Check if the session exists and is valid
+      const sessionResult = await sql`
+        SELECT s.session_id, s.team_name, s.token_version, t.token_version as current_version, s.revoked, s.expires_at
+        FROM user_sessions s
+        JOIN team_auth t ON s.team_name = t.team_name
+        WHERE s.session_id = ${authData.sessionId} AND s.expires_at > NOW() AND s.team_name = ${teamName} AND s.revoked = FALSE
+      `;
+      
+      console.log('[Middleware] Query result rows:', sessionResult.length);
+      
+      if (sessionResult.length === 0) {
+        console.log('[Middleware] No active session found - session deleted or invalid');
+        
+        // Session is invalid (deleted/revoked/expired), redirect to login and clear auth cookies
         const url = new URL('/', request.url);
         url.searchParams.set('authRequired', 'true');
         url.searchParams.set('redirect', pathname);
-        url.searchParams.set(errorParam, 'true');
+        url.searchParams.set('error', 'session_deleted');
         url.searchParams.set('t', Date.now().toString());
         url.searchParams.set('rc', (redirectCount + 1).toString());
 
@@ -390,12 +379,52 @@ export async function middleware(request) {
         return response;
       }
       
-      console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${authData.team}`);
+      const session = sessionResult[0];
+      console.log('[Middleware] Session found:', session);
+      
+      // Check if token version matches the current team version
+      const sessionVersion = session.token_version || 1;
+      const currentVersion = session.current_version || 1;
+      
+      if (sessionVersion !== currentVersion) {
+        console.log('[Middleware] Token version mismatch:', { 
+          sessionVersion: sessionVersion, 
+          currentVersion: currentVersion 
+        });
+        
+        // Token version mismatch, redirect to login
+        const url = new URL('/', request.url);
+        url.searchParams.set('authRequired', 'true');
+        url.searchParams.set('redirect', pathname);
+        url.searchParams.set('error', 'token_invalidated');
+        url.searchParams.set('t', Date.now().toString());
+        url.searchParams.set('rc', (redirectCount + 1).toString());
+
+        const response = NextResponse.redirect(url);
+        ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
+          .forEach(name => {
+            response.cookies.set(name, '', {
+              maxAge: 0,
+              path: '/',
+              expires: new Date(0)
+            });
+          });
+
+        return response;
+      }
+      
+      // Update last accessed time
+      await sql`
+        UPDATE user_sessions SET last_accessed = NOW()
+        WHERE session_id = ${authData.sessionId}
+      `;
+      
+      console.log(`[Middleware] Session validation successful for ${authData.sessionId.substring(0,8)}... team ${teamName}`);
       
       // Session is valid, add auth headers to the request
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set('X-Auth-Session', authData.sessionId);
-      requestHeaders.set('X-Auth-Team', authData.team);
+      requestHeaders.set('X-Auth-Team', teamName);
       requestHeaders.set('X-Auth-Version', authData.version);
       requestHeaders.set('X-Auth-Environment', isVercelPreview ? 'preview' : isProduction ? 'production' : 'development');
       
@@ -406,32 +435,16 @@ export async function middleware(request) {
       });
       
     } catch (error) {
-      console.error(`[Middleware] API validation error:`, error);
+      console.error(`[Middleware] Database validation error:`, error);
       
-      // Log more specific error details for debugging
-      let errorDetail = 'unknown_error';
-      if (error.name === 'AbortError') {
-        errorDetail = 'timeout';
-        console.log(`[Middleware] Validation API timeout after ${timeoutMs}ms`);
-      } else if (error.message?.includes('fetch')) {
-        errorDetail = 'fetch_failed';
-        console.log(`[Middleware] Fetch request failed: ${error.message}`);
-      } else if (error.message?.includes('JSON')) {
-        errorDetail = 'json_parse_failed';
-        console.log(`[Middleware] JSON parsing failed: ${error.message}`);
-      } else {
-        console.log(`[Middleware] Other validation error: ${error.message}`);
-      }
-      
-      // On API error, we should fail closed and redirect to login.
-      // Allowing requests to pass through is a security risk.
-      console.log(`[Middleware] Redirecting to login due to validation API error: ${errorDetail}`);
+      // On database error, we should fail closed and redirect to login.
+      // This maintains security by not allowing potentially invalid sessions through
+      console.log(`[Middleware] Redirecting to login due to database validation error`);
       
       const url = new URL('/', request.url);
       url.searchParams.set('authRequired', 'true');
       url.searchParams.set('redirect', pathname);
-      url.searchParams.set('error', 'validation_api_failed');
-      url.searchParams.set('errorDetail', errorDetail);
+      url.searchParams.set('error', 'validation_db_failed');
       url.searchParams.set('t', Date.now().toString());
       url.searchParams.set('rc', (redirectCount + 1).toString());
 
