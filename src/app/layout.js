@@ -14,7 +14,7 @@ export const metadata = {
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    apple: '/apple-touch-icon-180x180.png',
   },
 
   appleWebApp: {
@@ -31,7 +31,7 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: '#000000',
+  themeColor: '#153256',
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,
@@ -47,11 +47,11 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Teko&amp;display=swap" rel="stylesheet"></link>
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="icon" href="/favicon.ico" type="image/png" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png"></link>
-        <link rel="apple-touch-icon" sizes="192x192" href="/apple-touch-icon.png"></link>
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png"></link>
-        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"></link>
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-180x180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="JÖRMUNSCOUTR" />

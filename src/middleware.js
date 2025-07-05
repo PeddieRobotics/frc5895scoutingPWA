@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
   '/favicon.ico',
   '/manifest.json',
   '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
   '/api/admin/debug',
   '/api/auth/validate-token',
   '/auth-handler.js',
