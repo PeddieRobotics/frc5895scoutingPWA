@@ -14,19 +14,28 @@ export const metadata = {
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon-180x180.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon-180x180.png', sizes: '180x180' },
+    ],
   },
 
   appleWebApp: {
     capable: true,
     title: 'JÖRMUNSCOUTR',
-    statusBarStyle: 'black',
+    statusBarStyle: 'black-translucent',
     startupImage: [
       {
         url: '/icons/icon-512.png',
         media: '(device-width: 320px) and (device-height: 568px)'
       }
     ]
+  },
+  
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': 'JÖRMUNSCOUTR',
   }
 }
 
@@ -45,17 +54,6 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Teko&amp;display=swap" rel="stylesheet"></link>
-        <link rel="shortcut icon" href="/favicon.ico" />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
-        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-180x180.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-        <meta name="apple-mobile-web-app-title" content="JÖRMUNSCOUTR" />
-        <meta name="mobile-web-app-capable" content="yes" />
         
         <script src="/auto-auth-cleanup.js"></script>
       </head>
