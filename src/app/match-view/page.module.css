@@ -31,7 +31,7 @@
     margin-top: 10px;
     margin-bottom: -5px;
     font-size: 40px;
-    font-family: "Teko", sans-serif;
+    font-family: "Montserrat", sans-serif;
     text-align: center;
     width: 100%;
 }
@@ -100,7 +100,7 @@
     padding-bottom: 0px;
     border-radius: 5px;
     font-size: 45px;
-    font-family: "Teko", sans-serif;
+    font-family: "Montserrat", sans-serif;
 }
 
 .matchNav button:hover {
@@ -183,7 +183,7 @@
 }
 
 .matches * {
-    font-family: 'Teko', sans-serif;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .lightBorderBox {

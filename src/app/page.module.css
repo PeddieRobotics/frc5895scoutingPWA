@@ -6,7 +6,7 @@
     padding: 5px 15px;
     padding-bottom: 50px;
     min-height: calc(100vh - 45px);
-    font-family: "Belleza", sans-serif;
+    font-family: "Montserrat", sans-serif;
     justify-items: center;
     overflow-x: hidden;
     max-width: 100vw;
@@ -215,7 +215,7 @@
   }
 
   .MainDiv button, .MainDiv input {
-    font-family: 'Belleza', sans-serif;
+    font-family: 'Montserrat', sans-serif;
   }
 
   .MainDiv label {

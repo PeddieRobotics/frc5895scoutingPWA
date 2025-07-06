@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Belleza&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
 .container {
     width: 100%;
@@ -13,7 +13,7 @@
     justify-content: space-between;
     margin: 5px 10px; 
     text-align: center; 
-    font-family: "Belleza", sans-serif;
+    font-family: "Montserrat", sans-serif;
 }
 
 .allianceBoard {
@@ -38,7 +38,7 @@
     padding-bottom: 0px;
     border-radius: 5px;
     font-size: 45px;
-    font-family: "Teko", sans-serif;
+    font-family: "Montserrat", sans-serif;
 }
 
 .matchNav button:hover {
@@ -283,7 +283,7 @@
     align-items: center;
     align-self: center;
     width: 350px;
-    font-family: "Belleza", sans-serif;
+    font-family: "Montserrat", sans-serif;
 }
 
 .graphContainer :nth-child(2) {
@@ -334,7 +334,7 @@
     justify-content: center;
     align-items: center;
     width: 350px;
-    font-family: "Belleza", sans-serif; 
+    font-family: "Montserrat", sans-serif; 
 }
 
 .auto {
@@ -479,7 +479,7 @@
 .teamInputForm label {
     display: inline-block;
     font-size: 40px;
-    font-family: "Teko", sans-serif;
+    font-family: "Montserrat", sans-serif;
     width: 100%;
     text-align: center;
     margin-bottom: -5px;
