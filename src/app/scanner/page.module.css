@@ -5,7 +5,7 @@
     padding: 5px 40px;
     padding-bottom: 50px;
     min-height: calc(100vh - 45px);
-    font-family: "Belleza", sans-serif;
+    font-family: "Montserrat", sans-serif;
     justify-items: center;
     display: flex;
     flex-direction: column;
@@ -50,7 +50,7 @@
     border-radius: 5px;
     border: 1px solid #ffa200;
     font-size: 20px;
-    font-family: "Belleza", sans-serif;
+    font-family: "Montserrat", sans-serif;
     cursor: pointer;
     transition: background-color 0.3s;
   }
