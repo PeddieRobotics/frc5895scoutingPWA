@@ -24,6 +24,10 @@ export default function Endgame({ colors, endgameData }) {
           stroke: '#000', // Black border
           strokeWidth: 1.5, // Border width
         },
+        labels: {
+          fontFamily: "'Montserrat', sans-serif",
+          fill: "black"
+        }
       }}
     />
   );

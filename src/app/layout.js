@@ -5,7 +5,10 @@ import './globals.css'
 import NavBar from './form-components/NavBar.js'
 import PWADetector from './form-components/PWADetector.js'
 
-const montserrat = Montserrat({ subsets: ['latin'] })
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800']
+});
 
 export const metadata = {
   manifest: '/manifest.json',
@@ -16,7 +19,6 @@ export const metadata = {
     shortcut: '/favicon.ico',
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180' },
-      { url: '/apple-touch-icon-180x180.png', sizes: '180x180' },
     ],
   },
 
@@ -53,9 +55,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></link>
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/apple-touch-icon-192x192.png" />
         <script src="/auto-auth-cleanup.js"></script>
       </head>

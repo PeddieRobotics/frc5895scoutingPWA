@@ -16,7 +16,7 @@
 .weightsTable {
     height: auto;
     width: 100%;
-    font-size: 20px;
+    font-size: 16px;
     padding: 10px;
     border: 1px solid gray;
     border-radius: 10px;
@@ -32,7 +32,7 @@
     border: 2px solid black;
     border-radius: 5px;
     text-align: center;
-    font-size: 20px;
+    font-size: 16px;
 }
 .weightsTable td {
     text-align: right;
@@ -40,7 +40,7 @@
     padding: 0 3px;
 }
 .MainDiv h1 {
-    font-size: 40px;
+    font-size: 28px;
     text-align: center;
 }
 .weights {
@@ -51,6 +51,9 @@
     align-items: center;
     max-width: 100%;
     box-sizing: border-box;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 16px;
 }
 .alliances {
     display: flex;
@@ -73,11 +76,11 @@
     border: 2px solid black;
     border-radius: 5px;
     text-align: center;
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .wholeAlliance {
-    font-size: 20px;
+    font-size: 16px;
     border-spacing: 10px;
     border: 1px solid gray;
     padding: 10px;
@@ -172,7 +175,7 @@
 
 .picklistTable th {
     border-bottom: 2px solid black;
-    font-size: 30px;
+    font-size: 22px;
 }
 
 .picklistTable td {
@@ -181,7 +184,7 @@
     padding: 8px;
     border-radius: 3px;
     font-weight: 400;
-    font-size: 25px;
+    font-size: 18px;
 }
 
 .picklistTable td:first-child, .picklistTable td:nth-child(2) {

@@ -16,6 +16,12 @@ export default function Endgame({ data, color }) {
       data={data}
       colorScale={color}
       labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : ""}
+      style={{
+        labels: {
+          fontFamily: "'Montserrat', sans-serif",
+          fill: "black"
+        }
+      }}
     />
   );
 }

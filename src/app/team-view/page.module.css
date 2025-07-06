@@ -37,7 +37,7 @@
     padding: 3px 15px;
     padding-bottom: 0px;
     border-radius: 5px;
-    font-size: 45px;
+    font-size: 24px;
     font-family: "Montserrat", sans-serif;
 }
 
@@ -208,7 +208,7 @@
     margin-top: 5px;
     border: 1px solid black;
     border-radius: 10px 10px 0 0;
-    font-size: 30px;
+    font-size: 24px;
     font-weight: 800;
     width: 160px;
 }
@@ -227,8 +227,8 @@
     border-radius: 5px;
     padding: 5px;
     margin-bottom: -20px;
-    font-size: 19px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .Last3EpaBox::before {
@@ -245,8 +245,8 @@
     border-radius: 5px;
     padding: 5px;
     margin-bottom: -20px;
-    font-size: 19px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .EPA, .Last3EPA {
@@ -258,7 +258,7 @@
 }
 
 .EPA h1, .Last3EPA h1 {
-    font-size: 45px;
+    font-size: 28px;
 }
 
 .scoreBreakdownContainer {
