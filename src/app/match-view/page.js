@@ -458,9 +458,9 @@ function MatchView() {
       ];
 
     return <div className={styles.lightBorderBox}>
-      <h1 style={{color: colors[3]}}>{teamData.team}</h1>
-      <h2 style={{color: colors[3]}}>{teamData.teamName}</h2>
-      <div className={styles.scoreBreakdownContainer}>
+      <h1 style={{color: colors[3], marginTop: "10px", marginBottom: "0px"}}>{teamData.team}</h1>
+      <h2 style={{color: colors[3], marginTop: "0px", marginBottom: "0px"}}>{teamData.teamName}</h2>
+      <div className={styles.scoreBreakdownContainer} style={{marginTop: "30px"}}>
       <div style={{background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center"}} className={styles.EPABox}>
         {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
       </div>
@@ -471,7 +471,7 @@ function MatchView() {
       </div>
       </div>
       <div className={styles.barchartContainer}>
-        <h2>Average Piece Placement</h2>
+        <h2 style={{marginBottom: "0px", marginTop: "0px"}}>Average Piece Placement</h2>
         <PiecePlacement 
           colors={colors}
           matchMax={matchMax} 
@@ -485,7 +485,7 @@ function MatchView() {
         />
       </div>
       <div className={styles.chartContainer}>
-        <h2 style={{marginBottom: "-40px"}}>Endgame %</h2>
+        <h2 style={{marginBottom: "-40px", marginTop: "60px"}}>Endgame %</h2>
         <Endgame 
           colors={colors}
           endgameData={endgameData}
