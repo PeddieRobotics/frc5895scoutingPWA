@@ -2,8 +2,8 @@
 import styles from "./Checkbox.module.css";
 import { useState, useEffect, useRef } from "react";
 
-export default function Checkbox ({ visibleName, internalName, changeListener, className, style }) {
-    const [checked, setChecked] = useState(false);
+export default function Checkbox ({ visibleName, internalName, changeListener, className, style, defaultChecked = false }) {
+    const [checked, setChecked] = useState(defaultChecked);
     const checkboxRef = useRef(null);
     
     // Sync the React state with the actual DOM element when component mounts
@@ -15,6 +15,13 @@ export default function Checkbox ({ visibleName, internalName, changeListener, c
             }
         }
     }, []);
+
+    useEffect(() => {
+        setChecked(defaultChecked);
+        if (checkboxRef.current) {
+            checkboxRef.current.checked = defaultChecked;
+        }
+    }, [defaultChecked]);
     
     // Add listener for reset events
     useEffect(() => {

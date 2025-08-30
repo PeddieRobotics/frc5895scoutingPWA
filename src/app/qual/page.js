@@ -1,172 +1,84 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Header from "../form-components/Header";
-import TextInput from "../form-components/TextInput";
+import DynamicField from "../form-components/DynamicField";
 import styles from "../page.module.css";
-import Checkbox from "../form-components/Checkbox";
-import CommentBox from "../form-components/CommentBox";
-import Qualitative from "../form-components/Qualitative";
-import MatchType from "../form-components/MatchType";
 import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
+import formConfig from "../../config/formConfig.json";
 
-export default function Home() {
-  const [teamsData, setTeamsData] = useState([
-    { noShow: false, breakdown: false, defense: false },
-    { noShow: false, breakdown: false, defense: false },
-    { noShow: false, breakdown: false, defense: false }
-  ]);
-  const [scoutProfile, setScoutProfile] = useState(null);
+export default function QualForm() {
+  const form = useRef();
+
+  const initialMatchState = {};
+  formConfig.matchInfo.forEach(f => { initialMatchState[f.name] = f.default || ""; });
+  const initialTeamState = {};
+  formConfig.teamFields.forEach(f => { initialTeamState[f.name] = f.type === 'checkbox' ? false : ""; });
+
+  const [matchState, setMatchState] = useState(initialMatchState);
+  const [teamsState, setTeamsState] = useState(Array.from({ length: formConfig.teamsCount }, () => ({ ...initialTeamState })));
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeDataURL1, setQrCodeDataURL1] = useState("");
   const [qrCodeDataURL2, setQrCodeDataURL2] = useState("");
-  const [matchType, setMatchType] = useState("2");
-  const [allianceColor, setAllianceColor] = useState("red");
-  const form = useRef();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedProfile = localStorage.getItem("ScoutProfile");
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        setScoutProfile(profile);
-        setMatchType(profile.matchType || "2");
-      }
-    }
-  }, []);
-
-  const generateTSVString = (data) => {
-    // Sort teams by maneuverability (1 = worst, 5 = best)
-    const sortedTeams = [...data].sort((a, b) => a.maneuverability - b.maneuverability);
-    
-    // Combine all comments
-    const allComments = data.map(team => [
-      team.breakdownComments,
-      team.defenseComments,
-      team.generalComments
-    ].filter(Boolean).join("; ") );
-
+  const generateTSVString = (data, match) => {
+    const sortedTeams = [...data].sort((a, b) => (a[formConfig.sortField] || 0) - (b[formConfig.sortField] || 0));
+    const allComments = data
+      .map(team => formConfig.commentFields.map(f => team[f]).filter(Boolean).join("; "))
+      .join("; ");
     return [
-      data[0].match || "NULL",
-      allianceColor.toUpperCase(),
-      sortedTeams[0].team || "NULL",
-      sortedTeams[1].team || "NULL",
-      sortedTeams[2].team || "NULL",
+      match.match || "NULL",
+      (match.allianceColor || "").toUpperCase(),
+      sortedTeams[0]?.team || "NULL",
+      sortedTeams[1]?.team || "NULL",
+      sortedTeams[2]?.team || "NULL",
       allComments || "NULL"
     ].join("\t");
   };
 
-  const generateQRDataURL = async (data) => {
-    try {
-      // Generate JSON data
-      const jsonData = {
-        formType: 'tripleQualitative',
-        allianceColor,
-        matchType,
-        teams: data.map(team => ({
-          scoutname: team.scoutname,
-          scoutteam: team.scoutteam,
-          match: team.match,
-          team: team.team,
-          noShow: team.noShow,
-          maneuverability: team.maneuverability,
-          defensePlayed: team.defensePlayed,
-          defenseEvasion: team.defenseEvasion,
-          aggression: team.aggression,
-          breakdown: team.breakdown,
-          breakdownComments: team.breakdownComments,
-          defense: team.defense,
-          defenseComments: team.defenseComments,
-          generalComments: team.generalComments
-        }))
-      };
-
-      // Generate TSV data
-      const tsvString = generateTSVString(data);
-
-      // Create compressed JSON QR
-      const compressedJson = pako.gzip(new TextEncoder().encode(JSON.stringify(jsonData)));
-      const jsonQR = await QRCode.toDataURL(base58.encode(compressedJson), {
-        width: 400,
-        margin: 3,
-        errorCorrectionLevel: 'L'
-      });
-
-      // Create TSV QR
-      const tsvQR = await QRCode.toDataURL(tsvString, {
-        width: 400,
-        margin: 3,
-        errorCorrectionLevel: 'L'
-      });
-
-      setQrCodeDataURL1(jsonQR);
-      setQrCodeDataURL2(tsvQR);
-    } catch (error) {
-      console.error("QR Generation Error:", error);
-    }
-  };
-
-  const handleTeamChange = (index, field, value) => {
-    const newTeams = [...teamsData];
-    newTeams[index] = { ...newTeams[index], [field]: value };
-    setTeamsData(newTeams);
+  const generateQRDataURL = async (teams, match) => {
+    const jsonData = { formType: 'dynamic', match, teams };
+    const tsvString = generateTSVString(teams, match);
+    const compressedJson = pako.gzip(new TextEncoder().encode(JSON.stringify(jsonData)));
+    const jsonQR = await QRCode.toDataURL(base58.encode(compressedJson), { width: 400, margin: 3, errorCorrectionLevel: 'L' });
+    const tsvQR = await QRCode.toDataURL(tsvString, { width: 400, margin: 3, errorCorrectionLevel: 'L' });
+    setQrCodeDataURL1(jsonQR);
+    setQrCodeDataURL2(tsvQR);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(form.current);
-    
-    const collectedData = [0, 1, 2].map(index => ({
-      scoutname: formData.get('scoutname'),
-      scoutteam: formData.get('scoutteam'),
-      match: formData.get('match'),
-      team: formData.get(`team${index}-team`),
-      noShow: formData.get(`team${index}-noShow`) === 'on',
-      maneuverability: formData.get(`team${index}-maneuverability`),
-      defensePlayed: formData.get(`team${index}-defensePlayed`),
-      defenseEvasion: formData.get(`team${index}-defenseEvasion`),
-      aggression: formData.get(`team${index}-aggression`),
-      breakdown: formData.get(`team${index}-breakdown`) === 'on',
-      breakdownComments: formData.get(`team${index}-breakdownComments`),
-      defense: formData.get(`team${index}-defense`) === 'on',
-      defenseComments: formData.get(`team${index}-defenseComments`),
-      generalComments: formData.get(`team${index}-generalComments`)
-    }));
 
-    await generateQRDataURL(collectedData);
+    const matchData = {};
+    formConfig.matchInfo.forEach(f => {
+      let val = formData.get(f.name);
+      if (f.type === 'checkbox') val = formData.get(f.name) === 'on';
+      matchData[f.name] = val;
+    });
+
+    const teamsData = teamsState.map((_, index) => {
+      const obj = {};
+      formConfig.teamFields.forEach(f => {
+        const fieldName = `team${index}-${f.name}`;
+        let val = formData.get(fieldName);
+        if (f.type === 'checkbox') val = formData.get(fieldName) === 'on';
+        obj[f.name] = val;
+      });
+      return obj;
+    });
+
+    await generateQRDataURL(teamsData, matchData);
     setShowQRCode(true);
   };
 
   const handleQRClose = () => {
     setShowQRCode(false);
-    
-    // Instead of form reset, manually clear inputs
-    setTeamsData([
-      { noShow: false, breakdown: false, defense: false },
-      { noShow: false, breakdown: false, defense: false },
-      { noShow: false, breakdown: false, defense: false }
-    ]);
-    setAllianceColor('red');
-    setMatchType('2');
-  
-    // Update scout profile
-    if (scoutProfile) {
-      const newProfile = {
-        ...scoutProfile,
-        match: String(Number(scoutProfile.match) + 1)
-      };
-      setScoutProfile(newProfile);
-      localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
-    }
-  
-    new JSConfetti().addConfetti({
-      emojis: ['🐠', '🐡', '🦀', '🪸'],
-      emojiSize: 100,
-      confettiRadius: 3,
-      confettiNumber: 100,
-    });
+    setMatchState(initialMatchState);
+    setTeamsState(Array.from({ length: formConfig.teamsCount }, () => ({ ...initialTeamState })));
+    new JSConfetti().addConfetti({ emojis: ['🐠', '🐡', '🦀', '🪸'], emojiSize: 100, confettiRadius: 3, confettiNumber: 100 });
   };
 
   return (
@@ -179,135 +91,36 @@ export default function Home() {
               <img src={qrCodeDataURL1} alt="JSON QR" className={styles.QRCodeImage} />
               <img src={qrCodeDataURL2} alt="TSV QR" className={styles.QRCodeImage} />
             </div>
-            <button onClick={handleQRClose} className={styles.QRCloseButton}>
-              Done
-            </button>
+            <button onClick={handleQRClose} className={styles.QRCloseButton}>Done</button>
           </div>
         </div>
       ) : (
         <form ref={form} onSubmit={handleSubmit}>
           <Header headerName="Match Info" />
-          <div className={styles.allMatchInfo}>
-            <div className={styles.MatchInfo}>
-              <TextInput
-                visibleName="Scout Name:"
-                internalName="scoutname"
-                defaultValue={scoutProfile?.scoutname || ""}
-              />
-              <TextInput
-                visibleName="Scout Team:"
-                internalName="scoutteam"
-                defaultValue={scoutProfile?.scoutteam || ""}
-                type="number"
-              />
-              <TextInput
-                visibleName="Match #:"
-                internalName="match"
-                defaultValue={scoutProfile?.match || ""}
-                type="number"
-              />
-            </div>
-            
-            <div className={styles.configSection}>
-              <MatchType onMatchTypeChange={setMatchType} defaultValue={matchType} />
-              
-              <div className={styles.allianceToggle}>
-                <button
-                  type="button"
-                  className={`${styles.allianceButton} ${allianceColor === 'red' ? styles.active : ''}`}
-                  onClick={() => setAllianceColor('red')}
-                >
-                  RED ALLIANCE
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.allianceButton} ${allianceColor === 'blue' ? styles.active : ''}`}
-                  onClick={() => setAllianceColor('blue')}
-                >
-                  BLUE ALLIANCE
-                </button>
-              </div>
-            </div>
+          <div className={styles.MatchInfo}>
+            {formConfig.matchInfo.map(field => (
+              <DynamicField key={field.name} field={field} state={matchState} setState={setMatchState} />
+            ))}
           </div>
-
-          {[0, 1, 2].map((index) => (
+          {teamsState.map((teamState, index) => (
             <div key={index} className={styles.TeamSection}>
               <Header headerName={`Team ${index + 1}`} />
-              
-              <div className={styles.teamHeader}>
-                <TextInput
-                  visibleName="Team Scouted:"
-                  internalName={`team${index}-team`}
-                  type="number"
-                  className={styles.centeredInput}
+              {formConfig.teamFields.map(field => (
+                <DynamicField
+                  key={field.name}
+                  field={field}
+                  prefix={`team${index}-`}
+                  state={teamsState[index]}
+                  setState={updater =>
+                    setTeamsState(prev =>
+                      prev.map((t, i) => (i === index ? updater(t) : t))
+                    )
+                  }
                 />
-                <Checkbox
-                  visibleName="No Show"
-                  internalName={`team${index}-noShow`}
-                  changeListener={(e) => handleTeamChange(index, 'noShow', e.target.checked)}
-                  className={styles.centeredCheckbox}
-                />
-              </div>
-
-              {!teamsData[index].noShow && (
-                <div className={styles.qualitativeSection}>
-                  <div className={styles.qualGrid}>
-                    <Qualitative
-                      visibleName="Maneuverability"
-                      internalName={`team${index}-maneuverability`}
-                    />
-                    <Qualitative
-                      visibleName="Defense Played"
-                      internalName={`team${index}-defensePlayed`}
-                    />
-                    <Qualitative
-                      visibleName="Defense Evasion"
-                      internalName={`team${index}-defenseEvasion`}
-                    />
-                    <Qualitative
-                      visibleName="Aggression"
-                      internalName={`team${index}-aggression`}
-                    />
-                  </div>
-
-                  <div className={styles.commentSections}>
-                    <Checkbox
-                      visibleName="Broke Down"
-                      internalName={`team${index}-breakdown`}
-                      changeListener={(e) => handleTeamChange(index, 'breakdown', e.target.checked)}
-                    />
-                    {teamsData[index].breakdown && (
-                      <CommentBox
-                        visibleName="Breakdown Comments"
-                        internalName={`team${index}-breakdownComments`}
-                      />
-                    )}
-
-                    <Checkbox
-                      visibleName="Played Defense"
-                      internalName={`team${index}-defense`}
-                      changeListener={(e) => handleTeamChange(index, 'defense', e.target.checked)}
-                    />
-                    {teamsData[index].defense && (
-                      <CommentBox
-                        visibleName="Defense Comments"
-                        internalName={`team${index}-defenseComments`}
-                      />
-                    )}
-
-                    <CommentBox
-                      visibleName="General Comments"
-                      internalName={`team${index}-generalComments`}
-                    />
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           ))}
-
-          <button type="submit" className={styles.SubmitButton}>
-            GENERATE QR CODE
-          </button>
+          <button type="submit" className={styles.SubmitButton}>GENERATE QR CODE</button>
         </form>
       )}
     </div>

@@ -2,10 +2,16 @@
 import styles from './CommentBox.module.css'
 import { useRef, useEffect, useState } from 'react';
 
-export default function CommentBox ({ visibleName, internalName}) {
+export default function CommentBox ({ visibleName, internalName, defaultValue = "", changeListener }) {
     const textareaRef = useRef(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [charCount, setCharCount] = useState(0);
+    const [charCount, setCharCount] = useState(defaultValue.length);
+    const [value, setValue] = useState(defaultValue);
+
+    useEffect(() => {
+        setValue(defaultValue);
+        setCharCount(defaultValue.length);
+    }, [defaultValue]);
     const MAX_CHARS = 255;
     
     // Function to auto-resize the textarea
@@ -32,8 +38,10 @@ export default function CommentBox ({ visibleName, internalName}) {
     
     // Update character count
     const handleInput = (e) => {
+        setValue(e.target.value);
         setCharCount(e.target.value.length);
         autoResize();
+        if (changeListener) changeListener({ target: { value: e.target.value } });
     };
     
     // Set up the resize on input and window resize
@@ -56,14 +64,15 @@ export default function CommentBox ({ visibleName, internalName}) {
     return (
         <div className={styles.commentBoxContainer}>
             <label htmlFor={internalName} className={styles.commentLabel}>{visibleName}:</label>
-            <textarea 
+            <textarea
                 ref={textareaRef}
                 className={`${styles.textarea} ${isExpanded ? styles.expanded : ''}`}
-                id={internalName} 
+                id={internalName}
                 name={internalName}
                 placeholder="Enter your comments here..."
                 rows="3"
                 maxLength={MAX_CHARS}
+                value={value}
                 onInput={handleInput}
                 onFocus={autoResize}
             ></textarea>

@@ -1,0 +1,43 @@
+{
+  "teamsCount": 3,
+  "matchInfo": [
+    {"type": "text", "label": "Scout Name", "name": "scoutname"},
+    {"type": "number", "label": "Scout Team", "name": "scoutteam"},
+    {"type": "number", "label": "Match #", "name": "match"},
+    {
+      "type": "select",
+      "label": "Match Type",
+      "name": "matchType",
+      "options": [
+        {"label": "Qualification", "value": "2"},
+        {"label": "Playoff", "value": "3"}
+      ],
+      "default": "2"
+    },
+    {
+      "type": "select",
+      "label": "Alliance Color",
+      "name": "allianceColor",
+      "options": [
+        {"label": "Red", "value": "red"},
+        {"label": "Blue", "value": "blue"}
+      ],
+      "default": "red"
+    }
+  ],
+  "teamFields": [
+    {"type": "number", "label": "Team Scouted", "name": "team"},
+    {"type": "checkbox", "label": "No Show", "name": "noShow"},
+    {"type": "qualitative", "label": "Maneuverability", "name": "maneuverability"},
+    {"type": "qualitative", "label": "Defense Played", "name": "defensePlayed"},
+    {"type": "qualitative", "label": "Defense Evasion", "name": "defenseEvasion"},
+    {"type": "qualitative", "label": "Aggression", "name": "aggression"},
+    {"type": "checkbox", "label": "Broke Down", "name": "breakdown"},
+    {"type": "comment", "label": "Breakdown Comments", "name": "breakdownComments", "dependsOn": "breakdown"},
+    {"type": "checkbox", "label": "Played Defense", "name": "defense"},
+    {"type": "comment", "label": "Defense Comments", "name": "defenseComments", "dependsOn": "defense"},
+    {"type": "comment", "label": "General Comments", "name": "generalComments"}
+  ],
+  "sortField": "maneuverability",
+  "commentFields": ["breakdownComments", "defenseComments", "generalComments"]
+}

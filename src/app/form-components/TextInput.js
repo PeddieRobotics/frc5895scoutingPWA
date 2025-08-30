@@ -1,5 +1,5 @@
 import styles from './TextInput.module.css'
-export default function TextInput ({ visibleName, internalName, defaultValue, type="text", pattern, className }) {
+export default function TextInput ({ visibleName, internalName, type="text", pattern, className, changeListener, value = "" }) {
     return (
         <div className={styles.TextInput}>
             <label htmlFor={internalName}>{visibleName}</label>
@@ -8,8 +8,9 @@ export default function TextInput ({ visibleName, internalName, defaultValue, ty
                 type={type} 
                 id={internalName} 
                 name={internalName} 
-                defaultValue={defaultValue}
+                value={value}
                 pattern={pattern}
+                onChange={changeListener}
             ></input>
         </div>
     )

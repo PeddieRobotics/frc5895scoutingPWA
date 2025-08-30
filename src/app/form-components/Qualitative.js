@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import styles from './Qualitative.module.css'
 
-export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0 }) {
+export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0, changeListener }) {
     const [rating, setRating] = useState(forcedMinRating);
 
     // Update rating if forcedMinRating changes
@@ -31,7 +31,12 @@ export default function Qualitative ({ visibleName, internalName, description, s
             <hr></hr>
             <div className={styles.ratings}>
                 {[1,2,3,4,5,6].map(ratingValue => {
-                    return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => setRating(ratingValue)}>{symbol}</div>
+                    return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => {
+                        setRating(ratingValue);
+                        if (changeListener) {
+                            changeListener({ target: { value: ratingValue } });
+                        }
+                    }}>{symbol}</div>
                 })}
             </div>
             

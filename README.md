@@ -1,103 +1,75 @@
-## Getting Started
+# Config Driven Scouting App
 
-First, install the dependencies:
+This project now builds all scouting forms and displays from a single configuration file.  Non‑developers can modify the form structure, validation and the way data appears simply by editing [`src/config/formConfig.json`](src/config/formConfig.json) – no code changes required.
+
+## Getting Started
 
 ```bash
 npm install
+npm run dev
 ```
 
-Next, set up the database on Vercel with test data.
-```sql
+## Editing the Form
 
-CREATE TABLE cmptx2025 (
-   ID serial PRIMARY KEY,
-   ScoutName VARCHAR (255),
-   ScoutTeam INT,
-   Team INT,
-   Match INT,
-   MatchType INT,
-   Breakdown BOOLEAN,
-   NoShow BOOLEAN,
-   Leave BOOLEAN,
-   AutoL1Success INT,
-   AutoL1Fail INT,
-   AutoL2Success INT,
-   AutoL2Fail INT,
-   AutoL3Success INT,
-   AutoL3Fail INT,
-   AutoL4Success INT,
-   AutoL4Fail INT,
-   AutoAlgaeRemoved INT,
-   AutoProcessorSuccess INT,
-   AutoProcessorFail INT,
-   AutoNetSuccess INT,
-   AutoNetFail INT,
-   TeleL1Success INT,
-   TeleL1Fail INT,
-   TeleL2Success INT,
-   TeleL2Fail INT,
-   TeleL3Success INT,
-   TeleL3Fail INT,
-   TeleL4Success INT,
-   TeleL4Fail INT,
-   TeleAlgaeRemoved INT,
-   TeleProcessorSuccess INT,
-   TeleProcessorFail INT,
-   TeleNetSuccess INT,
-   TeleNetFail INT,
-   HPSuccess INT,
-   HPFail INT,
-   EndLocation INT,
-   CoralSpeed INT,
-   ProcessorSpeed INT,
-   NetSpeed INT,
-   AlgaeRemovalSpeed INT,
-   ClimbSpeed INT,
-   Maneuverability INT,
-   DefensePlayed INT,
-   DefenseEvasion INT,
-   Aggression INT,
-   CageHazard INT,
-   CoralGrndIntake BOOLEAN,
-   CoralStationIntake BOOLEAN,
-   Lollipop BOOLEAN,
-   AlgaeGrndIntake BOOLEAN,
-   AlgaeHighReefIntake BOOLEAN,
-   AlgaeLowReefIntake BOOLEAN,
-   GeneralComments VARCHAR (255),
-   BreakdownComments VARCHAR (255),
-   DefenseComments VARCHAR (255)
-);
+`formConfig.json` describes the match information section, how many teams are entered at once, and the fields for each team.  Example:
 
--- Authentication table for team logins
-CREATE TABLE team_auth (
-   id serial PRIMARY KEY,
-   team_name VARCHAR(255) UNIQUE NOT NULL,
-   password_hash VARCHAR(255) NOT NULL,
-   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-   last_login TIMESTAMP WITH TIME ZONE
-);
+```json
+{
+  "teamsCount": 3,
+  "matchInfo": [
+    {"type": "text", "label": "Scout Name", "name": "scoutname"},
+    {"type": "number", "label": "Match #", "name": "match"}
+  ],
+  "teamFields": [
+    {"type": "number", "label": "Team", "name": "team"},
+    {"type": "checkbox", "label": "No Show", "name": "noShow"},
+    {"type": "comment", "label": "General Comments", "name": "generalComments"}
+  ]
+}
+```
 
-INSERT INTO cmptx2025 (
-   ScoutName, ScoutTeam, Team, Match, MatchType, Breakdown, NoShow, Leave,
-   AutoL1Success, AutoL1Fail, AutoL2Success, AutoL2Fail, AutoL3Success, AutoL3Fail, AutoL4Success, AutoL4Fail,
-   AutoAlgaeRemoved, AutoProcessorSuccess, AutoProcessorFail, AutoNetSuccess, AutoNetFail,
-   TeleL1Success, TeleL1Fail, TeleL2Success, TeleL2Fail, TeleL3Success, TeleL3Fail, TeleL4Success, TeleL4Fail,
-   TeleAlgaeRemoved, TeleProcessorSuccess, TeleProcessorFail, TeleNetSuccess, TeleNetFail,
-   HPSuccess, HPFail, EndLocation, CoralSpeed, ProcessorSpeed, NetSpeed, AlgaeRemovalSpeed, ClimbSpeed,
-   Maneuverability, DefensePlayed, DefenseEvasion, Aggression, CageHazard,
-   CoralGrndIntake, CoralStationIntake, Lollipop, AlgaeGrndIntake, AlgaeHighReefIntake, AlgaeLowReefIntake,
-   GeneralComments, BreakdownComments, DefenseComments
-)
-VALUES
-(
-   'John Doe', 2485, 4909, 12, 2, FALSE, FALSE, TRUE,
-   3, 1, 2, 0, 1, 2, 3, 0,
-   1, 2, 1, 3, 0,
-   4, 2, 3, 1, 2, 3, 3, 0,
-   2, 1, 1, 2, 0,
-   5, 0, 2, 4, 3, 5, 2, 3,
-   4, 2, 3, 1, 2,
-   TRUE, FALSE, TRUE, TRUE, FALSE, FALSE,
-   'Performed well in auto but struggled with teleop.', NULL, 'Played strong defense.'
-);
+Field types supported:
+
+| type        | description                                      |
+|-------------|--------------------------------------------------|
+| `text`      | single‑line text input                           |
+| `number`    | numeric text box                                 |
+| `checkbox`  | boolean toggle                                   |
+| `qualitative` | star rating component                          |
+| `comment`   | multi‑line comment box                           |
+| `select`    | drop‑down list (`options` array required)        |
+
+Optional properties:
+
+* `default` – starting value
+* `dependsOn` – name of another field that must be truthy for the field to appear (useful for conditional comment boxes)
+
+After editing and saving the configuration file, run the app again – the form and submission logic update automatically.
+
+## Displaying Data
+
+Pages that consume submitted data also reference the same configuration so that any changes in `formConfig.json` automatically flow to the UI.  If you add a new field to `teamFields`, it will automatically appear in team and match views without touching the code.
+
+Example – adding a drop‑down:
+
+```json
+{
+  "type": "select",
+  "label": "Starting Position",
+  "name": "startPos",
+  "options": [
+    {"label": "Left", "value": "L"},
+    {"label": "Center", "value": "C"},
+    {"label": "Right", "value": "R"}
+  ]
+}
+```
+
+Insert the object above into `teamFields` and the new question shows up on the form and in all display pages automatically.
+
+## Contributing
+
+1. Edit `src/config/formConfig.json` to add, remove, or reorder fields.
+2. Run `npm run lint` to ensure the project builds.
+3. Submit a pull request.
+
