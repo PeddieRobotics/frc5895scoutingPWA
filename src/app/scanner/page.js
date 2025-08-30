@@ -9,8 +9,24 @@ export default function Scanner() {
   const [uploadStatus, setUploadStatus] = useState("");
   const [results, setResults] = useState([]);
   const [authCredentials, setAuthCredentials] = useState(null);
+  const [themeReady, setThemeReady] = useState(undefined);
 
   useEffect(() => {
+    // Check active theme
+    (async () => {
+      try {
+        const resp = await fetch('/api/themes/active', { headers: { 'Accept': 'application/json' } });
+        if ((resp.headers.get('content-type') || '').includes('application/json')) {
+          const json = await resp.json();
+          setThemeReady(Boolean(json?.item));
+        } else {
+          setThemeReady(false);
+        }
+      } catch (_) {
+        setThemeReady(false);
+      }
+    })();
+
     // Check for stored auth credentials
     if (typeof window !== 'undefined') {
       let credentials = null;
@@ -41,9 +57,15 @@ export default function Scanner() {
 
   const processData = async (data) => {
     try {
-      const entries = data.formType === 'tripleQualitative' 
-        ? data.teams 
-        : [data];
+      let entries;
+      if (data.formType === 'tripleQualitative') {
+        entries = data.teams;
+      } else if ((data.formType === 'dynamic' || data.formType === 'config-v1') && Array.isArray(data.teams) && data.match) {
+        // Merge match-level fields into each team entry
+        entries = data.teams.map(team => ({ ...data.match, ...team }));
+      } else {
+        entries = [data];
+      }
 
       // Extract the team name (scoutteam) from auth credentials
       let scoutTeam = "5895"; // Default value
@@ -102,6 +124,7 @@ export default function Scanner() {
 
   const handleScan = async () => {
     if (!inputText.trim()) return;
+    if (themeReady === false) { setUploadStatus('No active theme configured'); return; }
     
     setUploadStatus("Processing...");
  
@@ -127,6 +150,9 @@ export default function Scanner() {
   return (
     <div className={styles.MainDiv}>
       <h2>QR Scanner</h2>
+      {themeReady === false && (
+        <div style={{ marginBottom: 12 }}>No active theme configured. Go to <a href="/setup">Setup</a>.</div>
+      )}
 
       <div className={styles.ScannerInput}>
         <textarea

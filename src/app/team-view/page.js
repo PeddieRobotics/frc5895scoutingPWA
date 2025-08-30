@@ -190,12 +190,14 @@ function TeamView() {
       })
           .then(response => {
               if (response.status === 401) {
-                  console.error("Authentication failed - triggering login dialog");
-                  // Trigger auth required event to show login dialog
-                  window.dispatchEvent(new CustomEvent('auth:required', {
-                      detail: { message: 'Your session has expired. Please login again.' }
-                  }));
-                  throw new Error('Authentication required');
+                console.error("Authentication failed - triggering login dialog");
+                // Trigger auth required event to show login dialog
+                window.dispatchEvent(new CustomEvent('auth:required', {
+                    detail: { message: 'Your session has expired. Please login again.' }
+                }));
+                throw new Error('Authentication required');
+              } else if (response.status === 409) {
+                throw new Error('No active theme configured');
               }
               
               // Check for 404 Not Found

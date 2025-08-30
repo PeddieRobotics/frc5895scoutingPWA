@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import _ from 'lodash';
+import { getActiveTheme } from '../../../lib/theme';
 
 export const revalidate = 60; // caches for 60 seconds
 
@@ -16,8 +17,11 @@ export async function GET(request) {
   }
   
   try {
+    const active = await getActiveTheme();
+    const eventCode = active?.event_code;
+    if (!eventCode) return NextResponse.json({ message: 'No active theme configured' }, { status: 409 });
     const response = await fetch(
-        `https://www.thebluealliance.com/api/v3/event/2025mil/matches/simple`,       {
+        `https://www.thebluealliance.com/api/v3/event/${eventCode}/matches/simple`,       {
         headers: {
           "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
           "Accept": "application/json"

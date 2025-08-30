@@ -38,13 +38,57 @@ Field types supported:
 | `qualitative` | star rating component                          |
 | `comment`   | multi‑line comment box                           |
 | `select`    | drop‑down list (`options` array required)        |
+| `singleSelect` | radio button group (e.g., Endgame stage)     |
+| `multiSelect`  | multiple checkboxes (e.g., Intake)           |
 
 Optional properties:
 
 * `default` – starting value
 * `dependsOn` – name of another field that must be truthy for the field to appear (useful for conditional comment boxes)
 
-After editing and saving the configuration file, run the app again – the form and submission logic update automatically.
+Endgame (single select):
+
+```json
+"endgame": {
+  "type": "singleSelect",
+  "label": "Stage Placement",
+  "name": "stageplacement",
+  "options": [
+    { "label": "None", "value": 0 },
+    { "label": "Park", "value": 1 },
+    { "label": "Fail + Park", "value": 2 },
+    { "label": "Shallow Cage", "value": 3 },
+    { "label": "Deep Cage", "value": 4 }
+  ],
+  "default": 0
+}
+```
+
+Post‑Match Intake (multi select):
+
+```json
+"postMatchIntake": {
+  "type": "multiSelect",
+  "label": "Intake Capabilities",
+  "options": [
+    { "label": "Coral Ground", "name": "coralgrndintake" },
+    { "label": "Coral Station", "name": "coralstationintake" },
+    { "label": "Algae Ground", "name": "algaegrndintake" },
+    { "label": "Algae High Reef", "name": "algaehighreefintake" },
+    { "label": "Algae Low Reef", "name": "algaelowreefintake" }
+  ]
+}
+```
+
+After editing and saving the configuration file, run the app again – the form and submission logic update automatically. The Home page renders Endgame and Intake directly from the config; the confirmation dialog uses the same config for labels; and the QR payload includes a form type marker.
+
+Setup page and theme storage:
+
+- Visit `/setup` to create/select a theme and set the event name/code and target data table. Themes are stored in the `year_themes` DB table.
+- The active theme controls:
+  - Which DB table is used for all API queries (no hardcoded table names)
+  - The Blue Alliance event code used for API calls
+  - The form config JSON used to render inputs and summaries
 
 ## Displaying Data
 
@@ -67,9 +111,17 @@ Example – adding a drop‑down:
 
 Insert the object above into `teamFields` and the new question shows up on the form and in all display pages automatically.
 
+QR and Scanner:
+
+- The config‑driven qualification form emits JSON QR with `formType: "dynamic"` and payload `{match, teams}`; the scanner now recognizes this format and merges match fields into each team before uploading.
+- The standard match form QR is unchanged and continues to work.
+
+Data tables:
+
+- API routes now look up the active table from the active theme (via `/api/themes/active`) and query it dynamically. This removes all remaining hard-coded table names (previously `cmptx2025`).
+
 ## Contributing
 
 1. Edit `src/config/formConfig.json` to add, remove, or reorder fields.
 2. Run `npm run lint` to ensure the project builds.
 3. Submit a pull request.
-

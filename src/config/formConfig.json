@@ -27,17 +27,41 @@
   ],
   "teamFields": [
     {"type": "number", "label": "Team Scouted", "name": "team"},
-    {"type": "checkbox", "label": "No Show", "name": "noShow"},
+    {"type": "checkbox", "label": "No Show", "name": "noshow"},
     {"type": "qualitative", "label": "Maneuverability", "name": "maneuverability"},
-    {"type": "qualitative", "label": "Defense Played", "name": "defensePlayed"},
-    {"type": "qualitative", "label": "Defense Evasion", "name": "defenseEvasion"},
+    {"type": "qualitative", "label": "Defense Played", "name": "defenseplayed"},
+    {"type": "qualitative", "label": "Defense Evasion", "name": "defenseevasion"},
     {"type": "qualitative", "label": "Aggression", "name": "aggression"},
     {"type": "checkbox", "label": "Broke Down", "name": "breakdown"},
-    {"type": "comment", "label": "Breakdown Comments", "name": "breakdownComments", "dependsOn": "breakdown"},
+    {"type": "comment", "label": "Breakdown Comments", "name": "breakdowncomments", "dependsOn": "breakdown"},
     {"type": "checkbox", "label": "Played Defense", "name": "defense"},
-    {"type": "comment", "label": "Defense Comments", "name": "defenseComments", "dependsOn": "defense"},
-    {"type": "comment", "label": "General Comments", "name": "generalComments"}
+    {"type": "comment", "label": "Defense Comments", "name": "defensecomments", "dependsOn": "defense"},
+    {"type": "comment", "label": "General Comments", "name": "generalcomments"}
   ],
+  "endgame": {
+    "type": "singleSelect",
+    "label": "Stage Placement",
+    "name": "stageplacement",
+    "options": [
+      { "label": "None", "value": 0 },
+      { "label": "Park", "value": 1 },
+      { "label": "Fail + Park", "value": 2 },
+      { "label": "Shallow Cage", "value": 3 },
+      { "label": "Deep Cage", "value": 4 }
+    ],
+    "default": 0
+  },
+  "postMatchIntake": {
+    "type": "multiSelect",
+    "label": "Intake Capabilities",
+    "options": [
+      { "label": "Coral Ground", "name": "coralgrndintake" },
+      { "label": "Coral Station", "name": "coralstationintake" },
+      { "label": "Algae Ground", "name": "algaegrndintake" },
+      { "label": "Algae High Reef", "name": "algaehighreefintake" },
+      { "label": "Algae Low Reef", "name": "algaelowreefintake" }
+    ]
+  },
   "sortField": "maneuverability",
-  "commentFields": ["breakdownComments", "defenseComments", "generalComments"]
+  "commentFields": ["breakdowncomments", "defensecomments", "generalcomments"]
 }

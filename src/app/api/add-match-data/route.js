@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { pool } from "../../../lib/db";
 import _ from "lodash";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 const FIELD_DEFAULTS = {
   // Pre-Match
@@ -169,19 +170,29 @@ export async function POST(req) {
 
    
 
+    // Determine target table from active theme
+    const activeTheme = await getActiveTheme();
+    if (!activeTheme?.event_table) {
+      return NextResponse.json({ message: 'No active theme configured' }, { status: 409 });
+    }
+    const tableName = sanitizeIdentifier(activeTheme.event_table);
+    if (!tableName) {
+      return NextResponse.json({ message: 'Invalid active theme table' }, { status: 409 });
+    }
+
     // Handle no-show case
     if (body.noshow) {
-      await sql`
-        INSERT INTO cmptx2025 (scoutname, scoutteam, team, match, matchtype, noshow)
-        VALUES (${body.scoutname}, ${body.scoutteam}, ${body.team}, 
-                ${adjustedMatch}, ${matchType}, ${body.noshow})
-      `;
+      await pool.query(
+        `INSERT INTO ${tableName} (scoutname, scoutteam, team, match, matchtype, noshow)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [body.scoutname, body.scoutteam, body.team, adjustedMatch, matchType, body.noshow]
+      );
       return NextResponse.json({ message: "No-show recorded" });
     }
 
     // Insert full data
-    await sql`
-      INSERT INTO cmptx2025 (
+    const insertSql = `
+      INSERT INTO ${tableName} (
         scoutname, scoutteam, team, match, matchtype, noshow, leave,
         autol1success, autol1fail, autol2success, autol2fail,
         autol3success, autol3fail, autol4success, autol4fail,
@@ -197,23 +208,39 @@ export async function POST(req) {
         lollipop, algaegrndintake, algaehighreefintake, algaelowreefintake,
         generalcomments, breakdowncomments, defensecomments
       ) VALUES (
-        ${body.scoutname}, ${body.scoutteam}, ${body.team}, ${adjustedMatch}, ${matchType},
-        ${body.noshow}, ${body.leave},
-        ${body.autol1success}, ${body.autol1fail}, ${body.autol2success}, ${body.autol2fail},
-        ${body.autol3success}, ${body.autol3fail}, ${body.autol4success}, ${body.autol4fail},
-        ${body.autoalgaeremoved}, ${body.autoprocessorsuccess}, ${body.autoprocessorfail},
-        ${body.autonetsuccess}, ${body.autonetfail}, ${body.telel1success}, ${body.telel1fail},
-        ${body.telel2success}, ${body.telel2fail}, ${body.telel3success}, ${body.telel3fail},
-        ${body.telel4success}, ${body.telel4fail}, ${body.telealgaeremoved},
-        ${body.teleprocessorsuccess}, ${body.teleprocessorfail}, ${body.telenetsuccess},
-        ${body.telenetfail}, ${body.hpsuccess}, ${body.hpfail}, ${body.endlocation},
-        ${body.coralspeed}, ${body.processorspeed}, ${body.netspeed}, ${body.algaeremovalspeed},
-        ${body.climbspeed}, ${body.maneuverability}, ${body.defenseplayed}, ${body.defenseevasion},
-        ${body.aggression}, ${body.cagehazard}, ${body.coralgrndintake}, ${body.coralstationintake},
-        ${body.lollipop}, ${body.algaegrndintake}, ${body.algaehighreefintake}, ${body.algaelowreefintake},
-        ${body.generalcomments}, ${body.breakdowncomments}, ${body.defensecomments}
-      )
-    `;
+        $1,$2,$3,$4,$5,$6,$7,
+        $8,$9,$10,$11,
+        $12,$13,$14,$15,
+        $16,$17,$18,
+        $19,$20,$21,$22,
+        $23,$24,$25,$26,
+        $27,$28,$29,
+        $30,$31,$32,
+        $33,$34,$35,$36,
+        $37,$38,$39,$40,
+        $41,$42,$43,$44,
+        $45,$46,$47,$48,
+        $49,$50,$51,
+        $52,$53,$54
+      )`;
+    const values = [
+      body.scoutname, body.scoutteam, body.team, adjustedMatch, matchType,
+      body.noshow, body.leave,
+      body.autol1success, body.autol1fail, body.autol2success, body.autol2fail,
+      body.autol3success, body.autol3fail, body.autol4success, body.autol4fail,
+      body.autoalgaeremoved, body.autoprocessorsuccess, body.autoprocessorfail,
+      body.autonetsuccess, body.autonetfail, body.telel1success, body.telel1fail,
+      body.telel2success, body.telel2fail, body.telel3success, body.telel3fail,
+      body.telel4success, body.telel4fail, body.telealgaeremoved,
+      body.teleprocessorsuccess, body.teleprocessorfail, body.telenetsuccess,
+      body.telenetfail, body.hpsuccess, body.hpfail, body.endlocation,
+      body.coralspeed, body.processorspeed, body.netspeed, body.algaeremovalspeed,
+      body.climbspeed, body.maneuverability, body.defenseplayed, body.defenseevasion,
+      body.aggression, body.cagehazard, body.coralgrndintake, body.coralstationintake,
+      body.lollipop, body.algaegrndintake, body.algaehighreefintake, body.algaelowreefintake,
+      body.generalcomments, body.breakdowncomments, body.defensecomments
+    ];
+    await pool.query(insertSql, values);
 
     return NextResponse.json({ message: "Data recorded successfully" });
 

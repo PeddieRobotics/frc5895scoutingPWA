@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { sql } from '@vercel/postgres';
+import { pool } from '../../../lib/db';
 import { tidy, mutate, arrange, desc, mean, select, summarizeAll, max, groupBy } from '@tidyjs/tidy';
 import { calcAuto, calcTele, calcEnd, calcEPA } from "@/util/calculations";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 export async function POST(request) {
   // First validate the auth token
@@ -23,7 +24,11 @@ export async function POST(request) {
 
   const requestBody = await request.json(); // Weight inputs
 
-  let data = await sql`SELECT * FROM cmptx2025;`;
+  const active = await getActiveTheme();
+  if (!active?.event_table) return NextResponse.json({ message: 'No active theme configured' }, { status: 409 });
+  const tableName = sanitizeIdentifier(active.event_table);
+  if (!tableName) return NextResponse.json({ message: 'Invalid active theme table' }, { status: 409 });
+  const data = await pool.query(`SELECT * FROM ${tableName};`);
   let rows = data.rows;
   console.log(rows)
 
@@ -260,9 +265,11 @@ export async function POST(request) {
 
   
  // Fetch TBA Rankings
- async function getTBARankings() {
+  async function getTBARankings() {
   try {
-    const response = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mil/rankings`, {
+    const eventCode = active?.event_code;
+    if (!eventCode) return [];
+    const response = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventCode}/rankings`, {
       headers: {
         'X-TBA-Auth-Key': process.env.TBA_AUTH_KEY,
         'Accept': 'application/json'

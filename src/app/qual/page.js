@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Header from "../form-components/Header";
 import DynamicField from "../form-components/DynamicField";
 import styles from "../page.module.css";
@@ -7,26 +7,45 @@ import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
-import formConfig from "../../config/formConfig.json";
+// Load active form config from server
 
 export default function QualForm() {
   const form = useRef();
-
-  const initialMatchState = {};
-  formConfig.matchInfo.forEach(f => { initialMatchState[f.name] = f.default || ""; });
-  const initialTeamState = {};
-  formConfig.teamFields.forEach(f => { initialTeamState[f.name] = f.type === 'checkbox' ? false : ""; });
-
-  const [matchState, setMatchState] = useState(initialMatchState);
-  const [teamsState, setTeamsState] = useState(Array.from({ length: formConfig.teamsCount }, () => ({ ...initialTeamState })));
+  const [formConfig, setFormConfig] = useState(undefined); // undefined=loading, null=not set
+  const [matchState, setMatchState] = useState({});
+  const [teamsState, setTeamsState] = useState([]);
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeDataURL1, setQrCodeDataURL1] = useState("");
   const [qrCodeDataURL2, setQrCodeDataURL2] = useState("");
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const resp = await fetch('/api/themes/active', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+        let cfg = null;
+        if ((resp.headers.get('content-type') || '').includes('application/json')) {
+          const json = await resp.json();
+          cfg = json?.item?.config || null;
+        }
+        setFormConfig(cfg);
+        const ims = {};
+        (cfg?.matchInfo || []).forEach(f => { ims[f.name] = f.default || ""; });
+        const its = {};
+        (cfg?.teamFields || []).forEach(f => { its[f.name] = f.type === 'checkbox' ? false : ""; });
+        setMatchState(ims);
+        setTeamsState(Array.from({ length: (cfg?.teamsCount || 0) }, () => ({ ...its })));
+      } catch (e) {
+        console.error('Failed to load active theme config', e);
+        setFormConfig(null);
+      }
+    };
+    load();
+  }, []);
+
   const generateTSVString = (data, match) => {
-    const sortedTeams = [...data].sort((a, b) => (a[formConfig.sortField] || 0) - (b[formConfig.sortField] || 0));
+    const sortedTeams = [...data].sort((a, b) => (a[formConfig?.sortField] || 0) - (b[formConfig?.sortField] || 0));
     const allComments = data
-      .map(team => formConfig.commentFields.map(f => team[f]).filter(Boolean).join("; "))
+      .map(team => (formConfig?.commentFields || []).map(f => team[f]).filter(Boolean).join("; "))
       .join("; ");
     return [
       match.match || "NULL",
@@ -53,7 +72,7 @@ export default function QualForm() {
     const formData = new FormData(form.current);
 
     const matchData = {};
-    formConfig.matchInfo.forEach(f => {
+    (formConfig?.matchInfo || []).forEach(f => {
       let val = formData.get(f.name);
       if (f.type === 'checkbox') val = formData.get(f.name) === 'on';
       matchData[f.name] = val;
@@ -61,7 +80,7 @@ export default function QualForm() {
 
     const teamsData = teamsState.map((_, index) => {
       const obj = {};
-      formConfig.teamFields.forEach(f => {
+      (formConfig?.teamFields || []).forEach(f => {
         const fieldName = `team${index}-${f.name}`;
         let val = formData.get(fieldName);
         if (f.type === 'checkbox') val = formData.get(fieldName) === 'on';
@@ -83,7 +102,16 @@ export default function QualForm() {
 
   return (
     <div className={styles.MainDiv}>
-      {showQRCode ? (
+      {formConfig === undefined && (
+        <div>Loading theme…</div>
+      )}
+      {formConfig === null && (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <h3>No active theme configured</h3>
+          <p>Go to <a href="/setup" style={{ color: '#fcec91' }}>Setup</a> to create and activate a theme.</p>
+        </div>
+      )}
+      {formConfig && (showQRCode ? (
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
             <h2>Scan Both QR Codes</h2>
@@ -122,7 +150,7 @@ export default function QualForm() {
           ))}
           <button type="submit" className={styles.SubmitButton}>GENERATE QR CODE</button>
         </form>
-      )}
+      ))}
     </div>
   );
 }

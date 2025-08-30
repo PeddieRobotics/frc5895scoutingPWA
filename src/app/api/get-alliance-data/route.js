@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { pool } from "../../../lib/db";
 import { calcAuto, calcTele, calcEnd } from "@/util/calculations";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -23,12 +24,18 @@ export async function GET(request) {
       });
     }
 
-    const { rows } = await sql`SELECT * FROM cmptx2025;`;
+    const active = await getActiveTheme();
+    if (!active?.event_table) return NextResponse.json({ message: 'No active theme configured' }, { status: 409 });
+    const tableName = sanitizeIdentifier(active.event_table);
+    if (!tableName) return NextResponse.json({ message: 'Invalid active theme table' }, { status: 409 });
+    const { rows } = await pool.query(`SELECT * FROM ${tableName};`);
     let responseObject = {};
 
 
     // fetch team name from blue alliance api, commented our for now while testing getting from the backend
-    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mil/teams`, {
+    const eventCode = active?.event_code;
+    if (!eventCode) return NextResponse.json({ message: 'No active theme event code' }, { status: 409 });
+    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/${eventCode}/teams`, {
       headers: {
         "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
         "Accept": "application/json"

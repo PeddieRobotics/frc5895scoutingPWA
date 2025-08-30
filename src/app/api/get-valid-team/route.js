@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getActiveTheme } from "../../../lib/theme";
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
@@ -17,8 +18,11 @@ export async function GET(request) {
 
     try {
         // Fetch match data from The Blue Alliance API
+        const active = await getActiveTheme();
+        const eventCode = active?.event_code;
+        if (!eventCode) return NextResponse.json({ valid: false, error: 'No active theme configured' }, { status: 409 });
         const response = await fetch(
-            `https://www.thebluealliance.com/api/v3/event/2025mil/matches/simple`,
+            `https://www.thebluealliance.com/api/v3/event/${eventCode}/matches/simple`,
             {
                 headers: {
                     "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
@@ -35,7 +39,7 @@ export async function GET(request) {
 
         // Filter for the specific match and team
         const teamKey = `frc${team}`;
-        const matchKey = `2025mil_qm${match}`;
+        const matchKey = `${eventCode}_qm${match}`;
 
         const validMatch = matches.find(match => {
             // Check if this is the correct match

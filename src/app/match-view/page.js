@@ -93,12 +93,15 @@ function MatchView() {
     })
       .then(resp => {
         if (resp.status === 401) {
+          
           console.error("Authentication failed - triggering login dialog");
           // Trigger auth required event to show login dialog
           window.dispatchEvent(new CustomEvent('auth:required', {
             detail: { message: 'Session expired or invalid. Please login again.' }
           }));
           throw new Error('Authentication required');
+        } else if (resp.status === 409) {
+          throw new Error('No active theme configured');
         }
         if (!resp.ok) {
           throw new Error(`HTTP error! status: ${resp.status}`);

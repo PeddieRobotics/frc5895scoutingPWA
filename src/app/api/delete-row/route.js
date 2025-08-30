@@ -1,7 +1,8 @@
 import _ from 'lodash';
-import { sql } from "@vercel/postgres";
+import { pool } from "../../../lib/db";
 import { NextResponse } from 'next/server';
 import { cookies } from "next/headers";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 export async function POST(request) {
   const res = await request.json();
@@ -29,7 +30,10 @@ export async function POST(request) {
   }
   
   // Check if the row exists and belongs to the user's team
-  const row = await sql`SELECT * FROM cmptx2025 WHERE id = ${id};`;
+  const active = await getActiveTheme();
+  if (!active?.event_table) return NextResponse.json({ error: 'No active theme configured' }, { status: 409 });
+  const tableName = sanitizeIdentifier(active.event_table);
+  const row = await pool.query(`SELECT * FROM ${tableName} WHERE id = $1;`, [id]);
   
   if (row.rows.length === 0) {
     return NextResponse.json({error: "Row not found"}, {status: 404});
@@ -45,7 +49,7 @@ export async function POST(request) {
     return NextResponse.json({error: "You can only delete data from your own team"}, {status: 403});
   }
 
-  await sql`DELETE FROM cmptx2025 WHERE id = ${id};`;
+  await pool.query(`DELETE FROM ${tableName} WHERE id = $1;`, [id]);
 
   return NextResponse.json({ message: "Row deleted successfully" }, {status: 200});
 }

@@ -183,7 +183,7 @@ export default function Picklist() {
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [teamData, setTeamData] = useState([]);
-  const [eventCode, setEventCode] = useState('2025mil'); // Default event code
+  const [eventCode, setEventCode] = useState(''); // Event code from active theme
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
   const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Add authentication state
@@ -952,6 +952,11 @@ export default function Picklist() {
   return (
     <div style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
       <div className={styles.MainDiv}>
+        {themeReady === false && (
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            No active theme configured. Go to <a href="/setup">Setup</a>.
+          </div>
+        )}
         <div className={styles.configSection}>
           <form ref={weightsFormRef} className={styles.weightsForm}>
             <div className={styles.weights}>
@@ -1026,3 +1031,18 @@ export default function Picklist() {
     </div>
   )
 }
+  // Load event code from active theme
+  useEffect(() => {
+    const loadActive = async () => {
+      try {
+        const resp = await fetch('/api/themes/active', { headers: { 'Accept': 'application/json' } });
+        if ((resp.headers.get('content-type') || '').includes('application/json')) {
+          const json = await resp.json();
+          if (json?.item?.event_code) setEventCode(json.item.event_code);
+        } else {
+          // Leave eventCode empty; user can enter manually
+        }
+      } catch (_) { /* ignore */ }
+    };
+    loadActive();
+  }, []);

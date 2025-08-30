@@ -4,6 +4,8 @@ import Checkbox from "./Checkbox";
 import CommentBox from "./CommentBox";
 import Qualitative from "./Qualitative";
 import SelectInput from "./SelectInput";
+import RadioGroup from "./RadioGroup";
+import MultiCheckboxGroup from "./MultiCheckboxGroup";
 
 export default function DynamicField({ field, prefix = "", state, setState }) {
   const name = `${prefix}${field.name}`;
@@ -62,6 +64,22 @@ export default function DynamicField({ field, prefix = "", state, setState }) {
           options={field.options}
           value={state[field.name] || field.default || ""}
           changeListener={handleChange}
+        />
+      );
+    case 'singleSelect':
+      return (
+        <RadioGroup
+          visibleName={field.label}
+          internalName={name}
+          options={field.options || []}
+          defaultValue={field.default}
+        />
+      );
+    case 'multiSelect':
+      return (
+        <MultiCheckboxGroup
+          visibleName={field.label}
+          options={field.options || []}
         />
       );
     default:

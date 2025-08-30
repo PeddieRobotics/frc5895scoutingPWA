@@ -1,7 +1,8 @@
 import _ from 'lodash';
-import { sql } from "@vercel/postgres";
+import { pool } from "../../../lib/db";
 import { NextResponse } from 'next/server';
 import { cookies } from "next/headers";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 // Process data before saving to ensure text formatting is preserved
 const processDataForSave = (data) => {
@@ -56,7 +57,10 @@ export async function POST(request) {
   const processedData = processDataForSave(data);
   
   // Check if user is allowed to edit this row
-  const row = await sql`SELECT * FROM cmptx2025 WHERE id = ${id};`;
+  const active = await getActiveTheme();
+  if (!active?.event_table) return NextResponse.json({ error: 'No active theme configured' }, { status: 409 });
+  const tableName = sanitizeIdentifier(active.event_table);
+  const row = await pool.query(`SELECT * FROM ${tableName} WHERE id = $1;`, [id]);
   
   if (row.rows.length === 0) {
     return NextResponse.json({error: "Row not found"}, {status: 404});
@@ -106,12 +110,12 @@ export async function POST(request) {
     return NextResponse.json({error: "No valid fields to update"}, {status: 400});
   }
   
-  const query = `UPDATE cmptx2025 SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+  const query = `UPDATE ${tableName} SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
   values.push(id);
   
   try {
     console.log(`Updating row ${id} with fields: ${updates.join(', ')}`);
-    await sql.query(query, values);
+    await pool.query(query, values);
     return NextResponse.json({ message: "Row updated successfully" }, {status: 200});
   } catch (error) {
     console.error("Database error:", error);

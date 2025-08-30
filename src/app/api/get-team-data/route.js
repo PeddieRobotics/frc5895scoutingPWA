@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { sql } from '@vercel/postgres';
+import { pool } from '../../../lib/db';
 import _ from 'lodash';
 import { tidy, mutate, mean, select, summarizeAll, groupBy, summarize, first, n, median, total, arrange, asc, slice } from '@tidyjs/tidy';
 import { calcEPA, calcAuto, calcTele, calcEnd } from "../../../util/calculations.js";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveTheme, sanitizeIdentifier } from "../../../lib/theme";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -33,7 +34,10 @@ export async function GET(request) {
   }
 
   // Fetch team data from database
-  let data = await sql`SELECT * FROM cmptx2025 WHERE team = ${team};`;
+  const active = await getActiveTheme();
+  if (!active?.event_table) return NextResponse.json({ message: 'No active theme configured' }, { status: 409 });
+  const tableName = sanitizeIdentifier(active.event_table);
+  let data = await pool.query(`SELECT * FROM ${tableName} WHERE team = $1;`, [team]);
   const rows = data.rows;
 
   if (rows.length === 0) {

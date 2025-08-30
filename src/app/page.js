@@ -7,7 +7,9 @@ import compactStyles from "./compact.module.css";
 import NumericInput from "./form-components/NumericInput";
 import Checkbox from "./form-components/Checkbox";
 import CommentBox from "./form-components/CommentBox";
-import EndPlacement from "./form-components/EndPlacement";
+// Endgame + Intake now driven by config
+import RadioGroup from "./form-components/RadioGroup";
+import MultiCheckboxGroup from "./form-components/MultiCheckboxGroup";
 import SubHeader from "./form-components/SubHeader";
 import AuthDialog from "./form-components/AuthDialog";
 import JSConfetti from 'js-confetti';
@@ -15,7 +17,7 @@ import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
 import { toast, Toaster } from 'react-hot-toast';
-import IntakeOptions from "./form-components/IntakeOptions";
+// Load active theme config from API for modular rendering
 import Qualitative from "./form-components/Qualitative";
 import { useRouter } from 'next/navigation';
 
@@ -38,9 +40,29 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [activeConfig, setActiveConfig] = useState(undefined); // undefined=loading, null=not set
   
   const form = useRef();
   const router = useRouter();
+
+  // Load active theme configuration; do NOT fallback to bundled file.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const resp = await fetch('/api/themes/active', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+        let cfg = null;
+        if ((resp.headers.get('content-type') || '').includes('application/json')) {
+          const json = await resp.json();
+          cfg = json?.item?.config || null;
+        }
+        setActiveConfig(cfg); // cfg may be null if no active theme
+      } catch (e) {
+        console.error('Failed to load active theme config', e);
+        setActiveConfig(null);
+      }
+    };
+    load();
+  }, []);
 
   // Handle auth required from URL
   const handleAuthRequired = useCallback((required) => {
@@ -674,8 +696,9 @@ export default function Home() {
         }
       }
       
-      // Directly check for stageplacement radio buttons
-      const stagePlacementRadios = form.current.querySelectorAll('input[name="stageplacement"]');
+      // Directly check for endgame radio buttons based on active config name
+      const endgameFieldName = (activeConfig?.endgame?.name) || 'stageplacement';
+      const stagePlacementRadios = form.current.querySelectorAll(`input[name="${endgameFieldName}"]`);
       let foundCheckedPlacement = false;
       for (let radio of stagePlacementRadios) {
         if (radio.checked) {
@@ -708,6 +731,8 @@ export default function Home() {
           }
           
           // Store both the raw form value and the mapped DB value
+          // Store under the configured endgame field name and also the legacy key for compatibility
+          data[endgameFieldName] = rawPlacementValue;
           data.stageplacement = rawPlacementValue;
           data.endlocation = mappedValue;
           
@@ -718,7 +743,8 @@ export default function Home() {
       
       // If no placement was selected, explicitly set to no selection
       if (!foundCheckedPlacement) {
-        data.stageplacement = 0; // 0 = None in the form
+        data[endgameFieldName] = 0; // 0 = None in the form
+        data.stageplacement = 0; // legacy key
         data.endlocation = 1;    // 1 = None in the DB
       }
       
@@ -1229,7 +1255,17 @@ export default function Home() {
     <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
       <Toaster position="top-center" />
       
-      {/* Always render the form - don't conditionally render it, just conditionally hide it */}
+      {/* Require active theme to render form */}
+      {activeConfig === undefined && (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>Loading theme…</div>
+      )}
+      {activeConfig === null && (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <h3>No active theme configured</h3>
+          <p>Go to <a href="/setup" style={{ color: '#fcec91' }}>Setup</a> to create and activate a theme.</p>
+        </div>
+      )}
+      {activeConfig && (
       <form 
         key={formResetKey}
         ref={form} 
@@ -1494,13 +1530,27 @@ export default function Home() {
 
             <div className={`${styles.Endgame} ${compactStyles.Endgame}`}>
               <Header headerName={"Endgame"} className={compactStyles.header} />
-              <EndPlacement className={compactStyles.endPlacement} />
+              {activeConfig?.endgame ? (
+                <RadioGroup
+                  visibleName={activeConfig.endgame.label}
+                  internalName={activeConfig.endgame.name}
+                  options={activeConfig.endgame.options}
+                  defaultValue={activeConfig.endgame.default}
+                  className={compactStyles.endPlacement}
+                />
+              ) : null}
             </div>
 
             <div className={`${styles.PostMatch} ${compactStyles.PostMatch}`}>
               <Header headerName={"Post-Match"} className={compactStyles.header} />
               <SubHeader subHeaderName={"Intake"} className={compactStyles.subHeader} />
-              <IntakeOptions className={compactStyles.intakeOptions} />
+              {activeConfig?.postMatchIntake ? (
+                <MultiCheckboxGroup
+                  visibleName={activeConfig.postMatchIntake.label}
+                  options={activeConfig.postMatchIntake.options}
+                  className={compactStyles.intakeOptions}
+                />
+              ) : null}
               <Checkbox 
                 visibleName={"Broke down?"} 
                 internalName={"breakdown"} 
@@ -1536,6 +1586,7 @@ export default function Home() {
           </button>
         </div>
       </form>
+      )}
 
       {/* QR Code Overlay */}
       {showQRCode && (
@@ -1609,16 +1660,9 @@ export default function Home() {
                         <h4>Endgame</h4>
                         <p><strong>Stage Placement:</strong> {
                           (() => {
-                            // Use stageplacement for display since it has the raw form values
-                            const placement = formData.stageplacement;
-                            switch(placement) {
-                              case 0: return "None";  // value=0 in EndPlacement.js
-                              case 1: return "Park";  // value=1 in EndPlacement.js
-                              case 2: return "Fail + Park";  // value=2 in EndPlacement.js
-                              case 3: return "Shallow Cage";  // value=3 in EndPlacement.js
-                              case 4: return "Deep Cage";  // value=4 in EndPlacement.js
-                              default: return "None";
-                            }
+                          const placement = formData[activeConfig?.endgame?.name || 'stageplacement'];
+                          const opt = activeConfig?.endgame?.options?.find(o => String(o.value) === String(placement));
+                            return opt ? opt.label : (placement ?? 'None');
                           })()
                         }</p>
                       </div>
@@ -1626,11 +1670,9 @@ export default function Home() {
                       <div className={styles.SummarySection}>
                         <h4>Intake Capabilities</h4>
                         <ul className={styles.SummaryList}>
-                          <li><strong>Coral Ground:</strong> {formData.coralgrndintake ? "Yes" : "No"}</li>
-                          <li><strong>Coral Station:</strong> {formData.coralstationintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae Ground:</strong> {formData.algaegrndintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae High Reef:</strong> {formData.algaehighreefintake ? "Yes" : "No"}</li>
-                          <li><strong>Algae Low Reef:</strong> {formData.algaelowreefintake ? "Yes" : "No"}</li>
+                          {(formConfig?.postMatchIntake?.options || []).map((opt) => (
+                            <li key={opt.name}><strong>{opt.label}:</strong> {formData?.[opt.name] ? 'Yes' : 'No'}</li>
+                          ))}
                         </ul>
                       </div>
                       
