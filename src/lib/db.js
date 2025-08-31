@@ -2,17 +2,18 @@ import { neon, neonConfig } from '@neondatabase/serverless';
 import { Pool } from '@neondatabase/serverless';
 import ws from 'ws';
 
-// Configure neon client for WebSocket connections
-if (process.env.NODE_ENV === 'production') {
-  // In production/server environment, use the ws package
+// Configure Neon to use proper WebSocket implementation based on environment
+// Next.js API routes execute on the server in both dev and prod.
+const isServer = typeof window === 'undefined';
+if (isServer) {
   neonConfig.webSocketConstructor = ws;
   neonConfig.useSecureWebSocket = true;
   neonConfig.pipelineTLS = true;
 } else {
-  // In development/client environment, use browser's WebSocket
-  neonConfig.webSocketConstructor = globalThis.WebSocket;
-  neonConfig.useSecureWebSocket = false;
-  neonConfig.pipelineTLS = false;
+  neonConfig.webSocketConstructor = window.WebSocket;
+  const isHttps = typeof location !== 'undefined' && location.protocol === 'https:';
+  neonConfig.useSecureWebSocket = isHttps;
+  neonConfig.pipelineTLS = isHttps;
 }
 
 // Create a pool instance for reuse

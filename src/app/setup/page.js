@@ -17,16 +17,54 @@ export default function SetupPage() {
   });
 
   const exampleConfig = JSON.stringify({
+    game: "reefscape2025",
+    sections: { auto: true, tele: true },
     teamsCount: 3,
-    matchInfo: [
-      { type: 'text', label: 'Scout Name', name: 'scoutname' },
-      { type: 'number', label: 'Match #', name: 'match' }
+    autoFields: [
+      { type: 'checkbox', label: 'Leave', name: 'leave' }
     ],
+    teleFields: [],
     teamFields: [
       { type: 'number', label: 'Team Scouted', name: 'team' },
       { type: 'checkbox', label: 'No Show', name: 'noshow' },
       { type: 'comment', label: 'General Comments', name: 'generalcomments' }
     ],
+    counters: {
+      auto: [
+        { title: 'Coral', rows: [
+          { label: 'L4', success: 'autol4success', fail: 'autol4fail' },
+          { label: 'L3', success: 'autol3success', fail: 'autol3fail' },
+          { label: 'L2', success: 'autol2success', fail: 'autol2fail' },
+          { label: 'L1', success: 'autol1success', fail: 'autol1fail' }
+        ]},
+        { title: 'Algae Removed', rows: [
+          { label: '', success: 'autoalgaeremoved', fail: null }
+        ]},
+        { title: 'Processor', rows: [
+          { label: '', success: 'autoprocessorsuccess', fail: 'autoprocessorfail' }
+        ]},
+        { title: 'Net', rows: [
+          { label: '', success: 'autonetsuccess', fail: 'autonetfail' }
+        ]}
+      ],
+      tele: [
+        { title: 'Coral', rows: [
+          { label: 'L4', success: 'telel4success', fail: 'telel4fail' },
+          { label: 'L3', success: 'telel3success', fail: 'telel3fail' },
+          { label: 'L2', success: 'telel2success', fail: 'telel2fail' },
+          { label: 'L1', success: 'telel1success', fail: 'telel1fail' }
+        ]},
+        { title: 'Algae Removed', rows: [
+          { label: '', success: 'telealgaeremoved', fail: null }
+        ]},
+        { title: 'Processor', rows: [
+          { label: '', success: 'teleprocessorsuccess', fail: 'teleprocessorfail' }
+        ]},
+        { title: 'Net', rows: [
+          { label: '', success: 'telenetsuccess', fail: 'telenetfail' }
+        ]}
+      ]
+    },
     endgame: {
       type: 'singleSelect',
       label: 'Stage Placement',

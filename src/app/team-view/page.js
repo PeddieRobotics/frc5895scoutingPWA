@@ -9,6 +9,8 @@ import TwoByTwo from "./components/TwoByTwo";
 import ThreeByThree from "./components/ThreeByThree";
 import FourByTwo from "./components/FourByTwo";
 import EPALineChart from './components/EPALineChart';
+import GenericTeamView from './components/GenericTeamView';
+import { useState as useState2, useEffect as useEffect2 } from 'react';
 import CoralLineChart from './components/CoralLineChart';
 import PiecePlacement from "./components/PiecePlacement";
 import Endgame from "./components/Endgame";
@@ -16,6 +18,12 @@ import Qualitative from "./components/Qualitative";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 
 export default function TeamViewPage() {
+    const [team, setTeam] = useState2(null);
+    useEffect2(() => {
+        const url = new URL(window.location.href);
+        setTeam(url.searchParams.get('team'));
+    }, []);
+    if (team) return <GenericTeamView team={team} />;
     return <TeamView />;
 }
 

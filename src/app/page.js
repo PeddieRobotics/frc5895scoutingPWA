@@ -10,6 +10,8 @@ import CommentBox from "./form-components/CommentBox";
 // Endgame + Intake now driven by config
 import RadioGroup from "./form-components/RadioGroup";
 import MultiCheckboxGroup from "./form-components/MultiCheckboxGroup";
+import DynamicField from "./form-components/DynamicField";
+// import SelectInput from "./form-components/SelectInput";
 import SubHeader from "./form-components/SubHeader";
 import AuthDialog from "./form-components/AuthDialog";
 import JSConfetti from 'js-confetti';
@@ -23,7 +25,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [noShow, setNoShow] = useState(false);
-  const [breakdown, setBreakdown] = useState(false);
+  // Removed hard-coded breakdown toggle; make it config-driven if needed in future
   const [defense, setDefense] = useState(false);
   const [scoutProfile, setScoutProfile] = useState(null);
   const [showQRCode, setShowQRCode] = useState(false);
@@ -44,6 +46,58 @@ export default function Home() {
   
   const form = useRef();
   const router = useRouter();
+
+  // All sections are controlled by activeConfig; no hard-coded game gating
+  const renderPhaseField = useCallback((f, keyPrefix) => {
+    if (!f || !f.type || !f.name) return null;
+    const k = `${keyPrefix}-${f.name}`;
+    if (f.type === 'checkbox') {
+      return <Checkbox key={k} visibleName={f.label} internalName={f.name} />;
+    }
+    if (f.type === 'comment') {
+      return <CommentBox key={k} visibleName={f.label} internalName={f.name} />;
+    }
+    if (f.type === 'qualitative') {
+      return <Qualitative key={k} visibleName={f.label} internalName={f.name} />;
+    }
+    if (f.type === 'select') {
+      return null;
+    }
+    if (f.type === 'number' || f.type === 'text') {
+      return <TextInput key={k} visibleName={f.label} internalName={f.name} type={f.type === 'number' ? 'tel' : 'text'} pattern={f.type === 'number' ? '[0-9]*' : undefined} />;
+    }
+    return null;
+  }, []);
+
+  // Render configurable counter groups (tables with success/fail rows)
+  const renderCounterGroups = useCallback((groups) => {
+    if (!Array.isArray(groups)) return null;
+    return groups.map((group, gi) => (
+      <div key={`grp-${gi}`} className={`${styles.componentSection} ${compactStyles.componentSection}`} style={{ paddingTop: '10px' }}>
+        {group.title ? <SubHeader subHeaderName={group.title} className={compactStyles.subHeader} /> : null}
+        <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Success</th>
+              <th>Fail</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {(group.rows || []).map((row, ri) => (
+              <tr key={`row-${ri}`}>
+                <td>{row.label ? <h2>{row.label}</h2> : null}</td>
+                <td>{row.success ? <NumericInput pieceType={"Success"} internalName={row.success} /> : null}</td>
+                <td>{row.fail ? <NumericInput pieceType={"Fail"} internalName={row.fail} /> : null}</td>
+                <td></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ));
+  }, [styles, compactStyles]);
 
   // Load active theme configuration; do NOT fallback to bundled file.
   useEffect(() => {
@@ -527,7 +581,7 @@ export default function Home() {
     const deepClimb = climbStatus === 4 ? "TRUE" : "FALSE"; // 4 = Deep in DB
   
     const notes = [
-      data.breakdowncomments,
+      // removed breakdowncomments
       data.defensecomments,
       data.generalcomments
     ].filter(Boolean).join("; ") || "NULL";
@@ -605,9 +659,7 @@ export default function Home() {
     // through the {!noShow && ( ... )} conditional rendering
   }
 
-  function onBreakdownChange(e) {
-    setBreakdown(e.target.checked);
-  }
+  // Removed hard-coded breakdown change handler
 
   function onDefenseChange(e) {
     setDefense(e.target.checked);
@@ -621,51 +673,10 @@ export default function Home() {
       return null;
     }
     
-    // Initialize with default values
+    // Minimal defaults; all other fields come from rendered inputs
     let data = {
-      noshow: false, 
-      leave: false, 
-      breakdown: false, 
-      defense: false, 
-      stageplacement: -1, 
-      endlocation: null, // Initialize endlocation field
-      matchtype: 2, // Set the default matchtype to Qualification (2)
-      breakdowncomments: null, 
-      defensecomments: null, 
-      generalcomments: null,
-      scoutteam: "5895", // This will be replaced if auth credentials exist
-      // Explicitly include all form fields with defaults
-      autol1success: 0, autol1fail: 0,
-      autol2success: 0, autol2fail: 0,
-      autol3success: 0, autol3fail: 0,
-      autol4success: 0, autol4fail: 0,
-      autoprocessorsuccess: 0, autoprocessorfail: 0,
-      autonetsuccess: 0, autonetfail: 0,
-      autoalgaeremoved: 0,
-      telel1success: 0, telel1fail: 0,
-      telel2success: 0, telel2fail: 0,
-      telel3success: 0, telel3fail: 0,
-      telel4success: 0, telel4fail: 0,
-      teleprocessorsuccess: 0, teleprocessorfail: 0,
-      telenetsuccess: 0, telenetfail: 0,
-      telealgaeremoved: 0,
-      coralgrndintake: false,
-      coralstationintake: false,
-      algaegrndintake: false,
-      algaehighreefintake: false,
-      algaelowreefintake: false,
-      // Qualitative ratings
-      defenseplayed: 0,
-      // Remove other qualitative ratings
-      coralspeed: null,
-      processorspeed: null,
-      netspeed: null,
-      algaeremovalspeed: null,
-      climbspeed: null,
-      maneuverability: null,
-      defenseevasion: null,
-      aggression: null,
-      cagehazard: null
+      noshow: false,
+      matchtype: 2
     };
     
     try {
@@ -704,48 +715,18 @@ export default function Home() {
         if (radio.checked) {
           // Get the placement value from the radio button
           const rawPlacementValue = parseInt(radio.value);
-          
-          // Map the form values to the database values:
-          // Form values from EndPlacement.js:
-          // 0=None, 1=Park, 2=Fail+Park, 3=Shallow, 4=Deep
-          // DB expects: 1=None, 2=Park/Fail+Park, 3=Shallow, 4=Deep
-          let mappedValue;
-          switch(rawPlacementValue) {
-            case 0: // None in form
-              mappedValue = 0; // None in DB
-              break;
-            case 1: // Park in form
-              mappedValue = 1; // Park in DB
-              break;
-            case 2: // Fail+Park in form
-              mappedValue = 2; // Also considered as Parked in DB
-              break;
-            case 3: // Shallow cage in form
-              mappedValue = 3; // Shallow in DB
-              break;
-            case 4: // Deep cage in form
-              mappedValue = 4; // Deep in DB
-              break;
-            default:
-              mappedValue = 0; // Default to None in DB
-          }
-          
-          // Store both the raw form value and the mapped DB value
-          // Store under the configured endgame field name and also the legacy key for compatibility
+          // Store under the configured endgame field name
           data[endgameFieldName] = rawPlacementValue;
-          data.stageplacement = rawPlacementValue;
-          data.endlocation = mappedValue;
           
           foundCheckedPlacement = true;
           break;
         }
       }
       
-      // If no placement was selected, explicitly set to no selection
+      // If no placement was selected, set default or 0
       if (!foundCheckedPlacement) {
-        data[endgameFieldName] = 0; // 0 = None in the form
-        data.stageplacement = 0; // legacy key
-        data.endlocation = 1;    // 1 = None in the DB
+        const defVal = (activeConfig?.endgame?.default != null) ? activeConfig.endgame.default : 0;
+        data[endgameFieldName] = defVal;
       }
       
       // Ensure comments are captured
@@ -892,7 +873,7 @@ export default function Home() {
       
       // Reset React state controls
       setNoShow(false);
-      setBreakdown(false);
+      // removed breakdown state
       setDefense(false);
       
       // Force complete component reset by incrementing the key
@@ -944,7 +925,7 @@ export default function Home() {
     
     // Reset React state controls
     setNoShow(false);
-    setBreakdown(false);
+      // removed breakdown state
     setDefense(false);
     
     // Force complete component reset by incrementing the key
@@ -1317,216 +1298,21 @@ export default function Home() {
 
         {!noShow && (
           <>
+            { (activeConfig?.sections?.auto !== false) && (
             <div className={`${styles.Auto} ${compactStyles.Auto}`}>
               <Header headerName={"Auto"} className={compactStyles.header} />
-              <Checkbox visibleName={"Leave"} internalName={"leave"} className="leaveCheckbox" style={{ marginBottom: '10px' }} />
-              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`} style={{ paddingTop: '10px' }}>
-                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol4fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol3fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol2fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autol1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autol1fail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
-                <NumericInput pieceType={"Counter"} internalName={"autoalgaeremoved"}/>
-              </div>
-              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autoprocessorsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autoprocessorfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"autonetsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"autonetfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {(activeConfig?.autoFields || []).map(f => renderPhaseField(f, 'auto'))}
+              {Array.isArray(activeConfig?.counters?.auto) && renderCounterGroups(activeConfig.counters.auto)}
             </div>
+            )}
 
+            { (activeConfig?.sections?.tele !== false) && (
             <div className={`${styles.Auto} ${compactStyles.Auto}`}>
               <Header headerName={"Tele"} className={compactStyles.header} />
-              <div className={`${styles.Coral} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Coral"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><h2>L4</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel4success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel4fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L3</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel3success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel3fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L2</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel2success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel2fail"}/></td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td><h2>L1</h2></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telel1success"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telel1fail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className={`${styles.AlgaeRemoved} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Algae Removed"} className={compactStyles.subHeader} />
-                <NumericInput pieceType={"Counter"} internalName={"telealgaeremoved"}/>
-              </div>
-              <div className={`${styles.Processor} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Processor"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"teleprocessorsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"teleprocessorfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={`${styles.Net} ${styles.componentSection} ${compactStyles.componentSection}`}>
-                <SubHeader subHeaderName={"Net"} className={compactStyles.subHeader} />
-                <table className={`${styles.Table} ${styles.CoralTable} ${compactStyles.Table}`}>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>Success</th>
-                      <th>Fail</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td></td>
-                      <td><NumericInput pieceType={"Success"} internalName={"telenetsuccess"}/></td>
-                      <td><NumericInput pieceType={"Fail"} internalName={"telenetfail"}/></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <CommentBox
-                  visibleName={"General Comments"}
-                  internalName={"generalcomments"}
-                  className={compactStyles.commentBox}
-              />
-
-              <Checkbox 
-                  visibleName={"Playing Defense?"} 
-                  internalName={"defense"} 
-                  changeListener={onDefenseChange}
-                />
-                {defense && (
-                  <>
-                    <CommentBox
-                      visibleName={"Defense Elaboration"}
-                      internalName={"defensecomments"}
-                      className={compactStyles.commentBox}
-                    />
-                    <div className={`${styles.defenseRating} ${compactStyles.defenseRating}`}>
-                      <Qualitative
-                        visibleName="Defense Played"
-                        internalName="defenseplayed"
-                        description="Ability to Play Defense"
-                        forcedMinRating={1}
-                      />
-                    </div>
-                  </>
-                )}    
-
+              {(activeConfig?.teleFields || []).map(f => renderPhaseField(f, 'tele'))}
+              {Array.isArray(activeConfig?.counters?.tele) && renderCounterGroups(activeConfig.counters.tele)}
             </div>
+            )}
 
             <div className={`${styles.Endgame} ${compactStyles.Endgame}`}>
               <Header headerName={"Endgame"} className={compactStyles.header} />
@@ -1551,18 +1337,6 @@ export default function Home() {
                   className={compactStyles.intakeOptions}
                 />
               ) : null}
-              <Checkbox 
-                visibleName={"Broke down?"} 
-                internalName={"breakdown"} 
-                changeListener={onBreakdownChange} 
-              />
-              {breakdown && (
-                <CommentBox
-                  visibleName={"Breakdown Elaboration"}
-                  internalName={"breakdowncomments"}
-                  className={compactStyles.commentBox}
-                />
-              )}
             </div>
           </>
         )}
@@ -1670,7 +1444,7 @@ export default function Home() {
                       <div className={styles.SummarySection}>
                         <h4>Intake Capabilities</h4>
                         <ul className={styles.SummaryList}>
-                          {(formConfig?.postMatchIntake?.options || []).map((opt) => (
+                          {(activeConfig?.postMatchIntake?.options || []).map((opt) => (
                             <li key={opt.name}><strong>{opt.label}:</strong> {formData?.[opt.name] ? 'Yes' : 'No'}</li>
                           ))}
                         </ul>
@@ -1684,19 +1458,13 @@ export default function Home() {
                           </div>
                         )}
                         
-                        {formData.breakdown && formData.breakdowncomments && (
-                          <div className={styles.CommentBlock}>
-                            <strong>Breakdown:</strong> {formData.breakdowncomments}
-                          </div>
-                        )}
-                        
                         {formData.defense && formData.defensecomments && (
                           <div className={styles.CommentBlock}>
                             <strong>Defense:</strong> {formData.defensecomments}
                           </div>
                         )}
                         
-                        {!formData.generalcomments && !formData.breakdowncomments && !formData.defensecomments && (
+                        {!formData.generalcomments && !formData.defensecomments && (
                           <p>No comments provided</p>
                         )}
                       </div>

@@ -1,43 +1,34 @@
 {
+  "game": "reefscape2025",
+  "sections": { "auto": true, "tele": true },
   "teamsCount": 3,
-  "matchInfo": [
-    {"type": "text", "label": "Scout Name", "name": "scoutname"},
-    {"type": "number", "label": "Scout Team", "name": "scoutteam"},
-    {"type": "number", "label": "Match #", "name": "match"},
-    {
-      "type": "select",
-      "label": "Match Type",
-      "name": "matchType",
-      "options": [
-        {"label": "Qualification", "value": "2"},
-        {"label": "Playoff", "value": "3"}
-      ],
-      "default": "2"
-    },
-    {
-      "type": "select",
-      "label": "Alliance Color",
-      "name": "allianceColor",
-      "options": [
-        {"label": "Red", "value": "red"},
-        {"label": "Blue", "value": "blue"}
-      ],
-      "default": "red"
-    }
+
+  "autoFields": [
+    { "type": "checkbox", "label": "Leave", "name": "leave" }
   ],
-  "teamFields": [
-    {"type": "number", "label": "Team Scouted", "name": "team"},
-    {"type": "checkbox", "label": "No Show", "name": "noshow"},
-    {"type": "qualitative", "label": "Maneuverability", "name": "maneuverability"},
-    {"type": "qualitative", "label": "Defense Played", "name": "defenseplayed"},
-    {"type": "qualitative", "label": "Defense Evasion", "name": "defenseevasion"},
-    {"type": "qualitative", "label": "Aggression", "name": "aggression"},
-    {"type": "checkbox", "label": "Broke Down", "name": "breakdown"},
-    {"type": "comment", "label": "Breakdown Comments", "name": "breakdowncomments", "dependsOn": "breakdown"},
-    {"type": "checkbox", "label": "Played Defense", "name": "defense"},
-    {"type": "comment", "label": "Defense Comments", "name": "defensecomments", "dependsOn": "defense"},
-    {"type": "comment", "label": "General Comments", "name": "generalcomments"}
+  "teleFields": [
+    { "type": "comment", "label": "General Comments", "name": "generalcomments" }
   ],
+
+  "counters": {
+    "auto": [
+      { "title": "Coral", "rows": [
+        { "label": "L4", "success": "autol4success", "fail": "autol4fail" },
+        { "label": "L3", "success": "autol3success", "fail": "autol3fail" },
+        { "label": "L2", "success": "autol2success", "fail": "autol2fail" },
+        { "label": "L1", "success": "autol1success", "fail": "autol1fail" }
+      ]}
+    ],
+    "tele": [
+      { "title": "Coral", "rows": [
+        { "label": "L4", "success": "telel4success", "fail": "telel4fail" },
+        { "label": "L3", "success": "telel3success", "fail": "telel3fail" },
+        { "label": "L2", "success": "telel2success", "fail": "telel2fail" },
+        { "label": "L1", "success": "telel1success", "fail": "telel1fail" }
+      ]}
+    ]
+  },
+
   "endgame": {
     "type": "singleSelect",
     "label": "Stage Placement",
@@ -62,6 +53,11 @@
       { "label": "Algae Low Reef", "name": "algaelowreefintake" }
     ]
   },
-  "sortField": "maneuverability",
-  "commentFields": ["breakdowncomments", "defensecomments", "generalcomments"]
+
+  "teamFields": [
+    { "type": "qualitative", "label": "Defense Played", "name": "defenseplayed" }
+  ],
+
+  "sortField": "defenseplayed",
+  "commentFields": ["generalcomments"]
 }

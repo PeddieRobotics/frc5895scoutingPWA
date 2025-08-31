@@ -17,6 +17,8 @@ export default function QualForm() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeDataURL1, setQrCodeDataURL1] = useState("");
   const [qrCodeDataURL2, setQrCodeDataURL2] = useState("");
+  const initialMatchRef = useRef({});
+  const initialTeamRef = useRef({});
 
   useEffect(() => {
     const load = async () => {
@@ -28,10 +30,12 @@ export default function QualForm() {
           cfg = json?.item?.config || null;
         }
         setFormConfig(cfg);
-        const ims = {};
-        (cfg?.matchInfo || []).forEach(f => { ims[f.name] = f.default || ""; });
+        // Baked pre-match fields for qual QR
+        const ims = { scoutname: "", match: "" };
         const its = {};
         (cfg?.teamFields || []).forEach(f => { its[f.name] = f.type === 'checkbox' ? false : ""; });
+        initialMatchRef.current = ims;
+        initialTeamRef.current = its;
         setMatchState(ims);
         setTeamsState(Array.from({ length: (cfg?.teamsCount || 0) }, () => ({ ...its })));
       } catch (e) {
@@ -71,12 +75,10 @@ export default function QualForm() {
     e.preventDefault();
     const formData = new FormData(form.current);
 
-    const matchData = {};
-    (formConfig?.matchInfo || []).forEach(f => {
-      let val = formData.get(f.name);
-      if (f.type === 'checkbox') val = formData.get(f.name) === 'on';
-      matchData[f.name] = val;
-    });
+    const matchData = {
+      scoutname: formData.get('scoutname') || "",
+      match: formData.get('match') || ""
+    };
 
     const teamsData = teamsState.map((_, index) => {
       const obj = {};
@@ -95,8 +97,8 @@ export default function QualForm() {
 
   const handleQRClose = () => {
     setShowQRCode(false);
-    setMatchState(initialMatchState);
-    setTeamsState(Array.from({ length: formConfig.teamsCount }, () => ({ ...initialTeamState })));
+    setMatchState({ ...initialMatchRef.current });
+    setTeamsState(Array.from({ length: formConfig.teamsCount }, () => ({ ...initialTeamRef.current })));
     new JSConfetti().addConfetti({ emojis: ['🐠', '🐡', '🦀', '🪸'], emojiSize: 100, confettiRadius: 3, confettiNumber: 100 });
   };
 
@@ -126,9 +128,8 @@ export default function QualForm() {
         <form ref={form} onSubmit={handleSubmit}>
           <Header headerName="Match Info" />
           <div className={styles.MatchInfo}>
-            {formConfig.matchInfo.map(field => (
-              <DynamicField key={field.name} field={field} state={matchState} setState={setMatchState} />
-            ))}
+            <DynamicField field={{ type: 'text', label: 'Scout Name', name: 'scoutname' }} state={matchState} setState={setMatchState} />
+            <DynamicField field={{ type: 'number', label: 'Match #', name: 'match' }} state={matchState} setState={setMatchState} />
           </div>
           {teamsState.map((teamState, index) => (
             <div key={index} className={styles.TeamSection}>

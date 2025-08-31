@@ -9,10 +9,17 @@ import dynamic from 'next/dynamic';
 import Endgame from "./components/Endgame";
 import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
+import GenericMatchView from "./components/GenericMatchView";
 
 
 export default function MatchViewPage() {
-  return <MatchView />;
+  const [params, setParams] = useState({});
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const p = Object.fromEntries(url.searchParams.entries());
+    setParams(p);
+  }, []);
+  return <GenericMatchView params={params} />;
 }
 
 function MatchView() {
