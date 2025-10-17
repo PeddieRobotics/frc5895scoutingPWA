@@ -29,7 +29,7 @@ export async function POST(request) {
   }
   
   // Check if the row exists and belongs to the user's team
-  const row = await sql`SELECT * FROM cmptx2025 WHERE id = ${id};`;
+  const row = await sql`SELECT * FROM njbe2025 WHERE id = ${id};`;
   
   if (row.rows.length === 0) {
     return NextResponse.json({error: "Row not found"}, {status: 404});
@@ -45,7 +45,7 @@ export async function POST(request) {
     return NextResponse.json({error: "You can only delete data from your own team"}, {status: 403});
   }
 
-  await sql`DELETE FROM cmptx2025 WHERE id = ${id};`;
+  await sql`DELETE FROM njbe2025 WHERE id = ${id};`;
 
   return NextResponse.json({ message: "Row deleted successfully" }, {status: 200});
 }

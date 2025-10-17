@@ -49,7 +49,7 @@ export async function GET(request) {
                     telel1success, telel2success, telel3success, telel4success,
                     autoprocessorsuccess, autonetsuccess,
                     teleprocessorsuccess, telenetsuccess
-                FROM cmptx2025
+                FROM njbe2025
                 LIMIT 1000;
             `;
             
@@ -126,7 +126,7 @@ export async function GET(request) {
     // If all data was requested and admin password was provided, fetch everything
     if (allData && isAdmin) {
         console.log("GET-DATA: Admin access granted - fetching all data");
-        const data = await sql`SELECT * FROM cmptx2025;`;
+        const data = await sql`SELECT * FROM njbe2025;`;
         console.log(`GET-DATA: Returning all ${data.rows.length} rows as admin`);
         return NextResponse.json({ 
             rows: data.rows, 
@@ -146,7 +146,7 @@ export async function GET(request) {
     if (userTeam) {
         // Check if the team exists in the database
         console.log(`GET-DATA: Checking if team ${userTeam} exists in the database`);
-        const teamCheck = await sql`SELECT DISTINCT scoutteam FROM cmptx2025 WHERE scoutteam = ${userTeam};`;
+        const teamCheck = await sql`SELECT DISTINCT scoutteam FROM njbe2025 WHERE scoutteam = ${userTeam};`;
         
         if (teamCheck.rows.length === 0) {
             console.log(`GET-DATA: Team ${userTeam} not found in database`);
@@ -167,7 +167,7 @@ export async function GET(request) {
         
         // Filter data by the scoutteam field
         console.log(`GET-DATA: Filtering data for team ${userTeam}`);
-        const data = await sql`SELECT * FROM cmptx2025 WHERE scoutteam = ${userTeam};`;
+        const data = await sql`SELECT * FROM njbe2025 WHERE scoutteam = ${userTeam};`;
         console.log(`GET-DATA: Found ${data.rows.length} rows for team ${userTeam}`);
         return NextResponse.json({ 
             rows: data.rows, 

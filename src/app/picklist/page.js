@@ -183,7 +183,7 @@ export default function Picklist() {
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [teamData, setTeamData] = useState([]);
-  const [eventCode, setEventCode] = useState('2025mil'); // Default event code
+  const [eventCode, setEventCode] = useState('2025njbe'); // Default event code
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
   const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Add authentication state
@@ -980,7 +980,7 @@ export default function Picklist() {
                   type="text" 
                   value={eventCode} 
                   onChange={(e) => setEventCode(e.target.value)}
-                  placeholder="e.g. 2025mil"
+                  placeholder="e.g. 2025njbe"
                 />
               </div>
               <button 

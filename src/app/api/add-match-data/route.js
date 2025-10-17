@@ -172,7 +172,7 @@ export async function POST(req) {
     // Handle no-show case
     if (body.noshow) {
       await sql`
-        INSERT INTO cmptx2025 (scoutname, scoutteam, team, match, matchtype, noshow)
+        INSERT INTO njbe2025 (scoutname, scoutteam, team, match, matchtype, noshow)
         VALUES (${body.scoutname}, ${body.scoutteam}, ${body.team}, 
                 ${adjustedMatch}, ${matchType}, ${body.noshow})
       `;
@@ -181,7 +181,7 @@ export async function POST(req) {
 
     // Insert full data
     await sql`
-      INSERT INTO cmptx2025 (
+      INSERT INTO njbe2025 (
         scoutname, scoutteam, team, match, matchtype, noshow, leave,
         autol1success, autol1fail, autol2success, autol2fail,
         autol3success, autol3fail, autol4success, autol4fail,

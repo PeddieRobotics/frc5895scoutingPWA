@@ -23,7 +23,7 @@ export async function POST(request) {
 
   const requestBody = await request.json(); // Weight inputs
 
-  let data = await sql`SELECT * FROM cmptx2025;`;
+  let data = await sql`SELECT * FROM njbe2025;`;
   let rows = data.rows;
   console.log(rows)
 
@@ -262,7 +262,7 @@ export async function POST(request) {
  // Fetch TBA Rankings
  async function getTBARankings() {
   try {
-    const response = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mil/rankings`, {
+    const response = await fetch(`https://www.thebluealliance.com/api/v3/event/2025njbe/rankings`, {
       headers: {
         'X-TBA-Auth-Key': process.env.TBA_AUTH_KEY,
         'Accept': 'application/json'

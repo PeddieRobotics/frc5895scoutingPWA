@@ -23,12 +23,12 @@ export async function GET(request) {
       });
     }
 
-    const { rows } = await sql`SELECT * FROM cmptx2025;`;
+    const { rows } = await sql`SELECT * FROM njbe2025;`;
     let responseObject = {};
 
 
     // fetch team name from blue alliance api, commented our for now while testing getting from the backend
-    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025mil/teams`, {
+    const frcAPITeamData = await fetch(`https://www.thebluealliance.com/api/v3/event/2025njbe/teams`, {
       headers: {
         "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
         "Accept": "application/json"
