@@ -17,6 +17,9 @@ pool.on('error', (err) => {
   console.error('Unexpected database error:', err);
 });
 
+// Export the pool for use in other modules
+export { pool };
+
 /**
  * Generate a dynamic build ID based on environment variables
  * This helps ensure that preview deployments have consistent build IDs
