@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { pool } from "../../../lib/auth";
 import { calcAuto, calcTele, calcEnd } from "@/util/calculations";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveGame } from "../../../lib/game-config";
+import { createCalculationFunctions } from "../../../lib/calculation-engine";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -9,11 +11,11 @@ export async function GET(request) {
   try {
     // First validate the auth token
     const { isValid, teamName: authTeamName, error } = await validateAuthToken(request);
-    
+
     if (!isValid) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: error || "Authentication required"
-      }, { 
+      }, {
         status: 401,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -23,7 +25,36 @@ export async function GET(request) {
       });
     }
 
-    const { rows } = await sql`SELECT * FROM njbe2025;`;
+    // Determine which table to query
+    let tableName = 'njbe2025'; // default legacy table
+    let gameConfig = null;
+    let calculationFunctions = null;
+
+    try {
+      const activeGame = await getActiveGame();
+      if (activeGame && activeGame.table_name) {
+        tableName = activeGame.table_name;
+        gameConfig = activeGame.config_json;
+        calculationFunctions = createCalculationFunctions(gameConfig);
+      }
+    } catch (e) {
+      console.log("[get-alliance-data] No active game found, using legacy table");
+    }
+
+    // Use dynamic calculation functions if available
+    const autoCalc = calculationFunctions?.calcAuto || calcAuto;
+    const teleCalc = calculationFunctions?.calcTele || calcTele;
+    const endCalc = calculationFunctions?.calcEnd || calcEnd;
+
+    const client = await pool.connect();
+    let rows;
+    try {
+      const result = await client.query(`SELECT * FROM ${tableName}`);
+      rows = result.rows;
+    } finally {
+      client.release();
+    }
+
     let responseObject = {};
 
 
@@ -45,9 +76,9 @@ export async function GET(request) {
     
     rows.forEach((row) => {
       if (!row.noshow) {
-        let auto = calcAuto(row);
-        let tele = calcTele(row);
-        let end = calcEnd(row);
+        let auto = autoCalc(row);
+        let tele = teleCalc(row);
+        let end = endCalc(row);
         
         // Correct filter logic
         let frcAPITeamInfo = frcAPITeamData.filter(teamData => parseInt(teamData.team_number) == parseInt(row.team));
@@ -66,10 +97,10 @@ export async function GET(request) {
           .filter(r => String(r.team) === String(team) && !r.noshow)
           .map(r => ({
             ...r,
-            auto: calcAuto(r),
-            tele: calcTele(r),
-            end: calcEnd(r),
-            epa: calcAuto(r) + calcTele(r) + calcEnd(r),
+            auto: autoCalc(r),
+            tele: teleCalc(r),
+            end: endCalc(r),
+            epa: autoCalc(r) + teleCalc(r) + endCalc(r),
           }))
           .sort((a, b) => a.match - b.match); // assuming `match` column exists
     

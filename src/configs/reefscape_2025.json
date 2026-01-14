@@ -1,0 +1,382 @@
+{
+  "gameName": "reefscape_2025",
+  "displayName": "REEFSCAPE 2025",
+  "formTitle": "JÖRMUNSCOUTR",
+  "version": "1.0",
+
+  "basics": {
+    "description": "Pre-match fields displayed at the top of the form",
+    "fields": [
+      {
+        "type": "checkbox",
+        "name": "noshow",
+        "label": "No Show",
+        "hidesForm": true,
+        "dbColumn": { "type": "BOOLEAN", "default": false }
+      }
+    ]
+  },
+
+  "sections": [
+    {
+      "id": "auto",
+      "header": "Auto",
+      "showWhen": { "field": "noshow", "equals": false },
+      "fields": [
+        {
+          "type": "checkbox",
+          "name": "leave",
+          "label": "Leave",
+          "dbColumn": { "type": "BOOLEAN", "default": false }
+        },
+        {
+          "type": "table",
+          "id": "autoCoralTable",
+          "subHeader": "Coral",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "L4",
+              "fields": [
+                { "type": "counter", "name": "autol4success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autol4fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L3",
+              "fields": [
+                { "type": "counter", "name": "autol3success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autol3fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L2",
+              "fields": [
+                { "type": "counter", "name": "autol2success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autol2fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L1",
+              "fields": [
+                { "type": "counter", "name": "autol1success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autol1fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "counter",
+          "name": "autoalgaeremoved",
+          "subHeader": "Algae Removed",
+          "variant": "Counter",
+          "dbColumn": { "type": "INTEGER", "default": 0 }
+        },
+        {
+          "type": "table",
+          "id": "autoProcessorTable",
+          "subHeader": "Processor",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                { "type": "counter", "name": "autoprocessorsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autoprocessorfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "id": "autoNetTable",
+          "subHeader": "Net",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                { "type": "counter", "name": "autonetsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "autonetfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tele",
+      "header": "Tele",
+      "showWhen": { "field": "noshow", "equals": false },
+      "fields": [
+        {
+          "type": "table",
+          "id": "teleCoralTable",
+          "subHeader": "Coral",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "L4",
+              "fields": [
+                { "type": "counter", "name": "telel4success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "telel4fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L3",
+              "fields": [
+                { "type": "counter", "name": "telel3success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "telel3fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L2",
+              "fields": [
+                { "type": "counter", "name": "telel2success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "telel2fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            },
+            {
+              "label": "L1",
+              "fields": [
+                { "type": "counter", "name": "telel1success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "telel1fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "counter",
+          "name": "telealgaeremoved",
+          "subHeader": "Algae Removed",
+          "variant": "Counter",
+          "dbColumn": { "type": "INTEGER", "default": 0 }
+        },
+        {
+          "type": "table",
+          "id": "teleProcessorTable",
+          "subHeader": "Processor",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                { "type": "counter", "name": "teleprocessorsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "teleprocessorfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "id": "teleNetTable",
+          "subHeader": "Net",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                { "type": "counter", "name": "telenetsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "telenetfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "id": "teleHPTable",
+          "subHeader": "Human Player",
+          "columns": ["", "Success", "Fail", ""],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                { "type": "counter", "name": "hpsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
+                { "type": "counter", "name": "hpfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "comment",
+          "name": "generalcomments",
+          "label": "General Comments",
+          "dbColumn": { "type": "TEXT", "default": null }
+        },
+        {
+          "type": "collapsible",
+          "id": "defenseSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "defense",
+            "label": "Playing Defense?",
+            "dbColumn": { "type": "BOOLEAN", "default": false }
+          },
+          "content": [
+            {
+              "type": "comment",
+              "name": "defensecomments",
+              "label": "Defense Elaboration",
+              "dbColumn": { "type": "TEXT", "default": null }
+            },
+            {
+              "type": "starRating",
+              "name": "defenseplayed",
+              "label": "Defense Played",
+              "description": "Ability to Play Defense",
+              "max": 6,
+              "minWhenVisible": 1,
+              "dbColumn": { "type": "INTEGER", "default": null }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "endgame",
+      "header": "Endgame",
+      "showWhen": { "field": "noshow", "equals": false },
+      "fields": [
+        {
+          "type": "singleSelect",
+          "name": "endlocation",
+          "formName": "stageplacement",
+          "label": "Stage Placement",
+          "dbColumn": { "type": "INTEGER", "default": 0 },
+          "options": [
+            { "value": 0, "label": "None", "default": true },
+            { "value": 1, "label": "Park" },
+            { "value": 2, "label": "Fail + Park" },
+            { "value": 3, "label": "Shallow Cage" },
+            { "value": 4, "label": "Deep Cage" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postMatch",
+      "header": "Post-Match",
+      "showWhen": { "field": "noshow", "equals": false },
+      "fields": [
+        {
+          "type": "multiSelect",
+          "subHeader": "Intake",
+          "name": "intakeOptions",
+          "options": [
+            { "name": "coralgrndintake", "label": "Coral Ground", "dbColumn": { "type": "BOOLEAN", "default": false } },
+            { "name": "coralstationintake", "label": "Coral Station", "dbColumn": { "type": "BOOLEAN", "default": false } },
+            { "name": "algaegrndintake", "label": "Algae Ground", "dbColumn": { "type": "BOOLEAN", "default": false } },
+            { "name": "algaehighreefintake", "label": "Algae High Reef", "dbColumn": { "type": "BOOLEAN", "default": false } },
+            { "name": "algaelowreefintake", "label": "Algae Low Reef", "dbColumn": { "type": "BOOLEAN", "default": false } }
+          ]
+        },
+        {
+          "type": "collapsible",
+          "id": "breakdownSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "breakdown",
+            "label": "Broke down?",
+            "dbColumn": { "type": "BOOLEAN", "default": false }
+          },
+          "content": [
+            {
+              "type": "comment",
+              "name": "breakdowncomments",
+              "label": "Breakdown Elaboration",
+              "dbColumn": { "type": "TEXT", "default": null }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qualitative",
+      "header": "Qualitative Ratings",
+      "showWhen": { "field": "noshow", "equals": false },
+      "hidden": true,
+      "description": "These fields are for internal tracking and not shown on the main form",
+      "fields": [
+        { "type": "starRating", "name": "coralspeed", "label": "Coral Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "processorspeed", "label": "Processor Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "netspeed", "label": "Net Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "algaeremovalspeed", "label": "Algae Removal Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "climbspeed", "label": "Climb Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "maneuverability", "label": "Maneuverability", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "defenseevasion", "label": "Defense Evasion", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "aggression", "label": "Aggression", "max": 6, "inverted": true, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "starRating", "name": "cagehazard", "label": "Cage Hazard", "max": 6, "inverted": true, "dbColumn": { "type": "INTEGER", "default": null } },
+        { "type": "checkbox", "name": "lollipop", "label": "Lollipop", "dbColumn": { "type": "BOOLEAN", "default": false } }
+      ]
+    }
+  ],
+
+  "calculations": {
+    "auto": {
+      "formula": "autol1success*3 + autol2success*4 + autol3success*6 + autol4success*7 + autoprocessorsuccess*6 + autonetsuccess*4 + (leave?3:0)",
+      "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "autoprocessorsuccess", "autonetsuccess", "leave"]
+    },
+    "tele": {
+      "formula": "telel1success*2 + telel2success*3 + telel3success*4 + telel4success*5 + teleprocessorsuccess*6 + telenetsuccess*4 + hpsuccess*2",
+      "fields": ["telel1success", "telel2success", "telel3success", "telel4success", "teleprocessorsuccess", "telenetsuccess", "hpsuccess"]
+    },
+    "end": {
+      "type": "mapping",
+      "field": "endlocation",
+      "mapping": {
+        "0": 0,
+        "1": 2,
+        "2": 2,
+        "3": 6,
+        "4": 12
+      }
+    }
+  },
+
+  "display": {
+    "teamView": {
+      "epaBreakdown": ["auto", "tele", "end"],
+      "piecePlacement": {
+        "coral": {
+          "levels": ["L1", "L2", "L3", "L4"],
+          "autoFields": ["autol1success", "autol2success", "autol3success", "autol4success"],
+          "teleFields": ["telel1success", "telel2success", "telel3success", "telel4success"]
+        },
+        "algae": {
+          "autoFields": ["autoprocessorsuccess", "autonetsuccess", "autoalgaeremoved"],
+          "teleFields": ["teleprocessorsuccess", "telenetsuccess", "telealgaeremoved"]
+        }
+      },
+      "endgamePie": {
+        "field": "endlocation",
+        "labels": ["None", "Park", "Fail+Park", "Shallow", "Deep"],
+        "values": [0, 1, 2, 3, 4]
+      },
+      "comments": ["generalcomments", "breakdowncomments", "defensecomments"],
+      "intakeDisplay": [
+        { "category": "Coral Intake", "fields": ["coralgrndintake", "coralstationintake"], "labels": ["Ground", "Station"] },
+        { "category": "Algae Intake", "fields": ["algaegrndintake", "algaehighreefintake", "algaelowreefintake"], "labels": ["Ground", "High Reef", "Low Reef"] }
+      ],
+      "qualitativeDisplay": [
+        { "name": "coralspeed", "label": "Coral Speed" },
+        { "name": "processorspeed", "label": "Processor Speed" },
+        { "name": "netspeed", "label": "Net Speed" },
+        { "name": "algaeremovalspeed", "label": "Algae Removal Speed" },
+        { "name": "climbspeed", "label": "Climb Speed" },
+        { "name": "maneuverability", "label": "Maneuverability" },
+        { "name": "defenseplayed", "label": "Defense Played" },
+        { "name": "defenseevasion", "label": "Defense Evasion" },
+        { "name": "aggression", "label": "Aggression", "inverted": true },
+        { "name": "cagehazard", "label": "Cage Hazard", "inverted": true }
+      ]
+    },
+    "matchView": {
+      "allianceMetrics": ["auto", "tele", "end"],
+      "keyStats": [
+        { "label": "Leave %", "field": "leave", "type": "percentage" },
+        { "label": "Avg Coral", "type": "sum", "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"] },
+        { "label": "Breakdown %", "field": "breakdown", "type": "percentage" }
+      ]
+    }
+  }
+}
