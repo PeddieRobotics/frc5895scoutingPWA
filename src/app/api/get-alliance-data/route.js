@@ -25,26 +25,32 @@ export async function GET(request) {
       });
     }
 
-    // Determine which table to query
-    let tableName = 'njbe2025'; // default legacy table
+    // Get active game - required
+    let activeGame = null;
     let gameConfig = null;
     let calculationFunctions = null;
 
     try {
-      const activeGame = await getActiveGame();
-      if (activeGame && activeGame.table_name) {
-        tableName = activeGame.table_name;
-        gameConfig = activeGame.config_json;
-        calculationFunctions = createCalculationFunctions(gameConfig);
-      }
+      activeGame = await getActiveGame();
     } catch (e) {
-      console.log("[get-alliance-data] No active game found, using legacy table");
+      console.error("[get-alliance-data] Error getting active game:", e);
     }
 
-    // Use dynamic calculation functions if available
-    const autoCalc = calculationFunctions?.calcAuto || calcAuto;
-    const teleCalc = calculationFunctions?.calcTele || calcTele;
-    const endCalc = calculationFunctions?.calcEnd || calcEnd;
+    if (!activeGame || !activeGame.table_name) {
+      return NextResponse.json({
+        message: "No active game configured. Please go to /admin/games to create and activate a game.",
+        error: "NO_ACTIVE_GAME"
+      }, { status: 400 });
+    }
+
+    const tableName = activeGame.table_name;
+    gameConfig = activeGame.config_json;
+    calculationFunctions = createCalculationFunctions(gameConfig);
+
+    // Use dynamic calculation functions
+    const autoCalc = calculationFunctions.calcAuto;
+    const teleCalc = calculationFunctions.calcTele;
+    const endCalc = calculationFunctions.calcEnd;
 
     const client = await pool.connect();
     let rows;

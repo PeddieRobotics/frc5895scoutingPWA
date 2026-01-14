@@ -34,21 +34,27 @@ export async function GET(request) {
     return NextResponse.json({ message: "ERROR: Invalid team number" }, { status: 400 });
   }
 
-  // Determine which table to query
-  let tableName = 'njbe2025'; // default legacy table
+  // Get active game - required
+  let activeGame = null;
   let gameConfig = null;
   let calculationFunctions = null;
 
   try {
-    const activeGame = await getActiveGame();
-    if (activeGame && activeGame.table_name) {
-      tableName = activeGame.table_name;
-      gameConfig = activeGame.config_json;
-      calculationFunctions = createCalculationFunctions(gameConfig);
-    }
+    activeGame = await getActiveGame();
   } catch (e) {
-    console.log("[get-team-data] No active game found, using legacy table");
+    console.error("[get-team-data] Error getting active game:", e);
   }
+
+  if (!activeGame || !activeGame.table_name) {
+    return NextResponse.json({
+      message: "No active game configured. Please go to /admin/games to create and activate a game.",
+      error: "NO_ACTIVE_GAME"
+    }, { status: 400 });
+  }
+
+  const tableName = activeGame.table_name;
+  gameConfig = activeGame.config_json;
+  calculationFunctions = createCalculationFunctions(gameConfig);
 
   // Fetch team data from database
   const client = await pool.connect();

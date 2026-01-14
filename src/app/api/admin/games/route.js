@@ -27,19 +27,31 @@ export async function GET(request) {
 
   try {
     // Initialize table if needed
+    console.log('[Games API] Initializing game_configs table...');
     await initializeGameConfigsTable();
+    console.log('[Games API] Table initialized successfully');
 
     // Get all games
+    console.log('[Games API] Fetching all games...');
     const games = await getAllGames();
+    console.log(`[Games API] Found ${games.length} games`);
 
     // Add data counts for each game
     const gamesWithCounts = await Promise.all(
       games.map(async (game) => {
-        const dataCount = await getGameDataCount(game.table_name);
-        return {
-          ...game,
-          dataCount,
-        };
+        try {
+          const dataCount = await getGameDataCount(game.table_name);
+          return {
+            ...game,
+            dataCount,
+          };
+        } catch (err) {
+          console.warn(`[Games API] Could not get data count for ${game.table_name}:`, err.message);
+          return {
+            ...game,
+            dataCount: 0,
+          };
+        }
       })
     );
 
@@ -49,8 +61,9 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('[Games API] Error listing games:', error);
+    console.error('[Games API] Error stack:', error.stack);
     return NextResponse.json(
-      { message: 'Failed to list games', error: error.message },
+      { message: 'Failed to list games', error: error.message, stack: error.stack },
       { status: 500 }
     );
   }
