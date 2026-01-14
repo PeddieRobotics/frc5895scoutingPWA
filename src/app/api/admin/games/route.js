@@ -1,0 +1,198 @@
+import { NextResponse } from 'next/server';
+import { validateAuthToken } from '../../../../lib/auth';
+import {
+  initializeGameConfigsTable,
+  getAllGames,
+  createGame,
+  getGameDataCount,
+} from '../../../../lib/game-config';
+import { validateConfig } from '../../../../lib/config-validator';
+import { extractFieldsFromConfig } from '../../../../lib/schema-generator';
+
+export const revalidate = 0;
+
+/**
+ * GET /api/admin/games
+ * List all game configurations
+ */
+export async function GET(request) {
+  // Validate auth
+  const { isValid, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json(
+      { message: error || 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    // Initialize table if needed
+    await initializeGameConfigsTable();
+
+    // Get all games
+    const games = await getAllGames();
+
+    // Add data counts for each game
+    const gamesWithCounts = await Promise.all(
+      games.map(async (game) => {
+        const dataCount = await getGameDataCount(game.table_name);
+        return {
+          ...game,
+          dataCount,
+        };
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      games: gamesWithCounts,
+    });
+  } catch (error) {
+    console.error('[Games API] Error listing games:', error);
+    return NextResponse.json(
+      { message: 'Failed to list games', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/admin/games
+ * Create a new game configuration
+ */
+export async function POST(request) {
+  // Validate auth
+  const { isValid, teamName, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json(
+      { message: error || 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const { gameName, displayName, configJson } = body;
+
+    // Validate required fields
+    if (!gameName || !displayName || !configJson) {
+      return NextResponse.json(
+        { message: 'Missing required fields: gameName, displayName, configJson' },
+        { status: 400 }
+      );
+    }
+
+    // Parse configJson if it's a string
+    let config = configJson;
+    if (typeof configJson === 'string') {
+      try {
+        config = JSON.parse(configJson);
+      } catch (e) {
+        return NextResponse.json(
+          { message: 'Invalid JSON configuration', error: e.message },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate the configuration
+    const validationResult = validateConfig(config);
+    if (!validationResult.valid) {
+      return NextResponse.json(
+        {
+          message: 'Configuration validation failed',
+          errors: validationResult.errors,
+          warnings: validationResult.warnings,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Initialize table if needed
+    await initializeGameConfigsTable();
+
+    // Create the game
+    const game = await createGame({
+      gameName,
+      displayName,
+      configJson: config,
+      createdBy: teamName,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Game created successfully',
+      game: {
+        id: game.id,
+        gameName: game.game_name,
+        displayName: game.display_name,
+        tableName: game.table_name,
+        isActive: game.is_active,
+        createdAt: game.created_at,
+      },
+      columnsCreated: game.columnsCreated,
+      warnings: validationResult.warnings,
+    });
+  } catch (error) {
+    console.error('[Games API] Error creating game:', error);
+    return NextResponse.json(
+      { message: 'Failed to create game', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * OPTIONS /api/admin/games
+ * Preview what columns would be created for a config
+ */
+export async function OPTIONS(request) {
+  try {
+    const body = await request.json();
+    const { configJson } = body;
+
+    if (!configJson) {
+      return NextResponse.json(
+        { message: 'configJson is required' },
+        { status: 400 }
+      );
+    }
+
+    // Parse configJson if it's a string
+    let config = configJson;
+    if (typeof configJson === 'string') {
+      try {
+        config = JSON.parse(configJson);
+      } catch (e) {
+        return NextResponse.json(
+          { message: 'Invalid JSON', error: e.message },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate the configuration
+    const validationResult = validateConfig(config);
+
+    // Extract fields to show what would be created
+    const fields = extractFieldsFromConfig(config);
+
+    return NextResponse.json({
+      valid: validationResult.valid,
+      errors: validationResult.errors,
+      warnings: validationResult.warnings,
+      fieldsToCreate: fields.map((f) => ({
+        name: f.name,
+        type: f.type,
+        default: f.default,
+        required: f.required,
+        label: f.label,
+      })),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { message: 'Validation failed', error: error.message },
+      { status: 500 }
+    );
+  }
+}

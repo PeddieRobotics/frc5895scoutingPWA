@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
-import { sql } from '@vercel/postgres';
+import { pool } from '../../../lib/auth';
 import _ from 'lodash';
 import { tidy, mutate, mean, select, summarizeAll, groupBy, summarize, first, n, median, total, arrange, asc, slice } from '@tidyjs/tidy';
 import { calcEPA, calcAuto, calcTele, calcEnd } from "../../../util/calculations.js";
 import { validateAuthToken } from "../../../lib/auth";
+import { getActiveGame } from "../../../lib/game-config";
+import { createCalculationFunctions } from "../../../lib/calculation-engine";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
 export async function GET(request) {
   // First validate the auth token
   const { isValid, teamName: authTeamName, error } = await validateAuthToken(request);
-  
+
   if (!isValid) {
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: error || "Authentication required"
-    }, { 
+    }, {
       status: 401,
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -32,9 +34,31 @@ export async function GET(request) {
     return NextResponse.json({ message: "ERROR: Invalid team number" }, { status: 400 });
   }
 
+  // Determine which table to query
+  let tableName = 'njbe2025'; // default legacy table
+  let gameConfig = null;
+  let calculationFunctions = null;
+
+  try {
+    const activeGame = await getActiveGame();
+    if (activeGame && activeGame.table_name) {
+      tableName = activeGame.table_name;
+      gameConfig = activeGame.config_json;
+      calculationFunctions = createCalculationFunctions(gameConfig);
+    }
+  } catch (e) {
+    console.log("[get-team-data] No active game found, using legacy table");
+  }
+
   // Fetch team data from database
-  let data = await sql`SELECT * FROM njbe2025 WHERE team = ${team};`;
-  const rows = data.rows;
+  const client = await pool.connect();
+  let rows;
+  try {
+    const result = await client.query(`SELECT * FROM ${tableName} WHERE team = $1`, [team]);
+    rows = result.rows;
+  } finally {
+    client.release();
+  }
 
   if (rows.length === 0) {
     return NextResponse.json({ message: `ERROR: No data for team ${team}` }, { status: 404 });
@@ -56,11 +80,17 @@ export async function GET(request) {
     return mean(index);
   }
 
+  // Use dynamic calculation functions if available, otherwise fall back to legacy
+  const autoCalc = calculationFunctions?.calcAuto || calcAuto;
+  const teleCalc = calculationFunctions?.calcTele || calcTele;
+  const endCalc = calculationFunctions?.calcEnd || calcEnd;
+  const epaCalc = calculationFunctions?.calcEPA || calcEPA;
+
   let teamTable = tidy(rows, mutate({
-    auto: rec => calcAuto(rec),
-    tele: rec => calcTele(rec),
-    end: rec => calcEnd(rec),
-    epa: rec => calcEPA(rec) // Ensure EPA is using the correct calculation
+    auto: rec => autoCalc(rec),
+    tele: rec => teleCalc(rec),
+    end: rec => endCalc(rec),
+    epa: rec => epaCalc(rec) // Ensure EPA is using the correct calculation
 }));
 
 
@@ -817,6 +847,13 @@ console.log("Backend End Placement:", returnObject[0].endPlacement);
 // Include the raw rows if requested
 if (includeRows) {
   returnObject[0].rows = rows;
+}
+
+// Add game config metadata
+returnObject[0].tableName = tableName;
+if (gameConfig) {
+  returnObject[0].gameName = gameConfig.gameName;
+  returnObject[0].displayName = gameConfig.displayName;
 }
 
 // Just one return statement
