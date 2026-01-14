@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Not Found - JÖRMUNSCOUTR',
+  title: 'Not Found - 5895 SKOUTER',
   description: 'Page not found'
 }
 

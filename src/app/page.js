@@ -1242,7 +1242,7 @@ export default function Home() {
         }}
         style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
       >
-        <Header headerName={"JÖRMUNSCOUTR"} className={compactStyles.header} />
+        <Header headerName={"5895 SKOUTER"} className={compactStyles.header} />
         <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
           <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <TextInput 
