@@ -6,6 +6,16 @@ First, install the dependencies:
 npm install
 ```
 
+Then, run the development server:
+
+```bash
+npm run dev
+```
+
+The dev server is configured to bind to `0.0.0.0`, which allows you to access it from other devices on your local network. You can access the app at:
+- On the host machine: http://localhost:3000
+- From other devices on the network: http://YOUR_IP_ADDRESS:3000 (replace YOUR_IP_ADDRESS with your machine's local IP)
+
 Next, set up the database on Vercel with test data.
 ```sql
 
