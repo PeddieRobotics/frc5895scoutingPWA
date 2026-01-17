@@ -38,7 +38,12 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
-  
+
+  // Active game configuration state
+  const [activeGameConfig, setActiveGameConfig] = useState(null);
+  const [gameConfigLoading, setGameConfigLoading] = useState(true);
+  const [gameConfigError, setGameConfigError] = useState(null);
+
   const form = useRef();
   const router = useRouter();
 
@@ -374,6 +379,47 @@ export default function Home() {
       }
     };
   }, [authCredentials, validateCredentials, setAuthCookies, clearAuthCookies]);
+
+  // Fetch active game configuration on mount
+  useEffect(() => {
+    const fetchActiveGame = async () => {
+      try {
+        setGameConfigLoading(true);
+        setGameConfigError(null);
+
+        const response = await fetch('/api/admin/games/active', {
+          cache: 'no-store',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.config) {
+            setActiveGameConfig({
+              gameId: data.gameId,
+              gameName: data.gameName,
+              displayName: data.displayName,
+              tableName: data.tableName,
+              config: data.config,
+            });
+            console.log('[Form] Loaded active game:', data.displayName);
+          } else {
+            console.warn('[Form] No active game configured');
+            setGameConfigError('No active game configured. Contact admin to set up a game.');
+          }
+        } else {
+          console.error('[Form] Failed to fetch active game');
+          setGameConfigError('Failed to load game configuration.');
+        }
+      } catch (error) {
+        console.error('[Form] Error fetching active game:', error);
+        setGameConfigError('Error loading game configuration.');
+      } finally {
+        setGameConfigLoading(false);
+      }
+    };
+
+    fetchActiveGame();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -780,7 +826,13 @@ export default function Home() {
   async function handleSubmitOnline(e) {
     // Prevent default form submission behavior
     if (e) e.preventDefault();
-    
+
+    // Check if game config is loaded
+    if (!activeGameConfig && !gameConfigLoading) {
+      toast.error('No active game configured. Please contact your admin to set up a game.');
+      return;
+    }
+
     // Process the form data without modifying the form's state
     const data = await processFormData(e);
     if (!data) return;
@@ -801,6 +853,13 @@ export default function Home() {
   
   const submitDataOnline = async () => {
     try {
+      // Check if game config is loaded
+      if (!activeGameConfig && !gameConfigLoading) {
+        toast.error('No active game configured. Please contact your admin to set up a game.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // If no auth credentials, show auth dialog
       if (!authCredentials) {
         setShowSubmitDialog(false);
@@ -1228,7 +1287,55 @@ export default function Home() {
   return (
     <div className={`${styles.MainDiv} ${compactStyles.MainDiv}`}>
       <Toaster position="top-center" />
-      
+
+      {/* Game configuration status banner */}
+      {gameConfigLoading && (
+        <div style={{
+          background: 'rgba(255, 193, 7, 0.2)',
+          border: '1px solid #ffc107',
+          color: '#ffc107',
+          padding: '12px 16px',
+          margin: '8px',
+          borderRadius: '6px',
+          textAlign: 'center',
+          fontSize: '14px'
+        }}>
+          Loading game configuration...
+        </div>
+      )}
+
+      {gameConfigError && (
+        <div style={{
+          background: 'rgba(229, 62, 62, 0.2)',
+          border: '1px solid #e53e3e',
+          color: '#fc8181',
+          padding: '12px 16px',
+          margin: '8px',
+          borderRadius: '6px',
+          textAlign: 'center',
+          fontSize: '14px'
+        }}>
+          <strong>Warning:</strong> {gameConfigError}
+          <br />
+          <small>Form may not submit correctly. Please contact your admin.</small>
+        </div>
+      )}
+
+      {activeGameConfig && (
+        <div style={{
+          background: 'rgba(56, 161, 105, 0.15)',
+          border: '1px solid #38a169',
+          color: '#68d391',
+          padding: '8px 12px',
+          margin: '8px',
+          borderRadius: '6px',
+          textAlign: 'center',
+          fontSize: '13px'
+        }}>
+          Active Game: <strong>{activeGameConfig.displayName}</strong>
+        </div>
+      )}
+
       {/* Always render the form - don't conditionally render it, just conditionally hide it */}
       <form 
         key={formResetKey}
@@ -1242,7 +1349,7 @@ export default function Home() {
         }}
         style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
       >
-        <Header headerName={"5895 SKOUTER"} className={compactStyles.header} />
+        <Header headerName={activeGameConfig?.config?.formTitle || "5895 SKOUTER"} className={compactStyles.header} />
         <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
           <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <TextInput 
