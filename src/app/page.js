@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
+import DynamicFormRenderer from "./form-components/DynamicFormRenderer";
 import styles from "./page.module.css";
 import compactStyles from "./compact.module.css";
 import NumericInput from "./form-components/NumericInput";
@@ -1376,17 +1377,32 @@ export default function Home() {
               className="preMatchInput"
             />
           </div>
-          <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
-            <Checkbox
-              visibleName={"No Show"}
-              internalName={"noshow"}
-              changeListener={onNoShowChange}
-              className="preMatchInput"
-            />
-          </div>
         </div>
 
-        {!noShow && (
+        {/* Dynamic form content based on active game config */}
+        <DynamicFormRenderer
+          config={activeGameConfig?.config}
+          noShow={noShow}
+          setNoShow={setNoShow}
+          breakdown={breakdown}
+          setBreakdown={setBreakdown}
+          defense={defense}
+          setDefense={setDefense}
+        />
+
+        {!gameConfigLoading && !activeGameConfig && (
+          <div style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            color: '#999',
+            fontSize: '16px'
+          }}>
+            No active game configuration. Please contact your admin to set up a game.
+          </div>
+        )}
+
+        {/* Keep the old hardcoded form as fallback (hidden) */}
+        {false && !noShow && (
           <>
             <div className={`${styles.Auto} ${compactStyles.Auto}`}>
               <Header headerName={"Auto"} className={compactStyles.header} />
