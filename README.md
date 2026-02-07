@@ -7,7 +7,8 @@ npm install
 ```
 
 Next, configure the game collection JSON configuration file at /admin/games
-*** Please note that the PostgreSQL database keys, as well as ADMIN_PASSWORD must be defined in environment variables.
+
+Please note that the PostgreSQL database keys, as well as ADMIN_PASSWORD must be defined in environment variables.
 
 ---
 
