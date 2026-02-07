@@ -1192,3 +1192,46 @@ hr.subsubheading {
   width: 100%;
   max-width: 350px;
 }
+
+/* ========================
+   Dynamic Form Layout
+   ======================== */
+
+/* Basics section (No Show checkbox, etc.) */
+.BasicsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+/* Each major form section wrapper (Auto, Tele, Endgame, etc.) */
+.SectionWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+/* Content area within a section — centers all child fields */
+.SectionContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  gap: 8px;
+}
+
+/* Collapsible expanded content area */
+.collapsibleContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  margin-top: 4px;
+}

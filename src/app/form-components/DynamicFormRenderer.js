@@ -12,7 +12,6 @@ import EndPlacement from './EndPlacement';
 import IntakeOptions from './IntakeOptions';
 import Qualitative from './Qualitative';
 import styles from '../page.module.css';
-import compactStyles from '../compact.module.css';
 
 export default function DynamicFormRenderer({
   config,
@@ -163,7 +162,7 @@ export default function DynamicFormRenderer({
     return (
       <div key={key}>
         {tableField.subHeader && <SubHeader subHeaderName={tableField.subHeader} />}
-        <table className={`${styles.AutoAndTele} ${compactStyles.AutoAndTele}`}>
+        <table className={styles.Table}>
           <thead>
             <tr>
               {tableField.columns?.map((col, i) => (
@@ -202,7 +201,7 @@ export default function DynamicFormRenderer({
       <div key={key}>
         {trigger && renderField(trigger, `${key}-trigger`)}
         {isExpanded && (
-          <div className={`${styles.collapsibleContent} ${compactStyles.collapsibleContent}`}>
+          <div className={styles.collapsibleContent}>
             {content.map((field, i) => renderField(field, `${key}-content-${i}`))}
           </div>
         )}
@@ -214,7 +213,7 @@ export default function DynamicFormRenderer({
     <>
       {/* Render basics section */}
       {config.basics?.fields && (
-        <div className={`${styles.BasicsSection} ${compactStyles.BasicsSection}`}>
+        <div className={styles.BasicsSection}>
           {config.basics.fields.map((field, i) => renderField(field, `basics-${i}`))}
         </div>
       )}
@@ -224,9 +223,9 @@ export default function DynamicFormRenderer({
         if (!shouldShowSection(section)) return null;
 
         return (
-          <div key={section.id || `section-${sectionIndex}`}>
+          <div key={section.id || `section-${sectionIndex}`} className={styles.SectionWrapper}>
             {section.header && <Header headerName={section.header} />}
-            <div className={`${styles.SectionContent} ${compactStyles.SectionContent}`}>
+            <div className={styles.SectionContent}>
               {section.fields?.map((field, fieldIndex) =>
                 renderField(field, `${section.id}-${fieldIndex}`)
               )}
