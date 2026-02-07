@@ -345,6 +345,7 @@ A numeric counter with increment (+) and decrement (-) buttons. The value cannot
 | `label` | string | No | Display label (if not in a table) |
 | `subHeader` | string | No | Small header above the counter |
 | `variant` | string | No | Visual style: `"Success"`, `"Fail"`, or `"Counter"` |
+| `quickButtons` | array | No | Optional quick-action buttons for larger increments/decrements |
 | `dbColumn` | object | Yes | Database column configuration |
 
 **Database Type:** `INTEGER`
@@ -378,6 +379,40 @@ A numeric counter with increment (+) and decrement (-) buttons. The value cannot
 - `"Counter"` - Neutral styling
 
 **Renders as:** A number display with - and + buttons on either side. Starts at 0.
+
+#### Quick Buttons (Optional)
+
+Counters support optional `quickButtons` for rapid data entry with larger increments or decrements. This is useful during fast-paced matches where scouts need to add values like +5 or +10 quickly.
+
+**Quick Button Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `value` | integer | Yes | Amount to add (positive) or subtract (negative) |
+| `label` | string | Yes | Display text on the button (e.g., "+5", "-10") |
+| `position` | string | Yes | `"left"` or `"right"` of the main counter controls |
+| `style` | string | No | Optional CSS class name for custom styling |
+
+**Example with quick buttons:**
+
+```json
+{
+  "type": "counter",
+  "name": "autoscore",
+  "label": "Auto Scores",
+  "variant": "Success",
+  "quickButtons": [
+    { "value": -5, "label": "-5", "position": "left" },
+    { "value": 5, "label": "+5", "position": "right" },
+    { "value": 10, "label": "+10", "position": "right" }
+  ],
+  "dbColumn": { "type": "INTEGER", "default": 0 }
+}
+```
+
+**Layout:** Left-positioned buttons appear before the main -/+1 controls; right-positioned buttons appear after. The counter value is clamped to min/max bounds. Buttons are touch-friendly (minimum 44px touch targets) and responsive on smaller screens.
+
+**Note:** Counters without `quickButtons` continue to work exactly as before with just the standard -1/+1 buttons.
 
 ---
 

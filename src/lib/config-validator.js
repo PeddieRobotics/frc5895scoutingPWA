@@ -306,6 +306,50 @@ function validateStandardField(field, path, fieldNames, result) {
   if (field.dbColumn) {
     validateDbColumn(field.dbColumn, path, result);
   }
+
+  // Validate quickButtons (optional, for counter/number fields)
+  if (field.quickButtons) {
+    validateQuickButtons(field.quickButtons, path, result);
+  }
+}
+
+/**
+ * Validate quickButtons configuration for counter/number fields
+ */
+function validateQuickButtons(quickButtons, path, result) {
+  if (!Array.isArray(quickButtons)) {
+    result.addError('quickButtons must be an array', `${path}.quickButtons`);
+    return;
+  }
+
+  const seenValues = new Set();
+
+  quickButtons.forEach((btn, index) => {
+    const btnPath = `${path}.quickButtons[${index}]`;
+
+    if (typeof btn.value !== 'number' || !Number.isInteger(btn.value)) {
+      result.addError('Quick button value must be an integer', `${btnPath}.value`);
+    }
+
+    if (!btn.label || typeof btn.label !== 'string') {
+      result.addError('Quick button label is required and must be a non-empty string', `${btnPath}.label`);
+    }
+
+    if (!btn.position || !['left', 'right'].includes(btn.position)) {
+      result.addError('Quick button position must be "left" or "right"', `${btnPath}.position`);
+    }
+
+    if (btn.value !== undefined && seenValues.has(btn.value)) {
+      result.addWarning(`Duplicate quick button value: ${btn.value}`, `${btnPath}.value`);
+    }
+    if (btn.value !== undefined) {
+      seenValues.add(btn.value);
+    }
+
+    if (btn.style && typeof btn.style !== 'string') {
+      result.addWarning('Quick button style should be a string', `${btnPath}.style`);
+    }
+  });
 }
 
 /**

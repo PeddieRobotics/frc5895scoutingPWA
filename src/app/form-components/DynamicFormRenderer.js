@@ -79,6 +79,9 @@ export default function DynamicFormRenderer({
             key={key}
             internalName={field.name}
             pieceType={field.variant || 'Counter'}
+            min={field.min}
+            max={field.max}
+            quickButtons={field.quickButtons}
           />
         );
 
