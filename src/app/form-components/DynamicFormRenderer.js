@@ -1,5 +1,8 @@
 /**
  * DynamicFormRenderer - Renders form fields dynamically from JSON config
+ *
+ * All form content is driven entirely by the JSON game configuration.
+ * No hardcoded field names or game-specific components.
  */
 import React from 'react';
 import Header from './Header';
@@ -8,8 +11,8 @@ import TextInput from './TextInput';
 import NumericInput from './NumericInput';
 import Checkbox from './Checkbox';
 import CommentBox from './CommentBox';
-import EndPlacement from './EndPlacement';
-import IntakeOptions from './IntakeOptions';
+import SingleSelect from './SingleSelect';
+import MultiSelect from './MultiSelect';
 import Qualitative from './Qualitative';
 import styles from '../page.module.css';
 
@@ -32,11 +35,13 @@ export default function DynamicFormRenderer({
 
   // Helper to check if a section should be visible
   const shouldShowSection = (section) => {
+    // Hidden sections should never render on the scouting form
+    if (section.hidden) return false;
+
     if (!section.showWhen) return true;
 
     const { field, equals } = section.showWhen;
 
-    // Map field names to their state values
     if (field === 'noshow') return noShow === equals;
     if (field === 'breakdown') return breakdown === equals;
     if (field === 'defense') return defense === equals;
@@ -51,8 +56,7 @@ export default function DynamicFormRenderer({
     const key = field.name || field.id || `field-${index}`;
 
     switch (field.type) {
-      case 'checkbox':
-        // Create change listener for state-tracked checkboxes
+      case 'checkbox': {
         let changeListener = undefined;
         if (field.name === 'noshow') {
           changeListener = (e) => setNoShow(e.target.checked);
@@ -70,18 +74,22 @@ export default function DynamicFormRenderer({
             changeListener={changeListener}
           />
         );
+      }
 
       case 'counter':
       case 'number':
         return (
-          <NumericInput
-            key={key}
-            internalName={field.name}
-            pieceType={field.variant || 'Counter'}
-            min={field.min}
-            max={field.max}
-            quickButtons={field.quickButtons}
-          />
+          <div key={key}>
+            {field.subHeader && <SubHeader subHeaderName={field.subHeader} />}
+            <NumericInput
+              visibleName={field.label}
+              internalName={field.name}
+              pieceType={field.variant || 'Counter'}
+              min={field.min}
+              max={field.max}
+              quickButtons={field.quickButtons}
+            />
+          </div>
         );
 
       case 'text':
@@ -104,29 +112,23 @@ export default function DynamicFormRenderer({
         );
 
       case 'singleSelect':
-        // For singleSelect, use EndPlacement component or create a generic one
-        if (field.name === 'endlocation' || field.formName === 'stageplacement') {
-          return <EndPlacement key={key} />;
-        }
-        // For other single selects, we'd need a generic component
-        return null;
-
-      case 'multiSelect':
-        // Handle multiSelect - use IntakeOptions or create generic
-        if (field.name === 'intakeOptions') {
-          return <IntakeOptions key={key} />;
-        }
-        // For generic multiSelect, render as checkboxes
         return (
           <div key={key}>
             {field.subHeader && <SubHeader subHeaderName={field.subHeader} />}
-            {field.options?.map((opt, i) => (
-              <Checkbox
-                key={opt.name}
-                visibleName={opt.label}
-                internalName={opt.name}
-              />
-            ))}
+            <SingleSelect
+              options={field.options}
+              internalName={field.name}
+            />
+          </div>
+        );
+
+      case 'multiSelect':
+        return (
+          <div key={key}>
+            {field.subHeader && <SubHeader subHeaderName={field.subHeader} />}
+            <MultiSelect
+              options={field.options}
+            />
           </div>
         );
 
@@ -192,7 +194,6 @@ export default function DynamicFormRenderer({
     const trigger = collapsibleField.trigger;
     const content = collapsibleField.content || [];
 
-    // Determine which state to use based on trigger field name
     let isExpanded = false;
     if (trigger?.name === 'defense') isExpanded = defense;
     if (trigger?.name === 'breakdown') isExpanded = breakdown;
