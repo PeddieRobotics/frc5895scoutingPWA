@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
+export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField }) {
   const [defenseRatings, setDefenseRatings] = useState({
     team1: 0,
     team2: 0,
@@ -15,7 +15,14 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
   const getDefensePlayed = (row) => {
     if (!row) return null;
     
-    const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
+    const fieldVariants = [
+      defenseField,
+      'defenseplayed',
+      'defensePlayed',
+      'DEFENSEPLAYED',
+      'defense_played',
+      'DefensePlayed'
+    ].filter(Boolean);
     for (const field of fieldVariants) {
       if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
         return row[field];
@@ -135,7 +142,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers }) {
     };
     
     fetchAllTeamData();
-  }, [teamNumbers]);
+  }, [teamNumbers, defenseField]);
 
   // Format data for the bar chart
   const data = [

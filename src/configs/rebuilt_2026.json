@@ -428,6 +428,12 @@
         "tele",
         "end"
       ],
+      "epaThresholds": {
+        "overall": 12,
+        "auto": 6,
+        "tele": 8,
+        "end": 6
+      },
       "commentFields": [
         {
           "field": "generalcomments",
@@ -501,26 +507,97 @@
       },
       "overallStats": [
         {
-          "key": "avgEpa",
-          "title": "EPA",
-          "format": "decimal"
+          "key": "consistency",
+          "title": "Consistency",
+          "format": "percent"
         },
         {
-          "key": "avgAuto",
-          "title": "Auto",
-          "format": "decimal"
+          "key": "defense",
+          "title": "Defense %",
+          "format": "percent"
         },
         {
-          "key": "avgTele",
-          "title": "Tele",
-          "format": "decimal"
+          "key": "breakdown",
+          "title": "Breakdown %",
+          "format": "percent"
         },
         {
-          "key": "avgEnd",
-          "title": "End",
-          "format": "decimal"
+          "key": "matchesScouted",
+          "title": "Matches",
+          "format": "number"
         }
       ],
+      "sections": {
+        "auto": {
+          "charts": [
+            {
+              "type": "epaLine",
+              "label": "Auto Over Time",
+              "dataKey": "autoOverTime"
+            }
+          ],
+          "statTables": [
+            {
+              "title": "Fuel",
+              "columns": [
+                "Success",
+                "Avg"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "auto.successFuel",
+                    "auto.avgFuel"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "tele": {
+          "charts": [
+            {
+              "type": "epaLine",
+              "label": "Tele Over Time",
+              "dataKey": "teleOverTime"
+            }
+          ],
+          "extraStats": [
+            {
+              "title": "HP",
+              "columns": [
+                "Success",
+                "Avg"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "tele.successHP",
+                    "tele.avgHP"
+                  ]
+                }
+              ]
+            }
+          ],
+          "statTables": [
+            {
+              "title": "Fuel",
+              "columns": [
+                "Success",
+                "Avg"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "tele.successFuel",
+                    "tele.avgFuel"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
       "intakeDisplay": [
         {
           "category": "Fuel Intake",
@@ -590,6 +667,83 @@
         "tele",
         "end"
       ],
+      "epaBreakdown": [
+        "auto",
+        "tele",
+        "end"
+      ],
+      "piecePlacement": {
+        "bars": [
+          {
+            "label": "Auto Fuel",
+            "key": "autoFuel"
+          },
+          {
+            "label": "Tele Fuel",
+            "key": "teleFuel"
+          },
+          {
+            "label": "HP",
+            "key": "HP"
+          }
+        ]
+      },
+      "endgamePie": {
+        "field": "endlocation",
+        "labels": [
+          "None",
+          "L1",
+          "L2",
+          "L3",
+          "Failed"
+        ],
+        "keys": [
+          "none",
+          "l1",
+          "l2",
+          "l3",
+          "failed"
+        ]
+      },
+      "qualitativeFields": [
+        "shootingspeed",
+        "shootingaccuracy",
+        "intakespeed",
+        "climbspeed",
+        "maneuverability",
+        "defenseplayed",
+        "defenseevasion",
+        "aggression"
+      ],
+      "defenseBarField": "defenseplayed",
+      "rankingPoints": [
+        {
+          "label": "Fuel",
+          "type": "levelThreshold",
+          "levels": [
+            {
+              "key": "autoFuel",
+              "threshold": 6
+            },
+            {
+              "key": "teleFuel",
+              "threshold": 18
+            },
+            {
+              "key": "HP",
+              "threshold": 3
+            }
+          ],
+          "greenCount": 2,
+          "yellowCount": 1
+        },
+        {
+          "label": "Climb",
+          "type": "endgameThreshold",
+          "field": "end",
+          "threshold": 35
+        }
+      ],
       "keyStats": [
         {
           "label": "Auto Climb %",
@@ -615,7 +769,223 @@
         }
       ]
     },
+    "picklist": {
+      "weights": [
+        {
+          "key": "epa",
+          "label": "EPA",
+          "default": 1.2
+        },
+        {
+          "key": "epa3",
+          "label": "3 EPA",
+          "default": 1.0
+        },
+        {
+          "key": "auto",
+          "label": "Auto",
+          "default": 0.8
+        },
+        {
+          "key": "tele",
+          "label": "Tele",
+          "default": 0.9
+        },
+        {
+          "key": "end",
+          "label": "End",
+          "default": 0.7
+        },
+        {
+          "key": "fuelAccuracy",
+          "label": "Fuel %",
+          "default": 0.9
+        },
+        {
+          "key": "consistency",
+          "label": "Consistency",
+          "default": 0.8
+        },
+        {
+          "key": "defense",
+          "label": "Defense",
+          "default": 0.4
+        },
+        {
+          "key": "breakdown",
+          "label": "Break %",
+          "default": 0.6,
+          "inverted": true
+        }
+      ],
+      "tableColumns": [
+        {
+          "key": "realEpa",
+          "label": "EPA",
+          "colorScale": "epa",
+          "format": "one"
+        },
+        {
+          "key": "realEpa3",
+          "label": "3 EPA",
+          "colorScale": "epa3",
+          "format": "one"
+        },
+        {
+          "key": "auto",
+          "label": "Auto",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "tele",
+          "label": "Tele",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "end",
+          "label": "End",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "fuelAccuracy",
+          "label": "Fuel %",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "consistency",
+          "label": "Cnstcy",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "realDefense",
+          "label": "Defense",
+          "colorScale": "defense",
+          "format": "one"
+        },
+        {
+          "key": "breakdown",
+          "label": "Break %",
+          "colorScale": "inverse",
+          "format": "breakdownPercent"
+        }
+      ],
+      "computedMetrics": [
+        {
+          "key": "fuelTotal",
+          "type": "sumFields",
+          "fields": [
+            "autofuelsuccess",
+            "telefuelsuccess",
+            "hpsuccess"
+          ]
+        },
+        {
+          "key": "fuelAccuracy",
+          "type": "successRate",
+          "successFields": [
+            "autofuelsuccess",
+            "telefuelsuccess",
+            "hpsuccess"
+          ],
+          "failFields": [
+            "autofuelfail",
+            "telefuelfail",
+            "hpfail"
+          ]
+        }
+      ],
+      "consistencyMetricKey": "fuelAccuracy",
+      "scatterPlot": {
+        "xAxis": {
+          "label": "Total Fuel",
+          "fields": [
+            "autofuelsuccess",
+            "telefuelsuccess",
+            "hpsuccess"
+          ]
+        },
+        "yAxis": {
+          "label": "Fuel Attempts",
+          "fields": [
+            "autofuelsuccess",
+            "autofuelfail",
+            "telefuelsuccess",
+            "telefuelfail",
+            "hpsuccess",
+            "hpfail"
+          ]
+        }
+      },
+      "defenseField": "defenseplayed"
+    },
+    "compare": {
+      "metricsChart": [
+        {
+          "key": "avgEpa",
+          "label": "EPA"
+        },
+        {
+          "key": "avgAuto",
+          "label": "Auto"
+        },
+        {
+          "key": "avgTele",
+          "label": "Tele"
+        },
+        {
+          "key": "avgEnd",
+          "label": "End"
+        }
+      ],
+      "scoringChart": [
+        {
+          "key": "fuel",
+          "label": "Fuel Avg",
+          "compute": "auto.avgFuel + tele.avgFuel + tele.avgHP"
+        }
+      ],
+      "endgameChart": {
+        "metrics": [
+          "None",
+          "L1",
+          "L2",
+          "L3",
+          "Failed"
+        ],
+        "keys": [
+          "none",
+          "l1",
+          "l2",
+          "l3",
+          "failed"
+        ],
+        "endgameSource": "endPlacement",
+        "fallbackSource": "endgame"
+      },
+      "defenseField": "defenseplayed"
+    },
     "apiAggregation": {
+      "booleanFields": [
+        "noshow",
+        "defense",
+        "breakdown",
+        "fuelgrndintake",
+        "fueldepotintake",
+        "fueloutpostintake",
+        "usesbump",
+        "usestrench"
+      ],
+      "textFields": [
+        "scoutname",
+        "generalcomments",
+        "defensecomments",
+        "breakdowncomments"
+      ],
       "breakdownField": "breakdown",
       "defenseField": "defense",
       "leaveField": "leave",
@@ -642,11 +1012,11 @@
       "endgameConfig": {
         "field": "endlocation",
         "valueMapping": {
-          "0": "None",
-          "1": "L1",
-          "2": "L2",
-          "3": "L3",
-          "4": "Failed"
+          "0": "none",
+          "1": "l1",
+          "2": "l2",
+          "3": "l3",
+          "4": "failed"
         }
       },
       "qualitativeFields": [
@@ -658,6 +1028,43 @@
         "defenseplayed",
         "defenseevasion",
         "aggression"
+      ],
+      "booleanIntakeFields": [
+        "fuelgrndintake",
+        "fueldepotintake",
+        "fueloutpostintake",
+        "usesbump",
+        "usestrench"
+      ],
+      "alliancePiecePlacement": [
+        {
+          "key": "autoFuel",
+          "fields": [
+            "autofuelsuccess"
+          ]
+        },
+        {
+          "key": "teleFuel",
+          "fields": [
+            "telefuelsuccess"
+          ]
+        },
+        {
+          "key": "HP",
+          "fields": [
+            "hpsuccess"
+          ]
+        }
+      ],
+      "customSumFields": [
+        {
+          "key": "totalFuel",
+          "fields": [
+            "autofuelsuccess",
+            "telefuelsuccess",
+            "hpsuccess"
+          ]
+        }
       ]
     }
   }

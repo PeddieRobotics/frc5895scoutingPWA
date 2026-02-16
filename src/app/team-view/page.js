@@ -1,6 +1,6 @@
 "use client";
 import styles from "./page.module.css";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import VBox from "./components/VBox";
 import HBox from "./components/HBox";
@@ -14,6 +14,7 @@ import PiecePlacement from "./components/PiecePlacement";
 import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
 import useGameConfig from "../../lib/useGameConfig";
+import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 
 export default function TeamViewPage() {
@@ -31,6 +32,7 @@ function formatStatValue(value, format) {
     switch (format) {
         case 'percent':
             return `${Math.round(10 * (value || 0)) / 10}%`;
+        case 'decimal':
         case 'number':
             return Math.round(10 * (value || 0)) / 10;
         case 'text':
@@ -52,6 +54,10 @@ function TeamView() {
     const [source, setSource] = useState(null);
 
     const { config, loading: configLoading } = useGameConfig();
+    const configIssues = useMemo(() => {
+        if (configLoading || !config) return [];
+        return getTeamViewConfigIssues(config);
+    }, [config, configLoading]);
 
     // Extract teamView config with defaults
     const tvConfig = config?.display?.teamView || {};
@@ -104,10 +110,10 @@ function TeamView() {
 
     // Effect to fetch data when team changes
     useEffect(() => {
-        if (team) {
+        if (team && configIssues.length === 0) {
             fetchTeamData(team);
         }
-    }, [team, currentUserTeam]);
+    }, [team, currentUserTeam, configIssues.length]);
 
     function AllianceButtons({ t1, t2, t3, colors }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
@@ -308,6 +314,26 @@ function TeamView() {
         );
     }
 
+    if (configIssues.length > 0) {
+        return (
+            <div className={styles.container}>
+                <div style={{ maxWidth: "900px", margin: "2rem auto", padding: "1.5rem", background: "#2a0e0e", color: "#ffd9d9", borderRadius: "8px", border: "1px solid #a44" }}>
+                    <h2 style={{ marginTop: 0 }}>Team View Config Error</h2>
+                    <p style={{ marginBottom: "0.75rem" }}>
+                        The active game config is missing required display settings. Fix these entries in <code>display.teamView</code> / <code>display.apiAggregation</code>.
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                        {configIssues.map((issue, index) => (
+                            <li key={index}>
+                                <code>{issue.path}</code>: {issue.message}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        );
+    }
+
     if (!data) {
         return (
             <div>
@@ -444,38 +470,53 @@ function TeamView() {
     const teleLast3 = computeLast3Color(safeData.avgTele, safeData.last3Tele, epaThresholds.tele, { green: epaColors.green2, red: epaColors.red2, yellow: epaColors.yellow2 });
     const endLast3 = computeLast3Color(safeData.avgEnd, safeData.last3End, epaThresholds.end, { green: epaColors.green2, red: epaColors.red2, yellow: epaColors.yellow2 });
 
+    // Auto and Tele section configs
+    const autoSectionConfig = sectionsConfig.auto || {};
+    const teleSectionConfig = sectionsConfig.tele || {};
+
+    // Build PiecePlacement bar values generically from config
+    const dynamicBars = barsConfig.map(bar => {
+        // Support both raw row fields ("autol4success") and computed paths ("auto.avgFuel")
+        const teamRows = (safeData.rows || []).filter(r => r.team == team);
+
+        const resolveBarField = (fieldName) => {
+            if (!fieldName) return 0;
+
+            if (fieldName.includes('.')) {
+                const computed = Number(resolvePath(safeData, fieldName));
+                return Number.isFinite(computed) ? computed : 0;
+            }
+
+            if (!teamRows.length) return 0;
+            const total = teamRows.reduce((sum, row) => sum + (Number(row[fieldName]) || 0), 0);
+            return total / teamRows.length;
+        };
+
+        const value = resolveBarField(bar.autoField) + resolveBarField(bar.teleField);
+        return {
+            label: bar.label,
+            value: Math.round(10 * value) / 10
+        };
+    });
+
+    const hasAutoLevelTable = (autoSectionConfig.levelTable?.levels || []).length > 0;
+    const hasAutoAlgaeStats = (autoSectionConfig.algaeStats?.levels || []).length > 0;
+    const hasTeleLevelTable = (teleSectionConfig.levelTable?.levels || []).length > 0;
+    const hasTeleAlgaeStats = (teleSectionConfig.algaeStats?.levels || []).length > 0;
+
     // Build endgame pie data from config
+    const endgameValueMapping = config?.display?.apiAggregation?.endgameConfig?.valueMapping || {};
     const endgamePieData = (endgamePieConfig.labels || []).map((label, i) => {
-        // Map config labels to the endPlacement keys from the API
-        // The API uses valueMapping keys from apiAggregation.endgameConfig
-        const placementKeys = Object.keys(safeData.endPlacement);
-        const placementKey = placementKeys[i];
+        const valueCode = (endgamePieConfig.values || [])[i];
+        const mappedKey = endgameValueMapping[String(valueCode)] ?? Object.keys(safeData.endPlacement || {})[i];
         return {
             x: label,
-            y: placementKey ? (safeData.endPlacement[placementKey] || 0) : 0
+            y: mappedKey ? (safeData.endPlacement?.[mappedKey] || 0) : 0
         };
     });
 
     // Custom color array for endgame pie chart with 5 distinct colors
     const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
-
-    // Build PiecePlacement bar values generically from config
-    const dynamicBars = barsConfig.map(bar => {
-        let value = 0;
-        // Sum auto + tele field values from raw row data
-        const teamRows = (safeData.rows || []).filter(r => r.team == team);
-        if (teamRows.length > 0) {
-            let total = 0;
-            if (bar.autoField) {
-                total += teamRows.reduce((sum, row) => sum + (Number(row[bar.autoField]) || 0), 0);
-            }
-            if (bar.teleField) {
-                total += teamRows.reduce((sum, row) => sum + (Number(row[bar.teleField]) || 0), 0);
-            }
-            value = Math.round(10 * (total / teamRows.length)) / 10;
-        }
-        return { label: bar.label, value };
-    });
 
     // Build overall stat VBoxes from config
     const renderOverallStats = () => {
@@ -626,13 +667,8 @@ function TeamView() {
             props[`R${rowNum}C1`] = `${Math.round(10 * successVal) / 10}%`;
             props[`R${rowNum}C2`] = Math.round(10 * avgVal) / 10;
         });
-
         return props;
     };
-
-    // Auto and Tele section configs
-    const autoSectionConfig = sectionsConfig.auto || {};
-    const teleSectionConfig = sectionsConfig.tele || {};
 
     // Build defense bar chart data
     const buildDefenseChartData = () => {
@@ -843,12 +879,14 @@ function TeamView() {
                                                 </table>
                                             ))}
                                         </div>
-                                        <div className={styles.fourByTwoContainer}>
-                                            <FourByTwo
-                                                {...buildFourByTwoProps(autoSectionConfig.levelTable)}
-                                                color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
-                                            />
-                                        </div>
+                                        {hasAutoLevelTable && (
+                                            <div className={styles.fourByTwoContainer}>
+                                                <FourByTwo
+                                                    {...buildFourByTwoProps(autoSectionConfig.levelTable)}
+                                                    color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className={styles.alignElements}>
                                         <div className={styles.rightColumnBoxesTwo}>
@@ -863,12 +901,14 @@ function TeamView() {
                                                 />
                                             ))}
                                         </div>
-                                        <div className={styles.twoByTwoContainer}>
-                                            <TwoByTwo
-                                                {...buildTwoByTwoProps(autoSectionConfig.algaeStats)}
-                                                color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
-                                            />
-                                        </div>
+                                        {hasAutoAlgaeStats && (
+                                            <div className={styles.twoByTwoContainer}>
+                                                <TwoByTwo
+                                                    {...buildTwoByTwoProps(autoSectionConfig.algaeStats)}
+                                                    color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -955,12 +995,14 @@ function TeamView() {
                                                 </table>
                                             ))}
                                         </div>
-                                        <div className={styles.fourByTwoContainer}>
-                                            <FourByTwo
-                                                {...buildFourByTwoProps(teleSectionConfig.levelTable)}
-                                                color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
-                                            />
-                                        </div>
+                                        {hasTeleLevelTable && (
+                                            <div className={styles.fourByTwoContainer}>
+                                                <FourByTwo
+                                                    {...buildFourByTwoProps(teleSectionConfig.levelTable)}
+                                                    color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className={styles.alignElements}>
                                         <div className={styles.rightColumnBoxesTwo}>
@@ -975,12 +1017,14 @@ function TeamView() {
                                                 />
                                             ))}
                                         </div>
-                                        <div className={styles.twoByTwoContainer}>
-                                            <TwoByTwo
-                                                {...buildTwoByTwoProps(teleSectionConfig.algaeStats)}
-                                                color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
-                                            />
-                                        </div>
+                                        {hasTeleAlgaeStats && (
+                                            <div className={styles.twoByTwoContainer}>
+                                                <TwoByTwo
+                                                    {...buildTwoByTwoProps(teleSectionConfig.algaeStats)}
+                                                    color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

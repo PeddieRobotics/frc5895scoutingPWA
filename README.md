@@ -1081,7 +1081,7 @@ The `display` object configures how data is shown across all display pages. **Al
 | Property | Description |
 |----------|-------------|
 | `epaBreakdown` | Which calculations to show in EPA charts |
-| `piecePlacement.bars` | Bar chart entries, each with `label`, `autoField`, and/or `teleField` |
+| `piecePlacement.bars` | Bar chart entries, each with `label`, `autoField`, and/or `teleField`. `autoField` / `teleField` may be a raw form field (`autol4success`) or a computed dotted path (`auto.avgFuel`). |
 | `piecePlacement.{group}.metrics` | Explicit metric definitions for secondary stat groups (avoids string matching) |
 | `endgamePie` | Configure endgame pie chart |
 | `comments` | Which comment fields to display (legacy) |
@@ -1109,6 +1109,22 @@ The `display` object configures how data is shown across all display pages. **Al
   }
 }
 ```
+
+### Required Display Keys (Runtime Validated)
+
+If these keys are missing or mismatched, `team-view` / `match-view` now stop rendering partial data and show a config error list with exact paths.
+
+- `display.teamView.piecePlacement.bars` must be a non-empty array.
+- `display.teamView.endgamePie.labels` and `display.teamView.endgamePie.values` must both exist and be the same length.
+- `display.apiAggregation.endgameConfig.valueMapping` must include every `teamView.endgamePie.values` entry.
+- `display.matchView.piecePlacement.bars` must be a non-empty array.
+- `display.apiAggregation.alliancePiecePlacement` must be a non-empty array, and every `matchView.piecePlacement.bars[*].key` must exist there.
+- `display.matchView.endgamePie.labels` and `display.matchView.endgamePie.keys` must both exist and be the same length.
+- `display.matchView.endgamePie.keys` must match values from `display.apiAggregation.endgameConfig.valueMapping`.
+
+### Match-View Mapping Rule
+
+`match-view` piece bars are keyed by `display.matchView.piecePlacement.bars[*].key`, and those keys are populated from `display.apiAggregation.alliancePiecePlacement[*].key`. If these do not match exactly, the page will show a config error instead of guessing.
 
 ### Picklist Configuration
 

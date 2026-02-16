@@ -3,96 +3,90 @@ import { useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
-export default function PiecePlacement({ colors, matchMax, L1, L2, L3, L4, net, processor, HP }) {
+/**
+ * Generic piece placement chart for match-view.
+ * @param {{
+ *  colors: string[],
+ *  matchMax: number,
+ *  bars: Array<{ label: string, value: number | null }>
+ * }} props
+ */
+export default function PiecePlacement({ colors, matchMax, bars = [] }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  // Transform null values to 0 for chart display
-  const displayData = [
-    L1 === null ? 0 : L1,
-    L2 === null ? 0 : L2,
-    L3 === null ? 0 : L3,
-    L4 === null ? 0 : L4,
-    net === null ? 0 : net,
-    processor === null ? 0 : processor,
-    HP === null ? 0 : HP
-  ];
+  const labels = bars.map((bar) => bar.label);
+  const values = bars.map((bar) => (bar.value == null ? 0 : bar.value));
+  const anyDataPresent = bars.some((bar) => bar.value != null && bar.value > 0);
 
-  // Check if there's any meaningful data (not null and not zero)
-  const anyDataPresent = [L1, L2, L3, L4, net, processor, HP].some(value => value !== null && value > 0);
-
-  console.log('Rendering PiecePlacement:', typeof window !== 'undefined' ? 'Client' : 'Server');
-
-  // If no data is present, return a simple text message instead of rendering a chart
-  if (!anyDataPresent) {
+  if (!bars.length || !anyDataPresent) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '200px',
-        fontSize: '18px',
-        color: '#666',
-        fontFamily: 'Arial, sans-serif'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '200px',
+          fontSize: '18px',
+          color: '#666',
+          fontFamily: 'Arial, sans-serif'
+        }}
+      >
         No data available
       </div>
     );
   }
 
   useEffect(() => {
-    // Destroy existing chart if it exists
     if (chartInstance.current) {
       chartInstance.current.destroy();
     }
 
-    const ctx = chartRef.current.getContext('2d');
-    if (ctx) {
-      chartInstance.current = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['L1', 'L2', 'L3', 'L4', 'Net', 'Prcsr', 'HP'],
-          datasets: [
-            {
-              data: displayData,
-              backgroundColor: colors[0],
-              borderColor: colors[2],
-              borderWidth: 1,
-            },
-          ],
+    const ctx = chartRef.current?.getContext('2d');
+    if (!ctx) return;
+
+    chartInstance.current = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            data: values,
+            backgroundColor: colors?.[0] || '#B7D1F7',
+            borderColor: colors?.[2] || '#5E6CB5',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: matchMax,
+          },
         },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: matchMax,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const originalValue = bars[context.dataIndex]?.value;
+                return originalValue == null ? 'N/A' : context.formattedValue;
+              },
             },
           },
-          plugins: {
-            legend: {
-              display: false // Disable the legend entirely
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const index = context.dataIndex;
-                  const originalValue = [L1, L2, L3, L4, net, processor, HP][index];
-                  return originalValue === null ? 'N/A' : context.formattedValue;
-                }
-              }
-            }
-          }
-        }
-      });
-    }
+        },
+      },
+    });
 
     return () => {
       if (chartInstance.current) {
         chartInstance.current.destroy();
       }
     };
-  }, [L1, L2, L3, L4, net, processor, HP, matchMax, colors]);
+  }, [bars, labels, values, matchMax, colors]);
 
   return <canvas ref={chartRef} />;
 }
+

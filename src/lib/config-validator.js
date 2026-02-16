@@ -600,8 +600,16 @@ function validateCalculations(calculations, fieldNames, result) {
  * Uses warnings only (not errors) since display is optional
  */
 function validateDisplaySection(display, fieldNames, result) {
+  const systemFields = new Set(['id', 'scoutname', 'scoutteam', 'team', 'match', 'matchtype', 'timestamp']);
   // Helper to check if a field name exists in the form config
-  const checkField = (fieldName, path) => {
+  const checkField = (fieldName, path, options = {}) => {
+    const { allowComputedPath = false } = options;
+    if (allowComputedPath && typeof fieldName === 'string' && fieldName.includes('.')) {
+      return;
+    }
+    if (fieldName && systemFields.has(fieldName.toLowerCase())) {
+      return;
+    }
     if (fieldName && !fieldNames.has(fieldName.toLowerCase())) {
       result.addWarning(`Display references unknown field: "${fieldName}"`, path);
     }
@@ -612,8 +620,8 @@ function validateDisplaySection(display, fieldNames, result) {
     const tv = display.teamView;
     if (tv.piecePlacement?.bars) {
       tv.piecePlacement.bars.forEach((bar, i) => {
-        if (bar.autoField) checkField(bar.autoField, `display.teamView.piecePlacement.bars[${i}].autoField`);
-        if (bar.teleField) checkField(bar.teleField, `display.teamView.piecePlacement.bars[${i}].teleField`);
+        if (bar.autoField) checkField(bar.autoField, `display.teamView.piecePlacement.bars[${i}].autoField`, { allowComputedPath: true });
+        if (bar.teleField) checkField(bar.teleField, `display.teamView.piecePlacement.bars[${i}].teleField`, { allowComputedPath: true });
       });
     }
     // Validate metrics arrays on secondary stat groups (e.g. algae)
@@ -668,6 +676,18 @@ function validateDisplaySection(display, fieldNames, result) {
   // Validate matchView
   if (display.matchView) {
     const mv = display.matchView;
+    if (!mv.piecePlacement?.bars || !Array.isArray(mv.piecePlacement.bars) || mv.piecePlacement.bars.length === 0) {
+      result.addWarning('matchView.piecePlacement.bars should be a non-empty array', 'display.matchView.piecePlacement.bars');
+    }
+    if (!mv.endgamePie?.labels || !Array.isArray(mv.endgamePie.labels) || mv.endgamePie.labels.length === 0) {
+      result.addWarning('matchView.endgamePie.labels should be a non-empty array', 'display.matchView.endgamePie.labels');
+    }
+    if (!mv.endgamePie?.keys || !Array.isArray(mv.endgamePie.keys) || mv.endgamePie.keys.length === 0) {
+      result.addWarning('matchView.endgamePie.keys should be a non-empty array', 'display.matchView.endgamePie.keys');
+    }
+    if (Array.isArray(mv.endgamePie?.labels) && Array.isArray(mv.endgamePie?.keys) && mv.endgamePie.labels.length !== mv.endgamePie.keys.length) {
+      result.addWarning('matchView.endgamePie.labels and keys should have the same length', 'display.matchView.endgamePie');
+    }
     if (mv.qualitativeFields) {
       mv.qualitativeFields.forEach((f, i) => checkField(f, `display.matchView.qualitativeFields[${i}]`));
     }
@@ -718,6 +738,18 @@ function validateDisplaySection(display, fieldNames, result) {
     // Validate breakdownField / defenseField
     if (api.breakdownField) checkField(api.breakdownField, 'display.apiAggregation.breakdownField');
     if (api.defenseField) checkField(api.defenseField, 'display.apiAggregation.defenseField');
+    // Validate alliance piece placement field references
+    if (api.alliancePiecePlacement && Array.isArray(api.alliancePiecePlacement)) {
+      api.alliancePiecePlacement.forEach((entry, i) => {
+        const entryPath = `display.apiAggregation.alliancePiecePlacement[${i}]`;
+        if (!entry.key) result.addWarning('alliancePiecePlacement entry is missing "key"', `${entryPath}.key`);
+        if (!entry.fields || !Array.isArray(entry.fields) || entry.fields.length === 0) {
+          result.addWarning('alliancePiecePlacement entry should define a non-empty fields array', `${entryPath}.fields`);
+        } else {
+          entry.fields.forEach((f, fi) => checkField(f, `${entryPath}.fields[${fi}]`));
+        }
+      });
+    }
     // Validate successFailPairs
     if (api.successFailPairs && Array.isArray(api.successFailPairs)) {
       api.successFailPairs.forEach((pair, i) => {

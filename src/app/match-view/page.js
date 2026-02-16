@@ -1,15 +1,15 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, Rectangle, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, ResponsiveContainer, Cell, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 import { VictoryPie } from "victory";
 import Link from "next/link";
 import styles from "./page.module.css"
 import PiecePlacement from "./components/PiecePlacement";
-import dynamic from 'next/dynamic';
 import Endgame from "./components/Endgame";
 import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
 import useGameConfig from "../../lib/useGameConfig";
+import { getMatchViewConfigIssues } from "../../lib/display-config-validation";
 
 
 export default function MatchViewPage() {
@@ -17,8 +17,12 @@ export default function MatchViewPage() {
 }
 
 function MatchView() {
-  const { config } = useGameConfig();
+  const { config, loading: configLoading } = useGameConfig();
   const matchViewConfig = config?.display?.matchView;
+  const configIssues = useMemo(() => {
+    if (configLoading || !config) return [];
+    return getMatchViewConfigIssues(config);
+  }, [config, configLoading]);
 
   const [allData, setAllData] = useState(null);
   const [data, setData] = useState(false);
@@ -63,6 +67,8 @@ function MatchView() {
   }, []);
 
   useEffect(() => {
+    if (configLoading || configIssues.length > 0) return;
+
     // Only fetch data if we have URL parameters
     if (Object.keys(urlParams).length === 0) return;
 
@@ -129,9 +135,11 @@ function MatchView() {
         }
         setLoading(false);
       });
-  }, [urlParams]);
+  }, [urlParams, configLoading, configIssues.length]);
 
   useEffect(() => {
+    if (configLoading || configIssues.length > 0) return;
+
     if (Object.keys(urlParams).length > 0 && allData) {
       if (!urlParams.match) {
         //search by teams
@@ -248,16 +256,40 @@ function MatchView() {
           });
       }
     }
-  }, [urlParams, allData]);
+  }, [urlParams, allData, configLoading, configIssues.length]);
+
+  if (configLoading) {
+    return (
+      <div>
+        <h1>Loading...</h1>
+      </div>
+    );
+  }
+
+  if (configIssues.length > 0) {
+    return <div>
+      <div style={{ maxWidth: "900px", margin: "2rem auto", padding: "1.5rem", background: "#2a0e0e", color: "#ffd9d9", borderRadius: "8px", border: "1px solid #a44" }}>
+        <h2 style={{ marginTop: 0 }}>Match View Config Error</h2>
+        <p style={{ marginBottom: "0.75rem" }}>
+          The active game config is missing required match-view settings.
+        </p>
+        <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+          {configIssues.map((issue, index) => (
+            <li key={index}>
+              <code>{issue.path}</code>: {issue.message}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  }
 
   // Guard: if no matchView config, show fallback (must be after all hooks)
   if (!matchViewConfig) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
-        <h2>Match View Not Configured</h2>
-        <p>Add a &quot;matchView&quot; section to your game config&apos;s display settings.</p>
-      </div>
-    );
+    return <div>
+      <h2>Match View Not Configured</h2>
+      <p>Add a &quot;matchView&quot; section to your game config&apos;s display settings.</p>
+    </div>
   }
 
   //show loading state
@@ -357,10 +389,33 @@ function MatchView() {
     qualitative: defaultQualitative,
   };
 
-  function AllianceButtons({ t1, t2, t3, colors }) {
-    // Check if we're viewing a match that was loaded by match number
-    const fromMatch = urlParams.match !== null || urlParams.toString().includes('from_match=true');
+  const resolveTeamMetric = (teamObj, keyOrPath) => {
+    if (!teamObj || !keyOrPath) return 0;
+    if (typeof teamObj[keyOrPath] === 'number') return teamObj[keyOrPath];
+    if (typeof teamObj.avgPieces?.[keyOrPath] === 'number') return teamObj.avgPieces[keyOrPath];
+    if (typeof teamObj.customSums?.[keyOrPath] === 'number') return teamObj.customSums[keyOrPath];
 
+    if (typeof keyOrPath === 'string' && keyOrPath.includes('.')) {
+      const pathValue = keyOrPath.split('.').reduce((acc, key) => acc?.[key], teamObj);
+      return typeof pathValue === 'number' ? pathValue : 0;
+    }
+
+    if (teamObj.avgPieces && typeof keyOrPath === 'string') {
+      const normalize = (value) => String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const compact = keyOrPath
+        .replace(/^(auto|tele)/i, '')
+        .replace(/(success|fail)/gi, '');
+      const target = normalize(compact);
+      const alias = Object.keys(teamObj.avgPieces).find((key) => normalize(key) === target);
+      if (alias && typeof teamObj.avgPieces[alias] === 'number') {
+        return teamObj.avgPieces[alias];
+      }
+    }
+
+    return 0;
+  };
+
+  function AllianceButtons({ t1, t2, t3, colors }) {
     // Preserve original team order in the URL by getting team values from the current URL params
     // This maintains consistency when teams were swapped due to match number lookup
     return <div className={styles.allianceBoard}>
@@ -407,33 +462,64 @@ function MatchView() {
       let color = RGBColors.red;
 
       if (rpConfig.type === "allLeaveAndCoral" || rpConfig.type === "allFieldsAndThreshold") {
-        const coralField = rpConfig.coralField || 'autoCoral';
-        const allianceCoral = teams.reduce((sum, team) => {
-          return sum + (team && team[coralField] !== null ? Math.floor(team[coralField]) : 0);
-        }, 0);
+        const allianceCoral = (() => {
+          if (Array.isArray(rpConfig.coralFields) && rpConfig.coralFields.length > 0) {
+            return teams.reduce((sum, team) => {
+              const teamSum = rpConfig.coralFields.reduce((fieldSum, fieldName) => {
+                return fieldSum + resolveTeamMetric(team, fieldName);
+              }, 0);
+              return sum + teamSum;
+            }, 0);
+          }
+
+          const coralField = rpConfig.coralField || 'autoCoral';
+          return teams.reduce((sum, team) => sum + resolveTeamMetric(team, coralField), 0);
+        })();
+
         const allLeave = teams.every(team => team && team[rpConfig.leaveField || "leave"] === true);
-        if (allianceCoral >= (rpConfig.minCoral || 1) && allLeave) {
+        const threshold = rpConfig.minCoral ?? rpConfig.threshold ?? 1;
+        if (allianceCoral >= threshold && allLeave) {
           color = RGBColors.green;
         }
       } else if (rpConfig.type === "levelThreshold") {
-        const levels = rpConfig.levels || [];
-        const conditions = levels.map(level => {
-          const total = teams.reduce((sum, team) => {
-            return sum + (team && team.avgPieces && team.avgPieces[level.key] !== null ? team.avgPieces[level.key] : 0);
-          }, 0);
-          return total >= level.threshold;
-        });
+        let conditions = [];
+
+        if (Array.isArray(rpConfig.levels)) {
+          conditions = rpConfig.levels.map(level => {
+            if (!level?.key) return false;
+            const total = teams.reduce((sum, team) => sum + resolveTeamMetric(team, level.key), 0);
+            const threshold = level.threshold ?? rpConfig.threshold ?? 0;
+            return total >= threshold;
+          });
+        } else if (rpConfig.levels && typeof rpConfig.levels === "object") {
+          conditions = Object.entries(rpConfig.levels).map(([levelKey, fields]) => {
+            let total = teams.reduce((sum, team) => sum + resolveTeamMetric(team, levelKey), 0);
+            if (total === 0 && Array.isArray(fields) && fields.length > 0) {
+              total = teams.reduce((sum, team) => {
+                const teamSum = fields.reduce((fieldSum, fieldName) => {
+                  return fieldSum + resolveTeamMetric(team, fieldName);
+                }, 0);
+                return sum + teamSum;
+              }, 0);
+            }
+            const threshold = rpConfig.threshold ?? 0;
+            return total >= threshold;
+          });
+        }
+
         const trueCount = conditions.filter(Boolean).length;
-        if (trueCount >= (rpConfig.greenCount || levels.length)) {
+        const totalConditions = conditions.length;
+        if (trueCount >= (rpConfig.greenCount ?? totalConditions)) {
           color = RGBColors.green;
-        } else if (trueCount >= (rpConfig.yellowCount || levels.length - 1)) {
+        } else if (trueCount >= (rpConfig.yellowCount ?? Math.max(0, totalConditions - 1))) {
           color = RGBColors.yellow;
         }
       } else if (rpConfig.type === "endgameThreshold") {
+        const fieldName = rpConfig.field || rpConfig.calcKey || "end";
         const total = teams.reduce((sum, team) => {
-          return sum + (team && team[rpConfig.field] !== null ? Math.floor(team[rpConfig.field]) : 0);
+          return sum + resolveTeamMetric(team, fieldName);
         }, 0);
-        if (total >= rpConfig.threshold) {
+        if (total >= (rpConfig.threshold ?? 0)) {
           color = RGBColors.green;
         }
       }
@@ -461,9 +547,6 @@ function MatchView() {
   }
 
   function TeamDisplay({ teamData, colors, matchMax }) {
-
-    const PiecePlacement = dynamic(() => import('./components/PiecePlacement'), { ssr: false });
-
     // Check if endgame data is valid
     const hasEndgameData = teamData.endgame &&
       Object.values(teamData.endgame).some(value => value !== null && value > 0);
@@ -494,12 +577,12 @@ function MatchView() {
         <PiecePlacement
           colors={colors}
           matchMax={matchMax}
-          {...Object.fromEntries(
-            barsConfig.map(bar => [
-              bar.key,
-              teamData.avgPieces[bar.key] !== null ? Math.round(10 * teamData.avgPieces[bar.key]) / 10 : null,
-            ])
-          )}
+          bars={barsConfig.map(bar => ({
+            label: bar.label,
+            value: teamData.avgPieces?.[bar.key] !== null && teamData.avgPieces?.[bar.key] !== undefined
+              ? Math.round(10 * teamData.avgPieces[bar.key]) / 10
+              : null,
+          }))}
         />
       </div>
       <div className={styles.chartContainer}>
@@ -589,6 +672,7 @@ function MatchView() {
           <DefenseBarChart
             allianceData={redAlliance}
             colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
+            defenseField={matchViewConfig?.defenseBarField}
             teamNumbers={[
               (data.team1 || defaultTeam).team,
               (data.team2 || defaultTeam).team,
@@ -605,6 +689,7 @@ function MatchView() {
           <DefenseBarChart
             allianceData={blueAlliance}
             colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
+            defenseField={matchViewConfig?.defenseBarField}
             teamNumbers={[
               (data.team4 || defaultTeam).team,
               (data.team5 || defaultTeam).team,

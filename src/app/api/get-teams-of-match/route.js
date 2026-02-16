@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import _ from 'lodash';
+import { getActiveGame } from "../../../lib/game-config";
 
 export const revalidate = 60; // caches for 60 seconds
 
@@ -16,8 +17,16 @@ export async function GET(request) {
   }
   
   try {
+    let tbaEventCode = process.env.TBA_EVENT_CODE || '2025njbe';
+    try {
+      const activeGame = await getActiveGame();
+      tbaEventCode = activeGame?.config_json?.tbaEventCode || tbaEventCode;
+    } catch (eventError) {
+      console.error("[get-teams-of-match] Failed to load active game event code:", eventError);
+    }
+
     const response = await fetch(
-        `https://www.thebluealliance.com/api/v3/event/2025njbe/matches/simple`,       {
+        `https://www.thebluealliance.com/api/v3/event/${tbaEventCode}/matches/simple`,       {
         headers: {
           "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
           "Accept": "application/json"
@@ -61,7 +70,7 @@ export async function GET(request) {
       }
     } else {
       return NextResponse.json(
-        { message: "Failed to find match" },
+        { message: `Failed to find match in event ${tbaEventCode}` },
         { status: 200 }
       );
     }
