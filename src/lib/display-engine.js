@@ -190,23 +190,25 @@ export function aggregateTeamData(rows, config, calcFns) {
     ...d, tele: Math.round(d.tele * 100) / 100
   }));
 
-  // Consistency
+  // Consistency — use config-driven breakdown field
   const uniqueMatches = new Set(teamTable.map(r => r.match));
+  const breakdownFieldName = apiConfig.breakdownField || 'breakdown';
   const uniqueBreakdownCount = Array.from(uniqueMatches).filter(match =>
-    teamTable.some(r => r.match === match && r.breakdowncomments !== null)
+    teamTable.some(r => r.match === match && r[breakdownFieldName] === true)
   ).length;
   const breakdownRate = (uniqueBreakdownCount / uniqueMatches.size) * 100;
   const epaStdDev = standardDeviation(teamTable, 'epa');
   const consistency = 100 - (breakdownRate + epaStdDev);
 
-  // Defense %
+  // Defense % — use config-driven defense field
+  const defenseFieldName = apiConfig.defenseField || 'defense';
   const defenseMatchCount = Array.from(uniqueMatches).filter(match =>
-    teamTable.some(r => r.match === match && r.defensecomments !== null)
+    teamTable.some(r => r.match === match && r[defenseFieldName] === true)
   ).length;
   const defense = (defenseMatchCount / uniqueMatches.size) * 100;
 
   const breakdown = breakdownRate;
-  const lastBreakdown = teamTable.filter(e => e.breakdowncomments !== null).reduce((a, b) => b.match, "N/A");
+  const lastBreakdown = teamTable.filter(e => e[breakdownFieldName] === true).reduce((a, b) => b.match, "N/A");
   const noShow = computePercentage(teamTable, 'noshow', true);
 
   const leave = (() => {
@@ -272,72 +274,77 @@ export function aggregateTeamData(rows, config, calcFns) {
     return { total, success, ...levelStats };
   }
 
-  function buildAlgaeStats(phase, algaeConfig) {
-    if (!algaeConfig) return {};
-    const fields = phase === 'auto' ? algaeConfig.autoFields : algaeConfig.teleFields;
-    const failFields = phase === 'auto' ? (algaeConfig.autoFailFields || []) : (algaeConfig.teleFailFields || []);
+  // Generic metric group stats builder — uses explicit metrics array from config
+  function buildMetricGroupStats(phase, groupConfig) {
+    if (!groupConfig) return {};
+    const fields = phase === 'auto' ? groupConfig.autoFields : groupConfig.teleFields;
+    const failFields = phase === 'auto' ? (groupConfig.autoFailFields || []) : (groupConfig.teleFailFields || []);
+    const metrics = groupConfig.metrics || [];
+
+    if (!fields || !metrics.length) return {};
 
     const result = {};
-    // removed field (if it contains "removed")
-    const removedField = fields.find(f => f.includes('removed'));
-    if (removedField) {
-      result.removed = rows.length ? rows.reduce((sum, row) => sum + (Number(row[removedField]) || 0), 0) / rows.length : 0;
-    }
+    metrics.forEach(metric => {
+      const field = fields[metric.fieldIndex];
+      if (!field) return;
 
-    // processor field
-    const procField = fields.find(f => f.includes('processor'));
-    if (procField) {
-      result.avgProcessor = rows.length ? rows.reduce((sum, row) => sum + (Number(row[procField]) || 0), 0) / rows.length : 0;
-      const procFail = failFields.find(f => f.includes('processor'));
-      if (procFail) {
-        const s = rows.reduce((sum, row) => sum + (Number(row[procField]) || 0), 0);
-        const f = rows.reduce((sum, row) => sum + (Number(row[procFail]) || 0), 0);
-        result.successProcessor = (s + f) > 0 ? (s / (s + f)) * 100 : 0;
+      if (metric.type === 'count') {
+        // Simple average count
+        result[metric.key] = rows.length
+          ? rows.reduce((sum, row) => sum + (Number(row[field]) || 0), 0) / rows.length
+          : 0;
+      } else if (metric.type === 'successFail') {
+        // Average + success rate
+        result[`avg${metric.key}`] = rows.length
+          ? rows.reduce((sum, row) => sum + (Number(row[field]) || 0), 0) / rows.length
+          : 0;
+        const failField = failFields[metric.failIndex];
+        if (failField) {
+          const s = rows.reduce((sum, row) => sum + (Number(row[field]) || 0), 0);
+          const f = rows.reduce((sum, row) => sum + (Number(row[failField]) || 0), 0);
+          result[`success${metric.key}`] = (s + f) > 0 ? (s / (s + f)) * 100 : 0;
+        }
       }
-    }
-
-    // net field
-    const netField = fields.find(f => f.includes('net') && !f.includes('removed'));
-    if (netField) {
-      result.avgNet = rows.length ? rows.reduce((sum, row) => sum + (Number(row[netField]) || 0), 0) / rows.length : 0;
-      const netFail = failFields.find(f => f.includes('net'));
-      if (netFail) {
-        const s = rows.reduce((sum, row) => sum + (Number(row[netField]) || 0), 0);
-        const f = rows.reduce((sum, row) => sum + (Number(row[netFail]) || 0), 0);
-        result.successNet = (s + f) > 0 ? (s / (s + f)) * 100 : 0;
-      }
-    }
+    });
 
     return result;
   }
 
   const pp = teamViewConfig.piecePlacement || {};
-  const coralConfig = pp.coral;
-  const algaeConfig = pp.algae;
 
-  const autoStats = {
-    coral: buildPhaseStats('auto', coralConfig, algaeConfig),
-    algae: buildAlgaeStats('auto', algaeConfig),
-  };
-  const teleStats = {
-    coral: buildPhaseStats('tele', coralConfig, algaeConfig),
-    algae: buildAlgaeStats('tele', algaeConfig),
-  };
+  // Dynamically build auto/tele stats for all configured groups (e.g. coral, algae, fuel, etc.)
+  const autoStats = {};
+  const teleStats = {};
+  Object.entries(pp).forEach(([groupName, groupConfig]) => {
+    if (groupName === 'bars' || typeof groupConfig !== 'object') return;
+    // If group has levels (like coral), use buildPhaseStats
+    if (groupConfig.levels) {
+      autoStats[groupName] = buildPhaseStats('auto', groupConfig, groupConfig);
+      teleStats[groupName] = buildPhaseStats('tele', groupConfig, groupConfig);
+    }
+    // If group has metrics (like algae), use buildMetricGroupStats
+    if (groupConfig.metrics) {
+      autoStats[groupName] = { ...(autoStats[groupName] || {}), ...buildMetricGroupStats('auto', groupConfig) };
+      teleStats[groupName] = { ...(teleStats[groupName] || {}), ...buildMetricGroupStats('tele', groupConfig) };
+    }
+  });
 
-  // HP stats (tele only, look for "hp" fields)
-  const hpSuccessField = 'hpsuccess';
-  const hpFailField = 'hpfail';
-  const avgHp = (() => {
-    const valid = rows.filter(r => r[hpSuccessField] !== null && r[hpSuccessField] !== undefined);
-    return valid.length ? valid.reduce((s, r) => s + (Number(r[hpSuccessField]) || 0), 0) / valid.length : 0;
-  })();
-  const successHp = (() => {
-    const s = rows.reduce((sum, r) => sum + (Number(r[hpSuccessField]) || 0), 0);
-    const f = rows.reduce((sum, r) => sum + (Number(r[hpFailField]) || 0), 0);
-    return (s + f) > 0 ? (s / (s + f)) * 100 : 0;
-  })();
-  teleStats.avgHp = avgHp;
-  teleStats.successHp = successHp;
+  // Success/fail pairs from config (e.g. HP, or any custom pair)
+  const successFailPairs = apiConfig.successFailPairs || [];
+  successFailPairs.forEach(pair => {
+    const targetStats = pair.phase === 'auto' ? autoStats : teleStats;
+    const avgVal = (() => {
+      const valid = rows.filter(r => r[pair.successField] !== null && r[pair.successField] !== undefined);
+      return valid.length ? valid.reduce((s, r) => s + (Number(r[pair.successField]) || 0), 0) / valid.length : 0;
+    })();
+    const successRate = (() => {
+      const s = rows.reduce((sum, r) => sum + (Number(r[pair.successField]) || 0), 0);
+      const f = rows.reduce((sum, r) => sum + (Number(r[pair.failField]) || 0), 0);
+      return (s + f) > 0 ? (s / (s + f)) * 100 : 0;
+    })();
+    targetStats[`avg${pair.key}`] = avgVal;
+    targetStats[`success${pair.key}`] = successRate;
+  });
 
   // Endgame placement
   const endPlacement = bucketEndgame(rows, apiConfig);
@@ -391,6 +398,23 @@ export function aggregateTeamData(rows, config, calcFns) {
     intakeData[field] = rows.some(r => r[field] === true);
   });
 
+  // Build comments dynamically from config
+  const cfgCommentFields = teamViewConfig.commentFields || [];
+  const commentData = {};
+  cfgCommentFields.forEach(cf => {
+    commentData[cf.dataKey] = buildComments(cf.field);
+  });
+  // Fallback: if no commentFields config, try the comments array
+  if (!cfgCommentFields.length && teamViewConfig.comments) {
+    teamViewConfig.comments.forEach(field => {
+      // Convert field name to camelCase dataKey
+      const dataKey = field.replace(/([a-z])([a-z]*)/gi, (_, first, rest, idx) =>
+        idx === 0 ? first.toLowerCase() + rest : first.toUpperCase() + rest
+      );
+      commentData[dataKey] = buildComments(field);
+    });
+  }
+
   return {
     team,
     avgEpa, avgAuto, avgTele, avgEnd,
@@ -398,9 +422,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     epaOverTime, autoOverTime, teleOverTime,
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
-    generalComments: buildComments('generalcomments'),
-    breakdownComments: buildComments('breakdowncomments'),
-    defenseComments: buildComments('defensecomments'),
+    ...commentData,
     auto: autoStats,
     tele: teleStats,
     endPlacement,
@@ -421,7 +443,8 @@ export function aggregateAllianceData(rows, config, calcFns) {
   const apiConfig = display.apiAggregation || {};
   const qualFields = apiConfig.qualitativeFields || [];
   const piecePlacement = apiConfig.alliancePiecePlacement || [];
-  const removedAlgaeFields = apiConfig.removedAlgaeFields || [];
+  const customSumFields = apiConfig.customSumFields || [];
+  const leaveField = apiConfig.leaveField || 'leave';
   const endgameConfig = apiConfig.endgameConfig || {};
 
   const responseObject = {};
@@ -443,7 +466,10 @@ export function aggregateAllianceData(rows, config, calcFns) {
       const qualitative = {};
       qualFields.forEach(f => { qualitative[f] = Number(row[f]) || 0; });
 
-      const removedAlgae = removedAlgaeFields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+      const customSums = {};
+      customSumFields.forEach(csf => {
+        customSums[csf.key] = csf.fields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+      });
 
       // Endgame buckets
       const endgame = {};
@@ -459,8 +485,8 @@ export function aggregateAllianceData(rows, config, calcFns) {
         teamName: "",
         auto, tele, end,
         avgPieces,
-        leave: row.leave,
-        removedAlgae,
+        leave: row[leaveField],
+        customSums,
         endgame,
         qualitative,
       };
@@ -474,7 +500,9 @@ export function aggregateAllianceData(rows, config, calcFns) {
         td.avgPieces[pp.key] += pp.fields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
       });
 
-      td.removedAlgae += removedAlgaeFields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+      customSumFields.forEach(csf => {
+        td.customSums[csf.key] += csf.fields.reduce((s, f) => s + (Number(row[f]) || 0), 0);
+      });
 
       if (endgameConfig.valueMapping) {
         const val = Number(row[endgameConfig.field]);
@@ -501,7 +529,9 @@ export function aggregateAllianceData(rows, config, calcFns) {
       td.avgPieces[k] = average(td.avgPieces[k], count);
     });
 
-    td.removedAlgae = average(td.removedAlgae, count);
+    Object.keys(td.customSums).forEach(k => {
+      td.customSums[k] = average(td.customSums[k], count);
+    });
 
     // Convert endgame counts to percentages
     const locationSum = Object.values(td.endgame).reduce((s, v) => s + v, 0);
@@ -611,8 +641,12 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   // Consistency
   mutators.consistency = d => {
     const teamMatches = teamMatchData.filter(m => m.team === d.team);
-    const autoSuccess = computedMetrics.find(m => m.key === 'coral')?.successFields || [];
-    const autoFail = computedMetrics.find(m => m.key === 'coral')?.failFields || [];
+    // Use configurable metric key for consistency, default to first successRate metric
+    const consistencyKey = display.picklist?.consistencyMetricKey
+      || (computedMetrics.find(m => m.type === 'successRate')?.key);
+    const consistencyMetric = consistencyKey ? computedMetrics.find(m => m.key === consistencyKey) : null;
+    const autoSuccess = consistencyMetric?.successFields || [];
+    const autoFail = consistencyMetric?.failFields || [];
     const allSuccess = autoSuccess.reduce((s, f) => s + (d[f] || 0), 0);
     const allFail = autoFail.reduce((s, f) => s + (d[f] || 0), 0);
     const totalAttempts = allSuccess + allFail;
@@ -620,11 +654,13 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
     const endgameConfig = apiConfig.endgameConfig || {};
     const endVal = Math.round(d[endgameConfig.field] ?? 0);
-    const successEndValues = display.teamView?.endgameStats?.cageSuccessValues || [3, 4];
+    const successEndValues = display.teamView?.endgameStats?.cageSuccessValues || [];
     const endgameSuccess = successEndValues.includes(endVal) ? 1 : 0;
 
     const noShowPenalty = d.noshow ? 0 : 1;
-    const breakdownPenalty = d.breakdowncomments && String(d.breakdowncomments).trim() !== "" ? 0.8 : 1;
+    // Use config breakdownField instead of hardcoded breakdowncomments
+    const breakdownFieldName = apiConfig.breakdownField || 'breakdown';
+    const breakdownPenalty = d[breakdownFieldName] === true ? 0.8 : 1;
 
     const metrics = [successRate, endgameSuccess * 100, noShowPenalty * 100];
     const baseConsistency = metrics.reduce((s, v) => s + v, 0) / metrics.length;
@@ -648,8 +684,9 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   mutators.breakdown = d => {
     const teamMatches = teamMatchData.filter(m => m.team === d.team);
     const total = teamMatches.length;
+    const breakdownFieldName = apiConfig.breakdownField || 'breakdown';
     const breakdowns = teamMatches.filter(m =>
-      m.breakdown === true || (m.breakdowncomments && String(m.breakdowncomments).trim() !== "")
+      m[breakdownFieldName] === true
     ).length;
     return total > 0 ? breakdowns / total : 0;
   };

@@ -616,11 +616,49 @@ function validateDisplaySection(display, fieldNames, result) {
         if (bar.teleField) checkField(bar.teleField, `display.teamView.piecePlacement.bars[${i}].teleField`);
       });
     }
+    // Validate metrics arrays on secondary stat groups (e.g. algae)
+    const pp = tv.piecePlacement || {};
+    Object.entries(pp).forEach(([groupName, groupConfig]) => {
+      if (typeof groupConfig !== 'object' || groupName === 'bars' || groupName === 'coral') return;
+      if (groupConfig.metrics && Array.isArray(groupConfig.metrics)) {
+        groupConfig.metrics.forEach((metric, mi) => {
+          const mPath = `display.teamView.piecePlacement.${groupName}.metrics[${mi}]`;
+          if (!metric.key) result.addWarning('Metric is missing "key"', mPath);
+          if (!metric.type || !['successFail', 'count'].includes(metric.type)) {
+            result.addWarning(`Metric type must be "successFail" or "count"`, `${mPath}.type`);
+          }
+          if (metric.fieldIndex === undefined) result.addWarning('Metric is missing "fieldIndex"', mPath);
+          if (metric.type === 'successFail' && metric.failIndex === undefined) {
+            result.addWarning('successFail metric is missing "failIndex"', mPath);
+          }
+          // Check that fieldIndex is within bounds
+          const fields = groupConfig.autoFields || groupConfig.teleFields || [];
+          if (typeof metric.fieldIndex === 'number' && metric.fieldIndex >= fields.length) {
+            result.addWarning(`Metric fieldIndex ${metric.fieldIndex} is out of bounds (${fields.length} fields)`, mPath);
+          }
+        });
+      }
+    });
+
     if (tv.endgamePie?.field) {
       checkField(tv.endgamePie.field, 'display.teamView.endgamePie.field');
     }
     if (tv.comments) {
       tv.comments.forEach((c, i) => checkField(c, `display.teamView.comments[${i}]`));
+    }
+    // Validate commentFields structure
+    if (tv.commentFields) {
+      if (!Array.isArray(tv.commentFields)) {
+        result.addWarning('commentFields must be an array', 'display.teamView.commentFields');
+      } else {
+        tv.commentFields.forEach((cf, i) => {
+          const cfPath = `display.teamView.commentFields[${i}]`;
+          if (!cf.field) result.addWarning('commentField is missing "field"', cfPath);
+          if (!cf.dataKey) result.addWarning('commentField is missing "dataKey"', cfPath);
+          if (!cf.title) result.addWarning('commentField is missing "title"', cfPath);
+          if (cf.field) checkField(cf.field, `${cfPath}.field`);
+        });
+      }
     }
     if (tv.defenseBarField) {
       checkField(tv.defenseBarField, 'display.teamView.defenseBarField');
@@ -636,12 +674,32 @@ function validateDisplaySection(display, fieldNames, result) {
     if (mv.defenseBarField) {
       checkField(mv.defenseBarField, 'display.matchView.defenseBarField');
     }
+    // Validate ranking point field references
+    if (mv.rankingPoints && Array.isArray(mv.rankingPoints)) {
+      mv.rankingPoints.forEach((rp, i) => {
+        const rpPath = `display.matchView.rankingPoints[${i}]`;
+        if (rp.leaveField) checkField(rp.leaveField, `${rpPath}.leaveField`);
+        if (rp.coralFields) {
+          rp.coralFields.forEach((f, fi) => checkField(f, `${rpPath}.coralFields[${fi}]`));
+        }
+      });
+    }
   }
 
   // Validate picklist
   if (display.picklist) {
     if (display.picklist.defenseField) {
       checkField(display.picklist.defenseField, 'display.picklist.defenseField');
+    }
+    // Validate scatter plot field references
+    if (display.picklist.scatterPlot) {
+      const sp = display.picklist.scatterPlot;
+      if (sp.xAxis?.fields) {
+        sp.xAxis.fields.forEach((f, i) => checkField(f, `display.picklist.scatterPlot.xAxis.fields[${i}]`));
+      }
+      if (sp.yAxis?.fields) {
+        sp.yAxis.fields.forEach((f, i) => checkField(f, `display.picklist.scatterPlot.yAxis.fields[${i}]`));
+      }
     }
   }
 
@@ -656,6 +714,21 @@ function validateDisplaySection(display, fieldNames, result) {
     }
     if (api.qualitativeFields) {
       api.qualitativeFields.forEach((f, i) => checkField(f, `display.apiAggregation.qualitativeFields[${i}]`));
+    }
+    // Validate breakdownField / defenseField
+    if (api.breakdownField) checkField(api.breakdownField, 'display.apiAggregation.breakdownField');
+    if (api.defenseField) checkField(api.defenseField, 'display.apiAggregation.defenseField');
+    // Validate successFailPairs
+    if (api.successFailPairs && Array.isArray(api.successFailPairs)) {
+      api.successFailPairs.forEach((pair, i) => {
+        const pPath = `display.apiAggregation.successFailPairs[${i}]`;
+        if (!pair.key) result.addWarning('successFailPair is missing "key"', pPath);
+        if (!pair.phase || !['auto', 'tele'].includes(pair.phase)) {
+          result.addWarning('successFailPair phase must be "auto" or "tele"', `${pPath}.phase`);
+        }
+        if (pair.successField) checkField(pair.successField, `${pPath}.successField`);
+        if (pair.failField) checkField(pair.failField, `${pPath}.failField`);
+      });
     }
   }
 }

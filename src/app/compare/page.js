@@ -17,40 +17,6 @@ function computeValue(data, computeStr) {
   return parts.reduce((sum, path) => sum + (resolvePath(data, path.trim()) || 0), 0);
 }
 
-// Default config fallbacks
-const DEFAULT_COMPARE_CONFIG = {
-  metricsChart: [
-    { key: "avgEpa", label: "EPA" },
-    { key: "last3Epa", label: "Last 3 EPA" },
-    { key: "avgAuto", label: "Auto" },
-    { key: "avgTele", label: "Teleop" },
-    { key: "avgEnd", label: "Endgame" },
-  ],
-  scoringChart: [
-    { key: "coral", label: "Coral", compute: "auto.coral.total + tele.coral.total" },
-    { key: "net", label: "Net", compute: "auto.algae.avgNet + tele.algae.avgNet" },
-    { key: "processor", label: "Processor", compute: "auto.algae.avgProcessor + tele.algae.avgProcessor" },
-    { key: "algae", label: "Algae", compute: "auto.algae.removed + tele.algae.removed" },
-  ],
-  coralLevelChart: {
-    levels: ["L1", "L2", "L3", "L4"],
-    autoPrefix: "auto.coral.avg",
-    telePrefix: "tele.coral.avg",
-    failMetric: {
-      label: "Fail %",
-      autoSuccessKey: "auto.coral.success",
-      teleSuccessKey: "tele.coral.success",
-    },
-  },
-  endgameChart: {
-    metrics: ["None", "Park", "Shallow", "Deep", "Fail"],
-    keys: ["none", "park", "shallow", "deep", "fail"],
-    endgameSource: "endPlacement",
-    fallbackSource: "endgame",
-  },
-  defenseField: "defenseplayed",
-};
-
 // Custom tooltip formatter to show 1 decimal place
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -80,9 +46,10 @@ function Compare() {
   const { config, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(
-    () => config?.display?.compare || DEFAULT_COMPARE_CONFIG,
+    () => config?.display?.compare,
     [config]
   );
+
 
   // Parse URL parameters on the client side
   useEffect(() => {
@@ -98,6 +65,16 @@ function Compare() {
       setTeams(parsedTeams);
     }
   }, []);
+
+  // Guard: if no compare config, show fallback (must be after all hooks)
+  if (!configLoading && !compareConfig) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
+        <h2>Compare Not Configured</h2>
+        <p>Add a &quot;compare&quot; section to your game config&apos;s display settings.</p>
+      </div>
+    );
+  }
 
   // Colors for each team (same as match-view)
   const COLORS = [
@@ -243,10 +220,10 @@ function Compare() {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <div className={styles.linkContainer} style={{margin: "20px 0"}}>
+      <div className={styles.linkContainer} style={{ margin: "20px 0" }}>
         {teams.map((team, index) => (
           <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
-            <button style={{backgroundColor: COLORS[index]}}>
+            <button style={{ backgroundColor: COLORS[index] }}>
               View Team {team} Details
             </button>
           </Link>
@@ -256,8 +233,8 @@ function Compare() {
       <div className={styles.comparisonGrid}>
         <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
         <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <CoralLevelComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
+        {compareConfig?.coralLevelChart && <LevelComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />}
+        {compareConfig?.endgameChart && <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />}
       </div>
 
       {/* Defense ratings section outside the grid to span full width */}
@@ -317,7 +294,7 @@ function TeamInputForm({ initialTeams = ["", "", "", ""] }) {
 }
 
 function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
-  const metricsChart = compareConfig.metricsChart || DEFAULT_COMPARE_CONFIG.metricsChart;
+  const metricsChart = compareConfig?.metricsChart || [];
 
   // Prepare data for metric comparison chart
   const metricsData = teams.map((team, index) => {
@@ -358,7 +335,7 @@ function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
 }
 
 function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
-  const scoringChart = compareConfig.scoringChart || DEFAULT_COMPARE_CONFIG.scoringChart;
+  const scoringChart = compareConfig?.scoringChart || [];
 
   const chartData = scoringChart.map(metric => {
     const dataPoint = { name: metric.label };
@@ -390,8 +367,8 @@ function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
   );
 }
 
-function CoralLevelComparison({ teamsData, teams, colors, compareConfig }) {
-  const coralConfig = compareConfig.coralLevelChart || DEFAULT_COMPARE_CONFIG.coralLevelChart;
+function LevelComparison({ teamsData, teams, colors, compareConfig }) {
+  const coralConfig = compareConfig?.coralLevelChart || {};
   const { levels, autoPrefix, telePrefix, failMetric } = coralConfig;
 
   // Build metric list: levels + optional fail metric
@@ -441,7 +418,7 @@ function CoralLevelComparison({ teamsData, teams, colors, compareConfig }) {
 }
 
 function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
-  const endgameConfig = compareConfig.endgameChart || DEFAULT_COMPARE_CONFIG.endgameChart;
+  const endgameConfig = compareConfig?.endgameChart || {};
   const { metrics, keys, endgameSource, fallbackSource } = endgameConfig;
 
   const chartData = metrics.map((metric, metricIndex) => {
@@ -479,7 +456,7 @@ function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
 }
 
 function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
-  const defenseField = compareConfig.defenseField || DEFAULT_COMPARE_CONFIG.defenseField;
+  const defenseField = compareConfig?.defenseField || '';
 
   // Build case-variant list from the configured field name
   const baseField = defenseField;

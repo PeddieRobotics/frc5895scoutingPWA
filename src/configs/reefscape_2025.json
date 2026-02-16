@@ -3,7 +3,6 @@
   "displayName": "REEFSCAPE 2025",
   "formTitle": "5895 SKOUTER",
   "version": "1.0",
-
   "basics": {
     "description": "Pre-match fields displayed at the top of the form",
     "fields": [
@@ -12,55 +11,132 @@
         "name": "noshow",
         "label": "No Show",
         "hidesForm": true,
-        "dbColumn": { "type": "BOOLEAN", "default": false }
+        "dbColumn": {
+          "type": "BOOLEAN",
+          "default": false
+        }
       }
     ]
   },
-
   "sections": [
     {
       "id": "auto",
       "header": "Auto",
-      "showWhen": { "field": "noshow", "equals": false },
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
       "fields": [
         {
           "type": "checkbox",
           "name": "leave",
           "label": "Leave",
-          "dbColumn": { "type": "BOOLEAN", "default": false }
+          "dbColumn": {
+            "type": "BOOLEAN",
+            "default": false
+          }
         },
         {
           "type": "table",
           "id": "autoCoralTable",
           "subHeader": "Coral",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "L4",
               "fields": [
-                { "type": "counter", "name": "autol4success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autol4fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autol4success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autol4fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L3",
               "fields": [
-                { "type": "counter", "name": "autol3success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autol3fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autol3success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autol3fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L2",
               "fields": [
-                { "type": "counter", "name": "autol2success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autol2fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autol2success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autol2fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L1",
               "fields": [
-                { "type": "counter", "name": "autol1success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autol1fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autol1success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autol1fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -70,19 +146,43 @@
           "name": "autoalgaeremoved",
           "subHeader": "Algae Removed",
           "variant": "Counter",
-          "dbColumn": { "type": "INTEGER", "default": 0 }
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
         },
         {
           "type": "table",
           "id": "autoProcessorTable",
           "subHeader": "Processor",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "",
               "fields": [
-                { "type": "counter", "name": "autoprocessorsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autoprocessorfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autoprocessorsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autoprocessorfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -91,13 +191,34 @@
           "type": "table",
           "id": "autoNetTable",
           "subHeader": "Net",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "",
               "fields": [
-                { "type": "counter", "name": "autonetsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "autonetfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "autonetsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "autonetfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -107,40 +228,112 @@
     {
       "id": "tele",
       "header": "Tele",
-      "showWhen": { "field": "noshow", "equals": false },
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
       "fields": [
         {
           "type": "table",
           "id": "teleCoralTable",
           "subHeader": "Coral",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "L4",
               "fields": [
-                { "type": "counter", "name": "telel4success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "telel4fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "telel4success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "telel4fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L3",
               "fields": [
-                { "type": "counter", "name": "telel3success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "telel3fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "telel3success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "telel3fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L2",
               "fields": [
-                { "type": "counter", "name": "telel2success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "telel2fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "telel2success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "telel2fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             },
             {
               "label": "L1",
               "fields": [
-                { "type": "counter", "name": "telel1success", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "telel1fail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "telel1success",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "telel1fail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -150,19 +343,43 @@
           "name": "telealgaeremoved",
           "subHeader": "Algae Removed",
           "variant": "Counter",
-          "dbColumn": { "type": "INTEGER", "default": 0 }
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
         },
         {
           "type": "table",
           "id": "teleProcessorTable",
           "subHeader": "Processor",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "",
               "fields": [
-                { "type": "counter", "name": "teleprocessorsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "teleprocessorfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "teleprocessorsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "teleprocessorfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -171,13 +388,34 @@
           "type": "table",
           "id": "teleNetTable",
           "subHeader": "Net",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "",
               "fields": [
-                { "type": "counter", "name": "telenetsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "telenetfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "telenetsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "telenetfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -186,13 +424,34 @@
           "type": "table",
           "id": "teleHPTable",
           "subHeader": "Human Player",
-          "columns": ["", "Success", "Fail", ""],
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
           "rows": [
             {
               "label": "",
               "fields": [
-                { "type": "counter", "name": "hpsuccess", "variant": "Success", "dbColumn": { "type": "INTEGER", "default": 0 } },
-                { "type": "counter", "name": "hpfail", "variant": "Fail", "dbColumn": { "type": "INTEGER", "default": 0 } }
+                {
+                  "type": "counter",
+                  "name": "hpsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "hpfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
               ]
             }
           ]
@@ -201,7 +460,10 @@
           "type": "comment",
           "name": "generalcomments",
           "label": "General Comments",
-          "dbColumn": { "type": "TEXT", "default": null }
+          "dbColumn": {
+            "type": "TEXT",
+            "default": null
+          }
         },
         {
           "type": "collapsible",
@@ -210,14 +472,20 @@
             "type": "checkbox",
             "name": "defense",
             "label": "Playing Defense?",
-            "dbColumn": { "type": "BOOLEAN", "default": false }
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
           },
           "content": [
             {
               "type": "comment",
               "name": "defensecomments",
               "label": "Defense Elaboration",
-              "dbColumn": { "type": "TEXT", "default": null }
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
             },
             {
               "type": "starRating",
@@ -226,7 +494,10 @@
               "description": "Ability to Play Defense",
               "max": 6,
               "minWhenVisible": 1,
-              "dbColumn": { "type": "INTEGER", "default": null }
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
             }
           ]
         }
@@ -235,20 +506,42 @@
     {
       "id": "endgame",
       "header": "Endgame",
-      "showWhen": { "field": "noshow", "equals": false },
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
       "fields": [
         {
           "type": "singleSelect",
           "name": "endlocation",
           "formName": "stageplacement",
           "label": "Stage Placement",
-          "dbColumn": { "type": "INTEGER", "default": 0 },
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          },
           "options": [
-            { "value": 0, "label": "None", "default": true },
-            { "value": 1, "label": "Park" },
-            { "value": 2, "label": "Fail + Park" },
-            { "value": 3, "label": "Shallow Cage" },
-            { "value": 4, "label": "Deep Cage" }
+            {
+              "value": 0,
+              "label": "None",
+              "default": true
+            },
+            {
+              "value": 1,
+              "label": "Park"
+            },
+            {
+              "value": 2,
+              "label": "Fail + Park"
+            },
+            {
+              "value": 3,
+              "label": "Shallow Cage"
+            },
+            {
+              "value": 4,
+              "label": "Deep Cage"
+            }
           ]
         }
       ]
@@ -256,18 +549,56 @@
     {
       "id": "postMatch",
       "header": "Post-Match",
-      "showWhen": { "field": "noshow", "equals": false },
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
       "fields": [
         {
           "type": "multiSelect",
           "subHeader": "Intake",
           "name": "intakeOptions",
           "options": [
-            { "name": "coralgrndintake", "label": "Coral Ground", "dbColumn": { "type": "BOOLEAN", "default": false } },
-            { "name": "coralstationintake", "label": "Coral Station", "dbColumn": { "type": "BOOLEAN", "default": false } },
-            { "name": "algaegrndintake", "label": "Algae Ground", "dbColumn": { "type": "BOOLEAN", "default": false } },
-            { "name": "algaehighreefintake", "label": "Algae High Reef", "dbColumn": { "type": "BOOLEAN", "default": false } },
-            { "name": "algaelowreefintake", "label": "Algae Low Reef", "dbColumn": { "type": "BOOLEAN", "default": false } }
+            {
+              "name": "coralgrndintake",
+              "label": "Coral Ground",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "coralstationintake",
+              "label": "Coral Station",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "algaegrndintake",
+              "label": "Algae Ground",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "algaehighreefintake",
+              "label": "Algae High Reef",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "algaelowreefintake",
+              "label": "Algae Low Reef",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            }
           ]
         },
         {
@@ -277,14 +608,20 @@
             "type": "checkbox",
             "name": "breakdown",
             "label": "Broke down?",
-            "dbColumn": { "type": "BOOLEAN", "default": false }
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
           },
           "content": [
             {
               "type": "comment",
               "name": "breakdowncomments",
               "label": "Breakdown Elaboration",
-              "dbColumn": { "type": "TEXT", "default": null }
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
             }
           ]
         }
@@ -293,32 +630,141 @@
     {
       "id": "qualitative",
       "header": "Qualitative Ratings",
-      "showWhen": { "field": "noshow", "equals": false },
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
       "hidden": true,
       "description": "These fields are for internal tracking and not shown on the main form",
       "fields": [
-        { "type": "starRating", "name": "coralspeed", "label": "Coral Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "processorspeed", "label": "Processor Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "netspeed", "label": "Net Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "algaeremovalspeed", "label": "Algae Removal Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "climbspeed", "label": "Climb Speed", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "maneuverability", "label": "Maneuverability", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "defenseevasion", "label": "Defense Evasion", "max": 6, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "aggression", "label": "Aggression", "max": 6, "inverted": true, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "starRating", "name": "cagehazard", "label": "Cage Hazard", "max": 6, "inverted": true, "dbColumn": { "type": "INTEGER", "default": null } },
-        { "type": "checkbox", "name": "lollipop", "label": "Lollipop", "dbColumn": { "type": "BOOLEAN", "default": false } }
+        {
+          "type": "starRating",
+          "name": "coralspeed",
+          "label": "Coral Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "processorspeed",
+          "label": "Processor Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "netspeed",
+          "label": "Net Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "algaeremovalspeed",
+          "label": "Algae Removal Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "climbspeed",
+          "label": "Climb Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "maneuverability",
+          "label": "Maneuverability",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "defenseevasion",
+          "label": "Defense Evasion",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "aggression",
+          "label": "Aggression",
+          "max": 6,
+          "inverted": true,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "cagehazard",
+          "label": "Cage Hazard",
+          "max": 6,
+          "inverted": true,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "checkbox",
+          "name": "lollipop",
+          "label": "Lollipop",
+          "dbColumn": {
+            "type": "BOOLEAN",
+            "default": false
+          }
+        }
       ]
     }
   ],
-
   "calculations": {
     "auto": {
       "formula": "autol1success*3 + autol2success*4 + autol3success*6 + autol4success*7 + autoprocessorsuccess*6 + autonetsuccess*4 + (leave?3:0)",
-      "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "autoprocessorsuccess", "autonetsuccess", "leave"]
+      "fields": [
+        "autol1success",
+        "autol2success",
+        "autol3success",
+        "autol4success",
+        "autoprocessorsuccess",
+        "autonetsuccess",
+        "leave"
+      ]
     },
     "tele": {
       "formula": "telel1success*2 + telel2success*3 + telel3success*4 + telel4success*5 + teleprocessorsuccess*6 + telenetsuccess*4 + hpsuccess*2",
-      "fields": ["telel1success", "telel2success", "telel3success", "telel4success", "teleprocessorsuccess", "telenetsuccess", "hpsuccess"]
+      "fields": [
+        "telel1success",
+        "telel2success",
+        "telel3success",
+        "telel4success",
+        "teleprocessorsuccess",
+        "telenetsuccess",
+        "hpsuccess"
+      ]
     },
     "end": {
       "type": "mapping",
@@ -332,10 +778,13 @@
       }
     }
   },
-
   "display": {
     "teamView": {
-      "epaBreakdown": ["auto", "tele", "end"],
+      "epaBreakdown": [
+        "auto",
+        "tele",
+        "end"
+      ],
       "epaThresholds": {
         "overall": 12,
         "auto": 6,
@@ -344,177 +793,583 @@
       },
       "piecePlacement": {
         "bars": [
-          { "label": "L4", "autoField": "autol4success", "teleField": "telel4success" },
-          { "label": "L3", "autoField": "autol3success", "teleField": "telel3success" },
-          { "label": "L2", "autoField": "autol2success", "teleField": "telel2success" },
-          { "label": "L1", "autoField": "autol1success", "teleField": "telel1success" },
-          { "label": "Net", "autoField": "autonetsuccess", "teleField": "telenetsuccess" },
-          { "label": "Prcsr", "autoField": "autoprocessorsuccess", "teleField": "teleprocessorsuccess" },
-          { "label": "HP", "teleField": "hpsuccess" }
+          {
+            "label": "L4",
+            "autoField": "autol4success",
+            "teleField": "telel4success"
+          },
+          {
+            "label": "L3",
+            "autoField": "autol3success",
+            "teleField": "telel3success"
+          },
+          {
+            "label": "L2",
+            "autoField": "autol2success",
+            "teleField": "telel2success"
+          },
+          {
+            "label": "L1",
+            "autoField": "autol1success",
+            "teleField": "telel1success"
+          },
+          {
+            "label": "Net",
+            "autoField": "autonetsuccess",
+            "teleField": "telenetsuccess"
+          },
+          {
+            "label": "Prcsr",
+            "autoField": "autoprocessorsuccess",
+            "teleField": "teleprocessorsuccess"
+          },
+          {
+            "label": "HP",
+            "teleField": "hpsuccess"
+          }
         ],
         "coral": {
-          "levels": ["L1", "L2", "L3", "L4"],
-          "autoFields": ["autol1success", "autol2success", "autol3success", "autol4success"],
-          "teleFields": ["telel1success", "telel2success", "telel3success", "telel4success"],
-          "autoFailFields": ["autol1fail", "autol2fail", "autol3fail", "autol4fail"],
-          "teleFailFields": ["telel1fail", "telel2fail", "telel3fail", "telel4fail"]
+          "levels": [
+            "L1",
+            "L2",
+            "L3",
+            "L4"
+          ],
+          "autoFields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success"
+          ],
+          "teleFields": [
+            "telel1success",
+            "telel2success",
+            "telel3success",
+            "telel4success"
+          ],
+          "autoFailFields": [
+            "autol1fail",
+            "autol2fail",
+            "autol3fail",
+            "autol4fail"
+          ],
+          "teleFailFields": [
+            "telel1fail",
+            "telel2fail",
+            "telel3fail",
+            "telel4fail"
+          ]
         },
         "algae": {
-          "autoFields": ["autoprocessorsuccess", "autonetsuccess", "autoalgaeremoved"],
-          "teleFields": ["teleprocessorsuccess", "telenetsuccess", "telealgaeremoved"],
-          "autoFailFields": ["autoprocessorfail", "autonetfail"],
-          "teleFailFields": ["teleprocessorfail", "telenetfail"]
+          "autoFields": [
+            "autoprocessorsuccess",
+            "autonetsuccess",
+            "autoalgaeremoved"
+          ],
+          "teleFields": [
+            "teleprocessorsuccess",
+            "telenetsuccess",
+            "telealgaeremoved"
+          ],
+          "autoFailFields": [
+            "autoprocessorfail",
+            "autonetfail"
+          ],
+          "teleFailFields": [
+            "teleprocessorfail",
+            "telenetfail"
+          ],
+          "metrics": [
+            {
+              "key": "Processor",
+              "type": "successFail",
+              "fieldIndex": 0,
+              "failIndex": 0
+            },
+            {
+              "key": "Net",
+              "type": "successFail",
+              "fieldIndex": 1,
+              "failIndex": 1
+            },
+            {
+              "key": "removed",
+              "type": "count",
+              "fieldIndex": 2
+            }
+          ]
         }
       },
       "endgamePie": {
         "field": "endlocation",
-        "labels": ["None", "Park", "Fail+Park", "Shallow", "Deep"],
-        "values": [0, 1, 2, 3, 4]
+        "labels": [
+          "None",
+          "Park",
+          "Fail+Park",
+          "Shallow",
+          "Deep"
+        ],
+        "values": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
       },
       "endgameStats": {
-        "cageAttemptValues": [2, 3, 4],
-        "cageSuccessValues": [3, 4]
+        "cageAttemptValues": [
+          2,
+          3,
+          4
+        ],
+        "cageSuccessValues": [
+          3,
+          4
+        ]
       },
       "overallStats": [
-        { "title": "Consistency", "key": "consistency", "format": "percent" },
-        { "title": "Defense", "key": "defense", "format": "percent" },
-        { "title": "Last Breakdown", "key": "lastBreakdown", "format": "text" },
-        { "title": "No Show", "key": "noShow", "format": "percent" },
-        { "title": "Breakdown", "key": "breakdown", "format": "percent" },
-        { "title": "Matches Scouted", "key": "matchesScouted", "format": "number" }
+        {
+          "title": "Consistency",
+          "key": "consistency",
+          "format": "percent"
+        },
+        {
+          "title": "Defense",
+          "key": "defense",
+          "format": "percent"
+        },
+        {
+          "title": "Last Breakdown",
+          "key": "lastBreakdown",
+          "format": "text"
+        },
+        {
+          "title": "No Show",
+          "key": "noShow",
+          "format": "percent"
+        },
+        {
+          "title": "Breakdown",
+          "key": "breakdown",
+          "format": "percent"
+        },
+        {
+          "title": "Matches Scouted",
+          "key": "matchesScouted",
+          "format": "number"
+        }
       ],
       "sections": {
         "auto": {
           "charts": [
-            { "type": "epaLine", "label": "Auto Over Time", "dataKey": "autoOverTime" },
-            { "type": "coralLine", "label": "Auto Coral Success", "dataType": "success", "phase": "auto" },
-            { "type": "coralLine", "label": "Auto Coral Failures", "dataType": "fail", "phase": "auto" }
+            {
+              "type": "epaLine",
+              "label": "Auto Over Time",
+              "dataKey": "autoOverTime"
+            },
+            {
+              "type": "coralLine",
+              "label": "Auto Coral Success",
+              "dataType": "success",
+              "phase": "auto"
+            },
+            {
+              "type": "coralLine",
+              "label": "Auto Coral Failures",
+              "dataType": "fail",
+              "phase": "auto"
+            }
           ],
           "algaeTable": {
             "phase": "auto",
             "removedField": "autoalgaeremoved",
             "columns": [
-              { "label": "Algae Removed", "field": "autoalgaeremoved" },
-              { "label": "Processor Success", "field": "autoprocessorsuccess" },
-              { "label": "Processor Fail", "field": "autoprocessorfail" },
-              { "label": "Net Success", "field": "autonetsuccess" },
-              { "label": "Net Fail", "field": "autonetfail" }
+              {
+                "label": "Algae Removed",
+                "field": "autoalgaeremoved"
+              },
+              {
+                "label": "Processor Success",
+                "field": "autoprocessorsuccess"
+              },
+              {
+                "label": "Processor Fail",
+                "field": "autoprocessorfail"
+              },
+              {
+                "label": "Net Success",
+                "field": "autonetsuccess"
+              },
+              {
+                "label": "Net Fail",
+                "field": "autonetfail"
+              }
             ]
           },
           "statBoxes": [
-            { "title": "Leave", "key": "leave", "format": "percent" }
+            {
+              "title": "Leave",
+              "key": "leave",
+              "format": "percent"
+            }
           ],
           "statTables": [
             {
               "title": "Coral",
-              "columns": ["Success", "Total"],
-              "rows": [{ "values": ["auto.coral.success", "auto.coral.total"] }]
+              "columns": [
+                "Success",
+                "Total"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "auto.coral.success",
+                    "auto.coral.total"
+                  ]
+                }
+              ]
             }
           ],
           "levelTable": {
-            "levels": ["L4", "L3", "L2", "L1"],
-            "successFields": ["auto.coral.successL4", "auto.coral.successL3", "auto.coral.successL2", "auto.coral.successL1"],
-            "avgFields": ["auto.coral.avgL4", "auto.coral.avgL3", "auto.coral.avgL2", "auto.coral.avgL1"]
+            "levels": [
+              "L4",
+              "L3",
+              "L2",
+              "L1"
+            ],
+            "successFields": [
+              "auto.coral.successL4",
+              "auto.coral.successL3",
+              "auto.coral.successL2",
+              "auto.coral.successL1"
+            ],
+            "avgFields": [
+              "auto.coral.avgL4",
+              "auto.coral.avgL3",
+              "auto.coral.avgL2",
+              "auto.coral.avgL1"
+            ]
           },
           "miscStats": [
-            { "title": "Algae Removed", "key": "auto.algae.removed", "format": "number" }
+            {
+              "title": "Algae Removed",
+              "key": "auto.algae.removed",
+              "format": "number"
+            }
           ],
           "algaeStats": {
-            "levels": ["Prcsr", "Net"],
-            "successFields": ["auto.algae.successProcessor", "auto.algae.successNet"],
-            "avgFields": ["auto.algae.avgProcessor", "auto.algae.avgNet"]
+            "levels": [
+              "Prcsr",
+              "Net"
+            ],
+            "successFields": [
+              "auto.algae.successProcessor",
+              "auto.algae.successNet"
+            ],
+            "avgFields": [
+              "auto.algae.avgProcessor",
+              "auto.algae.avgNet"
+            ]
           }
         },
         "tele": {
           "charts": [
-            { "type": "epaLine", "label": "Tele Over Time", "dataKey": "teleOverTime" },
-            { "type": "coralLine", "label": "Tele Coral Success", "dataType": "success", "phase": "tele" },
-            { "type": "coralLine", "label": "Tele Coral Failures", "dataType": "fail", "phase": "tele" }
+            {
+              "type": "epaLine",
+              "label": "Tele Over Time",
+              "dataKey": "teleOverTime"
+            },
+            {
+              "type": "coralLine",
+              "label": "Tele Coral Success",
+              "dataType": "success",
+              "phase": "tele"
+            },
+            {
+              "type": "coralLine",
+              "label": "Tele Coral Failures",
+              "dataType": "fail",
+              "phase": "tele"
+            }
           ],
           "algaeTable": {
             "phase": "tele",
             "removedField": "telealgaeremoved",
             "columns": [
-              { "label": "Algae Removed", "field": "telealgaeremoved" },
-              { "label": "Processor Success", "field": "teleprocessorsuccess" },
-              { "label": "Processor Fail", "field": "teleprocessorfail" },
-              { "label": "Net Success", "field": "telenetsuccess" },
-              { "label": "Net Fail", "field": "telenetfail" }
+              {
+                "label": "Algae Removed",
+                "field": "telealgaeremoved"
+              },
+              {
+                "label": "Processor Success",
+                "field": "teleprocessorsuccess"
+              },
+              {
+                "label": "Processor Fail",
+                "field": "teleprocessorfail"
+              },
+              {
+                "label": "Net Success",
+                "field": "telenetsuccess"
+              },
+              {
+                "label": "Net Fail",
+                "field": "telenetfail"
+              }
             ]
           },
           "extraStats": [
             {
               "title": "HP",
-              "columns": ["Success", "Scored"],
-              "rows": [{ "values": ["tele.successHp", "tele.avgHp"] }]
+              "columns": [
+                "Success",
+                "Scored"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "tele.successHp",
+                    "tele.avgHp"
+                  ]
+                }
+              ]
             }
           ],
           "statTables": [
             {
               "title": "Coral",
-              "columns": ["Success", "Total"],
-              "rows": [{ "values": ["tele.coral.success", "tele.coral.total"] }]
+              "columns": [
+                "Success",
+                "Total"
+              ],
+              "rows": [
+                {
+                  "values": [
+                    "tele.coral.success",
+                    "tele.coral.total"
+                  ]
+                }
+              ]
             }
           ],
           "levelTable": {
-            "levels": ["L4", "L3", "L2", "L1"],
-            "successFields": ["tele.coral.successL4", "tele.coral.successL3", "tele.coral.successL2", "tele.coral.successL1"],
-            "avgFields": ["tele.coral.avgL4", "tele.coral.avgL3", "tele.coral.avgL2", "tele.coral.avgL1"]
+            "levels": [
+              "L4",
+              "L3",
+              "L2",
+              "L1"
+            ],
+            "successFields": [
+              "tele.coral.successL4",
+              "tele.coral.successL3",
+              "tele.coral.successL2",
+              "tele.coral.successL1"
+            ],
+            "avgFields": [
+              "tele.coral.avgL4",
+              "tele.coral.avgL3",
+              "tele.coral.avgL2",
+              "tele.coral.avgL1"
+            ]
           },
           "miscStats": [
-            { "title": "Algae Removed", "key": "tele.algae.removed", "format": "number" }
+            {
+              "title": "Algae Removed",
+              "key": "tele.algae.removed",
+              "format": "number"
+            }
           ],
           "algaeStats": {
-            "levels": ["Prcsr", "Net"],
-            "successFields": ["tele.algae.successProcessor", "tele.algae.successNet"],
-            "avgFields": ["tele.algae.avgProcessor", "tele.algae.avgNet"]
+            "levels": [
+              "Prcsr",
+              "Net"
+            ],
+            "successFields": [
+              "tele.algae.successProcessor",
+              "tele.algae.successNet"
+            ],
+            "avgFields": [
+              "tele.algae.avgProcessor",
+              "tele.algae.avgNet"
+            ]
           }
         }
       },
-      "comments": ["generalcomments", "breakdowncomments", "defensecomments"],
+      "comments": [
+        "generalcomments",
+        "breakdowncomments",
+        "defensecomments"
+      ],
+      "commentFields": [
+        {
+          "field": "generalcomments",
+          "dataKey": "generalComments",
+          "title": "General Comments"
+        },
+        {
+          "field": "breakdowncomments",
+          "dataKey": "breakdownComments",
+          "title": "Breakdown Comments"
+        },
+        {
+          "field": "defensecomments",
+          "dataKey": "defenseComments",
+          "title": "Defense Comments"
+        }
+      ],
       "intakeDisplay": [
-        { "category": "Coral Intake", "fields": ["coralgrndintake", "coralstationintake"], "labels": ["Ground", "Station"] },
-        { "category": "Algae Intake", "fields": ["algaegrndintake", "algaelowreefintake"], "labels": ["Ground", "Lollipop"] },
-        { "category": "Reef Intake", "fields": ["algaelowreefintake", "algaehighreefintake"], "labels": ["Low", "High"] }
+        {
+          "category": "Coral Intake",
+          "fields": [
+            "coralgrndintake",
+            "coralstationintake"
+          ],
+          "labels": [
+            "Ground",
+            "Station"
+          ]
+        },
+        {
+          "category": "Algae Intake",
+          "fields": [
+            "algaegrndintake",
+            "algaelowreefintake"
+          ],
+          "labels": [
+            "Ground",
+            "Lollipop"
+          ]
+        },
+        {
+          "category": "Reef Intake",
+          "fields": [
+            "algaelowreefintake",
+            "algaehighreefintake"
+          ],
+          "labels": [
+            "Low",
+            "High"
+          ]
+        }
       ],
       "qualitativeDisplay": [
-        { "name": "coralspeed", "label": "Coral Speed" },
-        { "name": "processorspeed", "label": "Processor Speed" },
-        { "name": "netspeed", "label": "Net Speed" },
-        { "name": "algaeremovalspeed", "label": "Algae Removal Speed" },
-        { "name": "climbspeed", "label": "Climb Speed" },
-        { "name": "maneuverability", "label": "Maneuverability" },
-        { "name": "defenseplayed", "label": "Defense Played" },
-        { "name": "defenseevasion", "label": "Defense Evasion" },
-        { "name": "aggression", "label": "Aggression", "inverted": true },
-        { "name": "cagehazard", "label": "Cage Hazard", "inverted": true }
+        {
+          "name": "coralspeed",
+          "label": "Coral Speed"
+        },
+        {
+          "name": "processorspeed",
+          "label": "Processor Speed"
+        },
+        {
+          "name": "netspeed",
+          "label": "Net Speed"
+        },
+        {
+          "name": "algaeremovalspeed",
+          "label": "Algae Removal Speed"
+        },
+        {
+          "name": "climbspeed",
+          "label": "Climb Speed"
+        },
+        {
+          "name": "maneuverability",
+          "label": "Maneuverability"
+        },
+        {
+          "name": "defenseplayed",
+          "label": "Defense Played"
+        },
+        {
+          "name": "defenseevasion",
+          "label": "Defense Evasion"
+        },
+        {
+          "name": "aggression",
+          "label": "Aggression",
+          "inverted": true
+        },
+        {
+          "name": "cagehazard",
+          "label": "Cage Hazard",
+          "inverted": true
+        }
       ],
       "defenseBarField": "defenseplayed"
     },
-
     "matchView": {
-      "allianceMetrics": ["auto", "tele", "end"],
-      "epaBreakdown": ["auto", "tele", "end"],
+      "allianceMetrics": [
+        "auto",
+        "tele",
+        "end"
+      ],
+      "epaBreakdown": [
+        "auto",
+        "tele",
+        "end"
+      ],
       "piecePlacement": {
         "bars": [
-          { "label": "L4", "key": "L4" },
-          { "label": "L3", "key": "L3" },
-          { "label": "L2", "key": "L2" },
-          { "label": "L1", "key": "L1" },
-          { "label": "Net", "key": "net" },
-          { "label": "Prcsr", "key": "processor" },
-          { "label": "HP", "key": "HP" }
+          {
+            "label": "L4",
+            "key": "L4"
+          },
+          {
+            "label": "L3",
+            "key": "L3"
+          },
+          {
+            "label": "L2",
+            "key": "L2"
+          },
+          {
+            "label": "L1",
+            "key": "L1"
+          },
+          {
+            "label": "Net",
+            "key": "net"
+          },
+          {
+            "label": "Prcsr",
+            "key": "processor"
+          },
+          {
+            "label": "HP",
+            "key": "HP"
+          }
         ]
       },
       "endgamePie": {
         "field": "endlocation",
-        "labels": ["None", "Fail", "Park", "Shallow", "Deep"],
-        "keys": ["none", "fail", "park", "shallow", "deep"]
+        "labels": [
+          "None",
+          "Fail",
+          "Park",
+          "Shallow",
+          "Deep"
+        ],
+        "keys": [
+          "none",
+          "fail",
+          "park",
+          "shallow",
+          "deep"
+        ]
       },
       "qualitativeFields": [
-        "coralspeed", "processorspeed", "netspeed", "algaeremovalspeed",
-        "climbspeed", "maneuverability", "defenseplayed", "defenseevasion",
-        "aggression", "cagehazard"
+        "coralspeed",
+        "processorspeed",
+        "netspeed",
+        "algaeremovalspeed",
+        "climbspeed",
+        "maneuverability",
+        "defenseplayed",
+        "defenseevasion",
+        "aggression",
+        "cagehazard"
       ],
       "defenseBarField": "defenseplayed",
       "rankingPoints": [
@@ -522,17 +1377,34 @@
           "label": "Auto",
           "type": "allLeaveAndCoral",
           "leaveField": "leave",
-          "coralFields": ["autol1success", "autol2success", "autol3success", "autol4success"],
+          "coralFields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success"
+          ],
           "minCoral": 1
         },
         {
           "label": "Coral",
           "type": "levelThreshold",
           "levels": {
-            "L1": ["autol1success", "telel1success"],
-            "L2": ["autol2success", "telel2success"],
-            "L3": ["autol3success", "telel3success"],
-            "L4": ["autol4success", "telel4success"]
+            "L1": [
+              "autol1success",
+              "telel1success"
+            ],
+            "L2": [
+              "autol2success",
+              "telel2success"
+            ],
+            "L3": [
+              "autol3success",
+              "telel3success"
+            ],
+            "L4": [
+              "autol4success",
+              "telel4success"
+            ]
           },
           "threshold": 5,
           "greenCount": 4,
@@ -546,51 +1418,192 @@
         }
       ],
       "keyStats": [
-        { "label": "Leave %", "field": "leave", "type": "percentage" },
-        { "label": "Avg Coral", "type": "sum", "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"] },
-        { "label": "Breakdown %", "field": "breakdown", "type": "percentage" }
+        {
+          "label": "Leave %",
+          "field": "leave",
+          "type": "percentage"
+        },
+        {
+          "label": "Avg Coral",
+          "type": "sum",
+          "fields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success",
+            "telel1success",
+            "telel2success",
+            "telel3success",
+            "telel4success"
+          ]
+        },
+        {
+          "label": "Breakdown %",
+          "field": "breakdown",
+          "type": "percentage"
+        }
       ]
     },
-
     "picklist": {
       "weights": [
-        { "key": "epa", "label": "EPA" },
-        { "key": "epa3", "label": "3 EPA" },
-        { "key": "auto", "label": "Auto Pts" },
-        { "key": "tele", "label": "Tele Pts" },
-        { "key": "consistency", "label": "Cnstcy" },
-        { "key": "coral", "label": "Coral Focus" },
-        { "key": "algae", "label": "Algae Focus" },
-        { "key": "defense", "label": "Defense" },
-        { "key": "breakdown", "label": "Break %", "inverted": true },
-        { "key": "avgCoral", "label": "Avg Coral" },
-        { "key": "avgNet", "label": "Avg Net" },
-        { "key": "avgProcessor", "label": "Avg Prcsr" }
+        {
+          "key": "epa",
+          "label": "EPA"
+        },
+        {
+          "key": "epa3",
+          "label": "3 EPA"
+        },
+        {
+          "key": "auto",
+          "label": "Auto Pts"
+        },
+        {
+          "key": "tele",
+          "label": "Tele Pts"
+        },
+        {
+          "key": "consistency",
+          "label": "Cnstcy"
+        },
+        {
+          "key": "coral",
+          "label": "Coral Focus"
+        },
+        {
+          "key": "algae",
+          "label": "Algae Focus"
+        },
+        {
+          "key": "defense",
+          "label": "Defense"
+        },
+        {
+          "key": "breakdown",
+          "label": "Break %",
+          "inverted": true
+        },
+        {
+          "key": "avgCoral",
+          "label": "Avg Coral"
+        },
+        {
+          "key": "avgNet",
+          "label": "Avg Net"
+        },
+        {
+          "key": "avgProcessor",
+          "label": "Avg Prcsr"
+        }
       ],
       "tableColumns": [
-        { "key": "epa", "label": "Norm EPA", "colorScale": "normal", "format": "three" },
-        { "key": "realEpa", "label": "Real EPA", "colorScale": "epa", "format": "one" },
-        { "key": "epa3", "label": "Norm 3 EPA", "colorScale": "normal", "format": "three" },
-        { "key": "realEpa3", "label": "Real 3 EPA", "colorScale": "epa3", "format": "one" },
-        { "key": "auto", "label": "Auto Points", "colorScale": "normal", "format": "three" },
-        { "key": "tele", "label": "Tele Points", "colorScale": "normal", "format": "three" },
-        { "key": "consistency", "label": "Cnstcy", "colorScale": "normal", "format": "three" },
-        { "key": "coral", "label": "Coral Focus", "colorScale": "normal", "format": "three" },
-        { "key": "algae", "label": "Algae Focus", "colorScale": "normal", "format": "three" },
-        { "key": "realDefense", "label": "Avg Defense Rating", "colorScale": "defense", "format": "one" },
-        { "key": "breakdown", "label": "Break %", "colorScale": "inverse", "format": "breakdownPercent" },
-        { "key": "realAvgCoral", "label": "Avg Coral", "colorScale": "avgCoral", "format": "one" },
-        { "key": "realAvgNet", "label": "Avg Net", "colorScale": "avgNet", "format": "one" },
-        { "key": "realAvgProcessor", "label": "Avg Prcsr", "colorScale": "avgProcessor", "format": "one" }
+        {
+          "key": "epa",
+          "label": "Norm EPA",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "realEpa",
+          "label": "Real EPA",
+          "colorScale": "epa",
+          "format": "one"
+        },
+        {
+          "key": "epa3",
+          "label": "Norm 3 EPA",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "realEpa3",
+          "label": "Real 3 EPA",
+          "colorScale": "epa3",
+          "format": "one"
+        },
+        {
+          "key": "auto",
+          "label": "Auto Points",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "tele",
+          "label": "Tele Points",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "consistency",
+          "label": "Cnstcy",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "coral",
+          "label": "Coral Focus",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "algae",
+          "label": "Algae Focus",
+          "colorScale": "normal",
+          "format": "three"
+        },
+        {
+          "key": "realDefense",
+          "label": "Avg Defense Rating",
+          "colorScale": "defense",
+          "format": "one"
+        },
+        {
+          "key": "breakdown",
+          "label": "Break %",
+          "colorScale": "inverse",
+          "format": "breakdownPercent"
+        },
+        {
+          "key": "realAvgCoral",
+          "label": "Avg Coral",
+          "colorScale": "avgCoral",
+          "format": "one"
+        },
+        {
+          "key": "realAvgNet",
+          "label": "Avg Net",
+          "colorScale": "avgNet",
+          "format": "one"
+        },
+        {
+          "key": "realAvgProcessor",
+          "label": "Avg Prcsr",
+          "colorScale": "avgProcessor",
+          "format": "one"
+        }
       ],
       "scatterPlot": {
         "xAxis": {
           "label": "Total Coral",
-          "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"]
+          "fields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success",
+            "telel1success",
+            "telel2success",
+            "telel3success",
+            "telel4success"
+          ]
         },
         "yAxis": {
           "label": "Total Algae",
-          "fields": ["autoprocessorsuccess", "autonetsuccess", "teleprocessorsuccess", "telenetsuccess"]
+          "fields": [
+            "autoprocessorsuccess",
+            "autonetsuccess",
+            "teleprocessorsuccess",
+            "telenetsuccess"
+          ]
         }
       },
       "computedMetrics": [
@@ -598,56 +1611,137 @@
           "key": "cage",
           "type": "endgameMapping",
           "field": "endlocation",
-          "mapping": { "2": 6, "3": 12 },
+          "mapping": {
+            "2": 6,
+            "3": 12
+          },
           "default": 0
         },
         {
           "key": "avgCoral",
           "type": "sumFields",
-          "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"]
+          "fields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success",
+            "telel1success",
+            "telel2success",
+            "telel3success",
+            "telel4success"
+          ]
         },
         {
           "key": "avgNet",
           "type": "sumFields",
-          "fields": ["autonetsuccess", "telenetsuccess"]
+          "fields": [
+            "autonetsuccess",
+            "telenetsuccess"
+          ]
         },
         {
           "key": "avgProcessor",
           "type": "sumFields",
-          "fields": ["autoprocessorsuccess", "teleprocessorsuccess"]
+          "fields": [
+            "autoprocessorsuccess",
+            "teleprocessorsuccess"
+          ]
         },
         {
           "key": "coral",
           "type": "successRate",
-          "successFields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"],
-          "failFields": ["autol1fail", "autol2fail", "autol3fail", "autol4fail", "telel1fail", "telel2fail", "telel3fail", "telel4fail"]
+          "successFields": [
+            "autol1success",
+            "autol2success",
+            "autol3success",
+            "autol4success",
+            "telel1success",
+            "telel2success",
+            "telel3success",
+            "telel4success"
+          ],
+          "failFields": [
+            "autol1fail",
+            "autol2fail",
+            "autol3fail",
+            "autol4fail",
+            "telel1fail",
+            "telel2fail",
+            "telel3fail",
+            "telel4fail"
+          ]
         },
         {
           "key": "algae",
           "type": "successRate",
-          "successFields": ["autoprocessorsuccess", "teleprocessorsuccess", "autonetsuccess", "telenetsuccess"],
-          "failFields": ["autoprocessorfail", "teleprocessorfail", "autonetfail", "telenetfail"]
+          "successFields": [
+            "autoprocessorsuccess",
+            "teleprocessorsuccess",
+            "autonetsuccess",
+            "telenetsuccess"
+          ],
+          "failFields": [
+            "autoprocessorfail",
+            "teleprocessorfail",
+            "autonetfail",
+            "telenetfail"
+          ]
         }
       ],
       "defenseField": "defenseplayed"
     },
-
     "compare": {
       "metricsChart": [
-        { "key": "avgEpa", "label": "EPA" },
-        { "key": "last3Epa", "label": "Last 3 EPA" },
-        { "key": "avgAuto", "label": "Auto" },
-        { "key": "avgTele", "label": "Teleop" },
-        { "key": "avgEnd", "label": "Endgame" }
+        {
+          "key": "avgEpa",
+          "label": "EPA"
+        },
+        {
+          "key": "last3Epa",
+          "label": "Last 3 EPA"
+        },
+        {
+          "key": "avgAuto",
+          "label": "Auto"
+        },
+        {
+          "key": "avgTele",
+          "label": "Teleop"
+        },
+        {
+          "key": "avgEnd",
+          "label": "Endgame"
+        }
       ],
       "scoringChart": [
-        { "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" },
-        { "key": "net", "label": "Net", "compute": "auto.algae.avgNet + tele.algae.avgNet" },
-        { "key": "processor", "label": "Processor", "compute": "auto.algae.avgProcessor + tele.algae.avgProcessor" },
-        { "key": "algae", "label": "Algae", "compute": "auto.algae.removed + tele.algae.removed" }
+        {
+          "key": "coral",
+          "label": "Coral",
+          "compute": "auto.coral.total + tele.coral.total"
+        },
+        {
+          "key": "net",
+          "label": "Net",
+          "compute": "auto.algae.avgNet + tele.algae.avgNet"
+        },
+        {
+          "key": "processor",
+          "label": "Processor",
+          "compute": "auto.algae.avgProcessor + tele.algae.avgProcessor"
+        },
+        {
+          "key": "algae",
+          "label": "Algae",
+          "compute": "auto.algae.removed + tele.algae.removed"
+        }
       ],
       "coralLevelChart": {
-        "levels": ["L1", "L2", "L3", "L4"],
+        "levels": [
+          "L1",
+          "L2",
+          "L3",
+          "L4"
+        ],
         "autoPrefix": "auto.coral.avg",
         "telePrefix": "tele.coral.avg",
         "failMetric": {
@@ -657,36 +1751,125 @@
         }
       },
       "endgameChart": {
-        "metrics": ["None", "Park", "Shallow", "Deep", "Fail"],
-        "keys": ["none", "park", "shallow", "deep", "fail"],
+        "metrics": [
+          "None",
+          "Park",
+          "Shallow",
+          "Deep",
+          "Fail"
+        ],
+        "keys": [
+          "none",
+          "park",
+          "shallow",
+          "deep",
+          "fail"
+        ],
         "endgameSource": "endPlacement",
         "fallbackSource": "endgame"
       },
       "defenseField": "defenseplayed"
     },
-
     "qual": {
       "qualitativeFields": [
-        { "name": "maneuverability", "label": "Maneuverability" },
-        { "name": "defensePlayed", "label": "Defense Played" },
-        { "name": "defenseEvasion", "label": "Defense Evasion" },
-        { "name": "aggression", "label": "Aggression" }
+        {
+          "name": "maneuverability",
+          "label": "Maneuverability"
+        },
+        {
+          "name": "defensePlayed",
+          "label": "Defense Played"
+        },
+        {
+          "name": "defenseEvasion",
+          "label": "Defense Evasion"
+        },
+        {
+          "name": "aggression",
+          "label": "Aggression"
+        }
       ],
       "checkboxFields": [
-        { "name": "breakdown", "label": "Broke Down", "commentField": "breakdownComments", "commentLabel": "Breakdown Comments" },
-        { "name": "defense", "label": "Played Defense", "commentField": "defenseComments", "commentLabel": "Defense Comments" }
+        {
+          "name": "breakdown",
+          "label": "Broke Down",
+          "commentField": "breakdownComments",
+          "commentLabel": "Breakdown Comments"
+        },
+        {
+          "name": "defense",
+          "label": "Played Defense",
+          "commentField": "defenseComments",
+          "commentLabel": "Defense Comments"
+        }
       ],
       "commentFields": [
-        { "name": "generalComments", "label": "General Comments" }
+        {
+          "name": "generalComments",
+          "label": "General Comments"
+        }
       ],
-      "qrFieldOrder": ["scoutname", "scoutteam", "match", "team", "noShow", "maneuverability", "defensePlayed", "defenseEvasion", "aggression", "breakdown", "breakdownComments", "defense", "defenseComments", "generalComments"]
+      "qrFieldOrder": [
+        "scoutname",
+        "scoutteam",
+        "match",
+        "team",
+        "noShow",
+        "maneuverability",
+        "defensePlayed",
+        "defenseEvasion",
+        "aggression",
+        "breakdown",
+        "breakdownComments",
+        "defense",
+        "defenseComments",
+        "generalComments"
+      ]
     },
-
     "apiAggregation": {
-      "booleanFields": ["noshow", "leave", "breakdown", "defense", "cageattempt"],
-      "textFields": ["scoutname", "generalcomments", "breakdowncomments", "defensecomments"],
-      "qualitativeFields": ["coralspeed", "processorspeed", "netspeed", "algaeremovalspeed", "climbspeed", "maneuverability", "defenseplayed", "defenseevasion", "aggression", "cagehazard"],
-      "booleanIntakeFields": ["coralgrndintake", "coralstationintake", "algaegrndintake", "algaelowreefintake", "algaehighreefintake", "lollipop"],
+      "breakdownField": "breakdown",
+      "defenseField": "defense",
+      "successFailPairs": [
+        {
+          "phase": "tele",
+          "key": "Hp",
+          "successField": "hpsuccess",
+          "failField": "hpfail"
+        }
+      ],
+      "booleanFields": [
+        "noshow",
+        "leave",
+        "breakdown",
+        "defense",
+        "cageattempt"
+      ],
+      "textFields": [
+        "scoutname",
+        "generalcomments",
+        "breakdowncomments",
+        "defensecomments"
+      ],
+      "qualitativeFields": [
+        "coralspeed",
+        "processorspeed",
+        "netspeed",
+        "algaeremovalspeed",
+        "climbspeed",
+        "maneuverability",
+        "defenseplayed",
+        "defenseevasion",
+        "aggression",
+        "cagehazard"
+      ],
+      "booleanIntakeFields": [
+        "coralgrndintake",
+        "coralstationintake",
+        "algaegrndintake",
+        "algaelowreefintake",
+        "algaehighreefintake",
+        "lollipop"
+      ],
       "endgameConfig": {
         "field": "endlocation",
         "valueMapping": {
@@ -698,15 +1881,65 @@
         }
       },
       "alliancePiecePlacement": [
-        { "key": "L1", "fields": ["autol1success", "telel1success"] },
-        { "key": "L2", "fields": ["autol2success", "telel2success"] },
-        { "key": "L3", "fields": ["autol3success", "telel3success"] },
-        { "key": "L4", "fields": ["autol4success", "telel4success"] },
-        { "key": "net", "fields": ["autoprocessorsuccess", "teleprocessorsuccess"] },
-        { "key": "processor", "fields": ["autonetsuccess", "telenetsuccess"] },
-        { "key": "HP", "fields": ["hpsuccess"] }
+        {
+          "key": "L1",
+          "fields": [
+            "autol1success",
+            "telel1success"
+          ]
+        },
+        {
+          "key": "L2",
+          "fields": [
+            "autol2success",
+            "telel2success"
+          ]
+        },
+        {
+          "key": "L3",
+          "fields": [
+            "autol3success",
+            "telel3success"
+          ]
+        },
+        {
+          "key": "L4",
+          "fields": [
+            "autol4success",
+            "telel4success"
+          ]
+        },
+        {
+          "key": "net",
+          "fields": [
+            "autoprocessorsuccess",
+            "teleprocessorsuccess"
+          ]
+        },
+        {
+          "key": "processor",
+          "fields": [
+            "autonetsuccess",
+            "telenetsuccess"
+          ]
+        },
+        {
+          "key": "HP",
+          "fields": [
+            "hpsuccess"
+          ]
+        }
       ],
-      "removedAlgaeFields": ["autoalgaeremoved", "telealgaeremoved"]
+      "customSumFields": [
+        {
+          "key": "removedAlgae",
+          "fields": [
+            "autoalgaeremoved",
+            "telealgaeremoved"
+          ]
+        }
+      ],
+      "leaveField": "leave"
     }
   }
 }

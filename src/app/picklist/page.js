@@ -5,52 +5,7 @@ import { Fragment, useEffect, useState, useRef, memo, useMemo } from "react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, Legend, ResponsiveContainer } from 'recharts';
 import useGameConfig from "../../lib/useGameConfig";
 
-// ── Hardcoded Reefscape defaults (used when config is not yet loaded) ──
 
-const DEFAULT_WEIGHTS = [
-  { key: "epa", label: "EPA" },
-  { key: "epa3", label: "3 EPA" },
-  { key: "auto", label: "Auto Pts" },
-  { key: "tele", label: "Tele Pts" },
-  { key: "consistency", label: "Cnstcy" },
-  { key: "coral", label: "Coral Focus" },
-  { key: "algae", label: "Algae Focus" },
-  { key: "defense", label: "Defense" },
-  { key: "breakdown", label: "Break %", inverted: true },
-  { key: "avgCoral", label: "Avg Coral" },
-  { key: "avgNet", label: "Avg Net" },
-  { key: "avgProcessor", label: "Avg Prcsr" },
-];
-
-const DEFAULT_TABLE_COLUMNS = [
-  { key: "epa", label: "Norm EPA", colorScale: "normal", format: "three" },
-  { key: "realEpa", label: "Real EPA", colorScale: "epa", format: "one" },
-  { key: "epa3", label: "Norm 3 EPA", colorScale: "normal", format: "three" },
-  { key: "realEpa3", label: "Real 3 EPA", colorScale: "epa3", format: "one" },
-  { key: "auto", label: "Auto Points", colorScale: "normal", format: "three" },
-  { key: "tele", label: "Tele Points", colorScale: "normal", format: "three" },
-  { key: "consistency", label: "Cnstcy", colorScale: "normal", format: "three" },
-  { key: "coral", label: "Coral Focus", colorScale: "normal", format: "three" },
-  { key: "algae", label: "Algae Focus", colorScale: "normal", format: "three" },
-  { key: "realDefense", label: "Avg Defense Rating", colorScale: "defense", format: "one" },
-  { key: "breakdown", label: "Break %", colorScale: "inverse", format: "breakdownPercent" },
-  { key: "realAvgCoral", label: "Avg Coral", colorScale: "avgCoral", format: "one" },
-  { key: "realAvgNet", label: "Avg Net", colorScale: "avgNet", format: "one" },
-  { key: "realAvgProcessor", label: "Avg Prcsr", colorScale: "avgProcessor", format: "one" },
-];
-
-const DEFAULT_SCATTER_PLOT = {
-  xAxis: {
-    label: "Total Coral",
-    fields: ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"],
-  },
-  yAxis: {
-    label: "Total Algae",
-    fields: ["autoprocessorsuccess", "autonetsuccess", "teleprocessorsuccess", "telenetsuccess"],
-  },
-};
-
-const DEFAULT_DEFENSE_FIELD = "defenseplayed";
 
 // Custom tooltip component for scatter plot
 const CustomTooltip = ({ active, payload, xLabel, yLabel }) => {
@@ -73,8 +28,8 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
   const [teamHighlight, setTeamHighlight] = useState('');
   const [highlightedTeams, setHighlightedTeams] = useState([]);
 
-  const xLabel = scatterConfig?.xAxis?.label || DEFAULT_SCATTER_PLOT.xAxis.label;
-  const yLabel = scatterConfig?.yAxis?.label || DEFAULT_SCATTER_PLOT.yAxis.label;
+  const xLabel = scatterConfig?.xAxis?.label || 'X';
+  const yLabel = scatterConfig?.yAxis?.label || 'Y';
   const title = `${xLabel.replace('Total ', '')} vs ${yLabel.replace('Total ', '')} Scoring`;
 
   // Update highlighted teams when the input changes
@@ -202,7 +157,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
   if (!prevProps.teamData && nextProps.teamData) return false;
   if (!nextProps.teamData && prevProps.teamData) return false;
   if (prevProps.teamData && nextProps.teamData &&
-      prevProps.teamData.length !== nextProps.teamData.length) return false;
+    prevProps.teamData.length !== nextProps.teamData.length) return false;
 
   // Re-render if scatter config changes
   if (prevProps.scatterConfig !== nextProps.scatterConfig) return false;
@@ -212,7 +167,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
 });
 
 export default function Picklist() {
-  const { config } = useGameConfig();
+  const { config, loading: configLoading } = useGameConfig();
 
   const [fields, setFields] = useState([]);
   const [picklist, setPicklist] = useState([]);
@@ -234,12 +189,14 @@ export default function Picklist() {
 
   const greenToRedColors = ["#9ADC83", "#BECC72", "#E1BB61", "#F0A56C", "#FF8E76"];
 
-  // ── Derive picklist config from game config, falling back to defaults ──
+  // ── Derive picklist config from game config ──
 
   const picklistConfig = config?.display?.picklist || {};
-  const weightsConfig = picklistConfig.weights || DEFAULT_WEIGHTS;
-  const tableColumnsConfig = picklistConfig.tableColumns || DEFAULT_TABLE_COLUMNS;
-  const scatterConfig = picklistConfig.scatterPlot || DEFAULT_SCATTER_PLOT;
+
+
+  const weightsConfig = picklistConfig.weights || [];
+  const tableColumnsConfig = picklistConfig.tableColumns || [];
+  const scatterConfig = picklistConfig.scatterPlot || {};
 
   // Function to process raw match data into scatter plot data
   function processTeamData(rows) {
@@ -251,8 +208,8 @@ export default function Picklist() {
 
     console.log('Sample data row:', JSON.stringify(rows[0]));
 
-    const xFields = scatterConfig.xAxis?.fields || DEFAULT_SCATTER_PLOT.xAxis.fields;
-    const yFields = scatterConfig.yAxis?.fields || DEFAULT_SCATTER_PLOT.yAxis.fields;
+    const xFields = scatterConfig.xAxis?.fields || [];
+    const yFields = scatterConfig.yAxis?.fields || [];
 
     // Group by team
     const teamMap = {};
@@ -425,7 +382,7 @@ export default function Picklist() {
           urlAlliances[allianceNumber] = [];
         }
         urlAlliances[allianceNumber][parseInt(teamPosition) - 1] = value;
-        urlTeamsToExclude[((allianceNumber - 1) * 4) + (teamPosition-1)] = +value;
+        urlTeamsToExclude[((allianceNumber - 1) * 4) + (teamPosition - 1)] = +value;
       } else if (key.startsWith('T') && key.includes('A')) {
         // Format: T1A1 (Alliance 1, Position 1 is team 341)
         const matches = key.match(/T(\d+)A(\d+)/);
@@ -437,7 +394,7 @@ export default function Picklist() {
             urlAlliances[allianceNumber] = [];
           }
           urlAlliances[allianceNumber][parseInt(position) - 1] = value;
-          urlTeamsToExclude[((allianceNumber - 1) * 4) + (parseInt(position)-1)] = +value;
+          urlTeamsToExclude[((allianceNumber - 1) * 4) + (parseInt(position) - 1)] = +value;
         }
       }
     }
@@ -518,6 +475,16 @@ export default function Picklist() {
       setTeamData([]);
     }
   }, [isAuthenticated]);
+
+  // Guard: if no picklist config, show fallback (must be after all hooks)
+  if (!configLoading && !picklistConfig.weights) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
+        <h2>Picklist Not Configured</h2>
+        <p>Add a &quot;picklist&quot; section to your game config&apos;s display settings.</p>
+      </div>
+    );
+  }
 
   async function recalculate(event) {
     // Don't block based on client-side authentication state
@@ -872,36 +839,36 @@ export default function Picklist() {
         <h1>Picklist</h1>
         <div className={styles.picklistTableContainer}>
           <table className={styles.picklistTable} id="teamTable">
-          <thead>
-          <tr>
-            <th>Picklist Rank</th>
-            <th>TBA Rank</th>
-            <th>Team</th>
-            {tableColumnsConfig.map((col) => (
-              <th key={col.key}>{col.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-            {picklist.map((teamData, index) => {
-              if (teamsToExclude.includes(teamData.team)) {
-                return <tr key={teamData.team} style={{display: "none"}}></tr>
-              } else {
-                const displayRank = `#${index + 1}`;
-                const tbaRank = (teamData.tbaRank !== -1 ? `${teamData.tbaRank}` : "");
+            <thead>
+              <tr>
+                <th>Picklist Rank</th>
+                <th>TBA Rank</th>
+                <th>Team</th>
+                {tableColumnsConfig.map((col) => (
+                  <th key={col.key}>{col.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {picklist.map((teamData, index) => {
+                if (teamsToExclude.includes(teamData.team)) {
+                  return <tr key={teamData.team} style={{ display: "none" }}></tr>
+                } else {
+                  const displayRank = `#${index + 1}`;
+                  const tbaRank = (teamData.tbaRank !== -1 ? `${teamData.tbaRank}` : "");
 
-                return (
-                  <tr key={teamData.team}>
-                    <td>
-                      <div className={styles.picklistRank}>
-                        {displayRank}
-                      </div>
-                    </td>
+                  return (
+                    <tr key={teamData.team}>
+                      <td>
+                        <div className={styles.picklistRank}>
+                          {displayRank}
+                        </div>
+                      </td>
                       <td>#{tbaRank}</td>
                       <td><a href={`/team-view?team=${teamData.team}`}>{teamData.team}
                         {teamRatings[teamData.team] === true && '\u2705'}
                         {teamRatings[teamData.team] === false && '\u274C'}
-                        </a>
+                      </a>
                       </td>
                       {tableColumnsConfig.map((col) => (
                         <td key={col.key} style={{ backgroundColor: getColor(col, teamData) }}>
@@ -950,11 +917,11 @@ export default function Picklist() {
       <form onSubmit={handleMatchViewSubmit}>
         <div className={styles.allianceMatchView}>
           <div className={styles.red}>
-            <label style={{color: "red"}} htmlFor="redAlliance">Red:</label>
+            <label style={{ color: "red" }} htmlFor="redAlliance">Red:</label>
             <input className={styles.redInput} name="redAlliance" type="number" min="1" max="8" />
           </div>
           <div className={styles.blue}>
-            <label style={{color: "blue"}} htmlFor="blueAlliance">Blue:</label>
+            <label style={{ color: "blue" }} htmlFor="blueAlliance">Blue:</label>
             <input className={styles.blueInput} name="blueAlliance" type="number" min="1" max="8" />
           </div>
           <button type="submit">Go!</button>
@@ -1036,7 +1003,7 @@ export default function Picklist() {
                   </table>
                 </div>
               </form>
-              <AllianceMatchView/>
+              <AllianceMatchView />
             </div>
           </div>
         </div>

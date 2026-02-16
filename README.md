@@ -1013,7 +1013,7 @@ Total EPA is computed as: `auto + tele + end`
 
 ## Display Configuration
 
-The `display` object configures how data is shown in team views and match views.
+The `display` object configures how data is shown across all display pages. **All display pages render entirely from this config** — if a section is missing, the page shows a "not configured" fallback.
 
 ### Structure
 
@@ -1021,7 +1021,10 @@ The `display` object configures how data is shown in team views and match views.
 {
   "display": {
     "teamView": { ... },
-    "matchView": { ... }
+    "matchView": { ... },
+    "picklist": { ... },
+    "compare": { ... },
+    "apiAggregation": { ... }
   }
 }
 ```
@@ -1033,29 +1036,40 @@ The `display` object configures how data is shown in team views and match views.
   "teamView": {
     "epaBreakdown": ["auto", "tele", "end"],
     "piecePlacement": {
+      "bars": [
+        { "label": "L4", "autoField": "autol4success", "teleField": "telel4success" },
+        { "label": "HP", "teleField": "hpsuccess" }
+      ],
       "coral": {
         "levels": ["L1", "L2", "L3", "L4"],
-        "autoFields": ["autol1success", "autol2success", "autol3success", "autol4success"],
-        "teleFields": ["telel1success", "telel2success", "telel3success", "telel4success"]
+        "autoFields": [...], "teleFields": [...],
+        "autoFailFields": [...], "teleFailFields": [...]
       },
       "algae": {
-        "autoFields": ["autoprocessorsuccess", "autonetsuccess", "autoalgaeremoved"],
-        "teleFields": ["teleprocessorsuccess", "telenetsuccess", "telealgaeremoved"]
+        "autoFields": [...], "teleFields": [...],
+        "autoFailFields": [...], "teleFailFields": [...],
+        "metrics": [
+          { "key": "Processor", "type": "successFail", "fieldIndex": 0, "failIndex": 0 },
+          { "key": "Net", "type": "successFail", "fieldIndex": 1, "failIndex": 1 },
+          { "key": "removed", "type": "count", "fieldIndex": 2 }
+        ]
       }
     },
     "endgamePie": {
       "field": "endlocation",
-      "labels": ["None", "Park", "Fail+Park", "Shallow", "Deep"],
-      "values": [0, 1, 2, 3, 4]
+      "labels": ["None", "Park", "Shallow", "Deep"],
+      "values": [0, 1, 2, 3]
     },
-    "comments": ["generalcomments", "breakdowncomments", "defensecomments"],
+    "comments": ["generalcomments", "breakdowncomments"],
+    "commentFields": [
+      { "field": "generalcomments", "dataKey": "generalComments", "title": "General Comments" },
+      { "field": "breakdowncomments", "dataKey": "breakdownComments", "title": "Breakdown Comments" }
+    ],
     "intakeDisplay": [
-      { "category": "Coral Intake", "fields": ["coralgrndintake", "coralstationintake"], "labels": ["Ground", "Station"] },
-      { "category": "Algae Intake", "fields": ["algaegrndintake", "algaehighreefintake"], "labels": ["Ground", "High Reef"] }
+      { "category": "Coral Intake", "fields": ["coralgrndintake"], "labels": ["Ground"] }
     ],
     "qualitativeDisplay": [
       { "name": "coralspeed", "label": "Coral Speed" },
-      { "name": "driverskill", "label": "Driver Skill" },
       { "name": "aggression", "label": "Aggression", "inverted": true }
     ]
   }
@@ -1067,11 +1081,17 @@ The `display` object configures how data is shown in team views and match views.
 | Property | Description |
 |----------|-------------|
 | `epaBreakdown` | Which calculations to show in EPA charts |
-| `piecePlacement` | Configure game piece scoring displays |
+| `piecePlacement.bars` | Bar chart entries, each with `label`, `autoField`, and/or `teleField` |
+| `piecePlacement.{group}.metrics` | Explicit metric definitions for secondary stat groups (avoids string matching) |
 | `endgamePie` | Configure endgame pie chart |
-| `comments` | Which comment fields to display |
+| `comments` | Which comment fields to display (legacy) |
+| `commentFields` | Explicit comment field mapping with `field`, `dataKey`, and `title` |
 | `intakeDisplay` | How to group and display intake capabilities |
 | `qualitativeDisplay` | Which qualitative ratings to show |
+
+**Metrics types:**
+- `successFail` — Computes `avg{Key}` and `success{Key}` from success/fail field pairs
+- `count` — Computes a simple average count as `{key}`
 
 ### Match View Configuration
 
@@ -1080,20 +1100,164 @@ The `display` object configures how data is shown in team views and match views.
   "matchView": {
     "allianceMetrics": ["auto", "tele", "end"],
     "keyStats": [
-      { "label": "Leave %", "field": "leave", "type": "percentage" },
-      { "label": "Avg Coral", "type": "sum", "fields": ["autol1success", "autol2success", "autol3success", "autol4success", "telel1success", "telel2success", "telel3success", "telel4success"] },
-      { "label": "Breakdown %", "field": "breakdown", "type": "percentage" }
+      { "label": "Auto Climb", "field": "autoclimb", "type": "percentage" },
+      { "label": "Avg Fuel", "type": "sum", "fields": ["autofuelsuccess", "telefuelsuccess"] }
+    ],
+    "rankingPoints": [
+      { "label": "RP", "type": "allFieldsAndThreshold", "minCoral": 15, "leaveField": "leave", "coralField": "autoCoral" }
     ]
   }
 }
 ```
 
-**Key Stats Types:**
-- `percentage` - Shows boolean field as a percentage (e.g., "Leave %" = times left / total matches)
-- `sum` - Adds up multiple fields
-- `average` - Averages a field across matches
+### Picklist Configuration
+
+```json
+{
+  "picklist": {
+    "weights": [
+      { "key": "avgEpa", "label": "EPA", "default": 1.0 },
+      { "key": "avgAuto", "label": "Auto", "default": 0.5 }
+    ],
+    "tableColumns": [
+      { "key": "avgEpa", "label": "EPA" },
+      { "key": "consistency", "label": "Cnstcy" }
+    ],
+    "scatterPlot": {
+      "xAxis": { "label": "Auto", "fields": ["avgAuto"] },
+      "yAxis": { "label": "Tele", "fields": ["avgTele"] }
+    },
+    "consistencyMetricKey": "mainCycleMetric" // Optional: key to use for consistency calc
+  }
+}
+```
+
+### Compare Configuration
+
+```json
+{
+  "compare": {
+    "metrics": [
+      { "key": "avgEpa", "label": "EPA", "format": "decimal" }
+    ],
+    "scorePrediction": {
+      "auto": ["avgAuto"],
+      "tele": ["avgTele"],
+      "end": ["avgEnd"]
+    },
+    "endgameChart": { ... },
+    "coralLevelChart": { ... }
+  }
+}
+```
+
+### API Aggregation Configuration
+
+This section controls how raw data is processed into team stats.
+
+```json
+{
+  "apiAggregation": {
+    "breakdownField": "breakdown",
+    "defenseField": "defenseplayed",
+    "leaveField": "leave",
+    "successFailPairs": [
+      { "key": "Fuel", "phase": "tele", "successField": "telefuelsuccess", "failField": "telefuelfail" }
+    ],
+    "customSumFields": [
+      { "key": "totalGamePieces", "fields": ["autopieces", "telepieces"] }
+    ],
+    "endgameConfig": {
+      "field": "endlocation",
+      "valueMapping": { "0": "None", "1": "Park", ... }
+    },
+    "qualitativeFields": ["speed", "accuracy"]
+  }
+}
+```
+    "allianceMetrics": ["auto", "tele", "end"],
+    "epaBreakdown": ["auto", "tele", "end"],
+    "piecePlacement": {
+      "bars": [{ "label": "L4", "key": "L4" }]
+    },
+    "endgamePie": { "field": "endlocation", "labels": [...], "keys": [...] },
+    "qualitativeFields": ["coralspeed", "maneuverability"],
+    "defenseBarField": "defenseplayed",
+    "rankingPoints": [
+      { "label": "Auto", "type": "allLeaveAndCoral", "leaveField": "leave", "coralFields": [...] }
+    ]
+  }
+}
+```
+
+### Picklist Configuration
+
+```json
+{
+  "picklist": {
+    "weights": [
+      { "key": "epa", "label": "EPA" },
+      { "key": "consistency", "label": "Cnstcy" },
+      { "key": "breakdown", "label": "Break %", "inverted": true }
+    ],
+    "tableColumns": [
+      { "key": "epa", "label": "Norm EPA", "colorScale": "normal", "format": "three" },
+      { "key": "realEpa", "label": "Real EPA", "colorScale": "epa", "format": "one" }
+    ],
+    "scatterPlot": {
+      "xAxis": { "label": "Total Coral", "fields": ["autol1success", "telel1success"] },
+      "yAxis": { "label": "Total Algae", "fields": ["autoprocessorsuccess"] }
+    },
+    "defenseField": "defenseplayed"
+  }
+}
+```
+
+### Compare Configuration
+
+```json
+{
+  "compare": {
+    "metricsChart": [{ "key": "avgEpa", "label": "EPA" }],
+    "scoringChart": [{ "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" }],
+    "coralLevelChart": { "levels": ["L1"], "autoPrefix": "auto.coral.avg", "telePrefix": "tele.coral.avg" },
+    "endgameChart": { "metrics": ["None", "Park"], "keys": ["none", "park"] },
+    "defenseField": "defenseplayed"
+  }
+}
+```
+
+### API Aggregation Configuration
+
+Controls how raw scouting data is aggregated by the display engine.
+
+```json
+{
+  "apiAggregation": {
+    "breakdownField": "breakdown",
+    "defenseField": "defense",
+    "successFailPairs": [
+      { "phase": "tele", "key": "Hp", "successField": "hpsuccess", "failField": "hpfail" }
+    ],
+    "booleanFields": ["noshow", "leave", "breakdown"],
+    "textFields": ["scoutname", "generalcomments"],
+    "qualitativeFields": ["coralspeed", "maneuverability"],
+    "booleanIntakeFields": ["coralgrndintake"]
+  }
+}
+```
+
+| Property | Description |
+|----------|-------------|
+| `breakdownField` | Boolean field used to detect breakdown matches (for consistency calc) |
+| `defenseField` | Boolean field used to detect defense matches (for defense % calc) |
+| `successFailPairs` | Generic success/fail metric pairs to aggregate, each with `phase`, `key`, `successField`, `failField` |
+| `booleanFields` | Fields to aggregate as boolean percentages |
+| `textFields` | Text fields not aggregated numerically |
+| `qualitativeFields` | Fields aggregated as qualitative ratings |
 
 ---
+
 
 ## Reserved Field Names
 

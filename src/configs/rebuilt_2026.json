@@ -1,0 +1,664 @@
+{
+  "gameName": "rebuilt_2026",
+  "displayName": "REBUILT 2026",
+  "formTitle": "5895 SKOUTER",
+  "version": "1.0",
+  "basics": {
+    "description": "Pre-match fields displayed at the top of the form",
+    "fields": [
+      {
+        "type": "checkbox",
+        "name": "noshow",
+        "label": "No Show",
+        "hidesForm": true,
+        "dbColumn": {
+          "type": "BOOLEAN",
+          "default": false
+        }
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "auto",
+      "header": "Auto",
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
+      "fields": [
+        {
+          "type": "counter",
+          "name": "autofuelsuccess",
+          "subHeader": "Fuel Scored",
+          "variant": "Success",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
+        },
+        {
+          "type": "counter",
+          "name": "autofuelfail",
+          "subHeader": "Fuel Missed",
+          "variant": "Fail",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
+        },
+        {
+          "type": "singleSelect",
+          "name": "autoclimb",
+          "label": "Auto Climb",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          },
+          "options": [
+            {
+              "value": 0,
+              "label": "None",
+              "default": true
+            },
+            {
+              "value": 1,
+              "label": "Level 1 (15 pts)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tele",
+      "header": "Tele",
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
+      "fields": [
+        {
+          "type": "counter",
+          "name": "telefuelsuccess",
+          "subHeader": "Fuel Scored",
+          "variant": "Success",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
+        },
+        {
+          "type": "counter",
+          "name": "telefuelfail",
+          "subHeader": "Fuel Missed",
+          "variant": "Fail",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          }
+        },
+        {
+          "type": "table",
+          "id": "teleHPTable",
+          "subHeader": "Human Player",
+          "columns": [
+            "",
+            "Success",
+            "Fail",
+            ""
+          ],
+          "rows": [
+            {
+              "label": "",
+              "fields": [
+                {
+                  "type": "counter",
+                  "name": "hpsuccess",
+                  "variant": "Success",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                },
+                {
+                  "type": "counter",
+                  "name": "hpfail",
+                  "variant": "Fail",
+                  "dbColumn": {
+                    "type": "INTEGER",
+                    "default": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "comment",
+          "name": "generalcomments",
+          "label": "General Comments",
+          "dbColumn": {
+            "type": "TEXT",
+            "default": null
+          }
+        },
+        {
+          "type": "collapsible",
+          "id": "defenseSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "defense",
+            "label": "Playing Defense?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "comment",
+              "name": "defensecomments",
+              "label": "Defense Elaboration",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            },
+            {
+              "type": "starRating",
+              "name": "defenseplayed",
+              "label": "Defense Played",
+              "description": "Ability to Play Defense",
+              "max": 6,
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "endgame",
+      "header": "Endgame",
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
+      "fields": [
+        {
+          "type": "singleSelect",
+          "name": "endlocation",
+          "label": "Tower Climb",
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": 0
+          },
+          "options": [
+            {
+              "value": 0,
+              "label": "None",
+              "default": true
+            },
+            {
+              "value": 1,
+              "label": "Level 1 (10 pts)"
+            },
+            {
+              "value": 2,
+              "label": "Level 2 (20 pts)"
+            },
+            {
+              "value": 3,
+              "label": "Level 3 (30 pts)"
+            },
+            {
+              "value": 4,
+              "label": "Failed Climb"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postMatch",
+      "header": "Post-Match",
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
+      "fields": [
+        {
+          "type": "multiSelect",
+          "subHeader": "Intake",
+          "name": "intakeOptions",
+          "options": [
+            {
+              "name": "fuelgrndintake",
+              "label": "Fuel Ground",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "fueldepotintake",
+              "label": "Fuel Depot",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "fueloutpostintake",
+              "label": "Fuel Outpost (HP)",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            }
+          ]
+        },
+        {
+          "type": "multiSelect",
+          "subHeader": "Field Traversal",
+          "name": "traversalOptions",
+          "options": [
+            {
+              "name": "usesbump",
+              "label": "Uses Bump",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "usestrench",
+              "label": "Uses Trench",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            }
+          ]
+        },
+        {
+          "type": "collapsible",
+          "id": "breakdownSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "breakdown",
+            "label": "Broke down?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "comment",
+              "name": "breakdowncomments",
+              "label": "Breakdown Elaboration",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qualitative",
+      "header": "Qualitative Ratings",
+      "showWhen": {
+        "field": "noshow",
+        "equals": false
+      },
+      "hidden": true,
+      "description": "These fields are for internal tracking and not shown on the main form",
+      "fields": [
+        {
+          "type": "starRating",
+          "name": "shootingspeed",
+          "label": "Shooting Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "shootingaccuracy",
+          "label": "Shooting Accuracy",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "intakespeed",
+          "label": "Intake Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "climbspeed",
+          "label": "Climb Speed",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "maneuverability",
+          "label": "Maneuverability",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "defenseevasion",
+          "label": "Defense Evasion",
+          "max": 6,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "aggression",
+          "label": "Aggression",
+          "max": 6,
+          "inverted": true,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        }
+      ]
+    }
+  ],
+  "calculations": {
+    "auto": {
+      "formula": "autofuelsuccess + (autoclimb==1?15:0)",
+      "fields": [
+        "autofuelsuccess",
+        "autoclimb"
+      ]
+    },
+    "tele": {
+      "formula": "telefuelsuccess + hpsuccess",
+      "fields": [
+        "telefuelsuccess",
+        "hpsuccess"
+      ]
+    },
+    "end": {
+      "type": "mapping",
+      "field": "endlocation",
+      "mapping": {
+        "0": 0,
+        "1": 10,
+        "2": 20,
+        "3": 30,
+        "4": 0
+      }
+    }
+  },
+  "display": {
+    "teamView": {
+      "epaBreakdown": [
+        "auto",
+        "tele",
+        "end"
+      ],
+      "commentFields": [
+        {
+          "field": "generalcomments",
+          "dataKey": "generalComments",
+          "title": "General Comments"
+        },
+        {
+          "field": "breakdowncomments",
+          "dataKey": "breakdownComments",
+          "title": "Breakdown Comments"
+        },
+        {
+          "field": "defensecomments",
+          "dataKey": "defenseComments",
+          "title": "Defense Comments"
+        }
+      ],
+      "comments": [
+        "generalcomments",
+        "breakdowncomments",
+        "defensecomments"
+      ],
+      "endgamePie": {
+        "field": "endlocation",
+        "labels": [
+          "None",
+          "L1",
+          "L2",
+          "L3",
+          "Failed"
+        ],
+        "values": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "endgameStats": {
+        "cageAttemptValues": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "cageSuccessValues": [
+          1,
+          2,
+          3
+        ]
+      },
+      "piecePlacement": {
+        "bars": [
+          {
+            "label": "Auto Fuel",
+            "autoField": "auto.avgFuel",
+            "teleField": null
+          },
+          {
+            "label": "Tele Fuel",
+            "autoField": null,
+            "teleField": "tele.avgFuel"
+          },
+          {
+            "label": "HP",
+            "autoField": null,
+            "teleField": "tele.avgHP"
+          }
+        ]
+      },
+      "overallStats": [
+        {
+          "key": "avgEpa",
+          "title": "EPA",
+          "format": "decimal"
+        },
+        {
+          "key": "avgAuto",
+          "title": "Auto",
+          "format": "decimal"
+        },
+        {
+          "key": "avgTele",
+          "title": "Tele",
+          "format": "decimal"
+        },
+        {
+          "key": "avgEnd",
+          "title": "End",
+          "format": "decimal"
+        }
+      ],
+      "intakeDisplay": [
+        {
+          "category": "Fuel Intake",
+          "fields": [
+            "fuelgrndintake",
+            "fueldepotintake",
+            "fueloutpostintake"
+          ],
+          "labels": [
+            "Ground",
+            "Depot",
+            "Outpost (HP)"
+          ]
+        },
+        {
+          "category": "Traversal",
+          "fields": [
+            "usesbump",
+            "usestrench"
+          ],
+          "labels": [
+            "Bump",
+            "Trench"
+          ]
+        }
+      ],
+      "qualitativeDisplay": [
+        {
+          "name": "shootingspeed",
+          "label": "Shooting Speed"
+        },
+        {
+          "name": "shootingaccuracy",
+          "label": "Shooting Accuracy"
+        },
+        {
+          "name": "intakespeed",
+          "label": "Intake Speed"
+        },
+        {
+          "name": "climbspeed",
+          "label": "Climb Speed"
+        },
+        {
+          "name": "maneuverability",
+          "label": "Maneuverability"
+        },
+        {
+          "name": "defenseplayed",
+          "label": "Defense Played"
+        },
+        {
+          "name": "defenseevasion",
+          "label": "Defense Evasion"
+        },
+        {
+          "name": "aggression",
+          "label": "Aggression",
+          "inverted": true
+        }
+      ],
+      "defenseBarField": "defenseplayed"
+    },
+    "matchView": {
+      "allianceMetrics": [
+        "auto",
+        "tele",
+        "end"
+      ],
+      "keyStats": [
+        {
+          "label": "Auto Climb %",
+          "field": "autoclimb",
+          "type": "percentage",
+          "condition": {
+            "greaterThan": 0
+          }
+        },
+        {
+          "label": "Avg Fuel",
+          "type": "sum",
+          "fields": [
+            "autofuelsuccess",
+            "telefuelsuccess",
+            "hpsuccess"
+          ]
+        },
+        {
+          "label": "Breakdown %",
+          "field": "breakdown",
+          "type": "percentage"
+        }
+      ]
+    },
+    "apiAggregation": {
+      "breakdownField": "breakdown",
+      "defenseField": "defense",
+      "leaveField": "leave",
+      "successFailPairs": [
+        {
+          "key": "HP",
+          "phase": "tele",
+          "successField": "hpsuccess",
+          "failField": "hpfail"
+        },
+        {
+          "key": "Fuel",
+          "phase": "auto",
+          "successField": "autofuelsuccess",
+          "failField": "autofuelfail"
+        },
+        {
+          "key": "Fuel",
+          "phase": "tele",
+          "successField": "telefuelsuccess",
+          "failField": "telefuelfail"
+        }
+      ],
+      "endgameConfig": {
+        "field": "endlocation",
+        "valueMapping": {
+          "0": "None",
+          "1": "L1",
+          "2": "L2",
+          "3": "L3",
+          "4": "Failed"
+        }
+      },
+      "qualitativeFields": [
+        "shootingspeed",
+        "shootingaccuracy",
+        "intakespeed",
+        "climbspeed",
+        "maneuverability",
+        "defenseplayed",
+        "defenseevasion",
+        "aggression"
+      ]
+    }
+  }
+}

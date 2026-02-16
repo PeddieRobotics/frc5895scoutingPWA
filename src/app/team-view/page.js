@@ -57,16 +57,32 @@ function TeamView() {
     const tvConfig = config?.display?.teamView || {};
     const epaThresholds = tvConfig.epaThresholds || { overall: 12, auto: 6, tele: 10, end: 6 };
     const epaBreakdown = tvConfig.epaBreakdown || ["auto", "tele", "end"];
-    const coralConfig = tvConfig.piecePlacement?.coral || { levels: [], autoFields: [], teleFields: [], autoFailFields: [], teleFailFields: [] };
-    const algaeConfig = tvConfig.piecePlacement?.algae || { autoFields: [], teleFields: [], autoFailFields: [], teleFailFields: [] };
-    const barsConfig = tvConfig.piecePlacement?.bars || [];
+    // Dynamic piecePlacement group discovery
+    const ppConfig = tvConfig.piecePlacement || {};
+    const coralConfig = ppConfig.coral || null;
+    const hasCoralConfig = !!(coralConfig && coralConfig.levels?.length);
+    // Find any group with metrics (e.g. algae) — dynamic discovery
+    const metricGroupEntries = Object.entries(ppConfig).filter(
+        ([key, val]) => key !== 'bars' && typeof val === 'object' && val.metrics?.length
+    );
+    const hasMetricGroups = metricGroupEntries.length > 0;
+    // For backward compat, pick the first metric group as the "secondary" group (algae in Reefscape)
+    const [metricGroupName, metricGroupConfig] = metricGroupEntries[0] || [null, null];
+    // Derive table columns from metric group metrics for the table header
+    const metricTableConfig = metricGroupConfig ? {
+        columns: metricGroupConfig.metrics.map(m => ({
+            label: m.key,
+            type: m.type, // 'count' or 'successFail'
+        })),
+    } : { columns: [] };
+    const barsConfig = ppConfig.bars || [];
     const endgamePieConfig = tvConfig.endgamePie || { labels: [], values: [] };
     const endgameStatsConfig = tvConfig.endgameStats || {};
     const overallStatsConfig = tvConfig.overallStats || [];
     const sectionsConfig = tvConfig.sections || {};
-    const commentsConfig = tvConfig.comments || ["generalcomments", "breakdowncomments", "defensecomments"];
+    const commentsConfig = tvConfig.comments || [];
     const intakeDisplayConfig = tvConfig.intakeDisplay || [];
-    const defenseBarField = tvConfig.defenseBarField || "defenseplayed";
+    const defenseBarField = tvConfig.defenseBarField || "";
 
     // Initialize URL parameters on the client side
     useEffect(() => {
@@ -93,181 +109,181 @@ function TeamView() {
         }
     }, [team, currentUserTeam]);
 
-    function AllianceButtons({t1, t2, t3, colors}) {
-      const searchParamsString = new URLSearchParams(urlParams).toString();
-      return <div className={styles.allianceBoard}>
-        <Link href={`/team-view?team=${t1 || ""}&${searchParamsString}`}>
-          <button style={team == t1 ? {background: 'black', color: 'yellow'} : {background: colors[0][1]}}>{t1 || 404}</button>
-        </Link>
-        <Link href={`/team-view?team=${t2 || ""}&${searchParamsString}`}>
-          <button style={team == t2 ? {background: 'black', color: 'yellow'} : {background: colors[1][1]}}>{t2 || 404}</button>
-        </Link>
-        <Link href={`/team-view?team=${t3 || ""}&${searchParamsString}`}>
-          <button style={team == t3 ? {background: 'black', color: 'yellow'} : {background: colors[2][1]}}>{t3 || 404}</button>
-        </Link>
-      </div>
+    function AllianceButtons({ t1, t2, t3, colors }) {
+        const searchParamsString = new URLSearchParams(urlParams).toString();
+        return <div className={styles.allianceBoard}>
+            <Link href={`/team-view?team=${t1 || ""}&${searchParamsString}`}>
+                <button style={team == t1 ? { background: 'black', color: 'yellow' } : { background: colors[0][1] }}>{t1 || 404}</button>
+            </Link>
+            <Link href={`/team-view?team=${t2 || ""}&${searchParamsString}`}>
+                <button style={team == t2 ? { background: 'black', color: 'yellow' } : { background: colors[1][1] }}>{t2 || 404}</button>
+            </Link>
+            <Link href={`/team-view?team=${t3 || ""}&${searchParamsString}`}>
+                <button style={team == t3 ? { background: 'black', color: 'yellow' } : { background: colors[2][1] }}>{t3 || 404}</button>
+            </Link>
+        </div>
     }
 
     function CompareTopBar() {
-      const COLORS = [
-        "#A4E5DF", // green
-        "#B7D1F7", // blue
-        "#DDB7F7", // purple
-        "#F6C1D8", // pink
-      ];
+        const COLORS = [
+            "#A4E5DF", // green
+            "#B7D1F7", // blue
+            "#DDB7F7", // purple
+            "#F6C1D8", // pink
+        ];
 
-      // Get teams from URL parameters
-      const compareTeams = [
-        urlParams.team1,
-        urlParams.team2,
-        urlParams.team3,
-        urlParams.team4
-      ].filter(t => t !== undefined && t !== null && t !== "");
+        // Get teams from URL parameters
+        const compareTeams = [
+            urlParams.team1,
+            urlParams.team2,
+            urlParams.team3,
+            urlParams.team4
+        ].filter(t => t !== undefined && t !== null && t !== "");
 
-      if (source !== 'compare' || compareTeams.length === 0) {
-        return <></>;
-      }
+        if (source !== 'compare' || compareTeams.length === 0) {
+            return <></>;
+        }
 
-      return (
-        <div className={styles.matchNav}>
-          <div className={styles.allianceBoard}>
-            {compareTeams.map((t, index) => (
-              <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
-                <button style={team == t ? {background: 'black', color: 'yellow'} : {background: COLORS[index]}}>
-                  {t || 404}
-                </button>
-              </Link>
-            ))}
-          </div>
-          <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
-            <button className={styles.goButton}>Compare</button>
-          </Link>
-        </div>
-      );
+        return (
+            <div className={styles.matchNav}>
+                <div className={styles.allianceBoard}>
+                    {compareTeams.map((t, index) => (
+                        <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
+                            <button style={team == t ? { background: 'black', color: 'yellow' } : { background: COLORS[index] }}>
+                                {t || 404}
+                            </button>
+                        </Link>
+                    ))}
+                </div>
+                <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
+                    <button className={styles.goButton}>Compare</button>
+                </Link>
+            </div>
+        );
     }
 
     function TopBar() {
-      const COLORS = [
-        ["#B7F7F2", "#A1E7E1", "#75C6BF", "#5EB5AE"],
-        ["#8AB8FD", "#7D99FF", "#6184DD", "#306BDD"],
-        ["#E1BFFA", "#E1A6FE", "#CA91F2", "#A546DF"],
-        ["#FFC6F6", "#ECA6E0", "#ED75D9", "#C342AE"],
-        ["#FABFC4", "#FEA6AD", "#F29199", "#E67983"],
-        ["#FFE3D3", "#EBB291", "#E19A70", "#D7814F"],
-      ];
+        const COLORS = [
+            ["#B7F7F2", "#A1E7E1", "#75C6BF", "#5EB5AE"],
+            ["#8AB8FD", "#7D99FF", "#6184DD", "#306BDD"],
+            ["#E1BFFA", "#E1A6FE", "#CA91F2", "#A546DF"],
+            ["#FFC6F6", "#ECA6E0", "#ED75D9", "#C342AE"],
+            ["#FABFC4", "#FEA6AD", "#F29199", "#E67983"],
+            ["#FFE3D3", "#EBB291", "#E19A70", "#D7814F"],
+        ];
 
-      if (!hasTopBar || source === 'compare') {
-        return <></>
-      }
+        if (!hasTopBar || source === 'compare') {
+            return <></>
+        }
 
-      // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
-      // when viewing a match by match number
-      const fromMatch = urlParams.from_match === 'true';
+        // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
+        // when viewing a match by match number
+        const fromMatch = urlParams.from_match === 'true';
 
-      return <div className={styles.matchNav}>
-        <AllianceButtons
-          t1={urlParams.team1}
-          t2={urlParams.team2}
-          t3={urlParams.team3}
-          colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
-        />
-        <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
-          <button style={{background: "#ffff88", color: "black"}}>Match</button>
-        </Link>
-        <AllianceButtons
-          t1={urlParams.team4}
-          t2={urlParams.team5}
-          t3={urlParams.team6}
-          colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
-        />
-      </div>
+        return <div className={styles.matchNav}>
+            <AllianceButtons
+                t1={urlParams.team1}
+                t2={urlParams.team2}
+                t3={urlParams.team3}
+                colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
+            />
+            <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
+                <button style={{ background: "#ffff88", color: "black" }}>Match</button>
+            </Link>
+            <AllianceButtons
+                t1={urlParams.team4}
+                t2={urlParams.team5}
+                t3={urlParams.team6}
+                colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
+            />
+        </div>
     }
 
     // Fetch team data from backend
     function fetchTeamData(team) {
-      setLoading(true);
-      setError(null);
+        setLoading(true);
+        setError(null);
 
-      // Try to get the current user's team
-      if (!currentUserTeam) {
-        try {
-          // Try localStorage first
-          const storedTeam = localStorage.getItem('userTeam');
-          if (storedTeam) {
-            setCurrentUserTeam(storedTeam);
-          } else {
-            // Check cookies as fallback
-            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-              const [key, value] = cookie.trim().split('=');
-              acc[key] = value;
-              return acc;
-            }, {});
-
-            if (cookies.team_name) {
-              setCurrentUserTeam(cookies.team_name);
-              localStorage.setItem('userTeam', cookies.team_name);
-            }
-          }
-        } catch (e) {
-          console.error('Error getting user team:', e);
-        }
-      }
-
-      fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
-          headers: (() => {
-            const hdrs = {};
+        // Try to get the current user's team
+        if (!currentUserTeam) {
             try {
-              const storedCreds = sessionStorage.getItem('auth_credentials') ||
-                                  localStorage.getItem('auth_credentials');
-              if (storedCreds) {
-                hdrs['Authorization'] = `Basic ${storedCreds}`;
-              }
-            } catch (_) {/* ignore */}
-            return hdrs;
-          })()
-      })
-          .then(response => {
-              if (response.status === 401) {
-                  console.error("Authentication failed - triggering login dialog");
-                  // Trigger auth required event to show login dialog
-                  window.dispatchEvent(new CustomEvent('auth:required', {
-                      detail: { message: 'Your session has expired. Please login again.' }
-                  }));
-                  throw new Error('Authentication required');
-              }
+                // Try localStorage first
+                const storedTeam = localStorage.getItem('userTeam');
+                if (storedTeam) {
+                    setCurrentUserTeam(storedTeam);
+                } else {
+                    // Check cookies as fallback
+                    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                        const [key, value] = cookie.trim().split('=');
+                        acc[key] = value;
+                        return acc;
+                    }, {});
 
-              // Check for 404 Not Found
-              if (response.status === 404) {
-                  throw new Error('Team data not found');
-              }
+                    if (cookies.team_name) {
+                        setCurrentUserTeam(cookies.team_name);
+                        localStorage.setItem('userTeam', cookies.team_name);
+                    }
+                }
+            } catch (e) {
+                console.error('Error getting user team:', e);
+            }
+        }
 
-              return response.json();
-          })
-          .then(data => {
-              console.log("Fetched Team Data:", data);
+        fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+            headers: (() => {
+                const hdrs = {};
+                try {
+                    const storedCreds = sessionStorage.getItem('auth_credentials') ||
+                        localStorage.getItem('auth_credentials');
+                    if (storedCreds) {
+                        hdrs['Authorization'] = `Basic ${storedCreds}`;
+                    }
+                } catch (_) {/* ignore */ }
+                return hdrs;
+            })()
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    console.error("Authentication failed - triggering login dialog");
+                    // Trigger auth required event to show login dialog
+                    window.dispatchEvent(new CustomEvent('auth:required', {
+                        detail: { message: 'Your session has expired. Please login again.' }
+                    }));
+                    throw new Error('Authentication required');
+                }
 
-              // Ensure we have a rows array, even if empty
-              if (!data.rows) {
-                  data.rows = [];
-              }
+                // Check for 404 Not Found
+                if (response.status === 404) {
+                    throw new Error('Team data not found');
+                }
 
-              console.log("Last 3 EPA values from API:", {
-                epa: data.last3Epa,
-                auto: data.last3Auto,
-                tele: data.last3Tele,
-                end: data.last3End
-              });
+                return response.json();
+            })
+            .then(data => {
+                console.log("Fetched Team Data:", data);
 
-              setData(data);
-              setLoading(false);
-          })
-          .catch(error => {
-              if (error.message !== 'Authentication required') {
-                  console.error("Error fetching team data:", error);
-              }
-              setError(error.message);
-              setLoading(false);
-          });
+                // Ensure we have a rows array, even if empty
+                if (!data.rows) {
+                    data.rows = [];
+                }
+
+                console.log("Last 3 EPA values from API:", {
+                    epa: data.last3Epa,
+                    auto: data.last3Auto,
+                    tele: data.last3Tele,
+                    end: data.last3End
+                });
+
+                setData(data);
+                setLoading(false);
+            })
+            .catch(error => {
+                if (error.message !== 'Authentication required') {
+                    console.error("Error fetching team data:", error);
+                }
+                setError(error.message);
+                setLoading(false);
+            });
     }
 
     if (!team) {
@@ -326,31 +342,30 @@ function TeamView() {
         }).sort((a, b) => a.match - b.match);
     };
 
-    // Process match data for algae data charts
-    // Uses algae config fields instead of hardcoded field names
-    const prepareAlgaeData = (matches, phase) => {
-        if (!matches || !Array.isArray(matches)) return [];
+    // Process match data for metric group data table (e.g. algae)
+    // Uses metric group config fields instead of hardcoded field names
+    const prepareMetricGroupData = (matches, phase) => {
+        if (!metricGroupConfig || !matches || !Array.isArray(matches)) return [];
 
         const teamMatches = matches.filter(match => match.team == team);
-        const algaeFields = phase === 'auto' ? algaeConfig.autoFields : algaeConfig.teleFields;
-        const algaeFailFields = phase === 'auto' ? algaeConfig.autoFailFields : algaeConfig.teleFailFields;
+        const fields = phase === 'auto' ? metricGroupConfig.autoFields : metricGroupConfig.teleFields;
+        const failFields = phase === 'auto' ? (metricGroupConfig.autoFailFields || []) : (metricGroupConfig.teleFailFields || []);
+        const metrics = metricGroupConfig.metrics || [];
 
-        // The algae fields follow a convention: [processorSuccess, netSuccess, algaeRemoved]
-        // The fail fields follow: [processorFail, netFail]
-        const processorSuccessField = algaeFields?.[0] || `${phase}processorsuccess`;
-        const netSuccessField = algaeFields?.[1] || `${phase}netsuccess`;
-        const removedField = algaeFields?.[2] || `${phase}algaeremoved`;
-        const processorFailField = algaeFailFields?.[0] || `${phase}processorfail`;
-        const netFailField = algaeFailFields?.[1] || `${phase}netfail`;
-
-        return teamMatches.map(match => ({
-            match: match.match,
-            removed: match[removedField] || 0,
-            processorSuccess: match[processorSuccessField] || 0,
-            processorFail: match[processorFailField] || 0,
-            netSuccess: match[netSuccessField] || 0,
-            netFail: match[netFailField] || 0
-        })).sort((a, b) => a.match - b.match);
+        return teamMatches.map(match => {
+            const row = { match: match.match };
+            metrics.forEach(metric => {
+                const field = fields?.[metric.fieldIndex];
+                if (metric.type === 'count') {
+                    row[metric.key] = match[field] || 0;
+                } else if (metric.type === 'successFail') {
+                    row[`${metric.key}Success`] = match[field] || 0;
+                    const failField = failFields?.[metric.failIndex];
+                    row[`${metric.key}Fail`] = failField ? (match[failField] || 0) : 0;
+                }
+            });
+            return row;
+        }).sort((a, b) => a.match - b.match);
     };
 
     // Use the data directly from the API with safe defaults
@@ -383,34 +398,21 @@ function TeamView() {
         attemptCage: data?.attemptCage || 0,
         successCage: data?.successCage || 0,
         qualitative: data?.qualitative || [],
-        auto: data?.auto || { coral: {}, algae: {} },
-        tele: data?.tele || { coral: {}, algae: {} },
+        auto: data?.auto || {},
+        tele: data?.tele || {},
         endPlacement: data?.endPlacement || {},
         // Spread all remaining fields (includes intake booleans from API)
         ...data,
     };
 
-    // Prepare data for the charts
-    const autoCoralSuccessData = prepareCoralData(safeData.rows, 'auto', 'success');
-    const autoCoralFailData = prepareCoralData(safeData.rows, 'auto', 'fail');
-    const teleCoralSuccessData = prepareCoralData(safeData.rows, 'tele', 'success');
-    const teleCoralFailData = prepareCoralData(safeData.rows, 'tele', 'fail');
+    // Prepare data for the charts — guarded on config existence
+    const autoCoralSuccessData = hasCoralConfig ? prepareCoralData(safeData.rows, 'auto', 'success') : [];
+    const autoCoralFailData = hasCoralConfig ? prepareCoralData(safeData.rows, 'auto', 'fail') : [];
+    const teleCoralSuccessData = hasCoralConfig ? prepareCoralData(safeData.rows, 'tele', 'success') : [];
+    const teleCoralFailData = hasCoralConfig ? prepareCoralData(safeData.rows, 'tele', 'fail') : [];
 
-    const autoAlgaeData = prepareAlgaeData(safeData.rows, 'auto');
-    const teleAlgaeData = prepareAlgaeData(safeData.rows, 'tele');
-
-    console.log(`Team ${team} Coral Data:`, {
-        autoSuccess: autoCoralSuccessData,
-        autoFail: autoCoralFailData,
-        teleSuccess: teleCoralSuccessData,
-        teleFail: teleCoralFailData,
-        matches: (safeData.rows).filter(m => m.team == team).map(m => m.match)
-    });
-
-    console.log(`Team ${team} Algae Data:`, {
-        auto: autoAlgaeData,
-        tele: teleAlgaeData
-    });
+    const autoMetricGroupData = hasMetricGroups ? prepareMetricGroupData(safeData.rows, 'auto') : [];
+    const teleMetricGroupData = hasMetricGroups ? prepareMetricGroupData(safeData.rows, 'tele') : [];
 
     const Colors = [
         //light to dark
@@ -422,12 +424,12 @@ function TeamView() {
     ];
 
     const epaColors = {
-      red1: "#fa8888",
-      red2: "#F7AFAF",
-      yellow1: "#ffe16b",
-      yellow2: "#ffff9e",
-      green1: "#7FD689",
-      green2: "#c4f19f",
+        red1: "#fa8888",
+        red2: "#F7AFAF",
+        yellow1: "#ffe16b",
+        yellow2: "#ffff9e",
+        green1: "#7FD689",
+        green2: "#c4f19f",
     }
 
     // Compute last3 EPA color indicators from config thresholds
@@ -457,33 +459,22 @@ function TeamView() {
     // Custom color array for endgame pie chart with 5 distinct colors
     const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
 
-    // Build PiecePlacement values from config bars
-    const piecePlacementProps = {};
-    barsConfig.forEach(bar => {
+    // Build PiecePlacement bar values generically from config
+    const dynamicBars = barsConfig.map(bar => {
         let value = 0;
-        // Look up auto + tele averages from safeData based on the bar label
-        // The API data uses keys like auto.coral.avgL1, tele.coral.avgL1, auto.algae.avgNet, etc.
-        const label = bar.label;
-        if (label.startsWith('L')) {
-            // Coral level
-            const autoVal = safeData.auto?.coral?.[`avg${label}`] || 0;
-            const teleVal = safeData.tele?.coral?.[`avg${label}`] || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'Net') {
-            const autoVal = safeData.auto?.algae?.avgNet || 0;
-            const teleVal = safeData.tele?.algae?.avgNet || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'Prcsr') {
-            const autoVal = safeData.auto?.algae?.avgProcessor || 0;
-            const teleVal = safeData.tele?.algae?.avgProcessor || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'HP') {
-            value = Math.round(10 * (safeData.tele?.avgHp || 0)) / 10;
+        // Sum auto + tele field values from raw row data
+        const teamRows = (safeData.rows || []).filter(r => r.team == team);
+        if (teamRows.length > 0) {
+            let total = 0;
+            if (bar.autoField) {
+                total += teamRows.reduce((sum, row) => sum + (Number(row[bar.autoField]) || 0), 0);
+            }
+            if (bar.teleField) {
+                total += teamRows.reduce((sum, row) => sum + (Number(row[bar.teleField]) || 0), 0);
+            }
+            value = Math.round(10 * (total / teamRows.length)) / 10;
         }
-        // Map label to prop name that PiecePlacement expects
-        const propMap = { 'L1': 'L1', 'L2': 'L2', 'L3': 'L3', 'L4': 'L4', 'Net': 'net', 'Prcsr': 'processor', 'HP': 'HP' };
-        const propName = propMap[label] || label;
-        piecePlacementProps[propName] = value;
+        return { label: bar.label, value };
     });
 
     // Build overall stat VBoxes from config
@@ -496,7 +487,7 @@ function TeamView() {
                     key={stat.key || i}
                     id="box"
                     className={styles.boxes}
-                    style={{width: "200px"}}
+                    style={{ width: "200px" }}
                     color1={Colors[0][1]}
                     color2={Colors[0][0]}
                     title={stat.title}
@@ -506,20 +497,21 @@ function TeamView() {
         });
     };
 
-    // Build comments from config
-    const commentKeyMap = {
-        'generalcomments': 'generalComments',
-        'breakdowncomments': 'breakdownComments',
-        'defensecomments': 'defenseComments',
-    };
-    const commentTitleMap = {
-        'generalcomments': 'General Comments',
-        'breakdowncomments': 'Breakdown Comments',
-        'defensecomments': 'Defense Comments',
-    };
+    // Build comments from commentFields config (fully generic)
+    const cfgComments = tvConfig.commentFields || [];
+    // Fallback to legacy comments array with generated titles
+    const resolvedComments = cfgComments.length > 0
+        ? cfgComments
+        : (commentsConfig || []).map(field => ({
+            field,
+            dataKey: field.replace(/([a-z])([a-z]*)/gi, (_, first, rest, idx) =>
+                idx === 0 ? first.toLowerCase() + rest : first.toUpperCase() + rest
+            ),
+            title: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase()),
+        }));
 
-    // Helper to render an algae table for a given phase and color set
-    const renderAlgaeTable = (algaeData, colorSet) => {
+    // Helper to render a metric group table for a given phase and color set
+    const renderMetricGroupTable = (groupData, colorSet) => {
         const algaeTableStyle = {
             fontSize: "clamp(10px, 2vw, 14px)",
             whiteSpace: "nowrap",
@@ -537,7 +529,7 @@ function TeamView() {
                 width: "100%",
                 textAlign: "center"
             }}>
-                <div style={{width: "90%", margin: "0 auto"}}>
+                <div style={{ width: "90%", margin: "0 auto" }}>
                     <table className={styles.coralTable} style={{
                         width: "100%",
                         tableLayout: "fixed",
@@ -546,33 +538,51 @@ function TeamView() {
                     }}>
                         <tbody>
                             <tr>
-                                <td style={{backgroundColor: colorSet[2], width: "15%", ...algaeTableStyle}}>Match</td>
-                                <td style={{backgroundColor: colorSet[2], width: "20%", ...algaeTableStyle}}>Algae Removed</td>
-                                <td style={{backgroundColor: colorSet[2], width: "32.5%", ...algaeTableStyle}} colSpan="2">Processor</td>
-                                <td style={{backgroundColor: colorSet[2], width: "32.5%", ...algaeTableStyle}} colSpan="2">Net</td>
+                                <td style={{ backgroundColor: colorSet[2], width: "15%", ...algaeTableStyle }}>Match</td>
+                                {(metricTableConfig?.columns || []).map((col, ci) => {
+                                    const isCount = col.type === 'count';
+                                    return (
+                                        <td key={ci} style={{ backgroundColor: colorSet[2], width: isCount ? "20%" : "32.5%", ...algaeTableStyle }}
+                                            colSpan={isCount ? 1 : 2}
+                                        >{col.label}</td>
+                                    );
+                                })}
                             </tr>
                             <tr>
-                                <td style={{backgroundColor: colorSet[1]}}></td>
-                                <td style={{backgroundColor: colorSet[1]}}></td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Success</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Fail</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Success</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Fail</td>
+                                <td style={{ backgroundColor: colorSet[1] }}></td>
+                                {(metricTableConfig?.columns || []).map((col, ci) => {
+                                    if (col.type === 'count') {
+                                        return <td key={ci} style={{ backgroundColor: colorSet[1] }}></td>;
+                                    }
+                                    return [
+                                        <td key={`${ci}-s`} style={{ backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle }}>Success</td>,
+                                        <td key={`${ci}-f`} style={{ backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle }}>Fail</td>
+                                    ];
+                                })}
                             </tr>
-                            {algaeData.length > 0 ? (
-                                algaeData.map((match, index) => (
-                                    <tr key={index}>
-                                        <td style={{backgroundColor: colorSet[1], ...algaeTableStyle}}>{match.match}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.removed}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.processorSuccess}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.processorFail}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.netSuccess}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.netFail}</td>
-                                    </tr>
-                                ))
+                            {groupData.length > 0 ? (
+                                groupData.map((match, index) => {
+                                    const metrics = metricGroupConfig?.metrics || [];
+                                    return (
+                                        <tr key={index}>
+                                            <td style={{ backgroundColor: colorSet[1], ...algaeTableStyle }}>{match.match}</td>
+                                            {metrics.map((metric, mi) => {
+                                                if (metric.type === 'count') {
+                                                    return <td key={mi} style={{ backgroundColor: colorSet[0], ...algaeTableStyle }}>{match[metric.key] || 0}</td>;
+                                                } else if (metric.type === 'successFail') {
+                                                    return [
+                                                        <td key={`${mi}-s`} style={{ backgroundColor: colorSet[0], ...algaeTableStyle }}>{match[`${metric.key}Success`] || 0}</td>,
+                                                        <td key={`${mi}-f`} style={{ backgroundColor: colorSet[0], ...algaeTableStyle }}>{match[`${metric.key}Fail`] || 0}</td>
+                                                    ];
+                                                }
+                                                return null;
+                                            })}
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan="6" style={{backgroundColor: colorSet[0], textAlign: "center", ...algaeTableStyle}}>No match data available</td>
+                                    <td colSpan={1 + (metricTableConfig?.columns || []).reduce((sum, col) => sum + (col.type === 'successFail' ? 2 : 1), 0)} style={{ backgroundColor: colorSet[0], textAlign: "center", ...algaeTableStyle }}>No match data available</td>
                                 </tr>
                             )}
                         </tbody>
@@ -587,7 +597,7 @@ function TeamView() {
         const levels = levelTable?.levels || [];
         const successFields = levelTable?.successFields || [];
         const avgFields = levelTable?.avgFields || [];
-        const props = { HC1: "Success", HC2: "Avg Coral" };
+        const props = { HC1: "Success", HC2: levelTable?.avgLabel || "Average" };
 
         levels.forEach((level, i) => {
             const rowNum = i + 1;
@@ -688,11 +698,11 @@ function TeamView() {
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
-                                    <div style={{ background: Colors[0][1] }} className={styles.epaBox}>{Math.round(10*safeData.avgEpa)/10}</div>
+                                    <div style={{ background: Colors[0][1] }} className={styles.epaBox}>{Math.round(10 * safeData.avgEpa) / 10}</div>
                                     <div className={styles.epaBreakdown}>
                                         {epaBreakdown.map(key => (
                                             <div key={key} style={{ background: Colors[0][0] }}>
-                                                {key.charAt(0).toUpperCase()}: {Math.round(10*(safeData[`avg${key.charAt(0).toUpperCase()}${key.slice(1)}`] || 0))/10}
+                                                {key.charAt(0).toUpperCase()}: {Math.round(10 * (safeData[`avg${key.charAt(0).toUpperCase()}${key.slice(1)}`] || 0)) / 10}
                                             </div>
                                         ))}
                                     </div>
@@ -700,11 +710,11 @@ function TeamView() {
                             </div>
                             <div className={styles.Last3EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
-                                    <div style={{background: overallLast3}} className={styles.Last3EpaBox}>{Math.round(10*safeData.last3Epa)/10}</div>
+                                    <div style={{ background: overallLast3 }} className={styles.Last3EpaBox}>{Math.round(10 * safeData.last3Epa) / 10}</div>
                                     <div className={styles.epaBreakdown}>
-                                        <div style={{background: autoLast3}}>A: {Math.round(10*safeData.last3Auto)/10}</div>
-                                        <div style={{background: teleLast3}}>T: {Math.round(10*safeData.last3Tele)/10}</div>
-                                        <div style={{background: endLast3}}>E: {Math.round(10*safeData.last3End)/10}</div>
+                                        <div style={{ background: autoLast3 }}>A: {Math.round(10 * safeData.last3Auto) / 10}</div>
+                                        <div style={{ background: teleLast3 }}>T: {Math.round(10 * safeData.last3Tele) / 10}</div>
+                                        <div style={{ background: endLast3 }}>E: {Math.round(10 * safeData.last3End) / 10}</div>
                                     </div>
                                 </div>
                             </div>
@@ -731,18 +741,12 @@ function TeamView() {
                         </div>
                         <div className={styles.graphContainer}>
                             <h4 className={styles.graphTitle}>EPA Over Time</h4>
-                            <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"}/>
+                            <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"} />
                         </div>
                         <div className={styles.barGraphContainer}>
                             <h4 className={styles.graphTitle}>Piece Placement</h4>
                             <PiecePlacement
-                                L1={piecePlacementProps.L1 || 0}
-                                L2={piecePlacementProps.L2 || 0}
-                                L3={piecePlacementProps.L3 || 0}
-                                L4={piecePlacementProps.L4 || 0}
-                                net={piecePlacementProps.net || 0}
-                                processor={piecePlacementProps.processor || 0}
-                                HP={piecePlacementProps.HP || 0}
+                                bars={dynamicBars}
                             />
                         </div>
                         <div className={styles.valueBoxes}>
@@ -750,16 +754,14 @@ function TeamView() {
                                 {renderOverallStats()}
                             </div>
                             <div className={styles.allComments}>
-                                {commentsConfig.map((commentField, i) => {
-                                    const dataKey = commentKeyMap[commentField] || commentField;
-                                    const title = commentTitleMap[commentField] || commentField;
+                                {resolvedComments.map((cf, i) => {
                                     return (
                                         <Comments
-                                            key={commentField}
+                                            key={cf.field || i}
                                             color1={Colors[0][1]}
                                             color2={Colors[0][0]}
-                                            title={title}
-                                            value={safeData[dataKey] || 'No comments'}
+                                            title={cf.title}
+                                            value={safeData[cf.dataKey] || 'No comments'}
                                         />
                                     );
                                 })}
@@ -785,7 +787,8 @@ function TeamView() {
                                             </div>
                                         );
                                     }
-                                    if (chart.type === 'coralLine') {
+                                    if (chart.type === 'coralLine' || chart.type === 'groupLine') {
+                                        if (!hasCoralConfig) return null;
                                         const chartData = chart.dataType === 'success'
                                             ? (chart.phase === 'auto' ? autoCoralSuccessData : teleCoralSuccessData)
                                             : (chart.phase === 'auto' ? autoCoralFailData : teleCoralFailData);
@@ -798,11 +801,13 @@ function TeamView() {
                                     }
                                     return null;
                                 })}
-                                <div className={styles.graphContainer}>
-                                    <h4 className={styles.graphTitle}>Auto Algae Data</h4>
-                                    {renderAlgaeTable(autoAlgaeData, Colors[1])}
-                                </div>
-                                <div style={{clear: "both"}}></div>
+                                {hasMetricGroups && (
+                                    <div className={styles.graphContainer}>
+                                        <h4 className={styles.graphTitle}>Auto {metricGroupName ? metricGroupName.charAt(0).toUpperCase() + metricGroupName.slice(1) : 'Data'}</h4>
+                                        {renderMetricGroupTable(autoMetricGroupData, Colors[1])}
+                                    </div>
+                                )}
+                                <div style={{ clear: "both" }}></div>
                                 <div className={styles.autoRightAlignment}>
                                     <div className={styles.alignElements}>
                                         <div className={styles.valueBoxes}>
@@ -822,16 +827,16 @@ function TeamView() {
                                                 <table key={i} className={styles.coralTable}>
                                                     <tbody>
                                                         <tr>
-                                                            <td style={{backgroundColor: Colors[1][2]}} rowSpan="2">{table.title}</td>
+                                                            <td style={{ backgroundColor: Colors[1][2] }} rowSpan="2">{table.title}</td>
                                                             {table.columns.map((col, ci) => (
-                                                                <td key={ci} style={{backgroundColor: Colors[1][1]}}>{col}</td>
+                                                                <td key={ci} style={{ backgroundColor: Colors[1][1] }}>{col}</td>
                                                             ))}
                                                         </tr>
                                                         <tr>
                                                             {table.rows[0].values.map((valPath, vi) => {
                                                                 const val = resolvePath(safeData, valPath) || 0;
-                                                                const formatted = valPath.includes('success') ? `${Math.round(10*val)/10}%` : Math.round(10*val)/10;
-                                                                return <td key={vi} style={{backgroundColor: Colors[1][0]}}>{formatted}</td>;
+                                                                const formatted = valPath.includes('success') ? `${Math.round(10 * val) / 10}%` : Math.round(10 * val) / 10;
+                                                                return <td key={vi} style={{ backgroundColor: Colors[1][0] }}>{formatted}</td>;
                                                             })}
                                                         </tr>
                                                     </tbody>
@@ -883,7 +888,8 @@ function TeamView() {
                                             </div>
                                         );
                                     }
-                                    if (chart.type === 'coralLine') {
+                                    if (chart.type === 'coralLine' || chart.type === 'groupLine') {
+                                        if (!hasCoralConfig) return null;
                                         const chartData = chart.dataType === 'success'
                                             ? (chart.phase === 'auto' ? autoCoralSuccessData : teleCoralSuccessData)
                                             : (chart.phase === 'auto' ? autoCoralFailData : teleCoralFailData);
@@ -896,11 +902,13 @@ function TeamView() {
                                     }
                                     return null;
                                 })}
-                                <div className={styles.graphContainer}>
-                                    <h4 className={styles.graphTitle}>Tele Algae Data</h4>
-                                    {renderAlgaeTable(teleAlgaeData, Colors[2])}
-                                </div>
-                                <div style={{clear: "both"}}></div>
+                                {hasMetricGroups && (
+                                    <div className={styles.graphContainer}>
+                                        <h4 className={styles.graphTitle}>Tele {metricGroupName ? metricGroupName.charAt(0).toUpperCase() + metricGroupName.slice(1) : 'Data'}</h4>
+                                        {renderMetricGroupTable(teleMetricGroupData, Colors[2])}
+                                    </div>
+                                )}
+                                <div style={{ clear: "both" }}></div>
                                 <div className={styles.teleRightAlignment}>
                                     <div className={styles.alignElements}>
                                         <div className={styles.coralAndHP}>
@@ -909,18 +917,18 @@ function TeamView() {
                                                     <table key={i} className={styles.differentTable}>
                                                         <tbody>
                                                             <tr>
-                                                                <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][2], width:"34px"}} rowSpan="2">{table.title}</td>
+                                                                <td className={styles.coloredBoxes} style={{ backgroundColor: Colors[2][2], width: "34px" }} rowSpan="2">{table.title}</td>
                                                                 {table.columns.map((col, ci) => (
-                                                                    <td key={ci} className={styles.coloredBoxes} style={{backgroundColor: Colors[2][1]}}>{col}</td>
+                                                                    <td key={ci} className={styles.coloredBoxes} style={{ backgroundColor: Colors[2][1] }}>{col}</td>
                                                                 ))}
                                                             </tr>
                                                             <tr>
                                                                 {table.rows[0].values.map((valPath, vi) => {
                                                                     const val = resolvePath(safeData, valPath) || 0;
                                                                     const formatted = valPath.includes('success') || valPath.includes('Success')
-                                                                        ? `${Math.round(10*val)/10}%`
-                                                                        : Math.round(10*val)/10;
-                                                                    return <td key={vi} className={styles.coloredBoxes} style={{backgroundColor: Colors[2][0]}}>{formatted}</td>;
+                                                                        ? `${Math.round(10 * val) / 10}%`
+                                                                        : Math.round(10 * val) / 10;
+                                                                    return <td key={vi} className={styles.coloredBoxes} style={{ backgroundColor: Colors[2][0] }}>{formatted}</td>;
                                                                 })}
                                                             </tr>
                                                         </tbody>
@@ -931,16 +939,16 @@ function TeamView() {
                                                 <table key={i} className={styles.coralTable}>
                                                     <tbody>
                                                         <tr>
-                                                            <td style={{backgroundColor: Colors[2][2]}} rowSpan="2">{table.title}</td>
+                                                            <td style={{ backgroundColor: Colors[2][2] }} rowSpan="2">{table.title}</td>
                                                             {table.columns.map((col, ci) => (
-                                                                <td key={ci} style={{backgroundColor: Colors[2][1]}}>{col}</td>
+                                                                <td key={ci} style={{ backgroundColor: Colors[2][1] }}>{col}</td>
                                                             ))}
                                                         </tr>
                                                         <tr>
                                                             {table.rows[0].values.map((valPath, vi) => {
                                                                 const val = resolvePath(safeData, valPath) || 0;
-                                                                const formatted = valPath.includes('success') ? `${Math.round(10*val)/10}%` : Math.round(10*val)/10;
-                                                                return <td key={vi} style={{backgroundColor: Colors[2][0]}}>{formatted}</td>;
+                                                                const formatted = valPath.includes('success') ? `${Math.round(10 * val) / 10}%` : Math.round(10 * val) / 10;
+                                                                return <td key={vi} style={{ backgroundColor: Colors[2][0] }}>{formatted}</td>;
                                                             })}
                                                         </tr>
                                                     </tbody>
@@ -987,16 +995,16 @@ function TeamView() {
                                         color={endgameColors}
                                     />
                                 </div>
-                                <table className={styles.differentTable} style={{borderRadius: "5px"}}>
+                                <table className={styles.differentTable} style={{ borderRadius: "5px" }}>
                                     <tbody>
                                         <tr>
-                                            <td style={{backgroundColor: Colors[3][2]}} rowSpan="2">Cage</td>
-                                            <td style={{backgroundColor: Colors[3][1]}}>Attempt</td>
-                                            <td style={{backgroundColor: Colors[3][1]}}>Success</td>
+                                            <td style={{ backgroundColor: Colors[3][2] }} rowSpan="2">Cage</td>
+                                            <td style={{ backgroundColor: Colors[3][1] }}>Attempt</td>
+                                            <td style={{ backgroundColor: Colors[3][1] }}>Success</td>
                                         </tr>
                                         <tr>
-                                            <td style={{backgroundColor: Colors[3][0]}}>{`${Math.round(10*safeData.attemptCage)/10}%`}</td>
-                                            <td style={{backgroundColor: Colors[3][0]}}>{`${Math.round(10*safeData.successCage)/10}%`}</td>
+                                            <td style={{ backgroundColor: Colors[3][0] }}>{`${Math.round(10 * safeData.attemptCage) / 10}%`}</td>
+                                            <td style={{ backgroundColor: Colors[3][0] }}>{`${Math.round(10 * safeData.successCage) / 10}%`}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1035,14 +1043,14 @@ function TeamView() {
                                         {intakeDisplayConfig.map((intake, idx) => (
                                             <React.Fragment key={idx}>
                                                 <tr>
-                                                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">{intake.category}</td>
+                                                    <td className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][2], width: "40px" }} rowSpan="2">{intake.category}</td>
                                                     {intake.labels.map((label, li) => (
-                                                        <td key={li} className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: li === 0 ? "10px" : undefined}}>{label}</td>
+                                                        <td key={li} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1], width: "50px", height: li === 0 ? "10px" : undefined }}>{label}</td>
                                                     ))}
                                                 </tr>
                                                 <tr>
                                                     {intake.fields.map((field, fi) => (
-                                                        <td key={fi} className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}>
+                                                        <td key={fi} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0], width: "50px", height: "30px" }}>
                                                             <input type="checkbox" readOnly checked={!!safeData[field]} />
                                                         </td>
                                                     ))}
