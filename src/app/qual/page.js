@@ -11,8 +11,10 @@ import JSConfetti from 'js-confetti';
 import QRCode from "qrcode";
 import pako from 'pako';
 import base58 from 'base-58';
+import useGameConfig from "../../lib/useGameConfig";
 
 export default function Home() {
+  const { config, loading: configLoading } = useGameConfig();
   const [teamsData, setTeamsData] = useState([
     { noShow: false, breakdown: false, defense: false },
     { noShow: false, breakdown: false, defense: false },
@@ -26,6 +28,28 @@ export default function Home() {
   const [allianceColor, setAllianceColor] = useState("red");
   const form = useRef();
 
+  // Read qual config from game config
+  const qualConfig = config?.display?.qual || {};
+  const qualitativeFields = qualConfig.qualitativeFields || [
+    { name: "maneuverability", label: "Maneuverability" },
+    { name: "defensePlayed", label: "Defense Played" },
+    { name: "defenseEvasion", label: "Defense Evasion" },
+    { name: "aggression", label: "Aggression" }
+  ];
+  const checkboxFields = qualConfig.checkboxFields || [
+    { name: "breakdown", label: "Broke Down", commentField: "breakdownComments", commentLabel: "Breakdown Comments" },
+    { name: "defense", label: "Played Defense", commentField: "defenseComments", commentLabel: "Defense Comments" }
+  ];
+  const commentFields = qualConfig.commentFields || [
+    { name: "generalComments", label: "General Comments" }
+  ];
+  const qrFieldOrder = qualConfig.qrFieldOrder || [
+    "scoutname", "scoutteam", "match", "team", "noShow",
+    ...qualitativeFields.map(f => f.name),
+    ...checkboxFields.flatMap(f => [f.name, f.commentField]),
+    ...commentFields.map(f => f.name)
+  ];
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedProfile = localStorage.getItem("ScoutProfile");
@@ -38,15 +62,16 @@ export default function Home() {
   }, []);
 
   const generateTSVString = (data) => {
-    // Sort teams by maneuverability (1 = worst, 5 = best)
-    const sortedTeams = [...data].sort((a, b) => a.maneuverability - b.maneuverability);
-    
-    // Combine all comments
-    const allComments = data.map(team => [
-      team.breakdownComments,
-      team.defenseComments,
-      team.generalComments
-    ].filter(Boolean).join("; ") );
+    const sortedTeams = [...data].sort((a, b) => {
+      const firstQual = qualitativeFields[0]?.name || 'maneuverability';
+      return (a[firstQual] || 0) - (b[firstQual] || 0);
+    });
+
+    const allComments = data.map(team =>
+      checkboxFields.map(f => team[f.commentField])
+        .concat(commentFields.map(f => team[f.name]))
+        .filter(Boolean).join("; ")
+    );
 
     return [
       data[0].match || "NULL",
@@ -54,51 +79,46 @@ export default function Home() {
       sortedTeams[0].team || "NULL",
       sortedTeams[1].team || "NULL",
       sortedTeams[2].team || "NULL",
-      allComments || "NULL"
+      allComments.join(" | ") || "NULL"
     ].join("\t");
   };
 
   const generateQRDataURL = async (data) => {
     try {
-      // Generate JSON data
       const jsonData = {
         formType: 'tripleQualitative',
         allianceColor,
         matchType,
-        teams: data.map(team => ({
-          scoutname: team.scoutname,
-          scoutteam: team.scoutteam,
-          match: team.match,
-          team: team.team,
-          noShow: team.noShow,
-          maneuverability: team.maneuverability,
-          defensePlayed: team.defensePlayed,
-          defenseEvasion: team.defenseEvasion,
-          aggression: team.aggression,
-          breakdown: team.breakdown,
-          breakdownComments: team.breakdownComments,
-          defense: team.defense,
-          defenseComments: team.defenseComments,
-          generalComments: team.generalComments
-        }))
+        teams: data.map(team => {
+          const teamObj = {
+            scoutname: team.scoutname,
+            scoutteam: team.scoutteam,
+            match: team.match,
+            team: team.team,
+            noShow: team.noShow,
+          };
+          // Add qualitative fields
+          qualitativeFields.forEach(f => { teamObj[f.name] = team[f.name]; });
+          // Add checkbox + comment fields
+          checkboxFields.forEach(f => {
+            teamObj[f.name] = team[f.name];
+            teamObj[f.commentField] = team[f.commentField];
+          });
+          // Add comment fields
+          commentFields.forEach(f => { teamObj[f.name] = team[f.name]; });
+          return teamObj;
+        })
       };
 
-      // Generate TSV data
       const tsvString = generateTSVString(data);
 
-      // Create compressed JSON QR
       const compressedJson = pako.gzip(new TextEncoder().encode(JSON.stringify(jsonData)));
       const jsonQR = await QRCode.toDataURL(base58.encode(compressedJson), {
-        width: 400,
-        margin: 3,
-        errorCorrectionLevel: 'L'
+        width: 400, margin: 3, errorCorrectionLevel: 'L'
       });
 
-      // Create TSV QR
       const tsvQR = await QRCode.toDataURL(tsvString, {
-        width: 400,
-        margin: 3,
-        errorCorrectionLevel: 'L'
+        width: 400, margin: 3, errorCorrectionLevel: 'L'
       });
 
       setQrCodeDataURL1(jsonQR);
@@ -117,23 +137,30 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(form.current);
-    
-    const collectedData = [0, 1, 2].map(index => ({
-      scoutname: formData.get('scoutname'),
-      scoutteam: formData.get('scoutteam'),
-      match: formData.get('match'),
-      team: formData.get(`team${index}-team`),
-      noShow: formData.get(`team${index}-noShow`) === 'on',
-      maneuverability: formData.get(`team${index}-maneuverability`),
-      defensePlayed: formData.get(`team${index}-defensePlayed`),
-      defenseEvasion: formData.get(`team${index}-defenseEvasion`),
-      aggression: formData.get(`team${index}-aggression`),
-      breakdown: formData.get(`team${index}-breakdown`) === 'on',
-      breakdownComments: formData.get(`team${index}-breakdownComments`),
-      defense: formData.get(`team${index}-defense`) === 'on',
-      defenseComments: formData.get(`team${index}-defenseComments`),
-      generalComments: formData.get(`team${index}-generalComments`)
-    }));
+
+    const collectedData = [0, 1, 2].map(index => {
+      const teamData = {
+        scoutname: formData.get('scoutname'),
+        scoutteam: formData.get('scoutteam'),
+        match: formData.get('match'),
+        team: formData.get(`team${index}-team`),
+        noShow: formData.get(`team${index}-noShow`) === 'on',
+      };
+      // Collect qualitative fields
+      qualitativeFields.forEach(f => {
+        teamData[f.name] = formData.get(`team${index}-${f.name}`);
+      });
+      // Collect checkbox + comment fields
+      checkboxFields.forEach(f => {
+        teamData[f.name] = formData.get(`team${index}-${f.name}`) === 'on';
+        teamData[f.commentField] = formData.get(`team${index}-${f.commentField}`);
+      });
+      // Collect comment fields
+      commentFields.forEach(f => {
+        teamData[f.name] = formData.get(`team${index}-${f.name}`);
+      });
+      return teamData;
+    });
 
     await generateQRDataURL(collectedData);
     setShowQRCode(true);
@@ -141,17 +168,17 @@ export default function Home() {
 
   const handleQRClose = () => {
     setShowQRCode(false);
-    
-    // Instead of form reset, manually clear inputs
+
+    const resetState = {};
+    checkboxFields.forEach(f => { resetState[f.name] = false; });
     setTeamsData([
-      { noShow: false, breakdown: false, defense: false },
-      { noShow: false, breakdown: false, defense: false },
-      { noShow: false, breakdown: false, defense: false }
+      { noShow: false, ...resetState },
+      { noShow: false, ...resetState },
+      { noShow: false, ...resetState }
     ]);
     setAllianceColor('red');
     setMatchType('2');
-  
-    // Update scout profile
+
     if (scoutProfile) {
       const newProfile = {
         ...scoutProfile,
@@ -160,7 +187,7 @@ export default function Home() {
       setScoutProfile(newProfile);
       localStorage.setItem("ScoutProfile", JSON.stringify(newProfile));
     }
-  
+
     new JSConfetti().addConfetti({
       emojis: ['🐠', '🐡', '🦀', '🪸'],
       emojiSize: 100,
@@ -168,6 +195,10 @@ export default function Home() {
       confettiNumber: 100,
     });
   };
+
+  if (configLoading) {
+    return <div className={styles.MainDiv}><h1>Loading config...</h1></div>;
+  }
 
   return (
     <div className={styles.MainDiv}>
@@ -189,41 +220,19 @@ export default function Home() {
           <Header headerName="Match Info" />
           <div className={styles.allMatchInfo}>
             <div className={styles.MatchInfo}>
-              <TextInput
-                visibleName="Scout Name:"
-                internalName="scoutname"
-                defaultValue={scoutProfile?.scoutname || ""}
-              />
-              <TextInput
-                visibleName="Scout Team:"
-                internalName="scoutteam"
-                defaultValue={scoutProfile?.scoutteam || ""}
-                type="number"
-              />
-              <TextInput
-                visibleName="Match #:"
-                internalName="match"
-                defaultValue={scoutProfile?.match || ""}
-                type="number"
-              />
+              <TextInput visibleName="Scout Name:" internalName="scoutname" defaultValue={scoutProfile?.scoutname || ""} />
+              <TextInput visibleName="Scout Team:" internalName="scoutteam" defaultValue={scoutProfile?.scoutteam || ""} type="number" />
+              <TextInput visibleName="Match #:" internalName="match" defaultValue={scoutProfile?.match || ""} type="number" />
             </div>
-            
+
             <div className={styles.configSection}>
               <MatchType onMatchTypeChange={setMatchType} defaultValue={matchType} />
-              
+
               <div className={styles.allianceToggle}>
-                <button
-                  type="button"
-                  className={`${styles.allianceButton} ${allianceColor === 'red' ? styles.active : ''}`}
-                  onClick={() => setAllianceColor('red')}
-                >
+                <button type="button" className={`${styles.allianceButton} ${allianceColor === 'red' ? styles.active : ''}`} onClick={() => setAllianceColor('red')}>
                   RED ALLIANCE
                 </button>
-                <button
-                  type="button"
-                  className={`${styles.allianceButton} ${allianceColor === 'blue' ? styles.active : ''}`}
-                  onClick={() => setAllianceColor('blue')}
-                >
+                <button type="button" className={`${styles.allianceButton} ${allianceColor === 'blue' ? styles.active : ''}`} onClick={() => setAllianceColor('blue')}>
                   BLUE ALLIANCE
                 </button>
               </div>
@@ -233,72 +242,37 @@ export default function Home() {
           {[0, 1, 2].map((index) => (
             <div key={index} className={styles.TeamSection}>
               <Header headerName={`Team ${index + 1}`} />
-              
+
               <div className={styles.teamHeader}>
-                <TextInput
-                  visibleName="Team Scouted:"
-                  internalName={`team${index}-team`}
-                  type="number"
-                  className={styles.centeredInput}
-                />
-                <Checkbox
-                  visibleName="No Show"
-                  internalName={`team${index}-noShow`}
-                  changeListener={(e) => handleTeamChange(index, 'noShow', e.target.checked)}
-                  className={styles.centeredCheckbox}
-                />
+                <TextInput visibleName="Team Scouted:" internalName={`team${index}-team`} type="number" className={styles.centeredInput} />
+                <Checkbox visibleName="No Show" internalName={`team${index}-noShow`} changeListener={(e) => handleTeamChange(index, 'noShow', e.target.checked)} className={styles.centeredCheckbox} />
               </div>
 
               {!teamsData[index].noShow && (
                 <div className={styles.qualitativeSection}>
                   <div className={styles.qualGrid}>
-                    <Qualitative
-                      visibleName="Maneuverability"
-                      internalName={`team${index}-maneuverability`}
-                    />
-                    <Qualitative
-                      visibleName="Defense Played"
-                      internalName={`team${index}-defensePlayed`}
-                    />
-                    <Qualitative
-                      visibleName="Defense Evasion"
-                      internalName={`team${index}-defenseEvasion`}
-                    />
-                    <Qualitative
-                      visibleName="Aggression"
-                      internalName={`team${index}-aggression`}
-                    />
+                    {qualitativeFields.map(field => (
+                      <Qualitative key={field.name} visibleName={field.label} internalName={`team${index}-${field.name}`} />
+                    ))}
                   </div>
 
                   <div className={styles.commentSections}>
-                    <Checkbox
-                      visibleName="Broke Down"
-                      internalName={`team${index}-breakdown`}
-                      changeListener={(e) => handleTeamChange(index, 'breakdown', e.target.checked)}
-                    />
-                    {teamsData[index].breakdown && (
-                      <CommentBox
-                        visibleName="Breakdown Comments"
-                        internalName={`team${index}-breakdownComments`}
-                      />
-                    )}
+                    {checkboxFields.map(field => (
+                      <div key={field.name}>
+                        <Checkbox
+                          visibleName={field.label}
+                          internalName={`team${index}-${field.name}`}
+                          changeListener={(e) => handleTeamChange(index, field.name, e.target.checked)}
+                        />
+                        {teamsData[index][field.name] && (
+                          <CommentBox visibleName={field.commentLabel} internalName={`team${index}-${field.commentField}`} />
+                        )}
+                      </div>
+                    ))}
 
-                    <Checkbox
-                      visibleName="Played Defense"
-                      internalName={`team${index}-defense`}
-                      changeListener={(e) => handleTeamChange(index, 'defense', e.target.checked)}
-                    />
-                    {teamsData[index].defense && (
-                      <CommentBox
-                        visibleName="Defense Comments"
-                        internalName={`team${index}-defenseComments`}
-                      />
-                    )}
-
-                    <CommentBox
-                      visibleName="General Comments"
-                      internalName={`team${index}-generalComments`}
-                    />
+                    {commentFields.map(field => (
+                      <CommentBox key={field.name} visibleName={field.label} internalName={`team${index}-${field.name}`} />
+                    ))}
                   </div>
                 </div>
               )}
