@@ -145,12 +145,15 @@ function validateConfig(config) {
     }
   }
 
-  // Validate display (optional)
+  // Validate display (optional, warnings only)
   if (config.display) {
     if (typeof config.display !== 'object') {
       result.addError('display must be an object', 'display');
+    } else {
+      validateDisplaySection(config.display, fieldNames, result);
     }
-    // Further display validation can be added here
+  } else {
+    result.addWarning('No display section defined - display pages will show a fallback message', 'display');
   }
 
   return result;
@@ -590,6 +593,71 @@ function validateCalculations(calculations, fieldNames, result) {
       }
     }
   });
+}
+
+/**
+ * Validate the display section of the config
+ * Uses warnings only (not errors) since display is optional
+ */
+function validateDisplaySection(display, fieldNames, result) {
+  // Helper to check if a field name exists in the form config
+  const checkField = (fieldName, path) => {
+    if (fieldName && !fieldNames.has(fieldName.toLowerCase())) {
+      result.addWarning(`Display references unknown field: "${fieldName}"`, path);
+    }
+  };
+
+  // Validate teamView
+  if (display.teamView) {
+    const tv = display.teamView;
+    if (tv.piecePlacement?.bars) {
+      tv.piecePlacement.bars.forEach((bar, i) => {
+        if (bar.autoField) checkField(bar.autoField, `display.teamView.piecePlacement.bars[${i}].autoField`);
+        if (bar.teleField) checkField(bar.teleField, `display.teamView.piecePlacement.bars[${i}].teleField`);
+      });
+    }
+    if (tv.endgamePie?.field) {
+      checkField(tv.endgamePie.field, 'display.teamView.endgamePie.field');
+    }
+    if (tv.comments) {
+      tv.comments.forEach((c, i) => checkField(c, `display.teamView.comments[${i}]`));
+    }
+    if (tv.defenseBarField) {
+      checkField(tv.defenseBarField, 'display.teamView.defenseBarField');
+    }
+  }
+
+  // Validate matchView
+  if (display.matchView) {
+    const mv = display.matchView;
+    if (mv.qualitativeFields) {
+      mv.qualitativeFields.forEach((f, i) => checkField(f, `display.matchView.qualitativeFields[${i}]`));
+    }
+    if (mv.defenseBarField) {
+      checkField(mv.defenseBarField, 'display.matchView.defenseBarField');
+    }
+  }
+
+  // Validate picklist
+  if (display.picklist) {
+    if (display.picklist.defenseField) {
+      checkField(display.picklist.defenseField, 'display.picklist.defenseField');
+    }
+  }
+
+  // Validate apiAggregation
+  if (display.apiAggregation) {
+    const api = display.apiAggregation;
+    if (api.booleanFields) {
+      api.booleanFields.forEach((f, i) => checkField(f, `display.apiAggregation.booleanFields[${i}]`));
+    }
+    if (api.textFields) {
+      api.textFields.forEach((f, i) => checkField(f, `display.apiAggregation.textFields[${i}]`));
+    }
+    if (api.qualitativeFields) {
+      api.qualitativeFields.forEach((f, i) => checkField(f, `display.apiAggregation.qualitativeFields[${i}]`));
+    }
+  }
 }
 
 /**
