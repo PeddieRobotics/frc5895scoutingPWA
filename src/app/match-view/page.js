@@ -9,62 +9,6 @@ import dynamic from 'next/dynamic';
 import Endgame from "./components/Endgame";
 import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
-import useGameConfig from "../../lib/useGameConfig";
-
-// --- Hardcoded Reefscape defaults (used when config is unavailable) ---
-const DEFAULT_MATCH_VIEW_CONFIG = {
-  allianceMetrics: ["auto", "tele", "end"],
-  epaBreakdown: ["auto", "tele", "end"],
-  piecePlacement: {
-    bars: [
-      { label: "L4", key: "L4" },
-      { label: "L3", key: "L3" },
-      { label: "L2", key: "L2" },
-      { label: "L1", key: "L1" },
-      { label: "Net", key: "net" },
-      { label: "Prcsr", key: "processor" },
-      { label: "HP", key: "HP" },
-    ],
-  },
-  endgamePie: {
-    field: "endlocation",
-    labels: ["None", "Fail", "Park", "Shallow", "Deep"],
-    keys: ["none", "fail", "park", "shallow", "deep"],
-  },
-  qualitativeFields: [
-    "coralspeed", "processorspeed", "netspeed", "algaeremovalspeed",
-    "climbspeed", "maneuverability", "defenseplayed", "defenseevasion",
-    "aggression", "cagehazard",
-  ],
-  defenseBarField: "defenseplayed",
-  rankingPoints: [
-    {
-      label: "Auto",
-      type: "allLeaveAndCoral",
-      leaveField: "leave",
-      coralFields: ["autol1success", "autol2success", "autol3success", "autol4success"],
-      minCoral: 1,
-    },
-    {
-      label: "Coral",
-      type: "levelThreshold",
-      levels: [
-        { key: "L1", threshold: 5 },
-        { key: "L2", threshold: 5 },
-        { key: "L3", threshold: 5 },
-        { key: "L4", threshold: 5 },
-      ],
-      greenCount: 4,
-      yellowCount: 3,
-    },
-    {
-      label: "Barge",
-      type: "endgameThreshold",
-      field: "end",
-      threshold: 14,
-    },
-  ],
-};
 
 
 export default function MatchViewPage() {
@@ -72,15 +16,12 @@ export default function MatchViewPage() {
 }
 
 function MatchView() {
-  const { config } = useGameConfig();
-  const matchViewConfig = config?.display?.matchView || DEFAULT_MATCH_VIEW_CONFIG;
-
   const [allData, setAllData] = useState(null);
   const [data, setData] = useState(false);
   const [urlParams, setUrlParams] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  
   //light to dark
   const COLORS = [
     ["#A4E5DF", "#6FDCD3", "#93C8C4", "#73CEC7", "#5EACB5"], //green
@@ -90,14 +31,7 @@ function MatchView() {
     ["#FFD1D0", "#F7B7B7", "#DC8683", "#BE5151", "#B55E5E"], //red
     ["#FFD4AB", "#FABD7C", "#FFAF72", "#FFA75A", "#FF9F4B"], //orange
   ];
-
-  // --- Derive shapes from config ---
-  const barsConfig = matchViewConfig.piecePlacement?.bars || DEFAULT_MATCH_VIEW_CONFIG.piecePlacement.bars;
-  const endgamePieConfig = matchViewConfig.endgamePie || DEFAULT_MATCH_VIEW_CONFIG.endgamePie;
-  const qualitativeFields = matchViewConfig.qualitativeFields || DEFAULT_MATCH_VIEW_CONFIG.qualitativeFields;
-  const rankingPointsConfig = matchViewConfig.rankingPoints || DEFAULT_MATCH_VIEW_CONFIG.rankingPoints;
-  const epaBreakdownKeys = matchViewConfig.epaBreakdown || DEFAULT_MATCH_VIEW_CONFIG.epaBreakdown;
-
+  
   // Get URL parameters on client-side
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -107,7 +41,7 @@ function MatchView() {
         paramsObj[key] = value;
       }
       setUrlParams(paramsObj);
-
+      
       // If no parameters are provided, set data to empty object to show the form
       if (Object.keys(paramsObj).length === 0) {
         setData({});
@@ -122,7 +56,7 @@ function MatchView() {
 
     setLoading(true);
     setError(null);
-
+    
     // Get the current user's team
     let currentUserTeam = null;
     try {
@@ -137,7 +71,7 @@ function MatchView() {
           acc[key] = value;
           return acc;
         }, {});
-
+        
         if (cookies.team_name) {
           currentUserTeam = cookies.team_name;
           localStorage.setItem('userTeam', cookies.team_name);
@@ -146,7 +80,7 @@ function MatchView() {
     } catch (e) {
       console.error('Error getting user team:', e);
     }
-
+    
     fetch("/api/get-alliance-data", {
       headers: {
         'Authorization': (() => {
@@ -190,11 +124,11 @@ function MatchView() {
       if (!urlParams.match) {
         //search by teams
         let [team1, team2, team3, team4, team5, team6] = [
-          urlParams.team1,
-          urlParams.team2,
-          urlParams.team3,
-          urlParams.team4,
-          urlParams.team5,
+          urlParams.team1, 
+          urlParams.team2, 
+          urlParams.team3, 
+          urlParams.team4, 
+          urlParams.team5, 
           urlParams.team6
         ];
         setData({team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6]});
@@ -214,7 +148,7 @@ function MatchView() {
               acc[key] = value;
               return acc;
             }, {});
-
+            
             if (cookies.team_name) {
               currentUserTeam = cookies.team_name;
               localStorage.setItem('userTeam', cookies.team_name);
@@ -223,7 +157,7 @@ function MatchView() {
         } catch (e) {
           console.error('Error getting user team:', e);
         }
-
+        
         fetch('/api/get-teams-of-match?match=' + urlParams.match, {
           headers: {
             'Authorization': (() => {
@@ -268,7 +202,7 @@ function MatchView() {
 
             const newUrl = `${window.location.pathname}?${newParams.toString()}`;
             window.history.replaceState(null, 'Picklist', newUrl);
-
+            
             // Update our local urlParams state
             const updatedParams = {
               team1: data.team4,
@@ -280,14 +214,14 @@ function MatchView() {
               from_match: 'true'
             };
             setUrlParams(updatedParams);
-
+            
             // Also swap the data assignment
             setData({
-              team1: allData[data.team4],
-              team2: allData[data.team5],
-              team3: allData[data.team6],
-              team4: allData[data.team1],
-              team5: allData[data.team2],
+              team1: allData[data.team4], 
+              team2: allData[data.team5], 
+              team3: allData[data.team6], 
+              team4: allData[data.team1], 
+              team5: allData[data.team2], 
               team6: allData[data.team3]
             });
             setLoading(false);
@@ -371,41 +305,32 @@ function MatchView() {
     );
   }
 
-  // --- Build defaultTeam dynamically from config ---
-  const defaultAvgPieces = {};
-  for (const bar of barsConfig) {
-    defaultAvgPieces[bar.key] = null;
-  }
-
-  const defaultEndgame = {};
-  for (let i = 0; i < endgamePieConfig.keys.length; i++) {
-    // First key gets 100 (so the pie shows something), rest get 0
-    defaultEndgame[endgamePieConfig.keys[i]] = i === 0 ? 100 : 0;
-  }
-
-  const defaultQualitative = {};
-  for (const field of qualitativeFields) {
-    defaultQualitative[field] = null;
-  }
-
   const defaultTeam = {
     team: "N/A",
     teamName: "No Data",
     auto: null,
     tele: null,
     end: null,
-    avgPieces: defaultAvgPieces,
+    avgPieces: {
+      L1: null,
+      L2: null,
+      L3: null,
+      L4: null,
+      net: null, 
+      processor: null,
+      HP: null,
+    },
     leave: null,
     autoCoral: null,
     removedAlgae: null,
-    endgame: defaultEndgame,
-    qualitative: defaultQualitative,
+    endgame: { none: 100, park: 0, shallow: 0, deep: 0, fail: 0},
+    qualitative: { coralspeed: null, processorspeed: null, netspeed: null, algaeremovalspeed: null, climbspeed: null, maneuverability: null, defenseplayed: null, defenseevasion: null, aggression: null, cagehazard: null }
   };
 
   function AllianceButtons({t1, t2, t3, colors}) {
     // Check if we're viewing a match that was loaded by match number
     const fromMatch = urlParams.match !== null || urlParams.toString().includes('from_match=true');
-
+    
     // Preserve original team order in the URL by getting team values from the current URL params
     // This maintains consistency when teams were swapped due to match number lookup
     return <div className={styles.allianceBoard}>
@@ -432,6 +357,9 @@ function MatchView() {
       console.log(tele)
       console.log(end)
 
+
+
+
       //calc ranking points
       const RGBColors = {
         red: "#FF9393",
@@ -447,43 +375,50 @@ function MatchView() {
       if (currentAllianceEPA > opponentsEPA) RP_WIN = RGBColors.green;
       else if (currentAllianceEPA == opponentsEPA) RP_WIN = RGBColors.yellow;
 
-      // --- Config-driven ranking point calculations ---
-      const rpResults = rankingPointsConfig.map(rpConfig => {
-        let color = RGBColors.red;
+      //auto rp = all robots leave and alliance scores one coral
+      const allianceCoral = teams.reduce((sum, team) => {
+        return sum + (team && team.autoCoral !== null ? Math.floor(team.autoCoral) : 0);
+      }, 0);
+      
+      let RP_AUTO = RGBColors.red;
+      if ((allianceCoral >= 1) && 
+          teams.every(team => team && team.leave === true)) {
+        RP_AUTO = RGBColors.green;
+      }
 
-        if (rpConfig.type === "allLeaveAndCoral") {
-          const allianceCoral = teams.reduce((sum, team) => {
-            return sum + (team && team.autoCoral !== null ? Math.floor(team.autoCoral) : 0);
-          }, 0);
-          const allLeave = teams.every(team => team && team[rpConfig.leaveField || "leave"] === true);
-          if (allianceCoral >= (rpConfig.minCoral || 1) && allLeave) {
-            color = RGBColors.green;
-          }
-        } else if (rpConfig.type === "levelThreshold") {
-          const levels = rpConfig.levels || [];
-          const conditions = levels.map(level => {
-            const total = teams.reduce((sum, team) => {
-              return sum + (team && team.avgPieces && team.avgPieces[level.key] !== null ? team.avgPieces[level.key] : 0);
-            }, 0);
-            return total >= level.threshold;
-          });
-          const trueCount = conditions.filter(Boolean).length;
-          if (trueCount >= (rpConfig.greenCount || levels.length)) {
-            color = RGBColors.green;
-          } else if (trueCount >= (rpConfig.yellowCount || levels.length - 1)) {
-            color = RGBColors.yellow;
-          }
-        } else if (rpConfig.type === "endgameThreshold") {
-          const total = teams.reduce((sum, team) => {
-            return sum + (team && team[rpConfig.field] !== null ? Math.floor(team[rpConfig.field]) : 0);
-          }, 0);
-          if (total >= rpConfig.threshold) {
-            color = RGBColors.green;
-          }
-        }
-
-        return { label: rpConfig.label, color };
-      });
+      //coral rp = 5 coral scored on each level (5 on 3 levels is yellow)
+      const sumValidPieces = (pieceType) => {
+        return teams.reduce((sum, team) => {
+          return sum + (team && team.avgPieces && team.avgPieces[pieceType] !== null ? team.avgPieces[pieceType] : 0);
+        }, 0);
+      };
+      
+      const allianceL1 = sumValidPieces('L1');
+      const allianceL2 = sumValidPieces('L2'); 
+      const allianceL3 = sumValidPieces('L3');
+      const allianceL4 = sumValidPieces('L4');
+      
+      let RP_CORAL = RGBColors.red;
+      const conditions = [
+        allianceL1 >= 5,
+        allianceL2 >= 5,
+        allianceL3 >= 5,
+        allianceL4 >= 5
+      ];
+      //count the number of true conditions
+      const trueCount = conditions.filter(Boolean).length;
+      //if all 4 conditions are true
+      if (trueCount == 4) RP_CORAL = RGBColors.green;
+      //if 3 conditions are true
+      else if (trueCount == 3) RP_CORAL = RGBColors.yellow;
+    
+      //barge rp = 14 points in the barge
+      const endgamePoints = teams.reduce((sum, team) => {
+        return sum + (team && team.end !== null ? Math.floor(team.end) : 0);
+      }, 0);
+      
+      let RP_BARGE = RGBColors.red;
+      if (endgamePoints >= 14) RP_BARGE = RGBColors.green;
 
       return <div className={styles.lightBorderBox}>
         <div className={styles.scoreBreakdownContainer}>
@@ -496,29 +431,31 @@ function MatchView() {
         <div className={styles.RPs}>
           <div style={{background: colors[1]}}>RPs:</div>
           <div style={{background: RP_WIN}}>Victory</div>
-          {rpResults.map((rp, i) => (
-            <div key={i} style={{background: rp.color}}>{rp.label}</div>
-          ))}
+          <div style={{background: RP_AUTO}}>Auto</div>
+          <div style={{background: RP_CORAL}}>Coral</div>
+          <div style={{background: RP_BARGE}}>Barge</div>
         </div>
       </div>
-
+      
     }
 
     function TeamDisplay({teamData, colors, matchMax}) {
 
       const PiecePlacement = dynamic(() => import('./components/PiecePlacement'), { ssr: false });
-
+      
       // Check if endgame data is valid
-      const hasEndgameData = teamData.endgame &&
+      const hasEndgameData = teamData.endgame && 
         Object.values(teamData.endgame).some(value => value !== null && value > 0);
-
-      // Build endgame data from config
-      const endgameData = hasEndgameData
-        ? endgamePieConfig.keys.map((key, i) => ({
-            x: endgamePieConfig.labels[i] || key,
-            y: teamData.endgame[key] || 0,
-          }))
-        : [{ x: 'N/A', y: 100 }];
+      
+      const endgameData = hasEndgameData ? [
+        { x: 'None', y: teamData.endgame.none },
+        { x: 'Fail', y: teamData.endgame.fail},
+        { x: 'Park', y: teamData.endgame.park },
+        { x: 'Shallow', y: teamData.endgame.shallow },
+        { x: 'Deep', y: teamData.endgame.deep },
+      ] : [
+        { x: 'N/A', y: 100 }
+      ];
 
     return <div className={styles.lightBorderBox}>
       <h1 style={{color: colors[3], marginTop: "10px", marginBottom: "0px"}}>{teamData.team}</h1>
@@ -535,20 +472,21 @@ function MatchView() {
       </div>
       <div className={styles.barchartContainer}>
         <h2 style={{marginBottom: "0px", marginTop: "0px"}}>Average Piece Placement</h2>
-        <PiecePlacement
+        <PiecePlacement 
           colors={colors}
-          matchMax={matchMax}
-          {...Object.fromEntries(
-            barsConfig.map(bar => [
-              bar.key,
-              teamData.avgPieces[bar.key] !== null ? Math.round(10 * teamData.avgPieces[bar.key]) / 10 : null,
-            ])
-          )}
+          matchMax={matchMax} 
+          L1={teamData.avgPieces.L1 !== null ? Math.round(10*teamData.avgPieces.L1)/10 : null}
+          L2={teamData.avgPieces.L2 !== null ? Math.round(10*teamData.avgPieces.L2)/10 : null}
+          L3={teamData.avgPieces.L3 !== null ? Math.round(10*teamData.avgPieces.L3)/10 : null} 
+          L4={teamData.avgPieces.L4 !== null ? Math.round(10*teamData.avgPieces.L4)/10 : null} 
+          net={teamData.avgPieces.processor !== null ? Math.round(10*teamData.avgPieces.processor)/10 : null}
+          processor={teamData.avgPieces.net !== null ? Math.round(10*teamData.avgPieces.net)/10 : null}
+          HP={teamData.avgPieces.HP !== null ? Math.round(10*teamData.avgPieces.HP)/10 : null}
         />
       </div>
       <div className={styles.chartContainer}>
         <h2 style={{marginBottom: "-40px", marginTop: "60px"}}>Endgame %</h2>
-        <Endgame
+        <Endgame 
           colors={colors}
           endgameData={endgameData}
         />
@@ -565,11 +503,11 @@ function MatchView() {
     return sum;
   }
 
-
-
+  
+  
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
   const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
-  let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3??
+  let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3?? 
   blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
   blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
   let redScores = [0, get(redAlliance, "last3Auto")]
@@ -580,12 +518,12 @@ function MatchView() {
     {name: "Auto", blue: blueScores[1], red: redScores[1]},
     {name: "Tele", blue: blueScores[2], red: redScores[2]},
     {name: "End", blue: blueScores[3], red: redScores[3]},
-  ];
+  ]; 
 
-    //getting radar data from config
+    //getting radar data
     let radarData = [];
-    for (let qual of qualitativeFields) {
-      radarData.push({qual,
+    for (let qual of ['coralspeed', 'processorspeed', 'netspeed', 'algaeremovalspeed', 'climbspeed', 'maneuverability', 'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard']) {
+      radarData.push({qual, 
         team1: data?.team1?.qualitative?.[qual] !== undefined ? data.team1.qualitative[qual] : null,
         team2: data?.team2?.qualitative?.[qual] !== undefined ? data.team2.qualitative[qual] : null,
         team3: data?.team3?.qualitative?.[qual] !== undefined ? data.team3.qualitative[qual] : null,
@@ -596,20 +534,25 @@ function MatchView() {
     }
     console.log(radarData);
 
-    // Calculate matchMax from config-driven bar keys
     let matchMax = 0;
     for (let teamData of [data.team1, data.team2, data.team3, data.team4, data.team5, data.team6]) {
      if (teamData && teamData.avgPieces) {
-      const pieceValues = barsConfig
-        .map(bar => teamData.avgPieces[bar.key])
-        .filter(value => value !== null && value !== undefined);
-
+      const pieceValues = [
+        teamData.avgPieces.L4, 
+        teamData.avgPieces.L3, 
+        teamData.avgPieces.L2, 
+        teamData.avgPieces.L1, 
+        teamData.avgPieces.net, 
+        teamData.avgPieces.processor, 
+        teamData.avgPieces.HP
+      ].filter(value => value !== null);
+      
       if (pieceValues.length > 0) {
         matchMax = Math.max(...pieceValues, matchMax);
       }
      }
     }
-    matchMax = Math.floor(matchMax) + 2;
+    matchMax = Math.floor(matchMax) + 2; 
     console.log("Team 1 Data:", data.team1);
     console.log("Team 2 Data:", data.team2);
     console.log("Team 3 Data:", data.team3);
@@ -628,7 +571,7 @@ function MatchView() {
         </div>
         <div className={styles.allianceGraphs}>
           <div className={styles.graphContainer}>
-            <DefenseBarChart
+            <DefenseBarChart 
               allianceData={redAlliance}
               colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
               teamNumbers={[
@@ -644,7 +587,7 @@ function MatchView() {
             <EPALineChart data={epaData}/>
           </div>
           <div className={styles.graphContainer}>
-            <DefenseBarChart
+            <DefenseBarChart 
               allianceData={blueAlliance}
               colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
               teamNumbers={[

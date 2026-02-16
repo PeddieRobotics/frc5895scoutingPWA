@@ -4,52 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import styles from "./page.module.css";
 import Link from "next/link";
-import useGameConfig from "../../lib/useGameConfig";
-
-// Helper to resolve a dotted path like "auto.coral.total" on an object
-function resolvePath(obj, path) {
-  return path.split('.').reduce((acc, key) => acc?.[key], obj);
-}
-
-// Helper to evaluate a compute string like "auto.coral.total + tele.coral.total"
-function computeValue(data, computeStr) {
-  const parts = computeStr.split(' + ');
-  return parts.reduce((sum, path) => sum + (resolvePath(data, path.trim()) || 0), 0);
-}
-
-// Default config fallbacks
-const DEFAULT_COMPARE_CONFIG = {
-  metricsChart: [
-    { key: "avgEpa", label: "EPA" },
-    { key: "last3Epa", label: "Last 3 EPA" },
-    { key: "avgAuto", label: "Auto" },
-    { key: "avgTele", label: "Teleop" },
-    { key: "avgEnd", label: "Endgame" },
-  ],
-  scoringChart: [
-    { key: "coral", label: "Coral", compute: "auto.coral.total + tele.coral.total" },
-    { key: "net", label: "Net", compute: "auto.algae.avgNet + tele.algae.avgNet" },
-    { key: "processor", label: "Processor", compute: "auto.algae.avgProcessor + tele.algae.avgProcessor" },
-    { key: "algae", label: "Algae", compute: "auto.algae.removed + tele.algae.removed" },
-  ],
-  coralLevelChart: {
-    levels: ["L1", "L2", "L3", "L4"],
-    autoPrefix: "auto.coral.avg",
-    telePrefix: "tele.coral.avg",
-    failMetric: {
-      label: "Fail %",
-      autoSuccessKey: "auto.coral.success",
-      teleSuccessKey: "tele.coral.success",
-    },
-  },
-  endgameChart: {
-    metrics: ["None", "Park", "Shallow", "Deep", "Fail"],
-    keys: ["none", "park", "shallow", "deep", "fail"],
-    endgameSource: "endPlacement",
-    fallbackSource: "endgame",
-  },
-  defenseField: "defenseplayed",
-};
 
 // Custom tooltip formatter to show 1 decimal place
 const CustomTooltip = ({ active, payload, label }) => {
@@ -77,13 +31,7 @@ function Compare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
-  const { config, loading: configLoading } = useGameConfig();
-
-  const compareConfig = useMemo(
-    () => config?.display?.compare || DEFAULT_COMPARE_CONFIG,
-    [config]
-  );
-
+  
   // Parse URL parameters on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -94,7 +42,7 @@ function Compare() {
         urlParams.get('team3'),
         urlParams.get('team4')
       ].filter(team => team !== null && team !== "");
-
+      
       setTeams(parsedTeams);
     }
   }, []);
@@ -109,7 +57,7 @@ function Compare() {
 
   useEffect(() => {
     let isMounted = true;
-
+    
     async function fetchTeamData() {
       if (teams.length === 0) {
         setLoading(false);
@@ -134,7 +82,7 @@ function Compare() {
               acc[key] = value;
               return acc;
             }, {});
-
+            
             if (cookies.team_name) {
               currentUserTeam = cookies.team_name;
               localStorage.setItem('userTeam', cookies.team_name);
@@ -143,8 +91,8 @@ function Compare() {
         } catch (e) {
           console.error('Error getting user team:', e);
         }
-
-        const teamDataPromises = teams.map(team =>
+        
+        const teamDataPromises = teams.map(team => 
           fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
             headers: {
               'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
@@ -166,7 +114,7 @@ function Compare() {
         );
 
         const results = await Promise.all(teamDataPromises);
-
+        
         if (isMounted) {
           const teamsDataObj = {};
           results.forEach((data, index) => {
@@ -174,8 +122,8 @@ function Compare() {
             if (!data.avgEpa && data.avgEpa !== 0) {
               console.warn(`Team ${teams[index]} data is missing avgEpa field`);
             }
-
-            teamsDataObj[teams[index]] = data || {
+            
+            teamsDataObj[teams[index]] = data || { 
               team: teams[index],
               name: `Team ${teams[index]}`,
               avgEpa: 0,
@@ -187,7 +135,7 @@ function Compare() {
               last3Tele: 0,
               last3End: 0
             };
-
+            
             // Log last3EPA values from API
             console.log(`Team ${teams[index]} Last 3 EPA values:`, {
               epa: teamsDataObj[teams[index]].last3Epa,
@@ -196,7 +144,7 @@ function Compare() {
               end: teamsDataObj[teams[index]].last3End
             });
           });
-
+  
           console.log('Processed team data:', teamsDataObj);
           setTeamsData(teamsDataObj);
           setLoading(false);
@@ -211,14 +159,14 @@ function Compare() {
     }
 
     fetchTeamData();
-
+    
     // Cleanup function
     return () => {
       isMounted = false;
     };
   }, [teams]);
 
-  if (loading || configLoading) {
+  if (loading) {
     return (
       <div className={styles.container}>
         <h1>Loading...</h1>
@@ -240,9 +188,9 @@ function Compare() {
     <div className={styles.container}>
       <h1>Team Comparison</h1>
       <TeamInputForm initialTeams={teams} />
-
+      
       {error && <div className={styles.error}>{error}</div>}
-
+      
       <div className={styles.linkContainer} style={{margin: "20px 0"}}>
         {teams.map((team, index) => (
           <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
@@ -252,16 +200,16 @@ function Compare() {
           </Link>
         ))}
       </div>
-
+      
       <div className={styles.comparisonGrid}>
-        <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <CoralLevelComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
+        <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} />
+        <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} />
+        <CoralLevelComparison teamsData={teamsData} teams={teams} colors={COLORS} />
+        <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} />
       </div>
-
+      
       {/* Defense ratings section outside the grid to span full width */}
-      <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
+      <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} />
     </div>
   );
 }
@@ -271,21 +219,21 @@ function TeamInputForm({ initialTeams = ["", "", "", ""] }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+    
     // Filter out empty team numbers
     const validTeams = teamInputs.filter(team => team !== "");
-
+    
     if (validTeams.length === 0) {
       alert("Please enter at least one team number");
       return;
     }
-
+    
     // Construct the URL with team parameters
     const params = new URLSearchParams();
     validTeams.forEach((team, index) => {
       params.append(`team${index + 1}`, team);
     });
-
+    
     window.location.href = `/compare?${params.toString()}`;
   };
 
@@ -316,27 +264,29 @@ function TeamInputForm({ initialTeams = ["", "", "", ""] }) {
   );
 }
 
-function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
-  const metricsChart = compareConfig.metricsChart || DEFAULT_COMPARE_CONFIG.metricsChart;
-
+function MetricsComparison({ teamsData, teams, colors }) {
   // Prepare data for metric comparison chart
   const metricsData = teams.map((team, index) => {
     const data = teamsData[team] || {};
-    const entry = {
+    return {
       team: team,
       teamName: data.name || `Team ${team}`,
       color: colors[index],
+      avgEpa: data.avgEpa || 0,
+      avgAuto: data.avgAuto || 0,
+      avgTele: data.avgTele || 0,
+      avgEnd: data.avgEnd || 0,
+      last3EPA: data.last3Epa || 0,
     };
-    metricsChart.forEach(metric => {
-      entry[metric.key] = data[metric.key] || 0;
-    });
-    return entry;
   });
 
-  const chartData = metricsChart.map(metric => ({
-    name: metric.label,
-    ...formatChartData(metricsData, metric.key),
-  }));
+  const chartData = [
+    { name: 'EPA', ...formatChartData(metricsData, 'avgEpa') },
+    { name: 'Last 3 EPA', ...formatChartData(metricsData, 'last3EPA') },
+    { name: 'Auto', ...formatChartData(metricsData, 'avgAuto') },
+    { name: 'Teleop', ...formatChartData(metricsData, 'avgTele') },
+    { name: 'Endgame', ...formatChartData(metricsData, 'avgEnd') },
+  ];
 
   return (
     <div className={styles.chartContainer}>
@@ -357,17 +307,35 @@ function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
   );
 }
 
-function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
-  const scoringChart = compareConfig.scoringChart || DEFAULT_COMPARE_CONFIG.scoringChart;
-
-  const chartData = scoringChart.map(metric => {
-    const dataPoint = { name: metric.label };
-
+function ScoreComparison({ teamsData, teams, colors }) {
+  // Restructure data for comparison to match the pattern in MetricsComparison
+  
+  // First determine all the scoring metrics we want to show
+  const metrics = ["Coral", "Net", "Processor", "Algae"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
+    const dataPoint = { name: metric };
+    
+    // Add each team's value for this metric
     teams.forEach(team => {
       const data = teamsData[team] || {};
-      dataPoint[`team${team}`] = computeValue(data, metric.compute);
+      const avgPieces = data.avgPieces || {};
+      
+      let value = 0;
+      if (metric === "Coral") {
+        value = data.auto?.coral?.total + data.tele?.coral?.total || data.avgCoral || 0;
+      } else if (metric === "Net") {
+        value = avgPieces.net || (data.auto?.algae?.avgNet || 0) + (data.tele?.algae?.avgNet || 0);
+      } else if (metric === "Processor") {
+        value = avgPieces.processor || (data.auto?.algae?.avgProcessor || 0) + (data.tele?.algae?.avgProcessor || 0);
+      } else if (metric === "Algae") {
+        value = data.avgAlgae || (data.auto?.algae?.removed || 0) + (data.tele?.algae?.removed || 0);
+      }
+      
+      dataPoint[`team${team}`] = value;
     });
-
+    
     return dataPoint;
   });
 
@@ -390,34 +358,38 @@ function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
   );
 }
 
-function CoralLevelComparison({ teamsData, teams, colors, compareConfig }) {
-  const coralConfig = compareConfig.coralLevelChart || DEFAULT_COMPARE_CONFIG.coralLevelChart;
-  const { levels, autoPrefix, telePrefix, failMetric } = coralConfig;
-
-  // Build metric list: levels + optional fail metric
-  const allMetrics = [...levels];
-  if (failMetric) {
-    allMetrics.push(failMetric.label);
-  }
-
-  const chartData = allMetrics.map(metric => {
+function CoralLevelComparison({ teamsData, teams, colors }) {
+  // Restructure data for comparison to match the pattern in MetricsComparison
+  
+  // First determine all the coral level metrics we want to show
+  const metrics = ["L1", "L2", "L3", "L4", "Fail %"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
     const dataPoint = { name: metric };
-
+    
+    // Add each team's value for this metric
     teams.forEach(team => {
       const data = teamsData[team] || {};
-
-      if (failMetric && metric === failMetric.label) {
-        const autoSuccess = resolvePath(data, failMetric.autoSuccessKey) || 0;
-        const teleSuccess = resolvePath(data, failMetric.teleSuccessKey) || 0;
-        dataPoint[`team${team}`] = 100 - (autoSuccess + teleSuccess) / 2;
-      } else {
-        // Level metric: resolve autoPrefix + level + telePrefix + level
-        const autoVal = resolvePath(data, `${autoPrefix}${metric}`) || 0;
-        const teleVal = resolvePath(data, `${telePrefix}${metric}`) || 0;
-        dataPoint[`team${team}`] = autoVal + teleVal;
+      const auto = data.auto?.coral || {};
+      const tele = data.tele?.coral || {};
+      
+      let value = 0;
+      if (metric === "L1") {
+        value = (auto.avgL1 || 0) + (tele.avgL1 || 0);
+      } else if (metric === "L2") {
+        value = (auto.avgL2 || 0) + (tele.avgL2 || 0);
+      } else if (metric === "L3") {
+        value = (auto.avgL3 || 0) + (tele.avgL3 || 0);
+      } else if (metric === "L4") {
+        value = (auto.avgL4 || 0) + (tele.avgL4 || 0);
+      } else if (metric === "Fail %") {
+        value = 100 - ((auto.success || 0) + (tele.success || 0)) / 2;
       }
+      
+      dataPoint[`team${team}`] = value;
     });
-
+    
     return dataPoint;
   });
 
@@ -440,22 +412,39 @@ function CoralLevelComparison({ teamsData, teams, colors, compareConfig }) {
   );
 }
 
-function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
-  const endgameConfig = compareConfig.endgameChart || DEFAULT_COMPARE_CONFIG.endgameChart;
-  const { metrics, keys, endgameSource, fallbackSource } = endgameConfig;
-
-  const chartData = metrics.map((metric, metricIndex) => {
+function EndgameComparison({ teamsData, teams, colors }) {
+  // Restructure data for comparison to match the pattern in other components
+  
+  // Define endgame metrics
+  const metrics = ["None", "Park", "Shallow", "Deep", "Fail"];
+  
+  // Create charts for each metric
+  const chartData = metrics.map(metric => {
     const dataPoint = { name: metric };
-    const key = keys[metricIndex];
-
+    
+    // Add each team's value for this metric
     teams.forEach(team => {
       const data = teamsData[team] || {};
-      const primary = data[endgameSource] || {};
-      const fallback = data[fallbackSource] || {};
-
-      dataPoint[`team${team}`] = primary[key] || fallback[key] || 0;
+      // Try to get data from two possible sources - direct endgame object or endPlacement
+      const endgame = data.endgame || {};
+      const endPlacement = data.endPlacement || {};
+      
+      let value = 0;
+      if (metric === "None") {
+        value = endgame.none || endPlacement.none || 0;
+      } else if (metric === "Park") {
+        value = endgame.park || endPlacement.park || 0;
+      } else if (metric === "Shallow") {
+        value = endgame.shallow || endPlacement.shallow || 0;
+      } else if (metric === "Deep") {
+        value = endgame.deep || endPlacement.deep || 0;
+      } else if (metric === "Fail") {
+        value = endgame.fail || endPlacement.parkandFail || 0;
+      }
+      
+      dataPoint[`team${team}`] = value;
     });
-
+    
     return dataPoint;
   });
 
@@ -478,19 +467,7 @@ function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
   );
 }
 
-function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
-  const defenseField = compareConfig.defenseField || DEFAULT_COMPARE_CONFIG.defenseField;
-
-  // Build case-variant list from the configured field name
-  const baseField = defenseField;
-  const fieldVariants = [
-    baseField,
-    baseField.charAt(0).toUpperCase() + baseField.slice(1),
-    baseField.toUpperCase(),
-    baseField.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, ''),
-    baseField.charAt(0).toUpperCase() + baseField.slice(1).replace(/([a-z])([A-Z])/g, '$1$2'),
-  ];
-
+function QualitativeComparison({ teamsData, teams, colors }) {
   // Format team-specific defense data using bar charts like in team-view
   return (
     <div className={styles.qualitativeContainer}>
@@ -499,9 +476,10 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
         {teams.map((team, index) => {
           const data = teamsData[team] || {};
           const rows = data.rows || [];
-
-          // Get defense played ratings using configured field with case variants
+          
+          // Get defense played ratings using the same method as team-view
           const getDefensePlayed = (row) => {
+            const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
             for (const field of fieldVariants) {
               if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
                 return row[field];
@@ -509,32 +487,32 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
             }
             return null;
           };
-
+          
           // Filter valid defense ratings
           const validDefenseRatings = rows.filter(row => {
             const defenseValue = getDefensePlayed(row);
             return row.team == team && defenseValue !== null;
           });
-
+          
           // Debug for when there's no row data
           if (rows.length === 0) {
             console.log(`Team ${team}: No row data available from API.`);
           } else if (validDefenseRatings.length === 0) {
             console.log(`Team ${team}: Has ${rows.length} rows but no defense ratings found.`);
           }
-
+          
           // Prepare chart data
           let chartData = [];
-
+          
           if (validDefenseRatings.length > 0) {
             // Calculate average defense rating
             const totalSum = validDefenseRatings.reduce((sum, row) => {
               const defenseValue = getDefensePlayed(row);
               return sum + defenseValue;
             }, 0);
-
+            
             const totalAvg = totalSum / validDefenseRatings.length;
-
+            
             // Debug log defense data
             console.log(`Team ${team} Defense Ratings:`, {
               numRows: rows.length,
@@ -546,9 +524,9 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
                 rating: getDefensePlayed(row)
               }))
             });
-
+            
             chartData = [{ name: 'TOTAL', value: totalAvg }];
-
+            
             // Group by scout
             const scoutMap = {};
             validDefenseRatings.forEach(row => {
@@ -558,7 +536,7 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
               }
               scoutMap[scoutName].push(getDefensePlayed(row));
             });
-
+            
             // Add scout averages
             Object.entries(scoutMap).forEach(([scout, ratings]) => {
               if (ratings.length > 0) {
@@ -570,14 +548,14 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
                 });
               }
             });
-          }
+          } 
           // If no row-level data but has qualitative array
           else if (data.qualitative) {
             // Check for defense rating in qualitative data
-            const defenseItem = Array.isArray(data.qualitative)
+            const defenseItem = Array.isArray(data.qualitative) 
               ? data.qualitative.find(q => q.name === "Defense Played")
               : null;
-
+              
             if (defenseItem && defenseItem.rating > 0) {
               chartData = [{ name: 'TOTAL', value: defenseItem.rating }];
             } else {
@@ -586,7 +564,7 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
           } else {
             chartData = [{ name: 'TOTAL', value: 0 }];
           }
-
+          
           return (
             <div key={team} className={styles.defenseChart}>
               <h3 style={{ color: colors[index] }}>Team {team}</h3>
@@ -596,15 +574,15 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
                   margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    angle={-45}
-                    textAnchor="end"
-                    height={70}
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={70} 
                     tick={{ dy: 10, fontSize: 12 }}
                   />
-                  <YAxis
-                    domain={[0, 6]}
+                  <YAxis 
+                    domain={[0, 6]} 
                     ticks={[0, 1, 2, 3, 4, 5, 6]}
                     interval={0}
                   />
@@ -623,10 +601,10 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
 // Helper function to format data for charts
 function formatChartData(teamsData, metric) {
   const formattedData = {};
-
+  
   teamsData.forEach(data => {
     formattedData[`team${data.team}`] = data[metric];
   });
-
+  
   return formattedData;
-}
+} 

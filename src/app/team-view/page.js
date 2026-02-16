@@ -1,6 +1,6 @@
 "use client";
 import styles from "./page.module.css";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import VBox from "./components/VBox";
 import HBox from "./components/HBox";
@@ -13,31 +13,10 @@ import CoralLineChart from './components/CoralLineChart';
 import PiecePlacement from "./components/PiecePlacement";
 import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
-import useGameConfig from "../../lib/useGameConfig";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 
 export default function TeamViewPage() {
     return <TeamView />;
-}
-
-// Helper to resolve a dotted path like "auto.coral.successL1" from an object
-function resolvePath(obj, path) {
-    if (!obj || !path) return undefined;
-    return path.split('.').reduce((acc, key) => acc?.[key], obj);
-}
-
-// Format a value based on format type from config
-function formatStatValue(value, format) {
-    switch (format) {
-        case 'percent':
-            return `${Math.round(10 * (value || 0)) / 10}%`;
-        case 'number':
-            return Math.round(10 * (value || 0)) / 10;
-        case 'text':
-            return value || 'None';
-        default:
-            return value;
-    }
 }
 
 function TeamView() {
@@ -51,23 +30,6 @@ function TeamView() {
     const [hasTopBar, setHasTopBar] = useState(false);
     const [source, setSource] = useState(null);
 
-    const { config, loading: configLoading } = useGameConfig();
-
-    // Extract teamView config with defaults
-    const tvConfig = config?.display?.teamView || {};
-    const epaThresholds = tvConfig.epaThresholds || { overall: 12, auto: 6, tele: 10, end: 6 };
-    const epaBreakdown = tvConfig.epaBreakdown || ["auto", "tele", "end"];
-    const coralConfig = tvConfig.piecePlacement?.coral || { levels: [], autoFields: [], teleFields: [], autoFailFields: [], teleFailFields: [] };
-    const algaeConfig = tvConfig.piecePlacement?.algae || { autoFields: [], teleFields: [], autoFailFields: [], teleFailFields: [] };
-    const barsConfig = tvConfig.piecePlacement?.bars || [];
-    const endgamePieConfig = tvConfig.endgamePie || { labels: [], values: [] };
-    const endgameStatsConfig = tvConfig.endgameStats || {};
-    const overallStatsConfig = tvConfig.overallStats || [];
-    const sectionsConfig = tvConfig.sections || {};
-    const commentsConfig = tvConfig.comments || ["generalcomments", "breakdowncomments", "defensecomments"];
-    const intakeDisplayConfig = tvConfig.intakeDisplay || [];
-    const defenseBarField = tvConfig.defenseBarField || "defenseplayed";
-
     // Initialize URL parameters on the client side
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -76,7 +38,7 @@ function TeamView() {
             setTeam(teamParam);
             setHasTopBar(params.get('team1') !== null);
             setSource(params.get('source'));
-
+            
             // Store all URL parameters
             const paramsObj = {};
             for (const [key, value] of params.entries()) {
@@ -107,7 +69,7 @@ function TeamView() {
         </Link>
       </div>
     }
-
+    
     function CompareTopBar() {
       const COLORS = [
         "#A4E5DF", // green
@@ -115,7 +77,7 @@ function TeamView() {
         "#DDB7F7", // purple
         "#F6C1D8", // pink
       ];
-
+      
       // Get teams from URL parameters
       const compareTeams = [
         urlParams.team1,
@@ -123,11 +85,11 @@ function TeamView() {
         urlParams.team3,
         urlParams.team4
       ].filter(t => t !== undefined && t !== null && t !== "");
-
+      
       if (source !== 'compare' || compareTeams.length === 0) {
         return <></>;
       }
-
+      
       return (
         <div className={styles.matchNav}>
           <div className={styles.allianceBoard}>
@@ -145,7 +107,7 @@ function TeamView() {
         </div>
       );
     }
-
+    
     function TopBar() {
       const COLORS = [
         ["#B7F7F2", "#A1E7E1", "#75C6BF", "#5EB5AE"],
@@ -155,29 +117,29 @@ function TeamView() {
         ["#FABFC4", "#FEA6AD", "#F29199", "#E67983"],
         ["#FFE3D3", "#EBB291", "#E19A70", "#D7814F"],
       ];
-
+      
       if (!hasTopBar || source === 'compare') {
         return <></>
       }
-
+      
       // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
       // when viewing a match by match number
       const fromMatch = urlParams.from_match === 'true';
 
       return <div className={styles.matchNav}>
-        <AllianceButtons
-          t1={urlParams.team1}
-          t2={urlParams.team2}
-          t3={urlParams.team3}
+        <AllianceButtons 
+          t1={urlParams.team1} 
+          t2={urlParams.team2} 
+          t3={urlParams.team3} 
           colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
         />
         <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
           <button style={{background: "#ffff88", color: "black"}}>Match</button>
         </Link>
-        <AllianceButtons
-          t1={urlParams.team4}
-          t2={urlParams.team5}
-          t3={urlParams.team6}
+        <AllianceButtons 
+          t1={urlParams.team4} 
+          t2={urlParams.team5} 
+          t3={urlParams.team6} 
           colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
         />
       </div>
@@ -202,7 +164,7 @@ function TeamView() {
               acc[key] = value;
               return acc;
             }, {});
-
+            
             if (cookies.team_name) {
               setCurrentUserTeam(cookies.team_name);
               localStorage.setItem('userTeam', cookies.team_name);
@@ -212,7 +174,7 @@ function TeamView() {
           console.error('Error getting user team:', e);
         }
       }
-
+  
       fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
           headers: (() => {
             const hdrs = {};
@@ -235,29 +197,31 @@ function TeamView() {
                   }));
                   throw new Error('Authentication required');
               }
-
+              
               // Check for 404 Not Found
               if (response.status === 404) {
                   throw new Error('Team data not found');
               }
-
+              
               return response.json();
           })
           .then(data => {
-              console.log("Fetched Team Data:", data);
-
+              console.log("Fetched Team Data:", data);  // Log the complete data object
+              
               // Ensure we have a rows array, even if empty
               if (!data.rows) {
                   data.rows = [];
               }
-
+              
+              // No need to recalculate last3Epa values - they are already correctly calculated in the API
+              // just log them to verify they exist
               console.log("Last 3 EPA values from API:", {
                 epa: data.last3Epa,
-                auto: data.last3Auto,
+                auto: data.last3Auto, 
                 tele: data.last3Tele,
                 end: data.last3End
               });
-
+              
               setData(data);
               setLoading(false);
           })
@@ -284,7 +248,7 @@ function TeamView() {
         );
     }
 
-    if (loading || configLoading) {
+    if (loading) {
         return (
             <div>
                 <h1>Loading...</h1>
@@ -301,59 +265,77 @@ function TeamView() {
     }
 
     // Process match data for coral success and failure charts
-    // Uses coral config levels/fields instead of hardcoded L1-L4
     const prepareCoralData = (matches, phase, dataType = 'success') => {
         if (!matches || !Array.isArray(matches)) return [];
-
+        
+        // Filter to only include matches for this team
         const teamMatches = matches.filter(match => match.team == team);
-        const levels = coralConfig.levels || [];
-
-        // Pick the right field arrays based on phase and dataType
-        let fields;
-        if (dataType === 'success') {
-            fields = phase === 'auto' ? coralConfig.autoFields : coralConfig.teleFields;
-        } else {
-            fields = phase === 'auto' ? coralConfig.autoFailFields : coralConfig.teleFailFields;
-        }
-        fields = fields || [];
-
+        
         return teamMatches.map(match => {
-            const result = { match: match.match };
-            levels.forEach((level, i) => {
-                result[level] = (fields[i] ? match[fields[i]] : 0) || 0;
-            });
+            let result;
+            
+            if (dataType === 'success') {
+                // Extract L1-L4 successes from match data
+                const l1Success = match[`${phase.toLowerCase()}l1success`] || 0;
+                const l2Success = match[`${phase.toLowerCase()}l2success`] || 0;
+                const l3Success = match[`${phase.toLowerCase()}l3success`] || 0;
+                const l4Success = match[`${phase.toLowerCase()}l4success`] || 0;
+                
+                result = {
+                    match: match.match,
+                    L1: l1Success,
+                    L2: l2Success,
+                    L3: l3Success,
+                    L4: l4Success,
+                };
+            } else {
+                // Extract L1-L4 failures from match data
+                const l1Fail = match[`${phase.toLowerCase()}l1fail`] || 0;
+                const l2Fail = match[`${phase.toLowerCase()}l2fail`] || 0;
+                const l3Fail = match[`${phase.toLowerCase()}l3fail`] || 0;
+                const l4Fail = match[`${phase.toLowerCase()}l4fail`] || 0;
+                
+                result = {
+                    match: match.match,
+                    L1: l1Fail,
+                    L2: l2Fail,
+                    L3: l3Fail,
+                    L4: l4Fail,
+                };
+            }
+            
             return result;
-        }).sort((a, b) => a.match - b.match);
+        }).sort((a, b) => a.match - b.match); // Ensure matches are in order
     };
 
+    // Add this function after prepareCoralData
     // Process match data for algae data charts
-    // Uses algae config fields instead of hardcoded field names
     const prepareAlgaeData = (matches, phase) => {
         if (!matches || !Array.isArray(matches)) return [];
-
+        
+        // Filter to only include matches for this team
         const teamMatches = matches.filter(match => match.team == team);
-        const algaeFields = phase === 'auto' ? algaeConfig.autoFields : algaeConfig.teleFields;
-        const algaeFailFields = phase === 'auto' ? algaeConfig.autoFailFields : algaeConfig.teleFailFields;
-
-        // The algae fields follow a convention: [processorSuccess, netSuccess, algaeRemoved]
-        // The fail fields follow: [processorFail, netFail]
-        const processorSuccessField = algaeFields?.[0] || `${phase}processorsuccess`;
-        const netSuccessField = algaeFields?.[1] || `${phase}netsuccess`;
-        const removedField = algaeFields?.[2] || `${phase}algaeremoved`;
-        const processorFailField = algaeFailFields?.[0] || `${phase}processorfail`;
-        const netFailField = algaeFailFields?.[1] || `${phase}netfail`;
-
-        return teamMatches.map(match => ({
-            match: match.match,
-            removed: match[removedField] || 0,
-            processorSuccess: match[processorSuccessField] || 0,
-            processorFail: match[processorFailField] || 0,
-            netSuccess: match[netSuccessField] || 0,
-            netFail: match[netFailField] || 0
-        })).sort((a, b) => a.match - b.match);
+        
+        return teamMatches.map(match => {
+            // Process algae data
+            const removed = match[`${phase.toLowerCase()}algaeremoved`] || 0;
+            const processorSuccess = match[`${phase.toLowerCase()}processorsuccess`] || 0;
+            const processorFail = match[`${phase.toLowerCase()}processorfail`] || 0;
+            const netSuccess = match[`${phase.toLowerCase()}netsuccess`] || 0;
+            const netFail = match[`${phase.toLowerCase()}netfail`] || 0;
+            
+            return {
+                match: match.match,
+                removed: removed,
+                processorSuccess: processorSuccess,
+                processorFail: processorFail,
+                netSuccess: netSuccess,
+                netFail: netFail
+            };
+        }).sort((a, b) => a.match - b.match); // Ensure matches are in order
     };
 
-    // Use the data directly from the API with safe defaults
+    // Ensure data has all the required properties with defaults
     const safeData = {
         team: data?.team || team || 'Unknown',
         name: data?.name || 'Unknown Team',
@@ -382,12 +364,64 @@ function TeamView() {
         leave: data?.leave || 0,
         attemptCage: data?.attemptCage || 0,
         successCage: data?.successCage || 0,
+        coralGroundIntake: data?.coralGroundIntake || false,
+        coralStationIntake: data?.coralStationIntake || false,
+        algaeGroundIntake: data?.algaeGroundIntake || false,
+        lollipop: data?.lollipop || false,
+        algaeLowReefIntake: data?.algaeLowReefIntake || false,
+        algaeHighReefIntake: data?.algaeHighReefIntake || false,
         qualitative: data?.qualitative || [],
-        auto: data?.auto || { coral: {}, algae: {} },
-        tele: data?.tele || { coral: {}, algae: {} },
-        endPlacement: data?.endPlacement || {},
-        // Spread all remaining fields (includes intake booleans from API)
-        ...data,
+        tele: {
+            coral: {
+                success: data?.tele?.coral?.success || 0,
+                total: data?.tele?.coral?.total || 0,
+                successL1: data?.tele?.coral?.successL1 || 0,
+                successL2: data?.tele?.coral?.successL2 || 0,
+                successL3: data?.tele?.coral?.successL3 || 0,
+                successL4: data?.tele?.coral?.successL4 || 0,
+                avgL1: data?.tele?.coral?.avgL1 || 0,
+                avgL2: data?.tele?.coral?.avgL2 || 0,
+                avgL3: data?.tele?.coral?.avgL3 || 0,
+                avgL4: data?.tele?.coral?.avgL4 || 0
+            },
+            algae: {
+                removed: data?.tele?.algae?.removed || 0,
+                successProcessor: data?.tele?.algae?.successProcessor || 0,
+                successNet: data?.tele?.algae?.successNet || 0,
+                avgProcessor: data?.tele?.algae?.avgProcessor || 0,
+                avgNet: data?.tele?.algae?.avgNet || 0
+            },
+            successHp: data?.tele?.successHp || 0,
+            avgHp: data?.tele?.avgHp || 0
+        },
+        auto: {
+            coral: {
+                success: data?.auto?.coral?.success || 0,
+                total: data?.auto?.coral?.total || 0,
+                successL1: data?.auto?.coral?.successL1 || 0,
+                successL2: data?.auto?.coral?.successL2 || 0,
+                successL3: data?.auto?.coral?.successL3 || 0,
+                successL4: data?.auto?.coral?.successL4 || 0,
+                avgL1: data?.auto?.coral?.avgL1 || 0,
+                avgL2: data?.auto?.coral?.avgL2 || 0,
+                avgL3: data?.auto?.coral?.avgL3 || 0,
+                avgL4: data?.auto?.coral?.avgL4 || 0
+            },
+            algae: {
+                removed: data?.auto?.algae?.removed || 0,
+                successProcessor: data?.auto?.algae?.successProcessor || 0,
+                successNet: data?.auto?.algae?.successNet || 0,
+                avgProcessor: data?.auto?.algae?.avgProcessor || 0,
+                avgNet: data?.auto?.algae?.avgNet || 0
+            }
+        },
+        endPlacement: {
+            none: data?.endPlacement?.none || 0,
+            park: data?.endPlacement?.park || 0,
+            parkandFail: data?.endPlacement?.parkandFail || 0,
+            shallow: data?.endPlacement?.shallow || 0,
+            deep: data?.endPlacement?.deep || 0
+        }
     };
 
     // Prepare data for the charts
@@ -395,18 +429,20 @@ function TeamView() {
     const autoCoralFailData = prepareCoralData(safeData.rows, 'auto', 'fail');
     const teleCoralSuccessData = prepareCoralData(safeData.rows, 'tele', 'success');
     const teleCoralFailData = prepareCoralData(safeData.rows, 'tele', 'fail');
-
+    
+    // Add these lines to prepare algae data
     const autoAlgaeData = prepareAlgaeData(safeData.rows, 'auto');
     const teleAlgaeData = prepareAlgaeData(safeData.rows, 'tele');
-
-    console.log(`Team ${team} Coral Data:`, {
-        autoSuccess: autoCoralSuccessData,
+    
+    console.log(`Team ${team} Coral Data:`, { 
+        autoSuccess: autoCoralSuccessData, 
         autoFail: autoCoralFailData,
         teleSuccess: teleCoralSuccessData,
         teleFail: teleCoralFailData,
         matches: (safeData.rows).filter(m => m.team == team).map(m => m.match)
     });
 
+    // Also log algae data
     console.log(`Team ${team} Algae Data:`, {
         auto: autoAlgaeData,
         tele: teleAlgaeData
@@ -430,251 +466,36 @@ function TeamView() {
       green2: "#c4f19f",
     }
 
-    // Compute last3 EPA color indicators from config thresholds
-    const computeLast3Color = (avg, last3, threshold, primaryColors) => {
-        if ((avg + threshold) < last3) return primaryColors.green;
-        if ((avg - threshold) > last3) return primaryColors.red;
-        return primaryColors.yellow;
-    };
+    //overall last3epa
+    let overallLast3 = epaColors.yellow1;
+    if ((safeData.avgEpa + 12) < safeData.last3Epa) overallLast3 = epaColors.green1;
+    else if ((safeData.avgEpa - 12) > safeData.last3Epa) overallLast3 = epaColors.red1;
 
-    const overallLast3 = computeLast3Color(safeData.avgEpa, safeData.last3Epa, epaThresholds.overall, { green: epaColors.green1, red: epaColors.red1, yellow: epaColors.yellow1 });
-    const autoLast3 = computeLast3Color(safeData.avgAuto, safeData.last3Auto, epaThresholds.auto, { green: epaColors.green2, red: epaColors.red2, yellow: epaColors.yellow2 });
-    const teleLast3 = computeLast3Color(safeData.avgTele, safeData.last3Tele, epaThresholds.tele, { green: epaColors.green2, red: epaColors.red2, yellow: epaColors.yellow2 });
-    const endLast3 = computeLast3Color(safeData.avgEnd, safeData.last3End, epaThresholds.end, { green: epaColors.green2, red: epaColors.red2, yellow: epaColors.yellow2 });
+    //auto last3epa
+    let autoLast3 = epaColors.yellow2;
+    if ((safeData.avgAuto + 6) < safeData.last3Auto) autoLast3 = epaColors.green2;
+    else if ((safeData.avgAuto - 6) > safeData.last3Auto) autoLast3 = epaColors.red2;
 
-    // Build endgame pie data from config
-    const endgamePieData = (endgamePieConfig.labels || []).map((label, i) => {
-        // Map config labels to the endPlacement keys from the API
-        // The API uses valueMapping keys from apiAggregation.endgameConfig
-        const placementKeys = Object.keys(safeData.endPlacement);
-        const placementKey = placementKeys[i];
-        return {
-            x: label,
-            y: placementKey ? (safeData.endPlacement[placementKey] || 0) : 0
-        };
-    });
+    //tele last3epa
+    let teleLast3 = epaColors.yellow2;
+    if ((safeData.avgTele + 10) < safeData.last3Tele) teleLast3 = epaColors.green2;
+    else if ((safeData.avgTele - 10) > safeData.last3Tele) teleLast3 = epaColors.red2;
+
+    //tele last3epa
+    let endLast3 = epaColors.yellow2;
+    if ((safeData.avgEnd + 6) < safeData.last3End) endLast3 = epaColors.green2;
+    else if ((safeData.avgEnd - 6) > safeData.last3End) endLast3 = epaColors.red2;
+
+    const endgamePieData = [
+        { x: 'None', y: safeData.endPlacement.none },
+        { x: 'Park', y: safeData.endPlacement.park },
+        { x: 'Fail', y: safeData.endPlacement.parkandFail },
+        { x: 'Shallow', y: safeData.endPlacement.shallow },
+        { x: 'Deep', y: safeData.endPlacement.deep }
+    ];
 
     // Custom color array for endgame pie chart with 5 distinct colors
     const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
-
-    // Build PiecePlacement values from config bars
-    const piecePlacementProps = {};
-    barsConfig.forEach(bar => {
-        let value = 0;
-        // Look up auto + tele averages from safeData based on the bar label
-        // The API data uses keys like auto.coral.avgL1, tele.coral.avgL1, auto.algae.avgNet, etc.
-        const label = bar.label;
-        if (label.startsWith('L')) {
-            // Coral level
-            const autoVal = safeData.auto?.coral?.[`avg${label}`] || 0;
-            const teleVal = safeData.tele?.coral?.[`avg${label}`] || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'Net') {
-            const autoVal = safeData.auto?.algae?.avgNet || 0;
-            const teleVal = safeData.tele?.algae?.avgNet || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'Prcsr') {
-            const autoVal = safeData.auto?.algae?.avgProcessor || 0;
-            const teleVal = safeData.tele?.algae?.avgProcessor || 0;
-            value = Math.round(10 * (autoVal + teleVal)) / 10;
-        } else if (label === 'HP') {
-            value = Math.round(10 * (safeData.tele?.avgHp || 0)) / 10;
-        }
-        // Map label to prop name that PiecePlacement expects
-        const propMap = { 'L1': 'L1', 'L2': 'L2', 'L3': 'L3', 'L4': 'L4', 'Net': 'net', 'Prcsr': 'processor', 'HP': 'HP' };
-        const propName = propMap[label] || label;
-        piecePlacementProps[propName] = value;
-    });
-
-    // Build overall stat VBoxes from config
-    const renderOverallStats = () => {
-        return overallStatsConfig.map((stat, i) => {
-            const rawValue = safeData[stat.key];
-            const formatted = formatStatValue(rawValue, stat.format);
-            return (
-                <VBox
-                    key={stat.key || i}
-                    id="box"
-                    className={styles.boxes}
-                    style={{width: "200px"}}
-                    color1={Colors[0][1]}
-                    color2={Colors[0][0]}
-                    title={stat.title}
-                    value={formatted}
-                />
-            );
-        });
-    };
-
-    // Build comments from config
-    const commentKeyMap = {
-        'generalcomments': 'generalComments',
-        'breakdowncomments': 'breakdownComments',
-        'defensecomments': 'defenseComments',
-    };
-    const commentTitleMap = {
-        'generalcomments': 'General Comments',
-        'breakdowncomments': 'Breakdown Comments',
-        'defensecomments': 'Defense Comments',
-    };
-
-    // Helper to render an algae table for a given phase and color set
-    const renderAlgaeTable = (algaeData, colorSet) => {
-        const algaeTableStyle = {
-            fontSize: "clamp(10px, 2vw, 14px)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            padding: "4px"
-        };
-
-        return (
-            <div style={{
-                padding: "15px 0",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                width: "100%",
-                textAlign: "center"
-            }}>
-                <div style={{width: "90%", margin: "0 auto"}}>
-                    <table className={styles.coralTable} style={{
-                        width: "100%",
-                        tableLayout: "fixed",
-                        margin: "0 auto",
-                        borderCollapse: "collapse"
-                    }}>
-                        <tbody>
-                            <tr>
-                                <td style={{backgroundColor: colorSet[2], width: "15%", ...algaeTableStyle}}>Match</td>
-                                <td style={{backgroundColor: colorSet[2], width: "20%", ...algaeTableStyle}}>Algae Removed</td>
-                                <td style={{backgroundColor: colorSet[2], width: "32.5%", ...algaeTableStyle}} colSpan="2">Processor</td>
-                                <td style={{backgroundColor: colorSet[2], width: "32.5%", ...algaeTableStyle}} colSpan="2">Net</td>
-                            </tr>
-                            <tr>
-                                <td style={{backgroundColor: colorSet[1]}}></td>
-                                <td style={{backgroundColor: colorSet[1]}}></td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Success</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Fail</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Success</td>
-                                <td style={{backgroundColor: colorSet[1], width: "16.25%", ...algaeTableStyle}}>Fail</td>
-                            </tr>
-                            {algaeData.length > 0 ? (
-                                algaeData.map((match, index) => (
-                                    <tr key={index}>
-                                        <td style={{backgroundColor: colorSet[1], ...algaeTableStyle}}>{match.match}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.removed}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.processorSuccess}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.processorFail}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.netSuccess}</td>
-                                        <td style={{backgroundColor: colorSet[0], ...algaeTableStyle}}>{match.netFail}</td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" style={{backgroundColor: colorSet[0], textAlign: "center", ...algaeTableStyle}}>No match data available</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
-    };
-
-    // Helper to build FourByTwo props from config level table
-    const buildFourByTwoProps = (levelTable, phaseData) => {
-        const levels = levelTable?.levels || [];
-        const successFields = levelTable?.successFields || [];
-        const avgFields = levelTable?.avgFields || [];
-        const props = { HC1: "Success", HC2: "Avg Coral" };
-
-        levels.forEach((level, i) => {
-            const rowNum = i + 1;
-            const successVal = resolvePath(safeData, successFields[i]) || 0;
-            const avgVal = resolvePath(safeData, avgFields[i]) || 0;
-            props[`HR${rowNum}`] = level;
-            props[`R${rowNum}C1`] = `${Math.round(10 * successVal) / 10}%`;
-            props[`R${rowNum}C2`] = Math.round(10 * avgVal) / 10;
-        });
-
-        return props;
-    };
-
-    // Helper to build TwoByTwo props from config algae stats
-    const buildTwoByTwoProps = (algaeStats) => {
-        const levels = algaeStats?.levels || [];
-        const successFields = algaeStats?.successFields || [];
-        const avgFields = algaeStats?.avgFields || [];
-        const props = { HC1: "Success", HC2: "Avg Algae" };
-
-        levels.forEach((level, i) => {
-            const rowNum = i + 1;
-            const successVal = resolvePath(safeData, successFields[i]) || 0;
-            const avgVal = resolvePath(safeData, avgFields[i]) || 0;
-            props[`HR${rowNum}`] = level;
-            props[`R${rowNum}C1`] = `${Math.round(10 * successVal) / 10}%`;
-            props[`R${rowNum}C2`] = Math.round(10 * avgVal) / 10;
-        });
-
-        return props;
-    };
-
-    // Auto and Tele section configs
-    const autoSectionConfig = sectionsConfig.auto || {};
-    const teleSectionConfig = sectionsConfig.tele || {};
-
-    // Build defense bar chart data
-    const buildDefenseChartData = () => {
-        const allRows = safeData.rows || [];
-        const getDefenseValue = (row) => {
-            // Use the config-driven field name, with common variants as fallback
-            const fieldVariants = [defenseBarField, 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
-            for (const field of fieldVariants) {
-                if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
-                    return row[field];
-                }
-            }
-            return null;
-        };
-
-        const validDefenseRatings = allRows.filter(row => {
-            const defenseValue = getDefenseValue(row);
-            return row.team == safeData.team && defenseValue !== null;
-        });
-
-        if (validDefenseRatings.length > 0) {
-            const totalSum = validDefenseRatings.reduce((sum, row) => sum + getDefenseValue(row), 0);
-            const totalAvg = totalSum / validDefenseRatings.length;
-
-            const chartData = [{ name: 'TOTAL', value: totalAvg }];
-
-            const scoutMap = {};
-            validDefenseRatings.forEach(row => {
-                const scoutName = row.scoutname || 'Unknown';
-                if (!scoutMap[scoutName]) scoutMap[scoutName] = [];
-                scoutMap[scoutName].push(getDefenseValue(row));
-            });
-
-            Object.entries(scoutMap).forEach(([scout, ratings]) => {
-                if (ratings.length > 0) {
-                    const scoutAvg = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
-                    chartData.push({ name: scout, value: scoutAvg });
-                }
-            });
-
-            return chartData;
-        }
-
-        if (safeData.qualitative) {
-            const defenseItem = safeData.qualitative.find(q => q.name === "Defense Played");
-            if (defenseItem && defenseItem.rating > 0) {
-                return [{ name: 'TOTAL', value: defenseItem.rating }];
-            }
-        }
-
-        return [{ name: 'TOTAL', value: 0 }];
-    };
 
     return (
         <div className={styles.container}>
@@ -690,16 +511,14 @@ function TeamView() {
                                 <div className={styles.scoreBreakdownContainer}>
                                     <div style={{ background: Colors[0][1] }} className={styles.epaBox}>{Math.round(10*safeData.avgEpa)/10}</div>
                                     <div className={styles.epaBreakdown}>
-                                        {epaBreakdown.map(key => (
-                                            <div key={key} style={{ background: Colors[0][0] }}>
-                                                {key.charAt(0).toUpperCase()}: {Math.round(10*(safeData[`avg${key.charAt(0).toUpperCase()}${key.slice(1)}`] || 0))/10}
-                                            </div>
-                                        ))}
+                                        <div style={{ background: Colors[0][0] }}>A: {Math.round(10*safeData.avgAuto)/10}</div>
+                                        <div style={{ background: Colors[0][0] }}>T: {Math.round(10*safeData.avgTele)/10}</div>
+                                        <div style={{ background: Colors[0][0] }}>E: {Math.round(10*safeData.avgEnd)/10}</div>
                                     </div>
                                 </div>
                             </div>
                             <div className={styles.Last3EPA}>
-                                <div className={styles.scoreBreakdownContainer}>
+                                <div className={styles.scoreBreakdownContainer}> 
                                     <div style={{background: overallLast3}} className={styles.Last3EpaBox}>{Math.round(10*safeData.last3Epa)/10}</div>
                                     <div className={styles.epaBreakdown}>
                                         <div style={{background: autoLast3}}>A: {Math.round(10*safeData.last3Auto)/10}</div>
@@ -717,8 +536,8 @@ function TeamView() {
                                         .filter(match => match.team == safeData.team)
                                         .sort((a, b) => a.match - b.match)
                                         .map((match, index) => (
-                                            <Link
-                                                key={index}
+                                            <Link 
+                                                key={index} 
                                                 href={`/match-view?match=${match.match}`}
                                                 className={styles.matchLink}
                                             >
@@ -736,33 +555,28 @@ function TeamView() {
                         <div className={styles.barGraphContainer}>
                             <h4 className={styles.graphTitle}>Piece Placement</h4>
                             <PiecePlacement
-                                L1={piecePlacementProps.L1 || 0}
-                                L2={piecePlacementProps.L2 || 0}
-                                L3={piecePlacementProps.L3 || 0}
-                                L4={piecePlacementProps.L4 || 0}
-                                net={piecePlacementProps.net || 0}
-                                processor={piecePlacementProps.processor || 0}
-                                HP={piecePlacementProps.HP || 0}
+                                L1={Math.round(10*(safeData.auto.coral.avgL1 + safeData.tele.coral.avgL1))/10}
+                                L2={Math.round(10*(safeData.auto.coral.avgL2 + safeData.tele.coral.avgL2))/10}
+                                L3={Math.round(10*(safeData.auto.coral.avgL3 + safeData.tele.coral.avgL3))/10}
+                                L4={Math.round(10*(safeData.auto.coral.avgL4 + safeData.tele.coral.avgL4))/10}
+                                net={Math.round(10*(safeData.auto.algae.avgNet + safeData.tele.algae.avgNet))/10}
+                                processor={Math.round(10*(safeData.auto.algae.avgProcessor + safeData.tele.algae.avgProcessor))/10}
+                                HP={Math.round(10*safeData.tele.avgHp)/10}
                             />
                         </div>
                         <div className={styles.valueBoxes}>
                             <div className={styles.leftColumnBoxes}>
-                                {renderOverallStats()}
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"Consistency"} value={`${Math.round(10*safeData.consistency)/10}%`}/>
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"Defense"} value={`${Math.round(10*safeData.defense)/10}%`}/>
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"Last Breakdown"} value={safeData.lastBreakdown}/>
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"No Show"} value={`${Math.round(10*safeData.noShow)*10}%`}/>
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"Breakdown"} value={`${Math.round(safeData.breakdown)}%`}/>
+                                <VBox id="box" className={styles.boxes} style={{width: "200px"}} color1={Colors[0][1]} color2={Colors[0][0]} title={"Matches Scouted"} value={Math.round(10*safeData.matchesScouted)/10}/>
                             </div>
                             <div className={styles.allComments}>
-                                {commentsConfig.map((commentField, i) => {
-                                    const dataKey = commentKeyMap[commentField] || commentField;
-                                    const title = commentTitleMap[commentField] || commentField;
-                                    return (
-                                        <Comments
-                                            key={commentField}
-                                            color1={Colors[0][1]}
-                                            color2={Colors[0][0]}
-                                            title={title}
-                                            value={safeData[dataKey] || 'No comments'}
-                                        />
-                                    );
-                                })}
+                                <Comments color1={Colors[0][1]} color2={Colors[0][0]} title={"General Comments"} value={safeData.generalComments} />
+                                <Comments color1={Colors[0][1]} color2={Colors[0][0]} title={"Breakdown Comments"} value={safeData.breakdownComments} />
+                                <Comments color1={Colors[0][1]} color2={Colors[0][0]} title={"Defense Comments"} value={safeData.defenseComments} />
                             </div>
                             <HBox color1={Colors[0][1]} color2={Colors[0][0]} title={"Scouts"} value={safeData.scouts} />
                         </div>
@@ -771,96 +585,227 @@ function TeamView() {
                         <div className={styles.topRow}>
                             <div className={styles.auto}>
                                 <h1 style={{ color: Colors[1][3] }}>Auto</h1>
-                                {/* Auto charts from config */}
-                                {(autoSectionConfig.charts || []).map((chart, i) => {
-                                    if (chart.type === 'epaLine') {
-                                        return (
-                                            <div key={i} className={styles.graphContainer}>
-                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
-                                                <EPALineChart
-                                                    data={safeData[chart.dataKey] || []}
-                                                    color={Colors[1][3]}
-                                                    label={chart.dataKey?.replace('OverTime', '') || "auto"}
-                                                />
-                                            </div>
-                                        );
-                                    }
-                                    if (chart.type === 'coralLine') {
-                                        const chartData = chart.dataType === 'success'
-                                            ? (chart.phase === 'auto' ? autoCoralSuccessData : teleCoralSuccessData)
-                                            : (chart.phase === 'auto' ? autoCoralFailData : teleCoralFailData);
-                                        return (
-                                            <div key={i} className={styles.graphContainer}>
-                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
-                                                <CoralLineChart data={chartData} />
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })}
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Auto Over Time</h4>
+                                    <EPALineChart 
+                                        data={safeData.autoOverTime} 
+                                        color={Colors[1][3]} 
+                                        label={"auto"}
+                                    />
+                                </div>
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Auto Coral Success</h4>
+                                    <CoralLineChart 
+                                        data={autoCoralSuccessData}
+                                    />
+                                </div>
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Auto Coral Failures</h4>
+                                    <CoralLineChart 
+                                        data={autoCoralFailData}
+                                    />
+                                </div>
                                 <div className={styles.graphContainer}>
                                     <h4 className={styles.graphTitle}>Auto Algae Data</h4>
-                                    {renderAlgaeTable(autoAlgaeData, Colors[1])}
+                                    <div style={{
+                                        padding: "15px 0", 
+                                        display: "flex", 
+                                        justifyContent: "center", 
+                                        alignItems: "center",
+                                        width: "100%", 
+                                        textAlign: "center"
+                                    }}>
+                                        <div style={{width: "90%", margin: "0 auto"}}>
+                                            <table className={styles.coralTable} style={{
+                                                width: "100%", 
+                                                tableLayout: "fixed", 
+                                                margin: "0 auto",
+                                                borderCollapse: "collapse"
+                                            }}> 
+                                                <tbody>
+                                                    <tr>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][2], 
+                                                            width: "15%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Match</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][2], 
+                                                            width: "20%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Algae Removed</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][2], 
+                                                            width: "32.5%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }} colSpan="2">Processor</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][2], 
+                                                            width: "32.5%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }} colSpan="2">Net</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[1][1]}}></td>
+                                                        <td style={{backgroundColor: Colors[1][1]}}></td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Success</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Fail</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Success</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[1][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Fail</td>
+                                                    </tr>
+                                                    {autoAlgaeData.length > 0 ? (
+                                                        autoAlgaeData.map((match, index) => (
+                                                            <tr key={index}>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][1],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.match}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.removed}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.processorSuccess}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.processorFail}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.netSuccess}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[1][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.netFail}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" style={{
+                                                                backgroundColor: Colors[1][0], 
+                                                                textAlign: "center",
+                                                                fontSize: "clamp(10px, 2vw, 14px)",
+                                                                padding: "4px"
+                                                            }}>No match data available</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div style={{clear: "both"}}></div>
                                 <div className={styles.autoRightAlignment}>
                                     <div className={styles.alignElements}>
                                         <div className={styles.valueBoxes}>
                                             <div className={styles.rightColumnBoxes}>
-                                                {(autoSectionConfig.statBoxes || []).map((box, i) => (
-                                                    <VBox
-                                                        key={i}
-                                                        color1={Colors[1][2]}
-                                                        color2={Colors[1][0]}
-                                                        color3={Colors[1][2]}
-                                                        title={box.title}
-                                                        value={formatStatValue(safeData[box.key], box.format)}
-                                                    />
-                                                ))}
+                                                <VBox color1={Colors[1][2]} color2={Colors[1][0]} color3={Colors[1][2]} title={"Leave"} value={`${Math.round(safeData.leave*100)}%`}/>
                                             </div>
-                                            {(autoSectionConfig.statTables || []).map((table, i) => (
-                                                <table key={i} className={styles.coralTable}>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td style={{backgroundColor: Colors[1][2]}} rowSpan="2">{table.title}</td>
-                                                            {table.columns.map((col, ci) => (
-                                                                <td key={ci} style={{backgroundColor: Colors[1][1]}}>{col}</td>
-                                                            ))}
-                                                        </tr>
-                                                        <tr>
-                                                            {table.rows[0].values.map((valPath, vi) => {
-                                                                const val = resolvePath(safeData, valPath) || 0;
-                                                                const formatted = valPath.includes('success') ? `${Math.round(10*val)/10}%` : Math.round(10*val)/10;
-                                                                return <td key={vi} style={{backgroundColor: Colors[1][0]}}>{formatted}</td>;
-                                                            })}
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            ))}
+                                            <table className={styles.coralTable}> 
+                                                <tbody>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[1][2]}} rowSpan="2">Coral</td>
+                                                        <td style={{backgroundColor: Colors[1][1]}}>Success</td>
+                                                        <td style={{backgroundColor: Colors[1][1]}}>Total</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[1][0]}}>{`${Math.round(10*safeData.auto.coral.success)/10}%`}</td>
+                                                        <td style={{backgroundColor: Colors[1][0]}}>{Math.round(10*safeData.auto.coral.total)/10}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                         <div className={styles.fourByTwoContainer}>
                                             <FourByTwo
-                                                {...buildFourByTwoProps(autoSectionConfig.levelTable)}
+                                                HC1="Success"
+                                                HC2="Avg Coral"
+                                                HR1="L4"
+                                                R1C1={`${Math.round(10*safeData.auto.coral.successL4)/10}%`}
+                                                R1C2={Math.round(10*safeData.auto.coral.avgL4)/10}
+                                                HR2="L3"
+                                                R2C1={`${Math.round(10*safeData.auto.coral.successL3)/10}%`}
+                                                R2C2={Math.round(10*safeData.auto.coral.avgL3)/10}
+                                                HR3="L2"
+                                                R3C1={`${Math.round(10*safeData.auto.coral.successL2)/10}%`}
+                                                R3C2={Math.round(10*safeData.auto.coral.avgL2)/10}
+                                                HR4="L1"
+                                                R4C1={`${Math.round(10*safeData.auto.coral.successL1)/10}%`}
+                                                R4C2={Math.round(10*safeData.auto.coral.avgL1)/10}
                                                 color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
                                             />
                                         </div>
                                     </div>
                                     <div className={styles.alignElements}>
                                         <div className={styles.rightColumnBoxesTwo}>
-                                            {(autoSectionConfig.miscStats || []).map((stat, i) => (
-                                                <VBox
-                                                    key={i}
-                                                    color1={Colors[1][2]}
-                                                    color2={Colors[1][0]}
-                                                    color3={Colors[1][2]}
-                                                    title={stat.title}
-                                                    value={formatStatValue(resolvePath(safeData, stat.key), stat.format)}
-                                                />
-                                            ))}
+                                            <VBox color1={Colors[1][2]} color2={Colors[1][0]} color3={Colors[1][2]} title={"Algae Removed"} value={Math.round(10*safeData.auto.algae.removed)/10} />  
                                         </div>
                                         <div className={styles.twoByTwoContainer}>
                                             <TwoByTwo
-                                                {...buildTwoByTwoProps(autoSectionConfig.algaeStats)}
+                                                HC1="Success"
+                                                HC2="Avg Algae"
+                                                HR1="Prcsr"
+                                                R1C1={`${Math.round(10*safeData.auto.algae.successProcessor)/10}%`}
+                                                R1C2={Math.round(10*safeData.auto.algae.avgProcessor)/10}
+                                                HR2="Net"
+                                                R2C1={`${Math.round(10*safeData.auto.algae.successNet)/10}%`}
+                                                R2C2={Math.round(10*safeData.auto.algae.avgNet)/10}
                                                 color1={Colors[1][2]} color2={Colors[1][1]} color3={Colors[1][0]}
                                             />
                                         </div>
@@ -869,107 +814,239 @@ function TeamView() {
                             </div>
                             <div className={styles.tele}>
                                 <h1 style={{ color: Colors[2][3] }}>Tele</h1>
-                                {/* Tele charts from config */}
-                                {(teleSectionConfig.charts || []).map((chart, i) => {
-                                    if (chart.type === 'epaLine') {
-                                        return (
-                                            <div key={i} className={styles.graphContainer}>
-                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
-                                                <EPALineChart
-                                                    data={safeData[chart.dataKey] || []}
-                                                    color={Colors[2][3]}
-                                                    label={chart.dataKey?.replace('OverTime', '') || "tele"}
-                                                />
-                                            </div>
-                                        );
-                                    }
-                                    if (chart.type === 'coralLine') {
-                                        const chartData = chart.dataType === 'success'
-                                            ? (chart.phase === 'auto' ? autoCoralSuccessData : teleCoralSuccessData)
-                                            : (chart.phase === 'auto' ? autoCoralFailData : teleCoralFailData);
-                                        return (
-                                            <div key={i} className={styles.graphContainer}>
-                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
-                                                <CoralLineChart data={chartData} />
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })}
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Tele Over Time</h4>
+                                    <EPALineChart 
+                                        data={safeData.teleOverTime} 
+                                        color={Colors[2][3]} 
+                                        label={"tele"}
+                                    />
+                                </div>
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Tele Coral Success</h4>
+                                    <CoralLineChart 
+                                        data={teleCoralSuccessData}
+                                    />
+                                </div>
+                                <div className={styles.graphContainer}>
+                                    <h4 className={styles.graphTitle}>Tele Coral Failures</h4>
+                                    <CoralLineChart 
+                                        data={teleCoralFailData}
+                                    />
+                                </div>
                                 <div className={styles.graphContainer}>
                                     <h4 className={styles.graphTitle}>Tele Algae Data</h4>
-                                    {renderAlgaeTable(teleAlgaeData, Colors[2])}
+                                    <div style={{
+                                        padding: "15px 0", 
+                                        display: "flex", 
+                                        justifyContent: "center", 
+                                        alignItems: "center",
+                                        width: "100%", 
+                                        textAlign: "center"
+                                    }}>
+                                        <div style={{width: "90%", margin: "0 auto"}}>
+                                            <table className={styles.coralTable} style={{
+                                                width: "100%", 
+                                                tableLayout: "fixed", 
+                                                margin: "0 auto",
+                                                borderCollapse: "collapse"
+                                            }}> 
+                                                <tbody>
+                                                    <tr>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][2], 
+                                                            width: "15%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Match</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][2], 
+                                                            width: "20%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Algae Removed</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][2], 
+                                                            width: "32.5%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }} colSpan="2">Processor</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][2], 
+                                                            width: "32.5%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }} colSpan="2">Net</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[2][1]}}></td>
+                                                        <td style={{backgroundColor: Colors[2][1]}}></td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Success</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Fail</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Success</td>
+                                                        <td style={{
+                                                            backgroundColor: Colors[2][1], 
+                                                            width: "16.25%",
+                                                            fontSize: "clamp(10px, 2vw, 14px)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            padding: "4px"
+                                                        }}>Fail</td>
+                                                    </tr>
+                                                    {teleAlgaeData.length > 0 ? (
+                                                        teleAlgaeData.map((match, index) => (
+                                                            <tr key={index}>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][1],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.match}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.removed}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.processorSuccess}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.processorFail}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.netSuccess}</td>
+                                                                <td style={{
+                                                                    backgroundColor: Colors[2][0],
+                                                                    fontSize: "clamp(10px, 2vw, 14px)",
+                                                                    padding: "4px"
+                                                                }}>{match.netFail}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" style={{
+                                                                backgroundColor: Colors[2][0], 
+                                                                textAlign: "center",
+                                                                fontSize: "clamp(10px, 2vw, 14px)",
+                                                                padding: "4px"
+                                                            }}>No match data available</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div style={{clear: "both"}}></div>
                                 <div className={styles.teleRightAlignment}>
                                     <div className={styles.alignElements}>
                                         <div className={styles.coralAndHP}>
                                             <div className={styles.valueBoxes}>
-                                                {(teleSectionConfig.extraStats || []).map((table, i) => (
-                                                    <table key={i} className={styles.differentTable}>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][2], width:"34px"}} rowSpan="2">{table.title}</td>
-                                                                {table.columns.map((col, ci) => (
-                                                                    <td key={ci} className={styles.coloredBoxes} style={{backgroundColor: Colors[2][1]}}>{col}</td>
-                                                                ))}
-                                                            </tr>
-                                                            <tr>
-                                                                {table.rows[0].values.map((valPath, vi) => {
-                                                                    const val = resolvePath(safeData, valPath) || 0;
-                                                                    const formatted = valPath.includes('success') || valPath.includes('Success')
-                                                                        ? `${Math.round(10*val)/10}%`
-                                                                        : Math.round(10*val)/10;
-                                                                    return <td key={vi} className={styles.coloredBoxes} style={{backgroundColor: Colors[2][0]}}>{formatted}</td>;
-                                                                })}
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                ))}
-                                            </div>
-                                            {(teleSectionConfig.statTables || []).map((table, i) => (
-                                                <table key={i} className={styles.coralTable}>
+                                                <table className={styles.differentTable}> 
                                                     <tbody>
                                                         <tr>
-                                                            <td style={{backgroundColor: Colors[2][2]}} rowSpan="2">{table.title}</td>
-                                                            {table.columns.map((col, ci) => (
-                                                                <td key={ci} style={{backgroundColor: Colors[2][1]}}>{col}</td>
-                                                            ))}
+                                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][2], width:"34px"}} rowSpan="2">HP</td>
+                                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][1]}}>Success</td>
+                                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][1]}}>Scored</td>
                                                         </tr>
                                                         <tr>
-                                                            {table.rows[0].values.map((valPath, vi) => {
-                                                                const val = resolvePath(safeData, valPath) || 0;
-                                                                const formatted = valPath.includes('success') ? `${Math.round(10*val)/10}%` : Math.round(10*val)/10;
-                                                                return <td key={vi} style={{backgroundColor: Colors[2][0]}}>{formatted}</td>;
-                                                            })}
+                                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][0]}}>{`${Math.round(10*safeData.tele.successHp)/10}%`}</td>
+                                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[2][0]}}>{Math.round(10*safeData.tele.avgHp)/10}</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
-                                            ))}
+                                            </div>
+                                            <table className={styles.coralTable}> 
+                                                <tbody>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[2][2]}} rowSpan="2">Coral</td>
+                                                        <td style={{backgroundColor: Colors[2][1]}} >Success</td>
+                                                        <td style={{backgroundColor: Colors[2][1],  width:"44px"}} >Total</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{backgroundColor: Colors[2][0]}}>{`${Math.round(10*safeData.tele.coral.success)/10}%`}</td>
+                                                        <td style={{backgroundColor: Colors[2][0]}}>{Math.round(10*safeData.tele.coral.total)/10}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                         <div className={styles.fourByTwoContainer}>
                                             <FourByTwo
-                                                {...buildFourByTwoProps(teleSectionConfig.levelTable)}
+                                                HC1="Success"
+                                                HC2="Avg Coral"
+                                                HR1="L4"
+                                                R1C1={`${Math.round(10*safeData.tele.coral.successL4)/10}%`}
+                                                R1C2={Math.round(10*safeData.tele.coral.avgL4)/10}
+                                                HR2="L3"
+                                                R2C1={`${Math.round(10*safeData.tele.coral.successL3)/10}%`}
+                                                R2C2={Math.round(10*safeData.tele.coral.avgL3)/10}
+                                                HR3="L2"
+                                                R3C1={`${Math.round(10*safeData.tele.coral.successL2)/10}%`}
+                                                R3C2={Math.round(10*safeData.tele.coral.avgL2)/10}
+                                                HR4="L1"
+                                                R4C1={`${Math.round(10*safeData.tele.coral.successL1)/10}%`}
+                                                R4C2={Math.round(10*safeData.tele.coral.avgL1)/10}
                                                 color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
                                             />
                                         </div>
                                     </div>
                                     <div className={styles.alignElements}>
                                         <div className={styles.rightColumnBoxesTwo}>
-                                            {(teleSectionConfig.miscStats || []).map((stat, i) => (
-                                                <VBox
-                                                    key={i}
-                                                    color1={Colors[2][2]}
-                                                    color2={Colors[2][0]}
-                                                    color3={Colors[2][2]}
-                                                    title={stat.title}
-                                                    value={formatStatValue(resolvePath(safeData, stat.key), stat.format)}
-                                                />
-                                            ))}
+                                            <VBox color1={Colors[2][2]} color2={Colors[2][0]} color3={Colors[2][2]} title={"Algae Removed"} value={Math.round(10*safeData.tele.algae.removed)/10} />
                                         </div>
                                         <div className={styles.twoByTwoContainer}>
                                             <TwoByTwo
-                                                {...buildTwoByTwoProps(teleSectionConfig.algaeStats)}
+                                                HC1="Success" 
+                                                HC2="Avg Algae"
+                                                HR1="Prcsr"
+                                                R1C1={`${Math.round(10*safeData.tele.algae.successProcessor)/10}%`}
+                                                R1C2={Math.round(10*safeData.tele.algae.avgProcessor)/10}
+                                                HR2="Net"
+                                                R2C1={`${Math.round(10*safeData.tele.algae.successNet)/10}%`}
+                                                R2C2={Math.round(10*safeData.tele.algae.avgNet)/10}
                                                 color1={Colors[2][2]} color2={Colors[2][1]} color3={Colors[2][0]}
                                             />
                                         </div>
@@ -982,9 +1059,9 @@ function TeamView() {
                                 <h1 className={styles.header} style={{ color: Colors[3][3] }}>Endgame</h1>
                                 <div className={styles.chartContainer}>
                                     <h4 className={styles.graphTitle}>Endgame Placement</h4>
-                                    <Endgame
-                                        data={endgamePieData}
-                                        color={endgameColors}
+                                    <Endgame 
+                                        data={endgamePieData} 
+                                        color={endgameColors} 
                                     />
                                 </div>
                                 <table className={styles.differentTable} style={{borderRadius: "5px"}}>
@@ -1009,19 +1086,88 @@ function TeamView() {
                                         <BarChart
                                             width={400}
                                             height={300}
-                                            data={buildDefenseChartData()}
+                                            data={(() => {
+                                                const allRows = safeData.rows || [];
+                                                const getDefensePlayed = (row) => {
+                                                    const fieldVariants = ['defenseplayed', 'defensePlayed', 'DEFENSEPLAYED', 'defense_played', 'DefensePlayed'];
+                                                    for (const field of fieldVariants) {
+                                                        if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
+                                                            return row[field];
+                                                        }
+                                                    }
+                                                    return null;
+                                                };
+                                                
+                                                if (safeData.team == 69) {
+                                                    console.log("TEAM 69 DETECTED - DEBUGGING DEFENSE RATINGS");
+                                                    console.log("Number of rows:", allRows.length);
+                                                    allRows.forEach((row, index) => {
+                                                        const defenseValue = getDefensePlayed(row);
+                                                        console.log(`Row ${index} - Match ${row.match} - Scout: ${row.scoutname} - Defense: ${defenseValue}`);
+                                                    });
+                                                }
+                                                
+                                                const validDefenseRatings = allRows.filter(row => {
+                                                    const defenseValue = getDefensePlayed(row);
+                                                    return row.team == safeData.team && defenseValue !== null;
+                                                });
+                                                
+                                                if (validDefenseRatings.length > 0) {
+                                                    const totalSum = validDefenseRatings.reduce((sum, row) => {
+                                                        const defenseValue = getDefensePlayed(row);
+                                                        return sum + defenseValue;
+                                                    }, 0);
+                                                    
+                                                    const totalAvg = totalSum / validDefenseRatings.length;
+                                                    
+                                                    const chartData = [
+                                                        { name: 'TOTAL', value: totalAvg }
+                                                    ];
+                                                    
+                                                    const scoutMap = {};
+                                                    validDefenseRatings.forEach(row => {
+                                                        const scoutName = row.scoutname || 'Unknown';
+                                                        if (!scoutMap[scoutName]) {
+                                                            scoutMap[scoutName] = [];
+                                                        }
+                                                        scoutMap[scoutName].push(getDefensePlayed(row));
+                                                    });
+                                                    
+                                                    Object.entries(scoutMap).forEach(([scout, ratings]) => {
+                                                        if (ratings.length > 0) {
+                                                            const scoutSum = ratings.reduce((sum, rating) => sum + rating, 0);
+                                                            const scoutAvg = scoutSum / ratings.length;
+                                                            chartData.push({
+                                                                name: scout,
+                                                                value: scoutAvg
+                                                            });
+                                                        }
+                                                    });
+                                                    
+                                                    return chartData;
+                                                } 
+                                                
+                                                if (safeData.qualitative) {
+                                                    const defenseItem = safeData.qualitative.find(q => q.name === "Defense Played");
+                                                    if (defenseItem && defenseItem.rating > 0) {
+                                                        return [{ name: 'TOTAL', value: defenseItem.rating }];
+                                                    }
+                                                }
+                                                
+                                                return [{ name: 'TOTAL', value: 0 }];
+                                            })()}
                                             margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
                                         >
                                             <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis
-                                                dataKey="name"
-                                                angle={-90}
-                                                textAnchor="end"
-                                                height={70}
+                                            <XAxis 
+                                                dataKey="name" 
+                                                angle={-90} 
+                                                textAnchor="end" 
+                                                height={70} 
                                                 tick={{ dy: 10 }}
                                             />
-                                            <YAxis
-                                                domain={[0, 6]}
+                                            <YAxis 
+                                                domain={[0, 6]} 
                                                 ticks={[0, 1, 2, 3, 4, 5, 6]}
                                                 interval={0}
                                             />
@@ -1030,25 +1176,35 @@ function TeamView() {
                                         </BarChart>
                                     </div>
                                 </div>
-                                <table className={styles.differentTable}>
+                                <table className={styles.differentTable}> 
                                     <tbody>
-                                        {intakeDisplayConfig.map((intake, idx) => (
-                                            <React.Fragment key={idx}>
-                                                <tr>
-                                                    <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">{intake.category}</td>
-                                                    {intake.labels.map((label, li) => (
-                                                        <td key={li} className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: li === 0 ? "10px" : undefined}}>{label}</td>
-                                                    ))}
-                                                </tr>
-                                                <tr>
-                                                    {intake.fields.map((field, fi) => (
-                                                        <td key={fi} className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}>
-                                                            <input type="checkbox" readOnly checked={!!safeData[field]} />
-                                                        </td>
-                                                    ))}
-                                                </tr>
-                                            </React.Fragment>
-                                        ))}
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Coral Intake</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Source</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={safeData.coralGroundIntake}></input></td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={safeData.coralStationIntake}></input></td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Algae Intake</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Ground</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>Lollipop</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={safeData.algaeGroundIntake}></input></td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={safeData.lollipop}></input></td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][2], width: "40px"}} rowSpan="2">Reef Intake</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px", height: "10px"}}>Low</td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][1], width: "50px"}}>High</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="groundcheck" type="checkbox" readOnly checked={safeData.algaeLowReefIntake}></input></td>
+                                            <td className={styles.coloredBoxes} style={{backgroundColor: Colors[4][0], width: "50px", height: "30px"}}><input id="sourcecheck" type="checkbox" readOnly checked={safeData.algaeHighReefIntake}></input></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
