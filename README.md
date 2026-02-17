@@ -14,7 +14,7 @@ Please note that the PostgreSQL database keys, as well as ADMIN_PASSWORD must be
 
 # JSON Game Configuration Guide
 
-This is a **comprehensive, in-depth guide** for creating JSON configuration files that define scouting forms for FRC games. After reading this guide, you will understand every aspect of the configuration system and be able to create custom scouting forms for any FRC game.
+This guide documents how to build and validate JSON game configurations for form rendering, calculations, and all display pages.
 
 ## Table of Contents
 
@@ -39,6 +39,14 @@ This is a **comprehensive, in-depth guide** for creating JSON configuration file
 8. [Conditional Visibility (showWhen)](#conditional-visibility-showwhen)
 9. [Calculations](#calculations)
 10. [Display Configuration](#display-configuration)
+   - [Display Quick Start](#display-quick-start)
+   - [Required Display Keys](#required-display-keys)
+   - [Team View Configuration](#team-view-configuration)
+   - [Match View Configuration](#match-view-configuration)
+   - [Picklist Configuration](#picklist-configuration)
+   - [Compare Configuration](#compare-configuration)
+   - [API Aggregation Configuration](#api-aggregation-configuration)
+   - [Display Troubleshooting](#display-troubleshooting)
 11. [Reserved Field Names](#reserved-field-names)
 12. [Validation & Common Errors](#validation--common-errors)
 13. [Complete Example](#complete-example)
@@ -1013,9 +1021,11 @@ Total EPA is computed as: `auto + tele + end`
 
 ## Display Configuration
 
-The `display` object configures how data is shown across all display pages. **All display pages render entirely from this config** — if a section is missing, the page shows a "not configured" fallback.
+The `display` object controls all non-form pages (`team-view`, `match-view`, `picklist`, `compare`) and the backend aggregation those pages consume.
 
-### Structure
+### Display Quick Start
+
+Use this top-level shape:
 
 ```json
 {
@@ -1029,200 +1039,144 @@ The `display` object configures how data is shown across all display pages. **Al
 }
 ```
 
+### Required Display Keys
+
+These keys are runtime-validated. If they are missing or mismatched, display pages show a config error panel with exact paths instead of rendering incorrect data.
+
+- `display.teamView.piecePlacement.bars` (non-empty array)
+- `display.teamView.endgamePie.labels` and `display.teamView.endgamePie.values` (same length)
+- `display.apiAggregation.endgameConfig.valueMapping` (must include every team-view endgame value)
+- `display.matchView.piecePlacement.bars` (non-empty array)
+- `display.apiAggregation.alliancePiecePlacement` (non-empty array)
+- Every `display.matchView.piecePlacement.bars[*].key` must exist in `display.apiAggregation.alliancePiecePlacement[*].key`
+- `display.matchView.endgamePie.labels` and `display.matchView.endgamePie.keys` (same length)
+- Every `display.matchView.endgamePie.keys[*]` must exist in `display.apiAggregation.endgameConfig.valueMapping` values
+
 ### Team View Configuration
+
+Key responsibilities:
+- EPA summary breakdown and thresholds
+- Per-team piece placement bars
+- Endgame distribution chart
+- Comments, intake capability display, qualitative metrics
 
 ```json
 {
   "teamView": {
     "epaBreakdown": ["auto", "tele", "end"],
+    "epaThresholds": { "overall": 12, "auto": 6, "tele": 10, "end": 6 },
     "piecePlacement": {
       "bars": [
         { "label": "L4", "autoField": "autol4success", "teleField": "telel4success" },
-        { "label": "HP", "teleField": "hpsuccess" }
-      ],
-      "coral": {
-        "levels": ["L1", "L2", "L3", "L4"],
-        "autoFields": [...], "teleFields": [...],
-        "autoFailFields": [...], "teleFailFields": [...]
-      },
-      "algae": {
-        "autoFields": [...], "teleFields": [...],
-        "autoFailFields": [...], "teleFailFields": [...],
-        "metrics": [
-          { "key": "Processor", "type": "successFail", "fieldIndex": 0, "failIndex": 0 },
-          { "key": "Net", "type": "successFail", "fieldIndex": 1, "failIndex": 1 },
-          { "key": "removed", "type": "count", "fieldIndex": 2 }
-        ]
-      }
+        { "label": "Fuel", "autoField": "auto.avgFuel", "teleField": "tele.avgFuel" }
+      ]
     },
     "endgamePie": {
-      "field": "endlocation",
       "labels": ["None", "Park", "Shallow", "Deep"],
-      "values": [0, 1, 2, 3]
+      "values": [0, 1, 3, 4]
     },
-    "comments": ["generalcomments", "breakdowncomments"],
     "commentFields": [
-      { "field": "generalcomments", "dataKey": "generalComments", "title": "General Comments" },
-      { "field": "breakdowncomments", "dataKey": "breakdownComments", "title": "Breakdown Comments" }
+      { "field": "generalcomments", "dataKey": "generalComments", "title": "General Comments" }
     ],
     "intakeDisplay": [
-      { "category": "Coral Intake", "fields": ["coralgrndintake"], "labels": ["Ground"] }
+      { "category": "Intake", "fields": ["coralgrndintake"], "labels": ["Ground"] }
     ],
     "qualitativeDisplay": [
-      { "name": "coralspeed", "label": "Coral Speed" },
-      { "name": "aggression", "label": "Aggression", "inverted": true }
+      { "name": "coralspeed", "label": "Coral Speed" }
     ]
   }
 }
 ```
 
-**Properties:**
-
-| Property | Description |
-|----------|-------------|
-| `epaBreakdown` | Which calculations to show in EPA charts |
-| `piecePlacement.bars` | Bar chart entries, each with `label`, `autoField`, and/or `teleField`. `autoField` / `teleField` may be a raw form field (`autol4success`) or a computed dotted path (`auto.avgFuel`). |
-| `piecePlacement.{group}.metrics` | Explicit metric definitions for secondary stat groups (avoids string matching) |
-| `endgamePie` | Configure endgame pie chart |
-| `comments` | Which comment fields to display (legacy) |
-| `commentFields` | Explicit comment field mapping with `field`, `dataKey`, and `title` |
-| `intakeDisplay` | How to group and display intake capabilities |
-| `qualitativeDisplay` | Which qualitative ratings to show |
-
-**Metrics types:**
-- `successFail` — Computes `avg{Key}` and `success{Key}` from success/fail field pairs
-- `count` — Computes a simple average count as `{key}`
+Notes:
+- `piecePlacement.bars[*].autoField` and `teleField` can be:
+  - raw form fields (for example `autol4success`)
+  - computed dotted paths from aggregated output (for example `auto.avgFuel`)
+- Use `commentFields` instead of legacy `comments` when possible.
 
 ### Match View Configuration
+
+Key responsibilities:
+- Alliance-level piece placement bars
+- Alliance endgame breakdown
+- Qualitative radar/bar inputs
+- Ranking point color blocks
 
 ```json
 {
   "matchView": {
-    "allianceMetrics": ["auto", "tele", "end"],
-    "keyStats": [
-      { "label": "Auto Climb", "field": "autoclimb", "type": "percentage" },
-      { "label": "Avg Fuel", "type": "sum", "fields": ["autofuelsuccess", "telefuelsuccess"] }
-    ],
-    "rankingPoints": [
-      { "label": "RP", "type": "allFieldsAndThreshold", "minCoral": 15, "leaveField": "leave", "coralField": "autoCoral" }
-    ]
-  }
-}
-```
-
-### Required Display Keys (Runtime Validated)
-
-If these keys are missing or mismatched, `team-view` / `match-view` now stop rendering partial data and show a config error list with exact paths.
-
-- `display.teamView.piecePlacement.bars` must be a non-empty array.
-- `display.teamView.endgamePie.labels` and `display.teamView.endgamePie.values` must both exist and be the same length.
-- `display.apiAggregation.endgameConfig.valueMapping` must include every `teamView.endgamePie.values` entry.
-- `display.matchView.piecePlacement.bars` must be a non-empty array.
-- `display.apiAggregation.alliancePiecePlacement` must be a non-empty array, and every `matchView.piecePlacement.bars[*].key` must exist there.
-- `display.matchView.endgamePie.labels` and `display.matchView.endgamePie.keys` must both exist and be the same length.
-- `display.matchView.endgamePie.keys` must match values from `display.apiAggregation.endgameConfig.valueMapping`.
-
-### Match-View Mapping Rule
-
-`match-view` piece bars are keyed by `display.matchView.piecePlacement.bars[*].key`, and those keys are populated from `display.apiAggregation.alliancePiecePlacement[*].key`. If these do not match exactly, the page will show a config error instead of guessing.
-
-### Picklist Configuration
-
-```json
-{
-  "picklist": {
-    "weights": [
-      { "key": "avgEpa", "label": "EPA", "default": 1.0 },
-      { "key": "avgAuto", "label": "Auto", "default": 0.5 }
-    ],
-    "tableColumns": [
-      { "key": "avgEpa", "label": "EPA" },
-      { "key": "consistency", "label": "Cnstcy" }
-    ],
-    "scatterPlot": {
-      "xAxis": { "label": "Auto", "fields": ["avgAuto"] },
-      "yAxis": { "label": "Tele", "fields": ["avgTele"] }
-    },
-    "consistencyMetricKey": "mainCycleMetric" // Optional: key to use for consistency calc
-  }
-}
-```
-
-### Compare Configuration
-
-```json
-{
-  "compare": {
-    "metrics": [
-      { "key": "avgEpa", "label": "EPA", "format": "decimal" }
-    ],
-    "scorePrediction": {
-      "auto": ["avgAuto"],
-      "tele": ["avgTele"],
-      "end": ["avgEnd"]
-    },
-    "endgameChart": { ... },
-    "coralLevelChart": { ... }
-  }
-}
-```
-
-### API Aggregation Configuration
-
-This section controls how raw data is processed into team stats.
-
-```json
-{
-  "apiAggregation": {
-    "breakdownField": "breakdown",
-    "defenseField": "defenseplayed",
-    "leaveField": "leave",
-    "successFailPairs": [
-      { "key": "Fuel", "phase": "tele", "successField": "telefuelsuccess", "failField": "telefuelfail" }
-    ],
-    "customSumFields": [
-      { "key": "totalGamePieces", "fields": ["autopieces", "telepieces"] }
-    ],
-    "endgameConfig": {
-      "field": "endlocation",
-      "valueMapping": { "0": "None", "1": "Park", ... }
-    },
-    "qualitativeFields": ["speed", "accuracy"]
-  }
-}
-```
-    "allianceMetrics": ["auto", "tele", "end"],
     "epaBreakdown": ["auto", "tele", "end"],
     "piecePlacement": {
-      "bars": [{ "label": "L4", "key": "L4" }]
+      "bars": [
+        { "label": "L4", "key": "L4" },
+        { "label": "HP", "key": "HP" }
+      ]
     },
-    "endgamePie": { "field": "endlocation", "labels": [...], "keys": [...] },
-    "qualitativeFields": ["coralspeed", "maneuverability"],
+    "endgamePie": {
+      "labels": ["None", "Fail", "Park", "Shallow", "Deep"],
+      "keys": ["none", "fail", "park", "shallow", "deep"]
+    },
+    "qualitativeFields": ["defenseplayed", "maneuverability"],
     "defenseBarField": "defenseplayed",
     "rankingPoints": [
-      { "label": "Auto", "type": "allLeaveAndCoral", "leaveField": "leave", "coralFields": [...] }
+      {
+        "label": "Auto",
+        "type": "allLeaveAndCoral",
+        "leaveField": "leave",
+        "coralFields": ["autol1success", "autol2success"],
+        "minCoral": 1
+      },
+      {
+        "label": "Coral",
+        "type": "levelThreshold",
+        "levels": [
+          { "key": "L1", "threshold": 2 },
+          { "key": "L2", "threshold": 2 }
+        ],
+        "greenCount": 2,
+        "yellowCount": 1
+      }
     ]
   }
 }
 ```
 
+Supported ranking point `type` values:
+- `allLeaveAndCoral`
+- `allFieldsAndThreshold`
+- `levelThreshold`
+- `endgameThreshold`
+
 ### Picklist Configuration
+
+Key responsibilities:
+- Weight sliders
+- Display table columns
+- Optional computed metrics
+- Scatter plot axes
 
 ```json
 {
   "picklist": {
     "weights": [
-      { "key": "epa", "label": "EPA" },
-      { "key": "consistency", "label": "Cnstcy" },
-      { "key": "breakdown", "label": "Break %", "inverted": true }
+      { "key": "epa", "label": "EPA", "default": 1.0 },
+      { "key": "consistency", "label": "Cnstcy", "default": 0.8 }
     ],
     "tableColumns": [
-      { "key": "epa", "label": "Norm EPA", "colorScale": "normal", "format": "three" },
-      { "key": "realEpa", "label": "Real EPA", "colorScale": "epa", "format": "one" }
+      { "key": "realEpa", "label": "EPA", "colorScale": "epa", "format": "one" },
+      { "key": "breakdown", "label": "Break %", "colorScale": "inverse", "format": "breakdownPercent" }
+    ],
+    "computedMetrics": [
+      {
+        "key": "fuelAccuracy",
+        "type": "successRate",
+        "successFields": ["autofuelsuccess", "telefuelsuccess"],
+        "failFields": ["autofuelfail", "telefuelfail"]
+      }
     ],
     "scatterPlot": {
-      "xAxis": { "label": "Total Coral", "fields": ["autol1success", "telel1success"] },
-      "yAxis": { "label": "Total Algae", "fields": ["autoprocessorsuccess"] }
+      "xAxis": { "label": "Fuel", "fields": ["autofuelsuccess", "telefuelsuccess"] },
+      "yAxis": { "label": "Attempts", "fields": ["autofuelsuccess", "autofuelfail", "telefuelsuccess", "telefuelfail"] }
     },
     "defenseField": "defenseplayed"
   }
@@ -1231,13 +1185,27 @@ This section controls how raw data is processed into team stats.
 
 ### Compare Configuration
 
+Key responsibilities:
+- Multi-team bar comparisons
+- Scoring expression chart
+- Endgame comparison chart
+
 ```json
 {
   "compare": {
-    "metricsChart": [{ "key": "avgEpa", "label": "EPA" }],
-    "scoringChart": [{ "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" }],
-    "coralLevelChart": { "levels": ["L1"], "autoPrefix": "auto.coral.avg", "telePrefix": "tele.coral.avg" },
-    "endgameChart": { "metrics": ["None", "Park"], "keys": ["none", "park"] },
+    "metricsChart": [
+      { "key": "avgEpa", "label": "EPA" },
+      { "key": "avgAuto", "label": "Auto" }
+    ],
+    "scoringChart": [
+      { "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" }
+    ],
+    "endgameChart": {
+      "metrics": ["None", "Park", "Deep"],
+      "keys": ["none", "park", "deep"],
+      "endgameSource": "endPlacement",
+      "fallbackSource": "endgame"
+    },
     "defenseField": "defenseplayed"
   }
 }
@@ -1245,32 +1213,48 @@ This section controls how raw data is processed into team stats.
 
 ### API Aggregation Configuration
 
-Controls how raw scouting data is aggregated by the display engine.
+This section drives backend aggregation for team, alliance, picklist, and compare pages.
 
 ```json
 {
   "apiAggregation": {
     "breakdownField": "breakdown",
     "defenseField": "defense",
+    "leaveField": "leave",
     "successFailPairs": [
       { "phase": "tele", "key": "Hp", "successField": "hpsuccess", "failField": "hpfail" }
     ],
     "booleanFields": ["noshow", "leave", "breakdown"],
     "textFields": ["scoutname", "generalcomments"],
-    "qualitativeFields": ["coralspeed", "maneuverability"],
-    "booleanIntakeFields": ["coralgrndintake"]
+    "qualitativeFields": ["maneuverability", "defenseplayed"],
+    "booleanIntakeFields": ["coralgrndintake"],
+    "endgameConfig": {
+      "field": "endlocation",
+      "valueMapping": { "0": "none", "1": "park", "2": "fail", "3": "shallow", "4": "deep" }
+    },
+    "alliancePiecePlacement": [
+      { "key": "L4", "fields": ["autol4success", "telel4success"] },
+      { "key": "HP", "fields": ["hpsuccess"] }
+    ]
   }
 }
 ```
 
-| Property | Description |
-|----------|-------------|
-| `breakdownField` | Boolean field used to detect breakdown matches (for consistency calc) |
-| `defenseField` | Boolean field used to detect defense matches (for defense % calc) |
-| `successFailPairs` | Generic success/fail metric pairs to aggregate, each with `phase`, `key`, `successField`, `failField` |
-| `booleanFields` | Fields to aggregate as boolean percentages |
-| `textFields` | Text fields not aggregated numerically |
-| `qualitativeFields` | Fields aggregated as qualitative ratings |
+Field notes:
+- `breakdownField`: field used by consistency and breakdown calculations
+- `defenseField`: field used for defense participation rates
+- `endgameConfig.valueMapping`: canonical names used by endgame charts
+- `alliancePiecePlacement`: source mapping for `matchView.piecePlacement.bars[*].key`
+
+### Display Troubleshooting
+
+If form submission works but display pages are wrong, check in this order:
+
+1. Verify every display field reference exists in `sections` or is a valid computed dotted path where supported.
+2. Verify `teamView.endgamePie.values` codes map to `apiAggregation.endgameConfig.valueMapping` keys.
+3. Verify `matchView.piecePlacement.bars[*].key` values match `apiAggregation.alliancePiecePlacement[*].key`.
+4. Verify `matchView.endgamePie.keys` values match `apiAggregation.endgameConfig.valueMapping` values.
+5. Confirm `apiAggregation` field names match the actual stored DB column names (spelling/casing).
 
 ---
 
@@ -1663,5 +1647,3 @@ A: Each game has its own database table. Switching games just changes which tabl
 A: Yes! Field names only need to be unique within a single configuration. Different games can have the same field names.
 
 ---
-
-**You're now ready to create custom scouting configurations!** Start with the template, refer to this guide for field types and syntax, and don't hesitate to look at the REEFSCAPE 2025 example for patterns to follow.
