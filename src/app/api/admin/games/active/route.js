@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getActiveGame, initializeGameConfigsTable } from '../../../../../lib/game-config';
+import { sanitizeScoutLeadsTableName } from '../../../../../lib/schema-generator';
 
 export const revalidate = 0;
 
@@ -33,6 +34,7 @@ export async function GET(request) {
       gameName: activeGame.game_name,
       displayName: activeGame.display_name,
       tableName: activeGame.table_name,
+      scoutLeadsTableName: sanitizeScoutLeadsTableName(activeGame.game_name),
       config: activeGame.config_json,
       updatedAt: activeGame.updated_at,
     });

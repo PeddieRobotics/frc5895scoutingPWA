@@ -7,7 +7,7 @@ import {
   getGameDataCount,
 } from '../../../../lib/game-config';
 import { validateConfig } from '../../../../lib/config-validator';
-import { extractFieldsFromConfig } from '../../../../lib/schema-generator';
+import { extractFieldsFromConfig, extractTimerFieldsFromConfig, sanitizeScoutLeadsTableName } from '../../../../lib/schema-generator';
 
 export const revalidate = 0;
 
@@ -140,10 +140,12 @@ export async function POST(request) {
         gameName: game.game_name,
         displayName: game.display_name,
         tableName: game.table_name,
+        scoutLeadsTableName: game.scoutLeadsTableName,
         isActive: game.is_active,
         createdAt: game.created_at,
       },
       columnsCreated: game.columnsCreated,
+      scoutLeadsColumnsCreated: game.scoutLeadsColumnsCreated,
       warnings: validationResult.warnings,
     });
   } catch (error) {
@@ -189,17 +191,25 @@ export async function OPTIONS(request) {
 
     // Extract fields to show what would be created
     const fields = extractFieldsFromConfig(config);
+    const timerFields = extractTimerFieldsFromConfig(config);
 
     return NextResponse.json({
       valid: validationResult.valid,
       errors: validationResult.errors,
       warnings: validationResult.warnings,
+      scoutLeadsTableName: sanitizeScoutLeadsTableName(config.gameName || 'new_game'),
       fieldsToCreate: fields.map((f) => ({
         name: f.name,
         type: f.type,
         default: f.default,
         required: f.required,
         label: f.label,
+      })),
+      scoutLeadsFieldsToCreate: timerFields.map((field) => ({
+        name: field.name,
+        rateLabel: field.scoutLeadsRateLabel,
+        type: field.scoutLeadsDbColumn?.type || 'NUMERIC(10,4)',
+        default: field.scoutLeadsDbColumn?.default ?? 0,
       })),
     });
   } catch (error) {

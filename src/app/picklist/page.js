@@ -183,6 +183,7 @@ export default function Picklist() {
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
   const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Add authentication state
+  const [unscoredMatches, setUnscoredMatches] = useState([]);
 
   const weightsFormRef = useRef();
   const alliancesFormRef = useRef();
@@ -197,6 +198,12 @@ export default function Picklist() {
   const weightsConfig = picklistConfig.weights || [];
   const tableColumnsConfig = picklistConfig.tableColumns || [];
   const scatterConfig = picklistConfig.scatterPlot || {};
+
+  const formatUnscoredMatch = (issue) => {
+    const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
+    const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
+    return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
+  };
 
   // Function to process raw match data into scatter plot data
   function processTeamData(rows) {
@@ -291,6 +298,7 @@ export default function Picklist() {
 
           // Parse the data and use it
           const data = await dataResponse.json();
+          setUnscoredMatches(Array.isArray(data.unscoredMatches) ? data.unscoredMatches : []);
 
           if (data.userTeam) {
             console.log('Setting team from data response:', data.userTeam);
@@ -448,6 +456,7 @@ export default function Picklist() {
       }
 
       const data = await response.json();
+      setUnscoredMatches(Array.isArray(data.unscoredMatches) ? data.unscoredMatches : []);
 
       if (!data.rows || data.rows.length === 0) {
         console.log('No data rows returned');
@@ -473,6 +482,7 @@ export default function Picklist() {
     } else {
       console.log('Not authenticated, clearing data');
       setTeamData([]);
+      setUnscoredMatches([]);
     }
   }, [isAuthenticated]);
 
@@ -536,19 +546,24 @@ export default function Picklist() {
         throw new Error('Empty response from server');
       }
 
-      const picklist = JSON.parse(text);
+      const payload = JSON.parse(text);
+      const nextPicklist = Array.isArray(payload) ? payload : (payload.teamTable || []);
+      setUnscoredMatches(Array.isArray(payload.unscoredMatches) ? payload.unscoredMatches : []);
 
       // If we received valid data, update the team information
-      if (picklist && picklist.userTeam && !currentUserTeam) {
-        setCurrentUserTeam(picklist.userTeam);
-        localStorage.setItem('userTeam', picklist.userTeam);
+      if (payload && payload.userTeam && !currentUserTeam) {
+        setCurrentUserTeam(payload.userTeam);
+        localStorage.setItem('userTeam', payload.userTeam);
       }
 
-      if (picklist && picklist.length > 0) {
-        setPicklist(picklist);
-        setMaxScore(picklist[0].score);
+      if (nextPicklist.length > 0) {
+        setPicklist(nextPicklist);
+        setMaxScore(nextPicklist[0].score);
         setWeightsChanged(false);
       } else {
+        setPicklist([]);
+        setMaxScore(1);
+        setWeightsChanged(false);
         console.error('Received empty picklist array');
       }
     } catch (error) {
@@ -936,6 +951,18 @@ export default function Picklist() {
 
   return (
     <div style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
+      {unscoredMatches.length > 0 && (
+        <div style={{ margin: "12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
+          <strong>Unscored matches were skipped.</strong>
+          <ul style={{ margin: "8px 0 0 18px" }}>
+            {unscoredMatches.map((issue, index) => (
+              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
+                {formatUnscoredMatch(issue)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className={styles.MainDiv}>
         <div className={styles.configSection}>
           <form ref={weightsFormRef} className={styles.weightsForm}>

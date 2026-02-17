@@ -3,6 +3,7 @@ import { pool } from "../../../lib/auth";
 import { validateAuthToken } from "../../../lib/auth";
 import { getActiveGame } from "../../../lib/game-config";
 import { extractFieldsFromConfig, getNumericFields, getBooleanFields } from "../../../lib/schema-generator";
+import { normalizeMatchForStorage } from "../../../lib/match-utils";
 
 export async function POST(req) {
   try {
@@ -114,13 +115,10 @@ async function handleDynamicInsert(body, activeGame) {
   }
 
   // Handle match number adjustment based on matchType
-  const matchType = parseInt(processedData.matchtype || processedData.matchType || 2);
-  let adjustedMatch = parseInt(processedData.match);
-  switch (matchType) {
-    case 0: adjustedMatch -= 100; break;
-    case 1: adjustedMatch -= 50; break;
-    case 3: adjustedMatch += 100; break;
-  }
+  const { match: adjustedMatch, matchType } = normalizeMatchForStorage(
+    processedData.match,
+    processedData.matchtype ?? processedData.matchType ?? 2
+  );
   processedData.match = adjustedMatch;
   processedData.matchtype = matchType;
 
@@ -160,4 +158,3 @@ async function handleDynamicInsert(body, activeGame) {
     client.release();
   }
 }
-

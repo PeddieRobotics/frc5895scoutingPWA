@@ -14,6 +14,7 @@ import CommentBox from './CommentBox';
 import SingleSelect from './SingleSelect';
 import MultiSelect from './MultiSelect';
 import Qualitative from './Qualitative';
+import HoldTimerInput from './HoldTimerInput';
 import styles from '../page.module.css';
 
 export default function DynamicFormRenderer({
@@ -90,6 +91,19 @@ export default function DynamicFormRenderer({
               quickButtons={field.quickButtons}
             />
           </div>
+        );
+
+      case 'holdTimer':
+        return (
+          <HoldTimerInput
+            key={key}
+            visibleName={field.label || field.name}
+            internalName={field.name}
+            buttonLabel={field.buttonLabel}
+            precision={field.precision}
+            min={field.min}
+            max={field.max}
+          />
         );
 
       case 'text':

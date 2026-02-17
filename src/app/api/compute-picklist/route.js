@@ -3,6 +3,7 @@ import { pool, validateAuthToken } from '../../../lib/auth';
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getActiveGame } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
+import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
 export async function POST(request) {
   // First validate the auth token
@@ -44,15 +45,22 @@ export async function POST(request) {
 
   const client = await pool.connect();
   let rows;
+  let scoredRows;
+  let unscoredMatches = [];
   try {
     const result = await client.query(`SELECT * FROM ${tableName}`);
     rows = result.rows;
+    const timerProcessing = await applyScoutLeadRatesToRows(rows, activeGame, client);
+    scoredRows = timerProcessing.scoredRows;
+    unscoredMatches = timerProcessing.unscoredMatches;
   } finally {
     client.release();
   }
 
   // Use config-driven picklist computation
-  let teamTable = computePicklistMetrics(rows, gameConfig, calculationFunctions, requestBody);
+  let teamTable = scoredRows.length > 0
+    ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, requestBody)
+    : [];
 
   // Fetch TBA Rankings (best effort)
   try {
@@ -83,5 +91,9 @@ export async function POST(request) {
     console.error('[compute-picklist] Error fetching TBA rankings:', tbaError);
   }
 
-  return NextResponse.json(teamTable, { status: 200 });
+  return NextResponse.json({
+    teamTable,
+    unscoredMatches,
+    skippedScoringRows: rows.length - scoredRows.length,
+  }, { status: 200 });
 }

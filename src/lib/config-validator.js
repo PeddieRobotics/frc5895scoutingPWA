@@ -8,6 +8,7 @@ const VALID_FIELD_TYPES = [
   'checkbox',
   'counter',
   'number',
+  'holdTimer',
   'text',
   'comment',
   'singleSelect',
@@ -255,6 +256,10 @@ function validateField(field, path, fieldNames, result) {
     case 'starRating':
     case 'qualitative':
       validateStarRatingField(field, path, fieldNames, result);
+      break;
+
+    case 'holdTimer':
+      validateHoldTimerField(field, path, fieldNames, result);
       break;
 
     default:
@@ -531,6 +536,53 @@ function validateStarRatingField(field, path, fieldNames, result) {
   if (field.minWhenVisible !== undefined) {
     if (typeof field.minWhenVisible !== 'number') {
       result.addWarning('starRating minWhenVisible should be a number', `${path}.minWhenVisible`);
+    }
+  }
+}
+
+/**
+ * Validate a holdTimer field
+ */
+function validateHoldTimerField(field, path, fieldNames, result) {
+  validateStandardField(field, path, fieldNames, result);
+
+  if (field.buttonLabel !== undefined && typeof field.buttonLabel !== 'string') {
+    result.addWarning('holdTimer buttonLabel should be a string', `${path}.buttonLabel`);
+  }
+
+  if (field.precision !== undefined) {
+    if (!Number.isInteger(field.precision) || field.precision < 0 || field.precision > 4) {
+      result.addWarning('holdTimer precision should be an integer between 0 and 4', `${path}.precision`);
+    }
+  }
+
+  if (field.dbColumn?.type) {
+    const dbType = field.dbColumn.type.toUpperCase();
+    if (!dbType.startsWith('NUMERIC') && !dbType.startsWith('DECIMAL') && !dbType.startsWith('INTEGER')) {
+      result.addWarning('holdTimer dbColumn.type should be NUMERIC, DECIMAL, or INTEGER', `${path}.dbColumn.type`);
+    }
+  }
+
+  if (field.scoutLeads !== undefined) {
+    if (!field.scoutLeads || typeof field.scoutLeads !== 'object' || Array.isArray(field.scoutLeads)) {
+      result.addError('holdTimer scoutLeads must be an object', `${path}.scoutLeads`);
+      return;
+    }
+
+    if (field.scoutLeads.rateLabel !== undefined && typeof field.scoutLeads.rateLabel !== 'string') {
+      result.addWarning('holdTimer scoutLeads.rateLabel should be a string', `${path}.scoutLeads.rateLabel`);
+    }
+
+    if (field.scoutLeads.placeholder !== undefined && typeof field.scoutLeads.placeholder !== 'string') {
+      result.addWarning('holdTimer scoutLeads.placeholder should be a string', `${path}.scoutLeads.placeholder`);
+    }
+
+    if (field.scoutLeads.defaultRate !== undefined && typeof field.scoutLeads.defaultRate !== 'number') {
+      result.addWarning('holdTimer scoutLeads.defaultRate should be a number', `${path}.scoutLeads.defaultRate`);
+    }
+
+    if (field.scoutLeads.dbColumn !== undefined) {
+      validateDbColumn(field.scoutLeads.dbColumn, `${path}.scoutLeads`, result);
     }
   }
 }

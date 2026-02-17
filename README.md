@@ -27,6 +27,7 @@ This guide documents how to build and validate JSON game configurations for form
    - [checkbox](#checkbox)
    - [counter](#counter)
    - [number](#number)
+   - [holdTimer](#holdtimer)
    - [text](#text)
    - [comment](#comment)
    - [singleSelect](#singleselect)
@@ -51,6 +52,7 @@ This guide documents how to build and validate JSON game configurations for form
 12. [Validation & Common Errors](#validation--common-errors)
 13. [Complete Example](#complete-example)
 14. [Best Practices](#best-practices)
+15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
 
 ---
 
@@ -61,14 +63,16 @@ The JSON configuration system allows you to define scouting forms without writin
 - **What fields appear on the form** (checkboxes, counters, dropdowns, etc.)
 - **How fields are organized** (sections like Auto, Tele, Endgame)
 - **What database columns are created** (automatic table generation)
+- **What scout-lead timer-rate columns are created** (automatic `scoutleads_*` table generation from `holdTimer` fields)
 - **How points are calculated** (EPA formulas for auto, tele, endgame)
 - **How data is displayed** (team view, match view, charts)
 
 When you create a new game configuration and activate it, the system automatically:
 1. Validates your JSON for errors
-2. Creates a new database table with all the columns your fields need
-3. Renders the scouting form based on your configuration
-4. Calculates EPA scores using your formulas
+2. Creates a scouting table (`scouting_<game>`) with all form data columns
+3. Creates a scout-leads table (`scoutleads_<game>`) with one per-second rate column for each `holdTimer` field
+4. Renders the scouting form based on your configuration
+5. Calculates EPA scores using your formulas
 
 ---
 
@@ -125,6 +129,19 @@ Copy this minimal template to get started quickly:
           "name": "telescore",
           "label": "Teleop Scores",
           "dbColumn": { "type": "INTEGER", "default": 0 }
+        },
+        {
+          "type": "holdTimer",
+          "name": "defensetime",
+          "label": "Defense Time",
+          "buttonLabel": "Hold While Defending",
+          "precision": 2,
+          "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+          "scoutLeads": {
+            "rateLabel": "Stops per second",
+            "defaultRate": 0,
+            "placeholder": "e.g. 0.75"
+          }
         },
         {
           "type": "comment",
@@ -456,6 +473,67 @@ A numeric input field where users type a number directly.
 ```
 
 **Renders as:** A standard number input field with optional up/down arrows.
+
+---
+
+### holdTimer
+
+A press-and-hold timer field designed for mobile scouting. Scouts hold a button while an action is happening; elapsed time accumulates in seconds.
+
+This field also powers the `/scout-leads` workflow: every `holdTimer` creates a matching rate column in `scoutleads_<game>` so scout leads can enter a configurable "something per second" value.
+
+Important behavior:
+- Timer seconds are stored in the scouting table.
+- Scoring/display APIs convert those seconds into scored amounts using scout-leads average balls/sec for that exact team+match+matchtype.
+- Scoring pages should not display raw timer-seconds as scoring output.
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | string | Yes | Must be `"holdTimer"` |
+| `name` | string | Yes | Database column name for stored seconds |
+| `label` | string | Yes | Display label on the scouting form |
+| `buttonLabel` | string | No | Custom text for the hold button |
+| `precision` | integer | No | Decimal places shown on form (0-4, default 2) |
+| `min` | number | No | Minimum allowed seconds (default 0) |
+| `max` | number | No | Maximum allowed seconds |
+| `dbColumn` | object | Yes | Scouting table column config (recommended `NUMERIC`) |
+| `scoutLeads` | object | No | Config for `/scout-leads` per-second input |
+
+**`scoutLeads` object:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `rateLabel` | string | No | Label shown on `/scout-leads` input |
+| `placeholder` | string | No | Placeholder text shown on `/scout-leads` input |
+| `defaultRate` | number | No | Optional UI default/prefill for scout-leads entry |
+| `dbColumn` | object | No | DB config for the scout-leads rate column |
+
+**Database Types:**
+- Scouting table column: recommended `NUMERIC(10,3)`
+- Scout-leads table column: recommended `NUMERIC(10,4)`
+
+**Example:**
+
+```json
+{
+  "type": "holdTimer",
+  "name": "defensetime",
+  "label": "Defense Time",
+  "buttonLabel": "Hold While Defending",
+  "precision": 2,
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Stops per second",
+    "placeholder": "e.g. 0.75",
+    "defaultRate": 0,
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+}
+```
+
+**Renders as:** A live seconds display, hold button, and clear button. Releasing the button commits elapsed time.
 
 ---
 
@@ -817,7 +895,7 @@ Every field that stores data needs a `dbColumn` property that defines how it's s
 | `INTEGER` | Counters, ratings, numeric selections | `0` or `null` |
 | `TEXT` | Comments, long text | `null` |
 | `VARCHAR(n)` | Short text with max length | `null` |
-| `NUMERIC` | Decimal numbers | `0` |
+| `NUMERIC` | Decimal numbers (timer seconds, per-second rates) | `0` |
 
 ### Examples
 
@@ -1296,7 +1374,19 @@ When you upload a configuration, it goes through validation. Here are common err
 **Fix:** Each field name must be unique across the entire configuration. Rename one of the duplicates.
 
 ### Error: "Invalid field type: X"
-**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
+**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
+
+### Error: "holdTimer scoutLeads must be an object"
+**Fix:** If you include `scoutLeads`, define it as an object:
+```json
+"scoutLeads": { "rateLabel": "Something per second", "defaultRate": 0 }
+```
+
+### Warning: "holdTimer dbColumn.type should be NUMERIC, DECIMAL, or INTEGER"
+**Fix:** Use a numeric DB type for timer seconds, e.g.:
+```json
+"dbColumn": { "type": "NUMERIC(10,3)", "default": 0 }
+```
 
 ### Error: "Table field requires rows"
 **Fix:** Add a `rows` array to your table field.
@@ -1597,6 +1687,74 @@ Here is a **complete, working configuration** for reference (REEFSCAPE 2025):
 
 ---
 
+## Scout Leads Timer Workflow
+
+`holdTimer` fields enable a second workflow for scout leads:
+
+1. Scouts collect time-in-seconds on the main form by holding timer buttons.
+2. Scout leads open `/scout-leads`, enter team + match, and load match data for timer-derived metrics.
+3. For each timer field, scout leads enter a configurable per-second rate.
+4. The app stores those rates in a game-specific `scoutleads_*` table.
+
+### Table Creation Rules
+
+When a game is imported:
+- Scouting table: `scouting_<gameName>`
+- Scout-leads table: `scoutleads_<gameName>`
+
+The scout-leads table always includes:
+- `scoutname`
+- `scoutteam`
+- `team`
+- `match`
+- `matchtype`
+- `timestamp`
+- one extra numeric column per `holdTimer` field (same column name as the timer field)
+
+The scout-leads table allows multiple entries for the same `(team, match, matchtype)`. When multiple scout-lead rates are saved, the app uses the **average rate** for that match when converting timer-seconds into scoring values.
+- Blank or `0` rates are treated as missing and are excluded from the average.
+
+### Configuring the Per-Second Input
+
+Use the `scoutLeads` object inside each `holdTimer`:
+
+```json
+{
+  "type": "holdTimer",
+  "name": "defensetime",
+  "label": "Defense Time",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Stops per second",
+    "placeholder": "e.g. 0.75",
+    "defaultRate": 0,
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+}
+```
+
+If `scoutLeads` is omitted:
+- the input label defaults to `"<field label> per second"`
+- rate default falls back to `0`
+- rate column defaults to `NUMERIC(10,4)`
+
+### Missing Rate Handling (Critical)
+
+For any `holdTimer` field:
+- If scouting recorded timer seconds for a team/match but no valid scout-leads rate exists for that same team/match/matchtype, that match is **excluded from scoring calculations**.
+- Team view, match view, and picklist show a **red error box** listing which matches were skipped and why.
+- This prevents raw timer seconds from being treated as scored piece counts.
+
+### Validation Notes
+
+- `holdTimer` is a first-class validated field type.
+- `holdTimer.scoutLeads` (if provided) must be an object.
+- `scoutLeads.rateLabel` must be a string when present.
+- `scoutLeads.defaultRate` must be numeric when present.
+- `holdTimer.dbColumn.type` should be numeric (`NUMERIC`, `DECIMAL`, or `INTEGER`).
+
+---
+
 ## Step-by-Step: Creating a New Game Config
 
 1. **Start with the template** at the top of this guide
@@ -1642,6 +1800,9 @@ A: Create the game, activate it, and fill out the form on the main page. Check t
 
 **Q: What happens to data when I switch games?**
 A: Each game has its own database table. Switching games just changes which table the form writes to. Old data remains.
+
+**Q: Where are scout-lead per-second timer rates stored?**
+A: In `scoutleads_<gameName>`, with one numeric column per `holdTimer` field.
 
 **Q: Can I reuse field names across different games?**
 A: Yes! Field names only need to be unique within a single configuration. Different games can have the same field names.

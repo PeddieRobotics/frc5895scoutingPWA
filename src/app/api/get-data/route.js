@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
 import { getActiveGame } from "../../../lib/game-config";
+import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -60,8 +61,9 @@ export async function GET(request) {
         try {
             // Use a simplified query for the scatter plot
             const data = await client.query(`SELECT * FROM ${tableName} LIMIT 1000`);
+            const timerProcessing = await applyScoutLeadRatesToRows(data.rows, activeGame, client);
             
-            console.log(`GET-DATA: Picklist query successful, returning ${data.rows.length} rows`);
+            console.log(`GET-DATA: Picklist query successful, returning ${timerProcessing.scoredRows.length} rows`);
             
             // Parse team name to get team number
             let userTeam = teamName;
@@ -75,9 +77,11 @@ export async function GET(request) {
             }
             
             const responseData = {
-                rows: data.rows,
+                rows: timerProcessing.scoredRows,
                 userTeam: userTeam,
-                adminMode: false
+                adminMode: false,
+                unscoredMatches: timerProcessing.unscoredMatches,
+                skippedScoringRows: data.rows.length - timerProcessing.scoredRows.length,
             };
             
             console.log(`GET-DATA: Including authenticated user team in response: ${userTeam}`);

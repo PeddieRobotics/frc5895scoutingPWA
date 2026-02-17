@@ -1,0 +1,125 @@
+.page {
+  min-height: 100vh;
+  padding: 20px 12px 40px;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: #57606a;
+}
+
+.info,
+.warning,
+.error,
+.success {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.info {
+  background: #ddf4ff;
+  border: 1px solid #54aeff;
+}
+
+.warning {
+  background: #fff8c5;
+  border: 1px solid #d4a72c;
+}
+
+.error {
+  background: #ffebe9;
+  border: 1px solid #ff8182;
+}
+
+.success {
+  background: #dafbe1;
+  border: 1px solid #4ac26b;
+}
+
+.lookupForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.field input,
+.field select {
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.primaryButton {
+  width: fit-content;
+  border: none;
+  background: #1f6feb;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.primaryButton:disabled {
+  opacity: 0.55;
+}
+
+.meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: #57606a;
+  font-size: 0.92rem;
+}
+
+.timerList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.timerCard {
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timerCard h2,
+.timerCard p {
+  margin: 0;
+}

@@ -105,6 +105,7 @@ function getFormDefaults(config) {
           break;
         case 'counter':
         case 'number':
+        case 'holdTimer':
           defaults[field.name] = 0;
           break;
         case 'starRating':
@@ -129,7 +130,7 @@ function getFormDefaults(config) {
 function getNumericFieldNames(config) {
   const fields = getAllFields(config);
   return fields
-    .filter(f => ['counter', 'number', 'singleSelect', 'starRating', 'qualitative'].includes(f.type))
+    .filter(f => ['counter', 'number', 'holdTimer', 'singleSelect', 'starRating', 'qualitative'].includes(f.type))
     .map(f => f.name)
     .filter(Boolean);
 }

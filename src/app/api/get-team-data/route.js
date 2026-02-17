@@ -3,6 +3,7 @@ import { pool, validateAuthToken } from '../../../lib/auth';
 import { getActiveGame } from "../../../lib/game-config";
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateTeamData } from "../../../lib/display-engine";
+import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -53,9 +54,14 @@ export async function GET(request) {
   // Fetch team data from database
   const client = await pool.connect();
   let rows;
+  let scoredRows;
+  let unscoredMatches = [];
   try {
     const result = await client.query(`SELECT * FROM ${tableName} WHERE team = $1`, [team]);
     rows = result.rows;
+    const timerProcessing = await applyScoutLeadRatesToRows(rows, activeGame, client);
+    scoredRows = timerProcessing.scoredRows;
+    unscoredMatches = timerProcessing.unscoredMatches;
   } finally {
     client.release();
   }
@@ -65,7 +71,36 @@ export async function GET(request) {
   }
 
   // Use config-driven aggregation
-  const returnObject = aggregateTeamData(rows, gameConfig, calculationFunctions);
+  const returnObject = scoredRows.length > 0
+    ? aggregateTeamData(scoredRows, gameConfig, calculationFunctions)
+    : {
+      team: Number(team),
+      avgEpa: 0,
+      avgAuto: 0,
+      avgTele: 0,
+      avgEnd: 0,
+      last3Epa: 0,
+      last3Auto: 0,
+      last3Tele: 0,
+      last3End: 0,
+      epaOverTime: [],
+      autoOverTime: [],
+      teleOverTime: [],
+      consistency: 0,
+      defense: 0,
+      breakdown: 0,
+      lastBreakdown: "N/A",
+      noShow: 0,
+      leave: 0,
+      matchesScouted: 0,
+      scouts: [],
+      auto: {},
+      tele: {},
+      endPlacement: {},
+      attemptCage: 0,
+      successCage: 0,
+      qualitative: [],
+    };
 
   // Fetch team name from TBA
   try {
@@ -85,11 +120,13 @@ export async function GET(request) {
 
   // Include the raw rows if requested
   if (includeRows) {
-    returnObject.rows = rows;
+    returnObject.rows = scoredRows;
   }
 
   // Add game config metadata
   returnObject.tableName = tableName;
+  returnObject.unscoredMatches = unscoredMatches;
+  returnObject.skippedScoringRows = rows.length - scoredRows.length;
   if (gameConfig) {
     returnObject.gameName = gameConfig.gameName;
     returnObject.displayName = gameConfig.displayName;

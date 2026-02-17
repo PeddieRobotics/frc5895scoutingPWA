@@ -207,7 +207,10 @@ export default function GamesPage() {
         setShowCreateForm(false);
         fetchGames();
       } else {
-        setError(data.message || 'Failed to create game');
+        const detailedMessage = data?.error
+          ? `${data.message || 'Failed to create game'}: ${data.error}`
+          : (data?.message || 'Failed to create game');
+        setError(detailedMessage);
         if (data.errors) {
           setValidationResult({ valid: false, errors: data.errors, warnings: data.warnings || [] });
         }
@@ -555,6 +558,26 @@ export default function GamesPage() {
                       <div key={i} className={styles.fieldItem}>
                         <span className={styles.fieldName}>{field.name}</span>
                         <span className={styles.fieldType}>{field.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {validationResult.scoutLeadsFieldsToCreate?.length > 0 && (
+                <div className={styles.fieldsPreview}>
+                  <h4>
+                    Scout Leads Rate Columns ({validationResult.scoutLeadsFieldsToCreate.length})
+                    {validationResult.scoutLeadsTableName && (
+                      <> in <code>{validationResult.scoutLeadsTableName}</code></>
+                    )}
+                  </h4>
+                  <div className={styles.fieldsGrid}>
+                    {validationResult.scoutLeadsFieldsToCreate.map((field, i) => (
+                      <div key={i} className={styles.fieldItem}>
+                        <span className={styles.fieldName}>{field.name}</span>
+                        <span className={styles.fieldType}>{field.type}</span>
+                        <span className={styles.fieldType}>{field.rateLabel}</span>
                       </div>
                     ))}
                   </div>

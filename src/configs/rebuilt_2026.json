@@ -28,13 +28,23 @@
       },
       "fields": [
         {
-          "type": "counter",
+          "type": "holdTimer",
           "name": "autofuelsuccess",
-          "subHeader": "Fuel Scored",
-          "variant": "Success",
+          "label": "Auto Fuel Time (s)",
+          "buttonLabel": "Hold While Shooting Auto Fuel",
+          "precision": 2,
           "dbColumn": {
-            "type": "INTEGER",
+            "type": "NUMERIC(10,3)",
             "default": 0
+          },
+          "scoutLeads": {
+            "rateLabel": "Auto Balls / Second",
+            "placeholder": "e.g. 2.40",
+            "defaultRate": 0,
+            "dbColumn": {
+              "type": "NUMERIC(10,4)",
+              "default": 0
+            }
           }
         },
         {
@@ -78,13 +88,23 @@
       },
       "fields": [
         {
-          "type": "counter",
+          "type": "holdTimer",
           "name": "telefuelsuccess",
-          "subHeader": "Fuel Scored",
-          "variant": "Success",
+          "label": "Tele Fuel Time (s)",
+          "buttonLabel": "Hold While Shooting Tele Fuel",
+          "precision": 2,
           "dbColumn": {
-            "type": "INTEGER",
+            "type": "NUMERIC(10,3)",
             "default": 0
+          },
+          "scoutLeads": {
+            "rateLabel": "Tele Balls / Second",
+            "placeholder": "e.g. 2.70",
+            "defaultRate": 0,
+            "dbColumn": {
+              "type": "NUMERIC(10,4)",
+              "default": 0
+            }
           }
         },
         {

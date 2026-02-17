@@ -1,0 +1,48 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.holdButton {
+  border: none;
+  border-radius: 12px;
+  background: #1f6feb;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 16px;
+  min-height: 52px;
+  touch-action: none;
+}
+
+.holding {
+  background: #b42318;
+}
+
+.clearButton {
+  border: 1px solid #adbac7;
+  border-radius: 10px;
+  background: #f6f8fa;
+  color: #1f2328;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  width: fit-content;
+}
+
+.hiddenInput {
+  display: none;
+}

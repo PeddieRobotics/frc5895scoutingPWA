@@ -84,6 +84,7 @@ export default function NavBar() {
         <div className={styles.pages}>
             <AuthLink href="/">Scouting Form</AuthLink>
             <AuthLink href="/scanner">Scanner</AuthLink>
+            <AuthLink href="/scout-leads">Scout Leads</AuthLink>
             <AuthLink href="/team-view">Team View</AuthLink>
             <AuthLink href="/match-view">Match View</AuthLink>
             <AuthLink href="/compare">Compare</AuthLink>

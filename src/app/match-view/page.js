@@ -29,6 +29,7 @@ function MatchView() {
   const [urlParams, setUrlParams] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [unscoredMatches, setUnscoredMatches] = useState([]);
 
   //light to dark
   const COLORS = [
@@ -47,6 +48,11 @@ function MatchView() {
   const qualitativeFields = matchViewConfig?.qualitativeFields || [];
   const rankingPointsConfig = matchViewConfig?.rankingPoints || [];
   const epaBreakdownKeys = matchViewConfig?.epaBreakdown || [];
+  const formatUnscoredMatch = (issue) => {
+    const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
+    const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
+    return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
+  };
 
   // Get URL parameters on client-side
   useEffect(() => {
@@ -125,7 +131,9 @@ function MatchView() {
       })
       .then(data => {
         console.log("Fetched Data from API:", data);  // <-- Check what the API returns
-        setAllData(data);
+        const teamMap = data?.teams || data || {};
+        setAllData(teamMap);
+        setUnscoredMatches(Array.isArray(data?.unscoredMatches) ? data.unscoredMatches : []);
         setLoading(false);
       })
       .catch(error => {
@@ -608,6 +616,21 @@ function MatchView() {
 
   const redAlliance = [data.team1 || defaultTeam, data.team2 || defaultTeam, data.team3 || defaultTeam];
   const blueAlliance = [data.team4 || defaultTeam, data.team5 || defaultTeam, data.team6 || defaultTeam];
+  const visibleTeamNumbers = new Set([
+    urlParams.team1,
+    urlParams.team2,
+    urlParams.team3,
+    urlParams.team4,
+    urlParams.team5,
+    urlParams.team6,
+    data?.team1?.team,
+    data?.team2?.team,
+    data?.team3?.team,
+    data?.team4?.team,
+    data?.team5?.team,
+    data?.team6?.team,
+  ].filter((value) => value !== undefined && value !== null).map((value) => String(value)));
+  const visibleUnscoredMatches = unscoredMatches.filter((issue) => visibleTeamNumbers.has(String(issue.team)));
   let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3??
   blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
   blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
@@ -658,6 +681,18 @@ function MatchView() {
 
   return (
     <div>
+      {visibleUnscoredMatches.length > 0 && (
+        <div style={{ margin: "12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
+          <strong>Unscored matches were skipped.</strong>
+          <ul style={{ margin: "8px 0 0 18px" }}>
+            {visibleUnscoredMatches.map((issue, index) => (
+              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
+                {formatUnscoredMatch(issue)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className={styles.matchNav}>
         <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
         <Link href={`/match-view?team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}><button style={{ background: "#ffff88", color: "black" }}>Edit</button></Link>

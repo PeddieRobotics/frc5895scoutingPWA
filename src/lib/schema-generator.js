@@ -14,6 +14,15 @@ const CORE_FIELDS = [
   { name: 'timestamp', type: 'TIMESTAMP', required: false, default: 'CURRENT_TIMESTAMP' },
 ];
 
+const SCOUT_LEADS_CORE_FIELDS = [
+  { name: 'scoutname', type: 'VARCHAR(100)', required: false, default: null },
+  { name: 'scoutteam', type: 'VARCHAR(50)', required: false, default: null },
+  { name: 'team', type: 'INTEGER', required: true, default: null },
+  { name: 'match', type: 'INTEGER', required: true, default: null },
+  { name: 'matchtype', type: 'INTEGER', required: false, default: 2 },
+  { name: 'timestamp', type: 'TIMESTAMP', required: false, default: 'CURRENT_TIMESTAMP' },
+];
+
 /**
  * Extract all field definitions from a game config
  * @param {Object} config - The game configuration JSON
@@ -61,10 +70,11 @@ function extractFieldsFromConfig(config) {
 
       case 'counter':
       case 'number':
+      case 'holdTimer':
         fieldNames.add(field.name);
         fields.push({
           name: field.name,
-          type: dbColumn.type || 'INTEGER',
+          type: dbColumn.type || (field.type === 'holdTimer' ? 'NUMERIC(10,3)' : 'INTEGER'),
           default: dbColumn.default !== undefined ? dbColumn.default : 0,
           required: false,
           label: field.label || field.name,
@@ -203,6 +213,8 @@ function getDefaultDbColumn(fieldType) {
     case 'counter':
     case 'number':
       return { type: 'INTEGER', default: 0 };
+    case 'holdTimer':
+      return { type: 'NUMERIC(10,3)', default: 0 };
     case 'text':
       return { type: 'VARCHAR(500)', default: null };
     case 'comment':
@@ -256,7 +268,7 @@ function generateCreateTableSQL(tableName, fields) {
  * @param {string} gameName - The game name
  * @returns {string} Sanitized table name
  */
-function sanitizeTableName(gameName) {
+function sanitizeTableName(gameName, prefix = 'scouting_') {
   // Convert to lowercase, replace spaces and special chars with underscores
   let sanitized = gameName
     .toLowerCase()
@@ -266,12 +278,12 @@ function sanitizeTableName(gameName) {
 
   // Ensure it starts with a letter
   if (/^[0-9]/.test(sanitized)) {
-    sanitized = 'scouting_' + sanitized;
+    sanitized = prefix + sanitized;
   }
 
-  // Prefix with scouting_ if not already
-  if (!sanitized.startsWith('scouting_')) {
-    sanitized = 'scouting_' + sanitized;
+  // Prefix if not already present
+  if (!sanitized.startsWith(prefix)) {
+    sanitized = prefix + sanitized;
   }
 
   // Truncate if too long (max 63 chars for PostgreSQL)
@@ -280,6 +292,114 @@ function sanitizeTableName(gameName) {
   }
 
   return sanitized;
+}
+
+function sanitizeScoutLeadsTableName(gameName) {
+  return sanitizeTableName(gameName, 'scoutleads_');
+}
+
+function extractTimerFieldsFromConfig(config) {
+  const timerFields = [];
+  const seen = new Set();
+
+  function processField(field) {
+    if (!field) return;
+
+    if (field.type === 'holdTimer' && field.name && !seen.has(field.name)) {
+      seen.add(field.name);
+      const dbColumn = field.dbColumn || getDefaultDbColumn('holdTimer');
+      const scoutLeadsDbColumn = field.scoutLeads?.dbColumn || { type: 'NUMERIC(10,4)', default: 0 };
+      const rateDefaultFromConfig = field.scoutLeads?.defaultRate;
+
+      timerFields.push({
+        name: field.name,
+        label: field.label || field.name,
+        dbColumn: {
+          type: dbColumn.type || 'NUMERIC(10,3)',
+          default: dbColumn.default !== undefined ? dbColumn.default : 0,
+        },
+        scoutLeadsRateLabel: field.scoutLeads?.rateLabel || `${field.label || field.name} per second`,
+        scoutLeadsRatePlaceholder: field.scoutLeads?.placeholder || '',
+        scoutLeadsDbColumn: {
+          type: scoutLeadsDbColumn.type || 'NUMERIC(10,4)',
+          default: scoutLeadsDbColumn.default !== undefined
+            ? scoutLeadsDbColumn.default
+            : (rateDefaultFromConfig !== undefined ? rateDefaultFromConfig : 0),
+        },
+      });
+      return;
+    }
+
+    if (field.type === 'table' && Array.isArray(field.rows)) {
+      field.rows.forEach((row) => {
+        if (Array.isArray(row.fields)) {
+          row.fields.forEach((nestedField) => processField(nestedField));
+        }
+      });
+      return;
+    }
+
+    if (field.type === 'collapsible') {
+      if (field.trigger) {
+        processField(field.trigger);
+      }
+      if (Array.isArray(field.content)) {
+        field.content.forEach((nestedField) => processField(nestedField));
+      }
+    }
+  }
+
+  if (config?.basics?.fields) {
+    config.basics.fields.forEach((field) => processField(field));
+  }
+
+  if (config?.sections) {
+    config.sections.forEach((section) => {
+      if (section?.fields) {
+        section.fields.forEach((field) => processField(field));
+      }
+    });
+  }
+
+  return timerFields;
+}
+
+function generateCreateScoutLeadsTableSQL(tableName, timerFields = []) {
+  const timerColumns = timerFields.map((field) => ({
+    name: field.name,
+    type: field.scoutLeadsDbColumn?.type || 'NUMERIC(10,4)',
+    required: false,
+    default: field.scoutLeadsDbColumn?.default !== undefined ? field.scoutLeadsDbColumn.default : 0,
+  }));
+
+  const allColumns = [...SCOUT_LEADS_CORE_FIELDS, ...timerColumns];
+
+  const columnDefs = allColumns.map((column) => {
+    let def = `${column.name} ${column.type}`;
+
+    if (column.required) {
+      def += ' NOT NULL';
+    }
+
+    if (column.default !== undefined && column.default !== null) {
+      if (typeof column.default === 'boolean') {
+        def += ` DEFAULT ${column.default ? 'TRUE' : 'FALSE'}`;
+      } else if (typeof column.default === 'string' && column.default.includes('CURRENT')) {
+        def += ` DEFAULT ${column.default}`;
+      } else if (typeof column.default === 'number') {
+        def += ` DEFAULT ${column.default}`;
+      }
+    }
+
+    return def;
+  });
+
+  return `
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      id SERIAL PRIMARY KEY,
+      ${columnDefs.join(',\n      ')}
+    );
+  `;
 }
 
 /**
@@ -313,7 +433,10 @@ function getFieldDefaults(fields) {
  */
 function getNumericFields(fields) {
   return fields
-    .filter(f => f.type === 'INTEGER' || f.type.startsWith('NUMERIC') || f.type.startsWith('DECIMAL'))
+    .filter((f) => {
+      const type = (f.type || '').toUpperCase();
+      return type === 'INTEGER' || type.startsWith('NUMERIC') || type.startsWith('DECIMAL');
+    })
     .map(f => f.name);
 }
 
@@ -324,7 +447,7 @@ function getNumericFields(fields) {
  */
 function getBooleanFields(fields) {
   return fields
-    .filter(f => f.type === 'BOOLEAN')
+    .filter((f) => (f.type || '').toUpperCase() === 'BOOLEAN')
     .map(f => f.name);
 }
 
@@ -347,11 +470,15 @@ function generateInsertTemplate(tableName, fields) {
 
 export {
   extractFieldsFromConfig,
+  extractTimerFieldsFromConfig,
   generateCreateTableSQL,
+  generateCreateScoutLeadsTableSQL,
   sanitizeTableName,
+  sanitizeScoutLeadsTableName,
   getFieldDefaults,
   getNumericFields,
   getBooleanFields,
   generateInsertTemplate,
   CORE_FIELDS,
+  SCOUT_LEADS_CORE_FIELDS,
 };

@@ -42,6 +42,12 @@ function formatStatValue(value, format) {
     }
 }
 
+function formatUnscoredMatch(issue) {
+    const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
+    const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
+    return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
+}
+
 function TeamView() {
     //for backend
     const [data, setData] = useState(null);
@@ -430,6 +436,7 @@ function TeamView() {
         // Spread all remaining fields (includes intake booleans from API)
         ...data,
     };
+    const unscoredMatches = Array.isArray(safeData.unscoredMatches) ? safeData.unscoredMatches : [];
 
     // Prepare data for the charts — guarded on config existence
     const autoCoralSuccessData = hasCoralConfig ? prepareCoralData(safeData.rows, 'auto', 'success') : [];
@@ -724,6 +731,18 @@ function TeamView() {
 
     return (
         <div className={styles.container}>
+            {unscoredMatches.length > 0 && (
+                <div style={{ margin: "12px 0", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
+                    <strong>Unscored matches were skipped.</strong>
+                    <ul style={{ margin: "8px 0 0 18px" }}>
+                        {unscoredMatches.map((issue, index) => (
+                            <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
+                                {formatUnscoredMatch(issue)}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
             <TopBar />
             <CompareTopBar />
             <div className={styles.header}>

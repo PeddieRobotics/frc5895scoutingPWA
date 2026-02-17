@@ -3,6 +3,7 @@ import { pool, validateAuthToken } from "../../../lib/auth";
 import { getActiveGame } from "../../../lib/game-config";
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateAllianceData } from "../../../lib/display-engine";
+import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -45,15 +46,20 @@ export async function GET(request) {
 
     const client = await pool.connect();
     let rows;
+    let scoredRows;
+    let unscoredMatches = [];
     try {
       const result = await client.query(`SELECT * FROM ${tableName}`);
       rows = result.rows;
+      const timerProcessing = await applyScoutLeadRatesToRows(rows, activeGame, client);
+      scoredRows = timerProcessing.scoredRows;
+      unscoredMatches = timerProcessing.unscoredMatches;
     } finally {
       client.release();
     }
 
     // Use config-driven aggregation
-    const responseObject = aggregateAllianceData(rows, gameConfig, calculationFunctions);
+    const responseObject = aggregateAllianceData(scoredRows, gameConfig, calculationFunctions);
 
     // Fetch team names from TBA (best effort)
     try {
@@ -77,7 +83,11 @@ export async function GET(request) {
       // Continue without team names
     }
 
-    return NextResponse.json(responseObject, { status: 200 });
+    return NextResponse.json({
+      teams: responseObject,
+      unscoredMatches,
+      skippedScoringRows: rows.length - scoredRows.length,
+    }, { status: 200 });
   } catch (error) {
     console.error("Error fetching alliance data:", error);
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });

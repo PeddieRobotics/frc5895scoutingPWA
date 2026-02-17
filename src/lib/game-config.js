@@ -4,7 +4,18 @@
  */
 
 import { pool } from './auth.js';
-import { extractFieldsFromConfig, generateCreateTableSQL, sanitizeTableName } from './schema-generator.js';
+import {
+  extractFieldsFromConfig,
+  extractTimerFieldsFromConfig,
+  generateCreateTableSQL,
+  generateCreateScoutLeadsTableSQL,
+  sanitizeTableName,
+  sanitizeScoutLeadsTableName,
+} from './schema-generator.js';
+
+function quoteIdentifier(identifier) {
+  return `"${String(identifier).replace(/"/g, '""')}"`;
+}
 
 // Cache for active game config (5 minute TTL)
 let activeGameCache = null;
@@ -148,6 +159,7 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
 
     // Generate table name
     const tableName = sanitizeTableName(gameName);
+    const scoutLeadsTableName = sanitizeScoutLeadsTableName(gameName);
 
     // Check if game name or table name already exists
     const existing = await client.query(`
@@ -159,13 +171,32 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
       throw new Error(`Game with name "${gameName}" or table "${tableName}" already exists`);
     }
 
+    // Guard against scout-leads table collisions from truncation or orphaned tables
+    const scoutLeadsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = $1
+      )
+    `, [scoutLeadsTableName]);
+
+    if (scoutLeadsExists.rows[0]?.exists) {
+      throw new Error(`Scout leads table "${scoutLeadsTableName}" already exists`);
+    }
+
     // Extract fields and generate CREATE TABLE SQL
     const fields = extractFieldsFromConfig(configJson);
     const createTableSQL = generateCreateTableSQL(tableName, fields);
+    const timerFields = extractTimerFieldsFromConfig(configJson);
+    const createScoutLeadsTableSQL = generateCreateScoutLeadsTableSQL(scoutLeadsTableName, timerFields);
 
     // Create the data table
     await client.query(createTableSQL);
     console.log(`[GameConfig] Created table: ${tableName}`);
+
+    // Create the scout leads data table
+    await client.query(createScoutLeadsTableSQL);
+    console.log(`[GameConfig] Created scout leads table: ${scoutLeadsTableName}`);
 
     // Insert into game_configs
     const insertResult = await client.query(`
@@ -179,6 +210,8 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     return {
       ...insertResult.rows[0],
       columnsCreated: fields.map(f => f.name),
+      scoutLeadsTableName,
+      scoutLeadsColumnsCreated: timerFields.map((f) => f.name),
     };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -274,6 +307,9 @@ async function deleteGame(id, dropTable = false) {
     if (dropTable) {
       await client.query(`DROP TABLE IF EXISTS ${game.table_name}`);
       console.log(`[GameConfig] Dropped table: ${game.table_name}`);
+      const scoutLeadsTableName = sanitizeScoutLeadsTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${scoutLeadsTableName}`);
+      console.log(`[GameConfig] Dropped table: ${scoutLeadsTableName}`);
     }
 
     await client.query('COMMIT');
@@ -285,6 +321,62 @@ async function deleteGame(id, dropTable = false) {
   } finally {
     client.release();
   }
+}
+
+function getScoutLeadsTableName(gameName) {
+  return sanitizeScoutLeadsTableName(gameName);
+}
+
+/**
+ * Ensure the scout leads table exists for a given game configuration
+ * @param {Object} game - Game row with game_name and config_json
+ * @param {Object|null} existingClient - Optional PG client to reuse
+ * @returns {Promise<{tableName: string, timerFields: Array}>}
+ */
+async function ensureScoutLeadsTableForGame(game, existingClient = null) {
+  if (!game) {
+    throw new Error('Game is required');
+  }
+
+  const gameName = game.game_name || game.gameName || game.config_json?.gameName;
+  if (!gameName) {
+    throw new Error('Game name is required to derive scout leads table name');
+  }
+
+  const config = game.config_json || game.configJson || {};
+  const timerFields = extractTimerFieldsFromConfig(config);
+  const tableName = sanitizeScoutLeadsTableName(gameName);
+  const createTableSQL = generateCreateScoutLeadsTableSQL(tableName, timerFields);
+
+  const client = existingClient || await pool.connect();
+  try {
+    await client.query(createTableSQL);
+
+    // Older versions created a unique constraint on (team, match, matchtype).
+    // Remove it so multiple scout-lead entries can be averaged per match.
+    const constraintsResult = await client.query(`
+      SELECT c.conname, pg_get_constraintdef(c.oid) AS definition
+      FROM pg_constraint c
+      JOIN pg_class t ON t.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = t.relnamespace
+      WHERE n.nspname = 'public'
+        AND t.relname = $1
+        AND c.contype = 'u'
+    `, [tableName]);
+
+    for (const row of constraintsResult.rows) {
+      const definition = row.definition || '';
+      if (/UNIQUE\s*\(\s*team\s*,\s*match\s*,\s*matchtype\s*\)/i.test(definition)) {
+        await client.query(`ALTER TABLE ${tableName} DROP CONSTRAINT IF EXISTS ${quoteIdentifier(row.conname)}`);
+      }
+    }
+  } finally {
+    if (!existingClient) {
+      client.release();
+    }
+  }
+
+  return { tableName, timerFields };
 }
 
 /**
@@ -402,4 +494,6 @@ export {
   getGameDataCount,
   tableExists,
   getTableColumns,
+  getScoutLeadsTableName,
+  ensureScoutLeadsTableForGame,
 };
