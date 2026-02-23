@@ -30,6 +30,7 @@ function MatchView() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unscoredMatches, setUnscoredMatches] = useState([]);
+  const [useRecent, setUseRecent] = useState(false);
 
   //light to dark
   const COLORS = [
@@ -105,7 +106,7 @@ function MatchView() {
       console.error('Error getting user team:', e);
     }
 
-    fetch("/api/get-alliance-data", {
+    fetch(`/api/get-alliance-data${useRecent ? '?scope=last3' : ''}`, {
       headers: {
         'Authorization': (() => {
           try {
@@ -143,7 +144,7 @@ function MatchView() {
         }
         setLoading(false);
       });
-  }, [urlParams, configLoading, configIssues.length]);
+  }, [urlParams, configLoading, configIssues.length, useRecent]);
 
   useEffect(() => {
     if (configLoading || configIssues.length > 0) return;
@@ -428,23 +429,23 @@ function MatchView() {
     // This maintains consistency when teams were swapped due to match number lookup
     return <div className={styles.allianceBoard}>
       <Link href={`/team-view?team=${t1.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[0][1] }}>{t1.team}</button>
+        <button style={{ background: colors[0][1], '--btn-color': colors[0][1] }}>{t1.team}</button>
       </Link>
       <Link href={`/team-view?team=${t2.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[1][1] }}>{t2.team}</button>
+        <button style={{ background: colors[1][1], '--btn-color': colors[1][1] }}>{t2.team}</button>
       </Link>
       <Link href={`/team-view?team=${t3.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[2][1] }}>{t3.team}</button>
+        <button style={{ background: colors[2][1], '--btn-color': colors[2][1] }}>{t3.team}</button>
       </Link>
     </div>
   }
 
   function AllianceDisplay({ teams, opponents, colors }) {
     //calc alliance espm breakdown
-    const validTeams = teams.filter(team => team && team.last3Auto !== null);
-    const auto = validTeams.reduce((sum, team) => sum + (team.last3Auto || 0), 0);
-    const tele = validTeams.reduce((sum, team) => sum + (team.last3Tele || 0), 0);
-    const end = validTeams.reduce((sum, team) => sum + (team.last3End || 0), 0);
+    const validTeams = teams.filter(team => team && team.auto !== null);
+    const auto = validTeams.reduce((sum, team) => sum + (team.auto || 0), 0);
+    const tele = validTeams.reduce((sum, team) => sum + (team.tele || 0), 0);
+    const end = validTeams.reduce((sum, team) => sum + (team.end || 0), 0);
 
     console.log(auto)
     console.log(tele)
@@ -572,12 +573,12 @@ function MatchView() {
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
         <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>
-          {(teamData.last3EPA !== null ? (teamData.last3EPA || 0).toFixed(1) : "N/A")}
+          {teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
         <div className={styles.EPABreakdown}>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {teamData.last3Auto !== null ? (teamData.last3Auto || 0).toFixed(1) : "N/A"}</div>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {teamData.last3Tele !== null ? (teamData.last3Tele || 0).toFixed(1) : "N/A"}</div>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {teamData.last3End !== null ? (teamData.last3End || 0).toFixed(1) : "N/A"}</div>
+          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A"}</div>
+          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A"}</div>
+          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A"}</div>
         </div>
       </div>
       <div className={styles.barchartContainer}>
@@ -631,12 +632,12 @@ function MatchView() {
     data?.team6?.team,
   ].filter((value) => value !== undefined && value !== null).map((value) => String(value)));
   const visibleUnscoredMatches = unscoredMatches.filter((issue) => visibleTeamNumbers.has(String(issue.team)));
-  let blueScores = [0, get(blueAlliance, "last3Auto")]  // last 3??
-  blueScores.push(blueScores[1] + get(blueAlliance, "last3Tele"))
-  blueScores.push(blueScores[2] + get(blueAlliance, "last3End"))
-  let redScores = [0, get(redAlliance, "last3Auto")]
-  redScores.push(redScores[1] + get(redAlliance, "last3Tele"))
-  redScores.push(redScores[2] + get(redAlliance, "last3End"));
+  let blueScores = [0, get(blueAlliance, "auto")]
+  blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
+  blueScores.push(blueScores[2] + get(blueAlliance, "end"))
+  let redScores = [0, get(redAlliance, "auto")]
+  redScores.push(redScores[1] + get(redAlliance, "tele"))
+  redScores.push(redScores[2] + get(redAlliance, "end"));
   let epaData = [
     { name: "Start", blue: 0, red: 0 },
     { name: "Auto", blue: blueScores[1], red: redScores[1] },
@@ -693,6 +694,23 @@ function MatchView() {
           </ul>
         </div>
       )}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', margin: '14px 0' }}>
+        <span style={{ fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '16px' }}>Data Range:</span>
+        <div style={{ display: 'flex', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
+          <button
+            onClick={() => setUseRecent(false)}
+            style={{ padding: '8px 22px', background: !useRecent ? '#333' : 'white', color: !useRecent ? 'white' : '#555', border: 'none', cursor: !useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}
+          >
+            All Time
+          </button>
+          <button
+            onClick={() => setUseRecent(true)}
+            style={{ padding: '8px 22px', background: useRecent ? '#4a90d9' : 'white', color: useRecent ? 'white' : '#555', border: 'none', borderLeft: '2px solid #333', cursor: useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}
+          >
+            Last 3 Matches
+          </button>
+        </div>
+      </div>
       <div className={styles.matchNav}>
         <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
         <Link href={`/match-view?team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}><button style={{ background: "#ffff88", color: "black" }}>Edit</button></Link>
@@ -708,6 +726,7 @@ function MatchView() {
             allianceData={redAlliance}
             colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
             defenseField={matchViewConfig?.defenseBarField}
+            scope={useRecent ? 'last3' : 'all'}
             teamNumbers={[
               (data.team1 || defaultTeam).team,
               (data.team2 || defaultTeam).team,
@@ -725,6 +744,7 @@ function MatchView() {
             allianceData={blueAlliance}
             colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
             defenseField={matchViewConfig?.defenseBarField}
+            scope={useRecent ? 'last3' : 'all'}
             teamNumbers={[
               (data.team4 || defaultTeam).team,
               (data.team5 || defaultTeam).team,

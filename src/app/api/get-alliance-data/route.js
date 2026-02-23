@@ -58,6 +58,16 @@ export async function GET(request) {
       client.release();
     }
 
+    // Optionally filter to last 3 matches per team
+    const scope = new URL(request.url).searchParams.get('scope');
+    if (scope === 'last3') {
+      const byTeam = {};
+      scoredRows.forEach(r => { (byTeam[r.team] = byTeam[r.team] || []).push(r); });
+      scoredRows = Object.values(byTeam).flatMap(rows =>
+        rows.sort((a, b) => a.match - b.match).slice(-3)
+      );
+    }
+
     // Use config-driven aggregation
     const responseObject = aggregateAllianceData(scoredRows, gameConfig, calculationFunctions);
 

@@ -105,7 +105,7 @@
 
 .matchNav button:hover {
     background: black !important;
-    color: yellow !important;
+    color: var(--btn-color, yellow) !important;
 }
 
 .allianceEPAs {

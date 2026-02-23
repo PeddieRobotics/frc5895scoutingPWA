@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField }) {
+export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField, scope }) {
   const [defenseRatings, setDefenseRatings] = useState({
     team1: 0,
     team2: 0,
@@ -34,20 +34,24 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
   // Helper function to calculate average defense rating for a team based on its rows
   const calculateTeamDefenseRating = (rows, teamNumber) => {
     if (!rows || rows.length === 0) return 0;
-    
-    const validDefenseRatings = rows.filter(row => {
+
+    let teamRows = rows.filter(row => {
       const defenseValue = getDefensePlayed(row);
       return row.team == teamNumber && defenseValue !== null;
     });
-    
-    if (validDefenseRatings.length === 0) return 0;
-    
-    const totalSum = validDefenseRatings.reduce((sum, row) => {
+
+    if (scope === 'last3') {
+      teamRows = teamRows.sort((a, b) => (a.match || 0) - (b.match || 0)).slice(-3);
+    }
+
+    if (teamRows.length === 0) return 0;
+
+    const totalSum = teamRows.reduce((sum, row) => {
       const defenseValue = getDefensePlayed(row);
       return sum + defenseValue;
     }, 0);
-    
-    return Math.min(totalSum / validDefenseRatings.length, 6); // Cap at 6
+
+    return Math.min(totalSum / teamRows.length, 6); // Cap at 6
   };
 
   // Fetch and process defense ratings for each team
@@ -142,7 +146,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
     };
     
     fetchAllTeamData();
-  }, [teamNumbers, defenseField]);
+  }, [teamNumbers, defenseField, scope]);
 
   // Format data for the bar chart
   const data = [
