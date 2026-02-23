@@ -3,28 +3,24 @@ import styles from "./Checkbox.module.css";
 import { useState, useEffect, useRef } from "react";
 
 export default function Checkbox ({ visibleName, internalName, changeListener, className, style }) {
-    const [checked, setChecked] = useState(false);
+    const lsKey = `form_field_${internalName}`;
+    const [checked, setChecked] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        const stored = localStorage.getItem(`form_field_${internalName}`);
+        return stored === 'true';
+    });
     const checkboxRef = useRef(null);
-    
-    // Sync the React state with the actual DOM element when component mounts
-    useEffect(() => {
-        if (checkboxRef.current) {
-            // If the checkbox has a different checked state, update our state
-            if (checkboxRef.current.checked !== checked) {
-                setChecked(checkboxRef.current.checked);
-            }
-        }
-    }, []);
     
     // Add listener for reset events
     useEffect(() => {
         // Handler for form reset events
         const handleReset = () => {
             console.log(`Checkbox ${internalName} received reset event`);
+            localStorage.removeItem(lsKey);
             setChecked(false);
             if (checkboxRef.current) {
                 checkboxRef.current.checked = false;
-                
+
                 // Also notify parent components of this change
                 if (changeListener) {
                     const syntheticEvent = {
@@ -36,20 +32,23 @@ export default function Checkbox ({ visibleName, internalName, changeListener, c
                 }
             }
         };
-        
+
         // Listen for reset events
         window.addEventListener('reset_form_components', handleReset);
-        
+
         // Cleanup
         return () => {
             window.removeEventListener('reset_form_components', handleReset);
         };
-    }, [internalName, changeListener]);
+    }, [internalName, lsKey, changeListener]);
     
     const handleChange = (e) => {
         // Update React state
         setChecked(e.target.checked);
-        
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(lsKey, String(e.target.checked));
+        }
+
         // Call external change listener if provided
         if (changeListener) changeListener(e);
     };

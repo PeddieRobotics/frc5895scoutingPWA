@@ -6,27 +6,24 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
     min = min || 0;
     max = max || 99999;
 
+    const lsKey = `form_field_${internalName}`;
+
     // Use a ref to keep track of the actual DOM input element
     const inputRef = useRef(null);
-    // Initialize state to 0 but we'll update it from DOM if needed
-    const [value, setValue] = useState(0);
-
-    // Effect to sync state with actual DOM value (important after re-renders)
-    useEffect(() => {
-        if (inputRef.current) {
-            // If the DOM element has a value, use that instead of the initial state
-            const currentValue = parseInt(inputRef.current.value || '0', 10);
-            if (currentValue !== value) {
-                setValue(currentValue);
-            }
-        }
-    }, []);
+    // Initialize state from localStorage if available
+    const [value, setValue] = useState(() => {
+        if (typeof window === 'undefined') return 0;
+        const stored = localStorage.getItem(`form_field_${internalName}`);
+        if (stored !== null) return parseInt(stored, 10) || 0;
+        return 0;
+    });
 
     // Add listener for reset events
     useEffect(() => {
         // Handler for form reset events
         const handleReset = (event) => {
             console.log(`NumericInput ${internalName} received reset event`);
+            localStorage.removeItem(lsKey);
 
             // Don't reset match field
             if (internalName === 'match') {
@@ -50,6 +47,7 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
         const handleNumericReset = () => {
             if (internalName !== 'match') {
                 console.log(`NumericInput ${internalName} reset to 0`);
+                localStorage.removeItem(lsKey);
                 setValue(0);
                 if (inputRef.current) {
                     inputRef.current.value = "0";
@@ -66,12 +64,15 @@ export default function NumericInput({ visibleName, internalName, pieceType, min
             window.removeEventListener('reset_form_components', handleReset);
             window.removeEventListener('reset_numeric_inputs', handleNumericReset);
         };
-    }, [internalName]);
+    }, [internalName, lsKey]);
 
     function adjustValue(amount) {
         const newValue = Math.max(min, Math.min(max, value + amount));
         if (newValue !== value) {
             setValue(newValue);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(lsKey, String(newValue));
+            }
             if (inputRef.current) {
                 inputRef.current.value = newValue;
             }

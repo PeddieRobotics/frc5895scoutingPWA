@@ -22,77 +22,149 @@ export default function HoldTimerInput({
     ? Math.min(Math.max(precision, 0), 4)
     : 2;
 
-  const [committedSeconds, setCommittedSeconds] = useState(0);
+  const lsKey = `holdtimer_${internalName}`;
+
+  const [recordings, setRecordings] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem(lsKey)) || [];
+    } catch {
+      return [];
+    }
+  });
   const [liveSeconds, setLiveSeconds] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ show: false, message: "", onConfirm: null });
+
+  const showConfirm = useCallback((message, onConfirm) => {
+    setConfirmDialog({ show: true, message, onConfirm });
+  }, []);
+
+  const handleConfirmOk = useCallback(() => {
+    setConfirmDialog((prev) => {
+      prev.onConfirm?.();
+      return { show: false, message: "", onConfirm: null };
+    });
+  }, []);
+
+  const handleConfirmCancel = useCallback(() => {
+    setConfirmDialog({ show: false, message: "", onConfirm: null });
+  }, []);
 
   const holdStartRef = useRef(null);
-  const baseSecondsRef = useRef(0);
   const animationFrameRef = useRef(null);
 
-  const clampSeconds = useCallback((value) => {
-    return Math.min(max, Math.max(min, value));
-  }, [min, max]);
+  const totalSeconds = recordings.reduce((sum, r) => sum + r.duration, 0);
 
-  const roundSeconds = useCallback((value) => {
-    const factor = 10 ** normalizedPrecision;
-    const clamped = clampSeconds(value);
-    return Math.round(clamped * factor) / factor;
-  }, [clampSeconds, normalizedPrecision]);
+  const clampSeconds = useCallback(
+    (value) => Math.min(max, Math.max(min, value)),
+    [min, max]
+  );
 
-  const stopHolding = useCallback((commit = true) => {
-    if (holdStartRef.current === null) return;
+  const roundSeconds = useCallback(
+    (value) => {
+      const factor = 10 ** normalizedPrecision;
+      return Math.round(clampSeconds(value) * factor) / factor;
+    },
+    [clampSeconds, normalizedPrecision]
+  );
 
-    const elapsed = (nowMs() - holdStartRef.current) / 1000;
-    const finalValue = roundSeconds(baseSecondsRef.current + elapsed);
-
-    holdStartRef.current = null;
-    setIsHolding(false);
-
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+  // Persist recordings to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(lsKey, JSON.stringify(recordings));
     }
+  }, [recordings, lsKey]);
 
-    if (commit) {
-      setCommittedSeconds(finalValue);
-      setLiveSeconds(finalValue);
-    } else {
-      setLiveSeconds(committedSeconds);
-    }
-  }, [committedSeconds, roundSeconds]);
-
-  const startHolding = useCallback((event) => {
-    event.preventDefault();
-    if (holdStartRef.current !== null) return;
-
-    if (event.pointerId !== undefined && event.currentTarget?.setPointerCapture) {
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch (_error) {
-        // Ignore capture failures on unsupported browsers.
+  // Listen for form reset event
+  useEffect(() => {
+    const handleReset = () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(lsKey);
       }
-    }
-
-    baseSecondsRef.current = committedSeconds;
-    holdStartRef.current = nowMs();
-    setIsHolding(true);
-
-    const tick = () => {
-      if (holdStartRef.current === null) return;
-      const elapsed = (nowMs() - holdStartRef.current) / 1000;
-      setLiveSeconds(clampSeconds(baseSecondsRef.current + elapsed));
-      animationFrameRef.current = requestAnimationFrame(tick);
+      if (holdStartRef.current !== null) {
+        holdStartRef.current = null;
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      }
+      setIsHolding(false);
+      setRecordings([]);
+      setLiveSeconds(0);
     };
 
-    tick();
-  }, [clampSeconds, committedSeconds]);
+    window.addEventListener("reset_form_components", handleReset);
+    return () => window.removeEventListener("reset_form_components", handleReset);
+  }, [lsKey]);
 
-  const clearTimer = useCallback(() => {
-    stopHolding(false);
-    setCommittedSeconds(0);
-    setLiveSeconds(0);
-  }, [stopHolding]);
+  const stopHolding = useCallback(
+    (commit = true) => {
+      if (holdStartRef.current === null) return;
+
+      const elapsed = (nowMs() - holdStartRef.current) / 1000;
+      const rounded = roundSeconds(elapsed);
+
+      holdStartRef.current = null;
+      setIsHolding(false);
+
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      if (commit && rounded > 0) {
+        setRecordings((prev) => [...prev, { id: Date.now(), duration: rounded }]);
+      }
+      setLiveSeconds(0);
+    },
+    [roundSeconds]
+  );
+
+  const startHolding = useCallback(
+    (event) => {
+      event.preventDefault();
+      if (holdStartRef.current !== null) return;
+
+      if (event.pointerId !== undefined && event.currentTarget?.setPointerCapture) {
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch (_error) {
+          // Ignore capture failures on unsupported browsers.
+        }
+      }
+
+      holdStartRef.current = nowMs();
+      setIsHolding(true);
+
+      const tick = () => {
+        if (holdStartRef.current === null) return;
+        const elapsed = (nowMs() - holdStartRef.current) / 1000;
+        setLiveSeconds(clampSeconds(elapsed));
+        animationFrameRef.current = requestAnimationFrame(tick);
+      };
+
+      tick();
+    },
+    [clampSeconds]
+  );
+
+  const clearAll = useCallback(() => {
+    showConfirm("Clear all recordings?", () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(lsKey);
+      }
+      stopHolding(false);
+      setRecordings([]);
+      setLiveSeconds(0);
+    });
+  }, [lsKey, stopHolding, showConfirm]);
+
+  const deleteRecording = useCallback((id) => {
+    showConfirm("Delete this recording?", () => {
+      setRecordings((prev) => prev.filter((r) => r.id !== id));
+    });
+  }, [showConfirm]);
 
   useEffect(() => {
     if (!isHolding) return undefined;
@@ -117,7 +189,7 @@ export default function HoldTimerInput({
     };
   }, []);
 
-  const displayedSeconds = isHolding ? liveSeconds : committedSeconds;
+  const displayedSeconds = isHolding ? liveSeconds : totalSeconds;
 
   return (
     <div className={styles.container}>
@@ -139,8 +211,8 @@ export default function HoldTimerInput({
         {isHolding ? "Timing..." : (buttonLabel || "Press and Hold")}
       </button>
 
-      <button type="button" className={styles.clearButton} onClick={clearTimer}>
-        Clear
+      <button type="button" className={styles.clearButton} onClick={clearAll}>
+        Clear All
       </button>
 
       <input
@@ -148,10 +220,61 @@ export default function HoldTimerInput({
         name={internalName}
         type="number"
         step="0.001"
-        value={committedSeconds}
+        value={Math.min(totalSeconds, max)}
         readOnly
         className={styles.hiddenInput}
       />
+
+      {recordings.length > 0 && (
+        <table className={styles.recordingsTable}>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Duration</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {recordings.map((r, idx) => (
+              <tr key={r.id}>
+                <td>{idx + 1}</td>
+                <td>{r.duration.toFixed(normalizedPrecision)}s</td>
+                <td>
+                  <button
+                    type="button"
+                    className={styles.deleteBtn}
+                    onClick={() => deleteRecording(r.id)}
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className={styles.totalRow}>
+              <td colSpan={2}>Total: {totalSeconds.toFixed(normalizedPrecision)}s</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      )}
+
+      {confirmDialog.show && (
+        <div className={styles.overlay}>
+          <div className={styles.dialog}>
+            <p className={styles.dialogMessage}>{confirmDialog.message}</p>
+            <div className={styles.dialogButtons}>
+              <button type="button" className={styles.dialogConfirm} onClick={handleConfirmOk}>
+                Confirm
+              </button>
+              <button type="button" className={styles.dialogCancel} onClick={handleConfirmCancel}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,23 @@ import { useEffect, useState } from 'react'
 import styles from './Qualitative.module.css'
 
 export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0 }) {
-    const [rating, setRating] = useState(forcedMinRating);
+    const lsKey = `form_field_${internalName}`;
+    const [rating, setRating] = useState(() => {
+        if (typeof window === 'undefined') return forcedMinRating;
+        const stored = localStorage.getItem(`form_field_${internalName}`);
+        if (stored !== null) return parseInt(stored, 10) || 0;
+        return forcedMinRating;
+    });
+
+    // Listen for form reset events
+    useEffect(() => {
+        const handleReset = () => {
+            localStorage.removeItem(lsKey);
+            setRating(0);
+        };
+        window.addEventListener('reset_form_components', handleReset);
+        return () => window.removeEventListener('reset_form_components', handleReset);
+    }, [lsKey]);
 
     // Update rating if forcedMinRating changes
     useEffect(() => {
@@ -31,7 +47,12 @@ export default function Qualitative ({ visibleName, internalName, description, s
             <hr></hr>
             <div className={styles.ratings}>
                 {[1,2,3,4,5,6].map(ratingValue => {
-                    return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => setRating(ratingValue)}>{symbol}</div>
+                    return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => {
+                        setRating(ratingValue);
+                        if (typeof window !== 'undefined') {
+                            localStorage.setItem(lsKey, String(ratingValue));
+                        }
+                    }}>{symbol}</div>
                 })}
             </div>
             

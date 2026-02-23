@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import styles from './EndPlacement.module.css';
 
 export default function MultiSelect({ options, subHeaderName, className }) {
+    const lsKey = subHeaderName ? `form_multiselect_${subHeaderName}` : null;
+
     // Build initial state from options
     const buildInitialState = () => {
         const state = {};
@@ -12,11 +14,22 @@ export default function MultiSelect({ options, subHeaderName, className }) {
         return state;
     };
 
-    const [checked, setChecked] = useState(buildInitialState);
+    const [checked, setChecked] = useState(() => {
+        if (lsKey && typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(lsKey);
+                if (stored) return JSON.parse(stored);
+            } catch {
+                // fall through
+            }
+        }
+        return buildInitialState();
+    });
 
     // Listen for form reset events
     useEffect(() => {
         const handleReset = () => {
+            if (lsKey) localStorage.removeItem(lsKey);
             setChecked(buildInitialState());
         };
 
@@ -27,12 +40,18 @@ export default function MultiSelect({ options, subHeaderName, className }) {
             window.removeEventListener('reset_form_components', handleReset);
             window.removeEventListener('reset_numeric_inputs', handleReset);
         };
-    }, [options]);
+    }, [options, lsKey]);
 
     if (!options || options.length === 0) return null;
 
     const handleOptionClick = (name) => {
-        setChecked(prev => ({ ...prev, [name]: !prev[name] }));
+        setChecked(prev => {
+            const next = { ...prev, [name]: !prev[name] };
+            if (lsKey && typeof window !== 'undefined') {
+                localStorage.setItem(lsKey, JSON.stringify(next));
+            }
+            return next;
+        });
     };
 
     return (
@@ -52,7 +71,13 @@ export default function MultiSelect({ options, subHeaderName, className }) {
                         name={opt.name}
                         checked={checked[opt.name] || false}
                         onChange={(e) => {
-                            setChecked(prev => ({ ...prev, [opt.name]: e.target.checked }));
+                            setChecked(prev => {
+                                const next = { ...prev, [opt.name]: e.target.checked };
+                                if (lsKey && typeof window !== 'undefined') {
+                                    localStorage.setItem(lsKey, JSON.stringify(next));
+                                }
+                                return next;
+                            });
                         }}
                         onClick={(e) => e.stopPropagation()}
                     />

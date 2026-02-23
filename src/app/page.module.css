@@ -214,6 +214,26 @@
     -webkit-text-fill-color: #aaa;
   }
 
+  .ClearFormButton {
+    background-color: #b42318;
+    height: 50px;
+    width: 100%;
+    max-width: 300px;
+    border-radius: 5px;
+    border: 1px solid #8a1a12;
+    font-size: clamp(16px, 4vw, 22px);
+    cursor: pointer;
+    color: white !important;
+    -webkit-text-fill-color: white;
+    -webkit-appearance: none;
+  }
+
+  .ClearFormButton:hover {
+    background-color: #cf2e21;
+    color: white !important;
+    -webkit-text-fill-color: white;
+  }
+
   .MainDiv button, .MainDiv input {
     font-family: 'Montserrat', sans-serif;
   }

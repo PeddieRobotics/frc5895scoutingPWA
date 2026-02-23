@@ -3,6 +3,7 @@ import styles from './CommentBox.module.css'
 import { useRef, useEffect, useState } from 'react';
 
 export default function CommentBox ({ visibleName, internalName}) {
+    const lsKey = `form_field_${internalName}`;
     const textareaRef = useRef(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [charCount, setCharCount] = useState(0);
@@ -33,25 +34,49 @@ export default function CommentBox ({ visibleName, internalName}) {
     // Update character count
     const handleInput = (e) => {
         setCharCount(e.target.value.length);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(lsKey, e.target.value);
+        }
         autoResize();
     };
     
-    // Set up the resize on input and window resize
+    // Set up the resize on input and window resize, restore from localStorage
     useEffect(() => {
         const textarea = textareaRef.current;
         if (!textarea) return;
-        
+
+        // Restore saved value from localStorage
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem(lsKey);
+            if (stored) {
+                textarea.value = stored;
+                setCharCount(stored.length);
+            }
+        }
+
         // Initialize the height
         autoResize();
-        
+
         // Add event listeners
         window.addEventListener('resize', autoResize);
-        
+
+        // Listen for reset event
+        const handleReset = () => {
+            localStorage.removeItem(lsKey);
+            if (textareaRef.current) {
+                textareaRef.current.value = '';
+                setCharCount(0);
+                autoResize();
+            }
+        };
+        window.addEventListener('reset_form_components', handleReset);
+
         // Cleanup
         return () => {
             window.removeEventListener('resize', autoResize);
+            window.removeEventListener('reset_form_components', handleReset);
         };
-    }, [isExpanded]);
+    }, [isExpanded, lsKey]);
     
     return (
         <div className={styles.commentBoxContainer}>

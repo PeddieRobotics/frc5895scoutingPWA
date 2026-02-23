@@ -33,6 +33,7 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [showClearFormDialog, setShowClearFormDialog] = useState(false);
 
   // Active game configuration state
   const [activeGameConfig, setActiveGameConfig] = useState(null);
@@ -798,10 +799,13 @@ export default function Home() {
       setNoShow(false);
       setBreakdown(false);
       setDefense(false);
-      
+
+      // Notify mounted components to clear their localStorage before unmounting
+      window.dispatchEvent(new CustomEvent('reset_form_components'));
+
       // Force complete component reset by incrementing the key
       setFormResetKey(prev => prev + 1);
-      
+
       // Indicate successful submission and hide dialog after a delay
       setTimeout(() => {
         setShowSubmitDialog(false);
@@ -850,11 +854,14 @@ export default function Home() {
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
-    
+
+    // Notify mounted components to clear their localStorage before unmounting
+    window.dispatchEvent(new CustomEvent('reset_form_components'));
+
     // Force complete component reset by incrementing the key
     setFormResetKey(prev => prev + 1);
-    
-    // Show confetti with a slight delay 
+
+    // Show confetti with a slight delay
     setTimeout(() => {
       new JSConfetti().addConfetti({
         emojis: ['🐠', '🐡', '🦀', '🪸'],
@@ -1218,7 +1225,7 @@ export default function Home() {
           e.stopPropagation();
           return false;
         }}
-        style={{ display: (showQRCode || showSubmitDialog || showAuthDialog) ? 'none' : 'block' }}
+        style={{ display: (showQRCode || showSubmitDialog || showAuthDialog || showClearFormDialog) ? 'none' : 'block' }}
       >
         <Header headerName={activeGameConfig?.config?.formTitle || "5895 SKOUTER"} className={compactStyles.header} />
         <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
@@ -1272,22 +1279,30 @@ export default function Home() {
         )}
 
         <div className={`${styles.SubmitButtons} ${compactStyles.SubmitButtons}`}>
-          <button 
-            id="qrbutton" 
-            type="button" 
-            onClick={handleQRButtonClick} 
+          <button
+            id="qrbutton"
+            type="button"
+            onClick={handleQRButtonClick}
             className={`${styles.QRButton} ${compactStyles.QRButton}`}
           >
             GENERATE QR CODE
           </button>
-          <button 
-            id="onlinesubmit" 
-            type="button" 
-            onClick={handleOnlineSubmitClick} 
-            className={`${styles.OnlineSubmitButton} ${compactStyles.OnlineSubmitButton}`} 
+          <button
+            id="onlinesubmit"
+            type="button"
+            onClick={handleOnlineSubmitClick}
+            className={`${styles.OnlineSubmitButton} ${compactStyles.OnlineSubmitButton}`}
             disabled={!isOnline}
           >
             {isOnline ? "SUBMIT ONLINE" : "OFFLINE MODE"}
+          </button>
+          <button
+            id="clearform"
+            type="button"
+            onClick={() => setShowClearFormDialog(true)}
+            className={`${styles.ClearFormButton} ${compactStyles.ClearFormButton || ''}`}
+          >
+            CLEAR FORM
           </button>
         </div>
       </form>
@@ -1392,9 +1407,42 @@ export default function Home() {
         </div>
       )}
 
+      {/* Clear Form Confirmation Dialog */}
+      {showClearFormDialog && (
+        <div className={styles.QRCodeOverlay}>
+          <div className={styles.QRCodeContainer}>
+            <h2 className={styles.qrTitle}>Clear Form</h2>
+            <p style={{ color: 'white', textAlign: 'center', marginBottom: '24px', fontSize: '18px' }}>
+              Are you sure you want to clear all form data?
+            </p>
+            <div className={styles.SubmitButtons}>
+              <button
+                className={styles.SubmitButton}
+                onClick={() => {
+                  setShowClearFormDialog(false);
+                  setNoShow(false);
+                  setBreakdown(false);
+                  setDefense(false);
+                  window.dispatchEvent(new CustomEvent('reset_form_components'));
+                  setFormResetKey(prev => prev + 1);
+                }}
+              >
+                Clear
+              </button>
+              <button
+                className={styles.CancelButton}
+                onClick={() => setShowClearFormDialog(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Auth Dialog */}
-      <AuthDialog 
-        isOpen={showAuthDialog} 
+      <AuthDialog
+        isOpen={showAuthDialog}
         onClose={handleAuthClose}
         onLogin={handleAuthSuccess}
         errorMessage={authError}

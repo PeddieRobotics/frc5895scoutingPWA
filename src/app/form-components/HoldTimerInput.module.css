@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .label {
@@ -25,6 +26,8 @@
   font-weight: 700;
   padding: 14px 16px;
   min-height: 52px;
+  min-width: 160px;
+  align-self: flex-start;
   touch-action: none;
 }
 
@@ -45,4 +48,99 @@
 
 .hiddenInput {
   display: none;
+}
+
+.recordingsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.recordingsTable th,
+.recordingsTable td {
+  padding: 6px 10px;
+  border: 1px solid #d0d7de;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.deleteBtn {
+  background: transparent;
+  border: 1px solid #cf222e;
+  border-radius: 6px;
+  color: #cf222e;
+  font-size: 14px;
+  padding: 6px 10px;
+  min-width: 36px;
+  min-height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.totalRow td {
+  font-weight: 700;
+  background: #f6f8fa;
+}
+
+/* Confirm dialog overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 35, 59, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: #0b233b;
+  padding: 28px 24px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 360px;
+  border: 2px solid #bd9748;
+  text-align: center;
+}
+
+.dialogMessage {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.dialogButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.dialogConfirm {
+  background-color: #b42318;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 100px;
+  height: 44px;
+}
+
+.dialogCancel {
+  background-color: #666;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 100px;
+  height: 44px;
 }
