@@ -43,6 +43,7 @@ function Compare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
+  const [useRecent, setUseRecent] = useState(false);
   const { config, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(
@@ -122,7 +123,7 @@ function Compare() {
         }
 
         const teamDataPromises = teams.map(team =>
-          fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+          fetch(`/api/get-team-data?team=${team}&includeRows=true${useRecent ? '&scope=last3' : ''}`, {
             headers: {
               'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
             }
@@ -193,7 +194,7 @@ function Compare() {
     return () => {
       isMounted = false;
     };
-  }, [teams]);
+  }, [teams, useRecent]);
 
   if (loading || configLoading) {
     return (
@@ -217,6 +218,20 @@ function Compare() {
     <div className={styles.container}>
       <h1>Team Comparison</h1>
       <TeamInputForm initialTeams={teams} />
+
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', margin: '14px 0' }}>
+        <span style={{ fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '16px' }}>Data Range:</span>
+        <div style={{ display: 'flex', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
+          <button onClick={() => setUseRecent(false)}
+            style={{ padding: '8px 22px', background: !useRecent ? '#333' : 'white', color: !useRecent ? 'white' : '#555', border: 'none', cursor: !useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}>
+            All Time
+          </button>
+          <button onClick={() => setUseRecent(true)}
+            style={{ padding: '8px 22px', background: useRecent ? '#4a90d9' : 'white', color: useRecent ? 'white' : '#555', border: 'none', borderLeft: '2px solid #333', cursor: useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}>
+            Last 3 Matches
+          </button>
+        </div>
+      </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
