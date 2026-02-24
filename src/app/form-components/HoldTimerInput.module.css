@@ -6,29 +6,77 @@
   width: 100%;
 }
 
+.container * {
+  box-sizing: border-box;
+}
+
 .label {
   font-size: 16px;
   font-weight: 600;
+  width: 100%;
+  text-align: center;
 }
 
 .value {
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  align-self: center;
 }
 
-.holdButton {
-  border: none;
+.timerButtonsGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.holdButtonWrap {
+  display: inline-grid;
+  align-self: auto;
+  max-width: 100%;
+}
+
+.holdButtonWrap > * {
+  grid-area: 1 / 1;
+}
+
+.holdButton,
+.holdButtonSizer {
   border-radius: 12px;
-  background: #1f6feb;
-  color: white;
   font-size: 16px;
   font-weight: 700;
   padding: 14px 16px;
   min-height: 52px;
   min-width: 160px;
-  align-self: flex-start;
+  max-width: 100%;
+  line-height: 1.2;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.holdButton {
+  border: none;
+  background: #1f6feb;
+  color: white;
   touch-action: none;
+  cursor: pointer;
+}
+
+.holdButtonSizer {
+  visibility: hidden;
+  pointer-events: none;
+  border: none;
 }
 
 .holding {
@@ -44,6 +92,8 @@
   font-weight: 600;
   padding: 10px 14px;
   width: fit-content;
+  align-self: auto;
+  cursor: pointer;
 }
 
 .hiddenInput {
@@ -55,14 +105,42 @@
   border-collapse: collapse;
   font-size: 14px;
   margin-top: 4px;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
 }
 
 .recordingsTable th,
 .recordingsTable td {
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 1px solid #d0d7de;
-  text-align: left;
   vertical-align: middle;
+}
+
+.recordingsTable th {
+  background: #f6f8fa;
+  font-weight: 700;
+  text-align: center;
+}
+
+.indexColumn,
+.indexCell {
+  width: 44px;
+  text-align: center;
+}
+
+.actionColumn,
+.actionCell {
+  width: 56px;
+  text-align: center;
+}
+
+.actionCell {
+  padding: 4px;
+}
+
+.durationColumn,
+.durationCell {
+  text-align: center;
 }
 
 .deleteBtn {
@@ -70,19 +148,94 @@
   border: 1px solid #cf222e;
   border-radius: 6px;
   color: #cf222e;
-  font-size: 14px;
-  padding: 6px 10px;
-  min-width: 36px;
-  min-height: 36px;
+  font-size: 20px;
+  padding: 0;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+  margin: 0 auto;
 }
 
 .totalRow td {
   font-weight: 700;
   background: #f6f8fa;
+}
+
+.totalCell {
+  text-align: right;
+}
+
+.recordingsMobileList {
+  display: none;
+}
+
+.mobileRecordingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.mobileRecordingMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobileRecordingIndex {
+  font-size: 12px;
+  font-weight: 700;
+  color: #57606a;
+  line-height: 1.2;
+}
+
+.mobileRecordingDuration {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1f2328;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobileTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f6f8fa;
+  font-weight: 700;
+}
+
+.mobileTotalLabel {
+  color: #1f2328;
+}
+
+.mobileTotalValue {
+  color: #1f2328;
+  font-variant-numeric: tabular-nums;
+}
+
+.holdButton:focus-visible,
+.clearButton:focus-visible,
+.deleteBtn:focus-visible,
+.dialogConfirm:focus-visible,
+.dialogCancel:focus-visible {
+  outline: 2px solid #bd9748;
+  outline-offset: 2px;
 }
 
 /* Confirm dialog overlay */
@@ -143,4 +296,25 @@
   cursor: pointer;
   min-width: 100px;
   height: 44px;
+}
+
+@media (max-width: 600px) {
+  .holdButton,
+  .holdButtonSizer {
+    min-width: 0;
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+
+  .recordingsTable {
+    display: none;
+  }
+
+  .recordingsMobileList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
 }
