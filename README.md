@@ -1172,6 +1172,43 @@ Notes:
   - computed dotted paths from aggregated output (for example `auto.avgFuel`)
 - Use `commentFields` instead of legacy `comments` when possible.
 
+#### `autoPie` — singleSelect outcome distribution chart
+
+You can display a pie chart for any `singleSelect` field in the auto section by adding an `autoPie` key to `teamView`. The engine supports **any number of such pie charts** for singleSelect fields using the same pattern.
+
+```json
+"autoPie": {
+  "field": "autoclimb",
+  "labels": ["None", "L1", "Failed"],
+  "values": [0, 1, 2]
+}
+```
+
+- `field`: the singleSelect form field name (must match a field in `sections`)
+- `labels`: display labels for the pie slices (same order as `values`)
+- `values`: the numeric option values from the singleSelect field
+- The corresponding `apiAggregation.autoclimbConfig` entry (same structure as `endgameConfig`) must be provided to map numeric values to canonical string keys used by the chart
+
+#### `sections[phase].charts` — chart types
+
+The `sections.auto.charts` and `sections.tele.charts` arrays support these chart `type` values:
+
+| `type` | Description |
+|--------|-------------|
+| `epaLine` | EPA/score over time line chart. `dataKey` is the API response field (e.g. `autoOverTime`); `label` is derived automatically. |
+| `passLine` | Balls-passed-over-time line chart for holdTimer pass fields. Requires `dataKey` (API response key, e.g. `autoPassOverTime`) and `valueKey` (the DB column name, e.g. `autopasssuccess`). |
+| `coralLine` / `groupLine` | Stacked line chart for coral/groupLevel fields. Requires `coralConfig` in `piecePlacement`. |
+
+Example `passLine` chart entry:
+```json
+{
+  "type": "passLine",
+  "label": "Auto Passes Over Time",
+  "dataKey": "autoPassOverTime",
+  "valueKey": "autopasssuccess"
+}
+```
+
 ### Match View Configuration
 
 Key responsibilities:
@@ -1321,8 +1358,10 @@ This section drives backend aggregation for team, alliance, picklist, and compar
 Field notes:
 - `breakdownField`: field used by consistency and breakdown calculations
 - `defenseField`: field used for defense participation rates
-- `endgameConfig.valueMapping`: canonical names used by endgame charts
+- `endgameConfig.valueMapping`: canonical names used by endgame charts — same structure can be used for any singleSelect field distribution chart
+- `autoclimbConfig`: optional — same structure as `endgameConfig`, drives `autoPie` distribution in team-view for any auto singleSelect field. For example: `{ "field": "autoclimb", "valueMapping": { "0": "none", "1": "l1", "2": "failed" } }`
 - `alliancePiecePlacement`: source mapping for `matchView.piecePlacement.bars[*].key`
+- `successFailPairs[*].failField`: can be `null` for fields with no corresponding fail counter (e.g. passing timers); success rate will show 100% when the field has data
 
 ### Display Troubleshooting
 

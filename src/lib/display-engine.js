@@ -46,9 +46,9 @@ function groupCommentsByMatch(rows, field) {
   );
 }
 
-function bucketEndgame(rows, config) {
-  if (!config?.endgameConfig) return {};
-  const { field, valueMapping } = config.endgameConfig;
+function bucketSingleSelectField(rows, fieldConfig) {
+  if (!fieldConfig) return {};
+  const { field, valueMapping } = fieldConfig;
   const buckets = {};
   Object.values(valueMapping).forEach(k => { buckets[k] = 0; });
 
@@ -188,6 +188,14 @@ export function aggregateTeamData(rows, config, calcFns) {
   }));
   const teleOverTime = computeMatchAverages(teamTable, 'tele').map(d => ({
     ...d, tele: Math.round(d.tele * 100) / 100
+  }));
+
+  // Pass over time — computed for any holdTimer pass fields present in the data
+  const autoPassOverTime = computeMatchAverages(teamTable, 'autopasssuccess').map(d => ({
+    ...d, autopasssuccess: Math.round(d.autopasssuccess * 100) / 100
+  }));
+  const telePassOverTime = computeMatchAverages(teamTable, 'telepasssuccess').map(d => ({
+    ...d, telepasssuccess: Math.round(d.telepasssuccess * 100) / 100
   }));
 
   // Consistency — use config-driven breakdown field
@@ -346,8 +354,9 @@ export function aggregateTeamData(rows, config, calcFns) {
     targetStats[`success${pair.key}`] = successRate;
   });
 
-  // Endgame placement
-  const endPlacement = bucketEndgame(rows, apiConfig);
+  // Endgame placement (and any other singleSelect distributions)
+  const endPlacement = bucketSingleSelectField(rows, apiConfig.endgameConfig);
+  const autoClimbPlacement = bucketSingleSelectField(rows, apiConfig.autoclimbConfig);
 
   // Cage attempt/success
   const endgameStats = teamViewConfig.endgameStats || {};
@@ -420,12 +429,14 @@ export function aggregateTeamData(rows, config, calcFns) {
     avgEpa, avgAuto, avgTele, avgEnd,
     last3Epa, last3Auto, last3Tele, last3End,
     epaOverTime, autoOverTime, teleOverTime,
+    autoPassOverTime, telePassOverTime,
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
     ...commentData,
     auto: autoStats,
     tele: teleStats,
     endPlacement,
+    autoClimbPlacement,
     attemptCage, successCage,
     qualitative,
     ...intakeData,

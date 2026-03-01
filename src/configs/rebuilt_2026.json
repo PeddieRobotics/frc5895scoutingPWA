@@ -58,6 +58,26 @@
           }
         },
         {
+          "type": "holdTimer",
+          "name": "autopasssuccess",
+          "label": "Auto Pass Time (s)",
+          "buttonLabel": "Hold While Passing Auto",
+          "precision": 2,
+          "dbColumn": {
+            "type": "NUMERIC(10,3)",
+            "default": 0
+          },
+          "scoutLeads": {
+            "rateLabel": "Auto Passes / Second",
+            "placeholder": "e.g. 1.50",
+            "defaultRate": 0,
+            "dbColumn": {
+              "type": "NUMERIC(10,4)",
+              "default": 0
+            }
+          }
+        },
+        {
           "type": "singleSelect",
           "name": "autoclimb",
           "label": "Auto Climb",
@@ -74,6 +94,10 @@
             {
               "value": 1,
               "label": "Level 1 (15 pts)"
+            },
+            {
+              "value": 2,
+              "label": "Failed Climb"
             }
           ]
         }
@@ -115,6 +139,26 @@
           "dbColumn": {
             "type": "INTEGER",
             "default": 0
+          }
+        },
+        {
+          "type": "holdTimer",
+          "name": "telepasssuccess",
+          "label": "Tele Pass Time (s)",
+          "buttonLabel": "Hold While Passing Tele",
+          "precision": 2,
+          "dbColumn": {
+            "type": "NUMERIC(10,3)",
+            "default": 0
+          },
+          "scoutLeads": {
+            "rateLabel": "Tele Passes / Second",
+            "placeholder": "e.g. 1.50",
+            "defaultRate": 0,
+            "dbColumn": {
+              "type": "NUMERIC(10,4)",
+              "default": 0
+            }
           }
         },
         {
@@ -476,6 +520,19 @@
         "breakdowncomments",
         "defensecomments"
       ],
+      "autoPie": {
+        "field": "autoclimb",
+        "labels": [
+          "None",
+          "L1",
+          "Failed"
+        ],
+        "values": [
+          0,
+          1,
+          2
+        ]
+      },
       "endgamePie": {
         "field": "endlocation",
         "labels": [
@@ -554,6 +611,12 @@
               "type": "epaLine",
               "label": "Auto Over Time",
               "dataKey": "autoOverTime"
+            },
+            {
+              "type": "passLine",
+              "label": "Auto Passes Over Time",
+              "dataKey": "autoPassOverTime",
+              "valueKey": "autopasssuccess"
             }
           ],
           "statTables": [
@@ -580,6 +643,12 @@
               "type": "epaLine",
               "label": "Tele Over Time",
               "dataKey": "teleOverTime"
+            },
+            {
+              "type": "passLine",
+              "label": "Tele Passes Over Time",
+              "dataKey": "telePassOverTime",
+              "valueKey": "telepasssuccess"
             }
           ],
           "extraStats": [
@@ -1027,8 +1096,28 @@
           "phase": "tele",
           "successField": "telefuelsuccess",
           "failField": "telefuelfail"
+        },
+        {
+          "key": "Pass",
+          "phase": "auto",
+          "successField": "autopasssuccess",
+          "failField": null
+        },
+        {
+          "key": "Pass",
+          "phase": "tele",
+          "successField": "telepasssuccess",
+          "failField": null
         }
       ],
+      "autoclimbConfig": {
+        "field": "autoclimb",
+        "valueMapping": {
+          "0": "none",
+          "1": "l1",
+          "2": "failed"
+        }
+      },
       "endgameConfig": {
         "field": "endlocation",
         "valueMapping": {
@@ -1083,6 +1172,13 @@
             "autofuelsuccess",
             "telefuelsuccess",
             "hpsuccess"
+          ]
+        },
+        {
+          "key": "totalPass",
+          "fields": [
+            "autopasssuccess",
+            "telepasssuccess"
           ]
         }
       ]

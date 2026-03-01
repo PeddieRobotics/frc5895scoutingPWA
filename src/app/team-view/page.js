@@ -88,6 +88,7 @@ function TeamView() {
         })),
     } : { columns: [] };
     const barsConfig = ppConfig.bars || [];
+    const autoPieConfig = tvConfig.autoPie || null;
     const endgamePieConfig = tvConfig.endgamePie || { labels: [], values: [] };
     const endgameStatsConfig = tvConfig.endgameStats || {};
     const overallStatsConfig = tvConfig.overallStats || [];
@@ -433,6 +434,7 @@ function TeamView() {
         auto: data?.auto || {},
         tele: data?.tele || {},
         endPlacement: data?.endPlacement || {},
+        autoClimbPlacement: data?.autoClimbPlacement || {},
         // Spread all remaining fields (includes intake booleans from API)
         ...data,
     };
@@ -522,8 +524,23 @@ function TeamView() {
         };
     });
 
+    // Build auto climb pie data from config (if autoPie config exists)
+    const autoclimbValueMapping = config?.display?.apiAggregation?.autoclimbConfig?.valueMapping || {};
+    const autoPieData = autoPieConfig
+        ? (autoPieConfig.labels || []).map((label, i) => {
+            const valueCode = (autoPieConfig.values || [])[i];
+            const mappedKey = autoclimbValueMapping[String(valueCode)] ?? Object.keys(safeData.autoClimbPlacement || {})[i];
+            return {
+                x: label,
+                y: mappedKey ? (safeData.autoClimbPlacement?.[mappedKey] || 0) : 0
+            };
+        })
+        : null;
+
     // Custom color array for endgame pie chart with 5 distinct colors
     const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
+    // Custom color array for auto climb pie chart (3 values: None, L1, Failed)
+    const autoPieColors = ["#D7F2FF", "#38b6f4", "#0A6D9F"];
 
     // Build overall stat VBoxes from config
     const renderOverallStats = () => {
@@ -842,6 +859,18 @@ function TeamView() {
                                             </div>
                                         );
                                     }
+                                    if (chart.type === 'passLine') {
+                                        return (
+                                            <div key={i} className={styles.graphContainer}>
+                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
+                                                <EPALineChart
+                                                    data={safeData[chart.dataKey] || []}
+                                                    color={Colors[1][3]}
+                                                    label={chart.valueKey}
+                                                />
+                                            </div>
+                                        );
+                                    }
                                     if (chart.type === 'coralLine' || chart.type === 'groupLine') {
                                         if (!hasCoralConfig) return null;
                                         const chartData = chart.dataType === 'success'
@@ -856,6 +885,13 @@ function TeamView() {
                                     }
                                     return null;
                                 })}
+                                {/* Auto climb pie chart (if autoPie config present) */}
+                                {autoPieData && (
+                                    <div className={styles.chartContainer}>
+                                        <h4 className={styles.graphTitle}>Auto Climb Outcomes</h4>
+                                        <Endgame data={autoPieData} color={autoPieColors} />
+                                    </div>
+                                )}
                                 {hasMetricGroups && (
                                     <div className={styles.graphContainer}>
                                         <h4 className={styles.graphTitle}>Auto {metricGroupName ? metricGroupName.charAt(0).toUpperCase() + metricGroupName.slice(1) : 'Data'}</h4>
@@ -943,6 +979,18 @@ function TeamView() {
                                                     data={safeData[chart.dataKey] || []}
                                                     color={Colors[2][3]}
                                                     label={chart.dataKey?.replace('OverTime', '') || "tele"}
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    if (chart.type === 'passLine') {
+                                        return (
+                                            <div key={i} className={styles.graphContainer}>
+                                                <h4 className={styles.graphTitle}>{chart.label}</h4>
+                                                <EPALineChart
+                                                    data={safeData[chart.dataKey] || []}
+                                                    color={Colors[2][3]}
+                                                    label={chart.valueKey}
                                                 />
                                             </div>
                                         );
