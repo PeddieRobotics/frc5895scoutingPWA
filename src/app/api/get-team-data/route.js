@@ -27,7 +27,6 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = searchParams.get('team');
   const includeRows = searchParams.get('includeRows') === 'true';
-  const scope = searchParams.get('scope');
 
   if (!team || isNaN(+team)) {
     return NextResponse.json({ message: "ERROR: Invalid team number" }, { status: 400 });
@@ -65,10 +64,6 @@ export async function GET(request) {
     unscoredMatches = timerProcessing.unscoredMatches;
   } finally {
     client.release();
-  }
-
-  if (scope === 'last3') {
-    scoredRows = scoredRows.sort((a, b) => a.match - b.match).slice(-3);
   }
 
   if (rows.length === 0) {

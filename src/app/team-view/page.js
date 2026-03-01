@@ -58,7 +58,6 @@ function TeamView() {
     const [team, setTeam] = useState(null);
     const [hasTopBar, setHasTopBar] = useState(false);
     const [source, setSource] = useState(null);
-    const [useRecent, setUseRecent] = useState(false);
 
     const { config, loading: configLoading } = useGameConfig();
     const configIssues = useMemo(() => {
@@ -120,7 +119,7 @@ function TeamView() {
         if (team && configIssues.length === 0) {
             fetchTeamData(team);
         }
-    }, [team, currentUserTeam, configIssues.length, useRecent]);
+    }, [team, currentUserTeam, configIssues.length]);
 
     function AllianceButtons({ t1, t2, t3, colors }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
@@ -242,75 +241,61 @@ function TeamView() {
             }
         }
 
-        const headers = (() => {
-            const hdrs = {};
-            try {
-                const storedCreds = sessionStorage.getItem('auth_credentials') ||
-                    localStorage.getItem('auth_credentials');
-                if (storedCreds) {
-                    hdrs['Authorization'] = `Basic ${storedCreds}`;
+        fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+            headers: (() => {
+                const hdrs = {};
+                try {
+                    const storedCreds = sessionStorage.getItem('auth_credentials') ||
+                        localStorage.getItem('auth_credentials');
+                    if (storedCreds) {
+                        hdrs['Authorization'] = `Basic ${storedCreds}`;
+                    }
+                } catch (_) {/* ignore */ }
+                return hdrs;
+            })()
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    console.error("Authentication failed - triggering login dialog");
+                    // Trigger auth required event to show login dialog
+                    window.dispatchEvent(new CustomEvent('auth:required', {
+                        detail: { message: 'Your session has expired. Please login again.' }
+                    }));
+                    throw new Error('Authentication required');
                 }
-            } catch (_) {/* ignore */ }
-            return hdrs;
-        })();
 
-        const handleResponse = (response) => {
-            if (response.status === 401) {
-                console.error("Authentication failed - triggering login dialog");
-                window.dispatchEvent(new CustomEvent('auth:required', {
-                    detail: { message: 'Your session has expired. Please login again.' }
-                }));
-                throw new Error('Authentication required');
-            }
-            if (response.status === 404) {
-                throw new Error('Team data not found');
-            }
-            return response.json();
-        };
+                // Check for 404 Not Found
+                if (response.status === 404) {
+                    throw new Error('Team data not found');
+                }
 
-        const applyData = (data) => {
-            if (!data.rows) data.rows = [];
-            setData(data);
-            setLoading(false);
-        };
+                return response.json();
+            })
+            .then(data => {
+                console.log("Fetched Team Data:", data);
 
-        if (!useRecent) {
-            fetch(`/api/get-team-data?team=${team}&includeRows=true`, { headers })
-                .then(handleResponse)
-                .then(applyData)
-                .catch(error => {
-                    if (error.message !== 'Authentication required') {
-                        console.error("Error fetching team data:", error);
-                    }
-                    setError(error.message);
-                    setLoading(false);
+                // Ensure we have a rows array, even if empty
+                if (!data.rows) {
+                    data.rows = [];
+                }
+
+                console.log("Last 3 EPA values from API:", {
+                    epa: data.last3Epa,
+                    auto: data.last3Auto,
+                    tele: data.last3Tele,
+                    end: data.last3End
                 });
-        } else {
-            Promise.all([
-                fetch(`/api/get-team-data?team=${team}&includeRows=true`, { headers }),
-                fetch(`/api/get-team-data?team=${team}&includeRows=true&scope=last3`, { headers }),
-            ])
-                .then(async ([r1, r2]) => {
-                    const allTime = await handleResponse(r1);
-                    const scoped = await handleResponse(r2);
-                    const merged = {
-                        ...scoped,
-                        avgEpa: allTime.avgEpa, avgAuto: allTime.avgAuto, avgTele: allTime.avgTele, avgEnd: allTime.avgEnd,
-                        last3Epa: allTime.last3Epa, last3Auto: allTime.last3Auto, last3Tele: allTime.last3Tele, last3End: allTime.last3End,
-                        rows: allTime.rows, epaOverTime: allTime.epaOverTime, autoOverTime: allTime.autoOverTime, teleOverTime: allTime.teleOverTime,
-                        matchesScouted: allTime.matchesScouted, name: allTime.name,
-                        unscoredMatches: allTime.unscoredMatches, skippedScoringRows: allTime.skippedScoringRows,
-                    };
-                    applyData(merged);
-                })
-                .catch(error => {
-                    if (error.message !== 'Authentication required') {
-                        console.error("Error fetching team data:", error);
-                    }
-                    setError(error.message);
-                    setLoading(false);
-                });
-        }
+
+                setData(data);
+                setLoading(false);
+            })
+            .catch(error => {
+                if (error.message !== 'Authentication required') {
+                    console.error("Error fetching team data:", error);
+                }
+                setError(error.message);
+                setLoading(false);
+            });
     }
 
     if (!team) {
@@ -760,19 +745,6 @@ function TeamView() {
             )}
             <TopBar />
             <CompareTopBar />
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', margin: '14px 0' }}>
-                <span style={{ fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '16px' }}>Data Range:</span>
-                <div style={{ display: 'flex', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
-                    <button onClick={() => setUseRecent(false)}
-                        style={{ padding: '8px 22px', background: !useRecent ? '#333' : 'white', color: !useRecent ? 'white' : '#555', border: 'none', cursor: !useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}>
-                        All Time
-                    </button>
-                    <button onClick={() => setUseRecent(true)}
-                        style={{ padding: '8px 22px', background: useRecent ? '#4a90d9' : 'white', color: useRecent ? 'white' : '#555', border: 'none', borderLeft: '2px solid #333', cursor: useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}>
-                        Last 3 Matches
-                    </button>
-                </div>
-            </div>
             <div className={styles.header}>
                 <div className={styles.MainDiv}>
                     <div className={styles.leftColumn}>
