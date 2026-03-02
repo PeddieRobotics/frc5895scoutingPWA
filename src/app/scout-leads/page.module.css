@@ -145,3 +145,246 @@
   font-size: 0.87rem;
   color: #57606a;
 }
+
+/* ── Admin unlock row ─────────────────────────────────────────── */
+.adminUnlock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adminPasswordInput {
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.secondaryButton {
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #24292f;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.adminUnlockError {
+  color: #d1242f;
+  font-size: 0.9rem;
+}
+
+.adminUnlockedBadge {
+  display: inline-block;
+  background: #dafbe1;
+  border: 1px solid #4ac26b;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 0.87rem;
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+/* ── Scouting entries section ────────────────────────────────── */
+.entriesSection {
+  border: 1px solid #d0d7de;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entriesHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.entriesTitle {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.confidenceLabel {
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
+.entryCard {
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(255,255,255,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entryCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.entryMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.entryTeamTag {
+  background: #ddf4ff;
+  border: 1px solid #54aeff;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 0.82rem;
+}
+
+.entryTimestamp {
+  margin-left: auto;
+  color: #57606a;
+  font-size: 0.82rem;
+}
+
+.noshowBadge {
+  background: #fff3cd;
+  border: 1px solid #d4a72c;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 0.82rem;
+  color: #856404;
+  font-weight: 600;
+}
+
+.editNoshowRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.editNoshowLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.entryFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 12px;
+}
+
+.entryFieldRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.entryFieldLabel {
+  font-size: 0.78rem;
+  color: #57606a;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.entryFieldValue {
+  font-size: 0.92rem;
+}
+
+.entryInput {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nestedFieldGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.multiSelectEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.multiSelectOption {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.entryActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editButton {
+  border: 1px solid #0969da;
+  background: #ddf4ff;
+  color: #0969da;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveEntryButton {
+  border: none;
+  background: #2da44e;
+  color: #fff;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveEntryButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.cancelButton {
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #24292f;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

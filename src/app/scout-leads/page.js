@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useGameConfig from "../../lib/useGameConfig";
-import { extractTimerFieldsFromConfig } from "../../lib/schema-generator";
+import { extractTimerFieldsFromConfig, extractConfidenceRatingField } from "../../lib/schema-generator";
 import styles from "./page.module.css";
 
 function getAuthHeaders() {
@@ -45,12 +45,253 @@ function buildDisplayItems(timerSummary) {
   return result;
 }
 
+/**
+ * Compute a soft hsl background color from a confidence average.
+ * value=1 → red (hue 0), value=max → green (hue 120).
+ */
+function getConfidenceColor(value, max) {
+  if (!value || !max || max <= 1) return "#ffffff";
+  const ratio = Math.min(1, Math.max(0, (value - 1) / (max - 1)));
+  const hue = Math.round(ratio * 120);
+  return `hsl(${hue}, 65%, 93%)`;
+}
+
+/**
+ * Render a single config field value — read-only or editable.
+ * For multiSelect, fieldDef.options is an array of { name, label }.
+ */
+function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
+  const { type, name, options = [], max = 5 } = fieldDef;
+  const value = editing ? (editValues[name] !== undefined ? editValues[name] : entry[name]) : entry[name];
+
+  if (type === "checkbox") {
+    if (!editing) return <span>{value ? "✓" : "✗"}</span>;
+    return (
+      <input
+        type="checkbox"
+        checked={!!editValues[name]}
+        onChange={(e) => onChange(name, e.target.checked)}
+      />
+    );
+  }
+
+  if (type === "counter" || type === "number") {
+    if (!editing) return <span>{value ?? "—"}</span>;
+    return (
+      <input
+        type="number"
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        className={styles.entryInput}
+      />
+    );
+  }
+
+  if (type === "holdTimer") {
+    if (!editing) return <span>{value != null ? `${Number(value).toFixed(3)}s` : "—"}</span>;
+    return (
+      <input
+        type="number"
+        step="0.001"
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        className={styles.entryInput}
+      />
+    );
+  }
+
+  if (type === "text") {
+    if (!editing) return <span>{value ?? "—"}</span>;
+    return (
+      <input
+        type="text"
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value)}
+        className={styles.entryInput}
+      />
+    );
+  }
+
+  if (type === "comment") {
+    if (!editing) {
+      return (
+        <span style={{ whiteSpace: "pre-wrap" }}>
+          {value ?? "—"}
+        </span>
+      );
+    }
+    return (
+      <textarea
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value)}
+        className={styles.entryInput}
+        rows={3}
+      />
+    );
+  }
+
+  if (type === "singleSelect") {
+    if (!editing) {
+      const match = options.find((o) => String(o.value) === String(value));
+      return <span>{match ? match.label : (value ?? "—")}</span>;
+    }
+    return (
+      <select
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        className={styles.entryInput}
+      >
+        <option value="">—</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    );
+  }
+
+  if (type === "multiSelect") {
+    // Each option is stored as its own boolean column
+    if (!editing) {
+      const selected = options.filter((o) => entry[o.name]);
+      return <span>{selected.length > 0 ? selected.map((o) => o.label).join(", ") : "—"}</span>;
+    }
+    return (
+      <div className={styles.multiSelectEdit}>
+        {options.map((o) => (
+          <label key={o.name} className={styles.multiSelectOption}>
+            <input
+              type="checkbox"
+              checked={!!(editValues[o.name] !== undefined ? editValues[o.name] : entry[o.name])}
+              onChange={(e) => onChange(o.name, e.target.checked)}
+            />
+            {o.label || o.name}
+          </label>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "starRating" || type === "qualitative") {
+    if (!editing) return <span>{value != null ? `${value} / ${max} ★` : "—"}</span>;
+    return (
+      <input
+        type="number"
+        min={0}
+        max={max}
+        value={editValues[name] ?? ""}
+        onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        className={styles.entryInput}
+      />
+    );
+  }
+
+  // table / collapsible: render nested fields recursively
+  if (type === "table") {
+    const rows = fieldDef.rows || [];
+    return (
+      <div className={styles.nestedFieldGrid}>
+        {rows.map((row, ri) =>
+          (row.fields || []).map((subField) => (
+            <div key={`${ri}-${subField.name}`} className={styles.entryFieldRow}>
+              <span className={styles.entryFieldLabel}>{subField.label || subField.name}</span>
+              <span className={styles.entryFieldValue}>
+                {renderEntryField(subField, entry, editing, editValues, onChange)}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  if (type === "collapsible") {
+    const trigger = fieldDef.trigger;
+    const content = fieldDef.content || [];
+    return (
+      <div className={styles.nestedFieldGrid}>
+        {trigger && (
+          <div key={trigger.name} className={styles.entryFieldRow}>
+            <span className={styles.entryFieldLabel}>{trigger.label || trigger.name}</span>
+            <span className={styles.entryFieldValue}>
+              {renderEntryField(trigger, entry, editing, editValues, onChange)}
+            </span>
+          </div>
+        )}
+        {content.map((subField) => (
+          <div key={subField.name} className={styles.entryFieldRow}>
+            <span className={styles.entryFieldLabel}>{subField.label || subField.name}</span>
+            <span className={styles.entryFieldValue}>
+              {renderEntryField(subField, entry, editing, editValues, onChange)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span>{value ?? "—"}</span>;
+}
+
+/**
+ * Flatten all leaf config fields (for the entry display grid).
+ * Returns [ { type, name, label, ...rest } ] in form order.
+ */
+function flattenConfigFields(config) {
+  const fields = [];
+  const seen = new Set();
+
+  function processField(field) {
+    if (!field) return;
+    // table and collapsible are containers — include them so nested fields render grouped
+    if (field.type === "table" || field.type === "collapsible") {
+      if (field.name && !seen.has(field.name)) {
+        seen.add(field.name);
+        fields.push(field);
+      }
+      return;
+    }
+    if (field.type === "multiSelect") {
+      // Include the whole multiSelect field so we can render option checkboxes
+      if (field.name && !seen.has(field.name)) {
+        seen.add(field.name);
+        fields.push(field);
+      }
+      return;
+    }
+    if (field.name && !seen.has(field.name)) {
+      seen.add(field.name);
+      fields.push(field);
+    }
+  }
+
+  // basics (skip identity fields handled in header)
+  const SKIP = new Set(["scoutname", "scoutteam", "team", "match", "matchtype"]);
+  if (config?.basics?.fields) {
+    config.basics.fields.forEach((f) => {
+      if (!SKIP.has(f.name)) processField(f);
+    });
+  }
+
+  if (config?.sections) {
+    config.sections.forEach((section) => {
+      if (section?.fields) section.fields.forEach(processField);
+    });
+  }
+
+  return fields;
+}
+
 export default function ScoutLeadsPage() {
   const { config, loading: configLoading } = useGameConfig();
   const configuredTimerFields = useMemo(
     () => extractTimerFieldsFromConfig(config || {}),
     [config]
   );
+  const confidenceRatingField = useMemo(
+    () => extractConfidenceRatingField(config || {}),
+    [config]
+  );
+  const allConfigFields = useMemo(() => flattenConfigFields(config || {}), [config]);
 
   const [team, setTeam] = useState("");
   const [match, setMatch] = useState("");
@@ -65,6 +306,22 @@ export default function ScoutLeadsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loadedRecordMeta, setLoadedRecordMeta] = useState(null);
+
+  // Entry display state
+  const [allScoutingRows, setAllScoutingRows] = useState([]);
+  const [currentUserTeam, setCurrentUserTeam] = useState(null);
+
+  // Admin unlock state
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminUnlockError, setAdminUnlockError] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
+
+  // Edit state
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [editValues, setEditValues] = useState({});
+  const [savingEntry, setSavingEntry] = useState(false);
+  const [entryError, setEntryError] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -127,14 +384,18 @@ export default function ScoutLeadsPage() {
 
       setTimerSummary(data.timerSummary || []);
       setRates(normalizedRates);
+      setAllScoutingRows(data.allScoutingRows || []);
+      setCurrentUserTeam(data.currentUserTeam ?? null);
       setLoadedRecordMeta({
-        scoutingRows: data.scoutingRows?.length || 0,
+        scoutingRows: (data.allScoutingRows || []).length,
         scoutLeadRows: data.scoutLeadsRows?.length || 0,
       });
 
-      if ((data.timerSummary || []).length === 0) {
-        setSuccess("No holdTimer fields are configured for the active game.");
-      } else if ((data.scoutingRows || []).length === 0) {
+      if ((data.timerSummary || []).length === 0 && (data.allScoutingRows || []).length === 0) {
+        setSuccess("No holdTimer fields or scouting entries found for this team/match yet.");
+      } else if ((data.timerSummary || []).length === 0) {
+        setSuccess("No holdTimer fields configured. Scouting entries are shown below.");
+      } else if ((data.allScoutingRows || []).length === 0) {
         setSuccess("No scouting entries found for this team/match yet.");
       } else if (showLoadedMessage) {
         setSuccess("Timer data loaded.");
@@ -197,6 +458,99 @@ export default function ScoutLeadsPage() {
     }
   };
 
+  const unlockAdmin = async () => {
+    setAdminUnlockError("");
+    setUnlocking(true);
+    try {
+      const response = await fetch("/api/verify-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      const data = await response.json();
+      if (response.ok && data.authenticated) {
+        setAdminUnlocked(true);
+        setAdminUnlockError("");
+      } else {
+        setAdminUnlockError("Incorrect admin password.");
+      }
+    } catch (_e) {
+      setAdminUnlockError("Failed to verify admin password.");
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  const startEdit = (entry) => {
+    setEditingEntryId(entry.id);
+    setEditValues({ ...entry });
+    setEntryError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingEntryId(null);
+    setEditValues({});
+    setEntryError("");
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    setEditValues((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  const saveEntry = async (entryId) => {
+    setEntryError("");
+    setSavingEntry(true);
+    try {
+      const response = await fetch("/api/edit-match-entry", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          id: entryId,
+          updates: editValues,
+          adminPassword: adminUnlocked ? adminPassword : undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to save entry (${response.status})`);
+      }
+
+      // Refresh all scouting rows
+      await fetchTimerData({ showLoadedMessage: false });
+      setEditingEntryId(null);
+      setEditValues({});
+    } catch (saveError) {
+      setEntryError(saveError.message || "Failed to save entry.");
+    } finally {
+      setSavingEntry(false);
+    }
+  };
+
+  // Section background color driven by confidence rating average
+  const sectionBackground = useMemo(() => {
+    if (!confidenceRatingField || !allScoutingRows.length) return "#ffffff";
+    const values = allScoutingRows
+      .map((r) => Number(r[confidenceRatingField.name]))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    if (!values.length) return "#ffffff";
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    return getConfidenceColor(avg, confidenceRatingField.max || 5);
+  }, [confidenceRatingField, allScoutingRows]);
+
+  const formatTimestamp = (ts) => {
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleString();
+    } catch (_e) {
+      return String(ts);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -209,7 +563,7 @@ export default function ScoutLeadsPage() {
 
         {!configLoading && configuredTimerFields.length === 0 && (
           <div className={styles.warning}>
-            No <code>holdTimer</code> fields found in the active game config. Add at least one timer field to use this page.
+            No <code>holdTimer</code> fields found in the active game config. Timer rate entry is unavailable, but scouting entries are shown below.
           </div>
         )}
 
@@ -389,14 +743,170 @@ export default function ScoutLeadsPage() {
           </div>
         )}
 
-        <button
-          type="button"
-          className={styles.primaryButton}
-          disabled={savingData || timerSummary.length === 0}
-          onClick={saveScoutLeadRates}
-        >
-          {savingData ? "Saving..." : "Save Scout Lead Entry"}
-        </button>
+        {timerSummary.length > 0 && (
+          <button
+            type="button"
+            className={styles.primaryButton}
+            disabled={savingData || timerSummary.length === 0}
+            onClick={saveScoutLeadRates}
+          >
+            {savingData ? "Saving..." : "Save Scout Lead Entry"}
+          </button>
+        )}
+
+        {/* Admin unlock section */}
+        {allScoutingRows.length > 0 && !adminUnlocked && (
+          <div className={styles.adminUnlock}>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Admin password"
+              className={styles.adminPasswordInput}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") unlockAdmin();
+              }}
+            />
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={unlockAdmin}
+              disabled={unlocking || !adminPassword}
+            >
+              {unlocking ? "Verifying..." : "Unlock Editing"}
+            </button>
+            {adminUnlockError && (
+              <span className={styles.adminUnlockError}>{adminUnlockError}</span>
+            )}
+          </div>
+        )}
+
+        {adminUnlocked && (
+          <div className={styles.adminUnlockedBadge}>
+            Admin editing unlocked
+          </div>
+        )}
+
+        {/* Scouting entries section */}
+        {allScoutingRows.length > 0 && (
+          <section
+            className={styles.entriesSection}
+            style={{ background: sectionBackground, transition: "background 0.4s" }}
+          >
+            <div className={styles.entriesHeader}>
+              <h2 className={styles.entriesTitle}>
+                Scouting Entries ({allScoutingRows.length})
+              </h2>
+              {confidenceRatingField && (
+                <span className={styles.confidenceLabel}>
+                  Confidence: {confidenceRatingField.label}
+                </span>
+              )}
+            </div>
+
+            {entryError && <div className={styles.error}>{entryError}</div>}
+
+            {allScoutingRows.map((entry) => {
+              const isEditing = editingEntryId === entry.id;
+              const canEdit =
+                String(entry.scoutteam) === String(currentUserTeam) || adminUnlocked;
+
+              return (
+                <div key={entry.id} className={styles.entryCard}>
+                  <div className={styles.entryCardHeader}>
+                    <span className={styles.entryMeta}>
+                      <strong>{entry.scoutname || "Unknown Scout"}</strong>
+                      {entry.scoutteam && (
+                        <span className={styles.entryTeamTag}>Team {entry.scoutteam}</span>
+                      )}
+                    </span>
+                    <span className={styles.entryTimestamp}>
+                      {formatTimestamp(entry.timestamp)}
+                    </span>
+                    {entry.noshow && (
+                      <span className={styles.noshowBadge}>No Show</span>
+                    )}
+                  </div>
+
+                  {isEditing && (
+                    <div className={styles.editNoshowRow}>
+                      <label className={styles.editNoshowLabel}>
+                        <input
+                          type="checkbox"
+                          checked={!!editValues.noshow}
+                          onChange={(e) => handleFieldChange("noshow", e.target.checked)}
+                        />
+                        No Show
+                      </label>
+                      <input
+                        type="text"
+                        value={editValues.scoutname ?? ""}
+                        onChange={(e) => handleFieldChange("scoutname", e.target.value)}
+                        placeholder="Scout name"
+                        className={styles.entryInput}
+                      />
+                    </div>
+                  )}
+
+                  <div className={styles.entryFieldGrid}>
+                    {allConfigFields.map((fieldDef) => (
+                      <div key={fieldDef.name} className={styles.entryFieldRow}>
+                        <span className={styles.entryFieldLabel}>
+                          {fieldDef.label || fieldDef.name}
+                        </span>
+                        <span className={styles.entryFieldValue}>
+                          {renderEntryField(
+                            fieldDef,
+                            entry,
+                            isEditing,
+                            editValues,
+                            handleFieldChange
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={styles.entryActions}>
+                    {!isEditing && canEdit && (
+                      <button
+                        type="button"
+                        className={styles.editButton}
+                        onClick={() => startEdit(entry)}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {isEditing && (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.saveEntryButton}
+                          onClick={() => saveEntry(entry.id)}
+                          disabled={savingEntry}
+                        >
+                          {savingEntry ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.cancelButton}
+                          onClick={cancelEdit}
+                          disabled={savingEntry}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {timerSummary.length === 0 && allScoutingRows.length === 0 && !loadingData && loadedRecordMeta && (
+          <div className={styles.info}>No scouting entries found for this team/match.</div>
+        )}
       </div>
     </div>
   );

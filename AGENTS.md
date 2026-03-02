@@ -159,6 +159,59 @@ All fields with `"group": "Fuel"` collapse into one "Fuel Scoring" card with:
 
 ---
 
+## Scouting Entry Edit Feature
+
+### Overview
+
+`/scout-leads` displays the full scouting form data for the loaded team+match below the timer rate cards. Entries are editable if the current user's team submitted them, or if the master admin password has been used to unlock editing on that page session.
+
+### New endpoint: `PATCH /api/edit-match-entry`
+
+- **Auth:** `validateAuthToken(request)` → `teamName`
+- **Authorization logic:**
+  1. Fetch the target row by `id`
+  2. If `row.scoutteam === teamName` → authorized (own entry)
+  3. Else if `request.body.adminPassword === process.env.ADMIN_PASSWORD` → authorized (admin override)
+  4. Otherwise → 403
+- **Allowed fields:** All config-defined fields from `extractFieldsFromConfig(config)` **minus** `IMMUTABLE_FIELDS` (`id`, `team`, `match`, `matchtype`, `scoutteam`, `timestamp`). `scoutname` and `noshow` are always editable.
+- **Why NOT `update-row`:** The legacy `/api/update-row` is hardcoded to a specific table with a hardcoded field allowlist. The new endpoint is fully config-driven using `getActiveGame()` and `extractFieldsFromConfig()`.
+
+### `isConfidenceRating` tag
+
+- A single `starRating` or `qualitative` field may carry `"isConfidenceRating": true`.
+- `extractConfidenceRatingField(config)` in `schema-generator.js` returns `{ name, label, max }` or `null`.
+- The `/scout-leads` page computes `sectionBackground` via `getConfidenceColor(avg, max)`:
+  - Maps average from 1→max to hue 0 (red) → 120 (green) in `hsl(hue, 65%, 93%)` (soft pastel).
+  - Background is `#ffffff` when no confidence field configured or no entries loaded.
+- **Validation:** more than one field with `isConfidenceRating: true` → **error** in config-validator. On a non-star field → **warning**.
+
+### Background color algorithm
+
+```
+ratio = clamp((avg - 1) / (max - 1), 0, 1)
+hue   = round(ratio * 120)
+color = hsl(hue, 65%, 93%)
+```
+
+### GET `/api/scout-leads` additions
+
+- `allScoutingRows` — all scouting rows for the team/match including noshow (for entry display)
+- `currentUserTeam` — `teamName` from `validateAuthToken` (to determine which entries the user can edit)
+- The existing `scoutingRows` still excludes noshow rows (used for timer rate accuracy).
+
+### Key files
+
+| File | Role |
+|------|------|
+| `src/app/api/edit-match-entry/route.js` | New PATCH endpoint |
+| `src/app/api/scout-leads/route.js` | GET additions (allScoutingRows, currentUserTeam) |
+| `src/app/scout-leads/page.js` | Entry display, edit UI, admin unlock, confidence background |
+| `src/app/scout-leads/page.module.css` | Entry card styles |
+| `src/lib/schema-generator.js` | `extractConfidenceRatingField()` |
+| `src/lib/config-validator.js` | isConfidenceRating validation rules |
+
+---
+
 ## Known Constraints / Gotchas
 
 - No dedicated automated test suite is configured in `package.json` (lint/build/manual verification are the main checks).

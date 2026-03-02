@@ -39,6 +39,7 @@ class ValidationResult {
     this.errors = [];
     this.warnings = [];
     this.fields = [];
+    this.confidenceRatingCount = 0;
   }
 
   addError(message, path = null) {
@@ -135,6 +136,14 @@ function validateConfig(config) {
     config.sections.forEach((section, sIndex) => {
       validateSection(section, `sections[${sIndex}]`, fieldNames, result);
     });
+  }
+
+  // Validate isConfidenceRating uniqueness across all processed fields
+  if (result.confidenceRatingCount > 1) {
+    result.addError(
+      `Only one starRating/qualitative field may have isConfidenceRating: true (found ${result.confidenceRatingCount})`,
+      'isConfidenceRating'
+    );
   }
 
   // Validate calculations (optional)
@@ -318,6 +327,14 @@ function validateStandardField(field, path, fieldNames, result) {
   // Validate quickButtons (optional, for counter/number fields)
   if (field.quickButtons) {
     validateQuickButtons(field.quickButtons, path, result);
+  }
+
+  // Warn if isConfidenceRating is used on a non-star field
+  if (field.isConfidenceRating === true && field.type !== 'starRating' && field.type !== 'qualitative') {
+    result.addWarning(
+      'isConfidenceRating is only meaningful on starRating or qualitative fields',
+      `${path}.isConfidenceRating`
+    );
   }
 }
 
@@ -524,6 +541,11 @@ function validateMultiSelectField(field, path, fieldNames, result) {
  */
 function validateStarRatingField(field, path, fieldNames, result) {
   validateStandardField(field, path, fieldNames, result);
+
+  // Track isConfidenceRating usage
+  if (field.isConfidenceRating === true) {
+    result.confidenceRatingCount++;
+  }
 
   // Validate max
   if (field.max !== undefined) {

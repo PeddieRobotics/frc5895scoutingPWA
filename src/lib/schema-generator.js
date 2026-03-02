@@ -470,8 +470,56 @@ function generateInsertTemplate(tableName, fields) {
   };
 }
 
+/**
+ * Find the single field marked with isConfidenceRating: true in the config.
+ * Returns { name, label, max } or null if none.
+ * @param {Object} config - The game configuration JSON
+ * @returns {{ name: string, label: string, max: number } | null}
+ */
+function extractConfidenceRatingField(config) {
+  let found = null;
+
+  function processField(field) {
+    if (!field || found) return;
+
+    if (
+      field.isConfidenceRating === true &&
+      (field.type === 'starRating' || field.type === 'qualitative') &&
+      field.name
+    ) {
+      found = { name: field.name, label: field.label || field.name, max: field.max || 5 };
+      return;
+    }
+
+    if (field.type === 'table' && Array.isArray(field.rows)) {
+      field.rows.forEach((row) => {
+        if (Array.isArray(row.fields)) row.fields.forEach(processField);
+      });
+      return;
+    }
+
+    if (field.type === 'collapsible') {
+      if (field.trigger) processField(field.trigger);
+      if (Array.isArray(field.content)) field.content.forEach(processField);
+    }
+  }
+
+  if (config?.basics?.fields) {
+    config.basics.fields.forEach(processField);
+  }
+
+  if (config?.sections) {
+    config.sections.forEach((section) => {
+      if (section?.fields) section.fields.forEach(processField);
+    });
+  }
+
+  return found;
+}
+
 export {
   extractFieldsFromConfig,
+  extractConfidenceRatingField,
   extractTimerFieldsFromConfig,
   generateCreateTableSQL,
   generateCreateScoutLeadsTableSQL,

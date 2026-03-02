@@ -30,7 +30,7 @@ function average(values) {
 }
 
 export async function GET(request) {
-  const { isValid, error } = await validateAuthToken(request);
+  const { isValid, teamName, error } = await validateAuthToken(request);
   if (!isValid) {
     return NextResponse.json(
       { message: error || "Authentication required" },
@@ -91,6 +91,20 @@ export async function GET(request) {
   const timerFields = scoutLeadsInfo.timerFields || [];
 
   if (timerFields.length === 0) {
+    // Still fetch all scouting rows for entry display even when no timer fields
+    const client = await pool.connect();
+    let allScoutingRows = [];
+    try {
+      const allResult = await client.query(
+        `SELECT * FROM ${scoutingTableName} WHERE team = $1 AND match = $2 ORDER BY timestamp ASC`,
+        [team, storedMatch]
+      );
+      allScoutingRows = allResult.rows;
+    } catch (_e) {
+      // Non-fatal: entry display is best-effort
+    } finally {
+      client.release();
+    }
     return NextResponse.json({
       success: true,
       team,
@@ -104,6 +118,8 @@ export async function GET(request) {
       averageRates: {},
       scoutingRows: [],
       scoutLeadsRows: [],
+      allScoutingRows,
+      currentUserTeam: teamName || null,
     });
   }
 
@@ -111,10 +127,18 @@ export async function GET(request) {
 
   const client = await pool.connect();
   try {
+    // Timer data query: excludes noshow rows (for rate accuracy)
     const scoutingResult = await client.query(
-      `SELECT scoutname, scoutteam, match, matchtype, timestamp, ${timerColumnSql}
-       FROM ${scoutingTableName}
+      `SELECT * FROM ${scoutingTableName}
        WHERE team = $1 AND match = $2 AND COALESCE(noshow, FALSE) = FALSE
+       ORDER BY timestamp ASC`,
+      [team, storedMatch]
+    );
+
+    // All scouting rows including noshow (for entry display)
+    const allScoutingResult = await client.query(
+      `SELECT * FROM ${scoutingTableName}
+       WHERE team = $1 AND match = $2
        ORDER BY timestamp ASC`,
       [team, storedMatch]
     );
@@ -202,9 +226,11 @@ export async function GET(request) {
         groupLabel: field.groupLabel || null,
       })),
       scoutingRows: scoutingResult.rows,
+      allScoutingRows: allScoutingResult.rows,
       timerSummary,
       averageRates,
       scoutLeadsRows,
+      currentUserTeam: teamName || null,
     });
   } finally {
     client.release();

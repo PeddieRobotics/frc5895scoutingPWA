@@ -55,6 +55,7 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
   - `add-match-data/` — Inserts a scouting submission
   - `compute-picklist/` — Picklist computation
   - `scout-leads/` — Scout-lead timer rate CRUD
+  - `edit-match-entry/` — PATCH endpoint to update a single scouting row (config-driven field allowlist; auth: own entry or admin password)
   - `admin/` — Game management, auth, team management
 
 - `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/sudo`
@@ -92,6 +93,16 @@ Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `s
 - `extractTimerFieldsFromConfig()` in `schema-generator.js` propagates `group` and `groupLabel` to the returned field metadata.
 - The GET `/api/scout-leads` response includes `group`/`groupLabel` on each `timerSummary` item; the `/scout-leads` page builds grouped display items using `buildDisplayItems()`.
 - The DB schema is **unchanged** — each `holdTimer` still has its own column; grouping is purely a UI concern.
+
+#### Scout Leads — Scouting Entry Display & Edit
+
+The `/scout-leads` page also renders the full scouting form data below the timer cards:
+- All submitted entries (including No Show) are shown in entry cards.
+- Edit button visible for own entries or when admin password is unlocked.
+- Admin unlock: enter `ADMIN_PASSWORD` in the unlock form on the page to enable editing of all entries.
+- `isConfidenceRating: true` on a single `starRating`/`qualitative` field drives a red→green section background based on average confidence. `extractConfidenceRatingField()` in `schema-generator.js` extracts this field client-side.
+- The GET `/api/scout-leads` now returns `allScoutingRows` (all rows including noshow) and `currentUserTeam` in addition to existing timer data.
+- Edits are saved via `PATCH /api/edit-match-entry` which validates auth, checks allowed fields against config, and uses parameterized SQL.
 
 ### Display Config Validation
 

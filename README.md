@@ -744,6 +744,7 @@ A star-based rating system (1-N stars).
 | `max` | number | No | Maximum stars (default: 5, max: 10) |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
+| `isConfidenceRating` | boolean | No | Marks this field as the primary confidence indicator for `/scout-leads` section background (red→green). At most one field per config. |
 | `dbColumn` | object | Yes | Database column configuration |
 
 **Database Type:** `INTEGER`
@@ -1870,6 +1871,45 @@ Add `group` (required) and optionally `groupLabel` to the `scoutLeads` object of
 - The rate input label shown on the grouped card uses the `rateLabel` of the first field in the group. Set it to a generic label (e.g. `"Balls / Second"`) for all fields in the group to keep it readable.
 - `groupLabel` defaults to the `group` key value if omitted.
 
+### Scouting Entry Display
+
+`/scout-leads` also displays the full scouting form data for the loaded team+match below the timer rate cards. All submitted entries (including No Show) are shown.
+
+**Features:**
+- **Edit button** appears on an entry if the logged-in team submitted it, or if admin editing is unlocked.
+- **Admin unlock:** Enter the master admin password below the Save button and click "Unlock Editing" to enable editing of all entries regardless of which team submitted them.
+- **Section background color:** If exactly one `starRating` or `qualitative` field in the config carries `isConfidenceRating: true`, the entire entries section transitions from red (low average confidence) to green (high average confidence). The background is white when no confidence field is configured.
+
+**Configuring confidence color:**
+Add `"isConfidenceRating": true` to exactly one `starRating` or `qualitative` field:
+
+```json
+{
+  "type": "starRating",
+  "name": "scoutconfidence",
+  "label": "Scouting Confidence",
+  "max": 5,
+  "isConfidenceRating": true,
+  "dbColumn": { "type": "INTEGER", "default": null }
+}
+```
+
+At most one field per config may carry this tag — having more than one is a validation **error**. Placing it on a non-star field is a validation **warning** and is ignored at runtime.
+
+**Edit flow:**
+1. Click "Edit" on an entry card.
+2. All fields become editable inputs (matching their original types).
+3. `scoutname` and `noshow` are also editable in the edit header row.
+4. Click "Save" to PATCH the row via `/api/edit-match-entry`. The entries section refreshes automatically.
+5. Click "Cancel" to discard changes.
+
+**Authorization model for edits:**
+- Own entries (same `scoutteam` as the logged-in user's team) are always editable without admin password.
+- Other teams' entries require the admin password to be unlocked first.
+- Server-side: `PATCH /api/edit-match-entry` re-checks both conditions and returns 403 if neither is satisfied.
+
+---
+
 ### Missing Rate Handling (Critical)
 
 For any `holdTimer` field (grouped or ungrouped):
@@ -1886,6 +1926,8 @@ For any `holdTimer` field (grouped or ungrouped):
 - `scoutLeads.group` must be a string when present.
 - `scoutLeads.groupLabel` must be a string when present.
 - `holdTimer.dbColumn.type` should be numeric (`NUMERIC`, `DECIMAL`, or `INTEGER`).
+- At most **one** field per config may have `isConfidenceRating: true`. Having more than one is an **error** (not a warning): `"Only one starRating/qualitative field may have isConfidenceRating: true (found N)"`. Fix: remove the flag from all but one field.
+- `isConfidenceRating` on a non-`starRating`/`qualitative` field produces a **warning** and is ignored by `/scout-leads`.
 
 ---
 
