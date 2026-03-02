@@ -82,6 +82,7 @@ function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
         type="number"
         value={editValues[name] ?? ""}
         onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        onWheel={(e) => e.target.blur()}
         className={styles.entryInput}
       />
     );
@@ -95,6 +96,7 @@ function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
         step="0.001"
         value={editValues[name] ?? ""}
         onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        onWheel={(e) => e.target.blur()}
         className={styles.entryInput}
       />
     );
@@ -183,6 +185,7 @@ function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
         max={6}
         value={editValues[name] ?? ""}
         onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
+        onWheel={(e) => e.target.blur()}
         className={styles.entryInput}
       />
     );
