@@ -12,6 +12,39 @@ function getAuthHeaders() {
   return { Authorization: `Basic ${credentials}` };
 }
 
+/**
+ * Build an ordered list of display items from timerSummary.
+ * Items without a group render individually; items with the same group are
+ * collapsed into a single grouped entry. Order follows first appearance.
+ */
+function buildDisplayItems(timerSummary) {
+  const groupMap = {};
+  const seen = new Set();
+  const result = [];
+
+  timerSummary.forEach((timer) => {
+    if (timer.group) {
+      if (!groupMap[timer.group]) {
+        groupMap[timer.group] = {
+          type: "group",
+          groupKey: timer.group,
+          groupLabel: timer.groupLabel || timer.group,
+          fields: [],
+        };
+      }
+      groupMap[timer.group].fields.push(timer);
+      if (!seen.has(timer.group)) {
+        seen.add(timer.group);
+        result.push(groupMap[timer.group]);
+      }
+    } else {
+      result.push({ type: "individual", timer });
+    }
+  });
+
+  return result;
+}
+
 export default function ScoutLeadsPage() {
   const { config, loading: configLoading } = useGameConfig();
   const configuredTimerFields = useMemo(
@@ -26,6 +59,7 @@ export default function ScoutLeadsPage() {
 
   const [timerSummary, setTimerSummary] = useState([]);
   const [rates, setRates] = useState({});
+  const displayItems = useMemo(() => buildDisplayItems(timerSummary), [timerSummary]);
   const [loadingData, setLoadingData] = useState(false);
   const [savingData, setSavingData] = useState(false);
   const [error, setError] = useState("");
@@ -243,7 +277,71 @@ export default function ScoutLeadsPage() {
 
         {timerSummary.length > 0 && (
           <div className={styles.timerList}>
-            {timerSummary.map((timer) => {
+            {displayItems.map((item) => {
+              if (item.type === "group") {
+                const { groupKey, groupLabel, fields } = item;
+                const firstField = fields[0];
+                const rateValue = Number(rates[firstField.name]);
+                const totalAverageSeconds = fields.reduce(
+                  (sum, f) => sum + (Number(f.averageSeconds) || 0),
+                  0
+                );
+                const estimatedOutput = Number.isFinite(rateValue)
+                  ? rateValue * totalAverageSeconds
+                  : null;
+                const allRateSamples = fields.flatMap((f) => f.rateSamples || []);
+                const combinedAverageRate = allRateSamples.length
+                  ? allRateSamples.reduce((a, b) => a + b, 0) / allRateSamples.length
+                  : 0;
+
+                return (
+                  <div key={groupKey} className={`${styles.timerCard} ${styles.timerCardGroup}`}>
+                    <h2>{groupLabel}</h2>
+                    <div className={styles.groupFieldList}>
+                      {fields.map((f) => (
+                        <div key={f.name} className={styles.groupFieldItem}>
+                          <span>{f.label}</span>
+                          <span>{Number(f.averageSeconds || 0).toFixed(2)}s avg</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p>
+                      Combined avg seconds: {totalAverageSeconds.toFixed(2)}s
+                    </p>
+                    <p>
+                      Average saved rate for this match: {Number(combinedAverageRate).toFixed(3)}
+                      {" "}({allRateSamples.length} entry{allRateSamples.length === 1 ? "" : "ies"})
+                    </p>
+
+                    <label className={styles.field}>
+                      {firstField.rateLabel}
+                      <input
+                        type="number"
+                        step="0.001"
+                        value={rates[firstField.name] ?? ""}
+                        placeholder={firstField.ratePlaceholder || "Per-second value"}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setRates((previous) => {
+                            const updates = {};
+                            fields.forEach((f) => {
+                              updates[f.name] = nextValue;
+                            });
+                            return { ...previous, ...updates };
+                          });
+                        }}
+                      />
+                    </label>
+
+                    <p>
+                      Estimated combined output: {estimatedOutput === null ? "N/A" : estimatedOutput.toFixed(2)}
+                    </p>
+                  </div>
+                );
+              }
+
+              // Individual (ungrouped) card
+              const { timer } = item;
               const rateValue = Number(rates[timer.name]);
               const estimatedOutput = Number.isFinite(rateValue)
                 ? rateValue * (Number(timer.averageSeconds) || 0)

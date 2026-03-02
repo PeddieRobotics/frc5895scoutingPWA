@@ -1,9 +1,39 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Table, Button, Checkbox, Switch, Input, Form, Popconfirm, Typography, message, Drawer, Space, Card, Tabs, Divider } from "antd";
-import { calcAuto, calcTele, calcEnd, calcEPA } from "@/util/calculations";
+import useGameConfig from "@/lib/useGameConfig";
+import { createCalculationFunctions } from "@/lib/calculation-engine";
 import '@ant-design/v5-patch-for-react-19';
 import { EditOutlined, DeleteOutlined, LockOutlined, TeamOutlined, MenuOutlined } from '@ant-design/icons';
+
+// Recursively flatten all leaf fields from a section's fields array
+function flattenFields(fields) {
+  const result = [];
+  for (const field of fields || []) {
+    if (field.name && !['multiSelect', 'table', 'collapsible'].includes(field.type)) {
+      result.push({ name: field.name, type: field.type, label: field.label || field.name });
+    }
+    if (field.type === 'multiSelect') {
+      for (const opt of field.options || []) {
+        if (opt.name) result.push({ name: opt.name, type: 'checkbox', label: opt.label || opt.name });
+      }
+    }
+    if (field.type === 'table') {
+      for (const row of field.rows || []) {
+        for (const f of row.fields || []) {
+          if (f.name) result.push({ name: f.name, type: f.type || 'counter', label: f.label || f.variant || f.name });
+        }
+      }
+    }
+    if (field.type === 'collapsible') {
+      if (field.trigger?.name) {
+        result.push({ name: field.trigger.name, type: field.trigger.type || 'checkbox', label: field.trigger.label || field.trigger.name });
+      }
+      result.push(...flattenFields(field.content));
+    }
+  }
+  return result;
+}
 
 export default function Sudo() {
   const [data, setData] = useState([]);
@@ -18,6 +48,95 @@ export default function Sudo() {
   const [mobileView, setMobileView] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeTab, setActiveTab] = useState("1");
+
+  // Load active game config and derive calc functions + field lists
+  const { config } = useGameConfig();
+
+  const { calcAuto, calcTele, calcEnd, calcEPA } = useMemo(() => {
+    if (!config) {
+      const noop = () => 0;
+      return { calcAuto: noop, calcTele: noop, calcEnd: noop, calcEPA: noop };
+    }
+    return createCalculationFunctions(config);
+  }, [config]);
+
+  // All unique game fields from the active config (deduplicated)
+  const configFields = useMemo(() => {
+    if (!config) return [];
+    const fields = [];
+    const seen = new Set();
+    const addField = (f) => {
+      if (f.name && !seen.has(f.name)) {
+        seen.add(f.name);
+        fields.push(f);
+      }
+    };
+    for (const f of config.basics?.fields || []) {
+      if (f.name) addField({ name: f.name, type: f.type, label: f.label || f.name });
+    }
+    for (const section of config.sections || []) {
+      for (const f of flattenFields(section.fields)) {
+        addField(f);
+      }
+    }
+    return fields;
+  }, [config]);
+
+  // Fields grouped by section id (for mobile drawer tabs)
+  const fieldsBySection = useMemo(() => {
+    if (!config) return {};
+    const sections = {};
+    for (const section of config.sections || []) {
+      sections[section.id] = flattenFields(section.fields);
+    }
+    return sections;
+  }, [config]);
+
+  const autoFields = useMemo(
+    () => (fieldsBySection['auto'] || []).filter(f => f.type !== 'comment' && f.type !== 'text').map(f => f.name),
+    [fieldsBySection]
+  );
+  const teleFields = useMemo(
+    () => (fieldsBySection['tele'] || []).filter(f => f.type !== 'comment' && f.type !== 'text').map(f => f.name),
+    [fieldsBySection]
+  );
+  const endFields = useMemo(
+    () => (fieldsBySection['endgame'] || []).filter(f => f.type !== 'comment' && f.type !== 'text').map(f => f.name),
+    [fieldsBySection]
+  );
+  const miscFields = useMemo(() => {
+    const mainSections = new Set(['auto', 'tele', 'endgame']);
+    const seen = new Set();
+    const result = [];
+    for (const [id, fields] of Object.entries(fieldsBySection)) {
+      if (!mainSections.has(id)) {
+        for (const f of fields) {
+          if (f.type !== 'comment' && f.type !== 'text' && !seen.has(f.name)) {
+            seen.add(f.name);
+            result.push(f.name);
+          }
+        }
+      }
+    }
+    return result;
+  }, [fieldsBySection]);
+  const commentFields = useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const fields of Object.values(fieldsBySection)) {
+      for (const f of fields) {
+        if ((f.type === 'comment' || f.type === 'text') && !seen.has(f.name)) {
+          seen.add(f.name);
+          result.push(f.name);
+        }
+      }
+    }
+    return result;
+  }, [fieldsBySection]);
+  const generalFields = useMemo(() => {
+    const basicsFields = (config?.basics?.fields || []).map(f => f.name);
+    return ['scoutname', 'team', 'match', 'scoutteam', ...basicsFields];
+  }, [config]);
 
   // Track screen size for responsive design
   useEffect(() => {
@@ -459,86 +578,32 @@ export default function Sudo() {
     },
     {
       title: "Breakdown",
-      dataIndex: "breakdowncomments",
-      key: "breakdowncomments",
-      render: (value, record) => {
-        if (value !== null) {
-          return <>💥</>
-        } else {
-          return <>❌</>
-        }
-      },
+      dataIndex: config?.display?.apiAggregation?.breakdownField || "breakdown",
+      key: "breakdown_indicator",
+      render: (value) => value ? <>💥</> : <>✅</>,
       simple: true,
     },
-    "noshow",
-    "leave",
-    "autol1success",
-    "autol1fail",
-    "autol2success",
-    "autol2fail",
-    "autol3success",
-    "autol3fail",
-    "autol4success",
-    "autol4fail",
-    "autoalgaeremoved",
-    "autoprocessorsuccess",
-    "autoprocessorfail",
-    "autonetsuccess",
-    "autonetfail",
-    "telel1success",
-    "telel1fail",
-    "telel2success",
-    "telel2fail",
-    "telel3success",
-    "telel3fail",
-    "telel4success",
-    "telel4fail",
-    "telealgaeremoved",
-    "teleprocessorsuccess",
-    "teleprocessorfail",
-    "telenetsuccess",
-    "telenetfail",
-    "hpsuccess",
-    "hpfail",
-    "endlocation",
-    "coralspeed",
-    "processorspeed",
-    "netspeed",
-    "algaeremovalspeed",
-    "climbspeed",
-    "maneuverability",
-    "defenseplayed",
-    "defenseevasion",
-    "aggression",
-    "cagehazard",
-    "coralgrndintake",
-    "coralstationintake",
-    "lollipop",
-    "algaegrndintake",
-    "algaelowreefintake",
-    "algaehighreefintake",
-    "generalcomments",
-    "breakdowncomments",
-    "defensecomments",
+    ...configFields,
   ].map((element) => {
-    if (typeof element == "object") return element;
-    if (element.includes("Comments")) {
+    // Pre-built column objects (have a `title` property)
+    if (typeof element === "object" && 'title' in element) return element;
+    // Dynamic field objects: { name, type, label }
+    const fieldName = element.name;
+    const fieldLabel = element.label || fieldName;
+    const isComment = element.type === 'comment' || element.type === 'text';
+    if (isComment) {
       return {
-        title: element,
-        dataIndex: element.toLowerCase(),
-        key: element.toLowerCase(),
+        title: fieldLabel,
+        dataIndex: fieldName,
+        key: fieldName,
         ellipsis: true,
         editable: true,
         render: (text, record) => {
           const isEditing = editing[record.id];
-          
           if (isEditing) {
             return (
-              <Form.Item
-                name={element.toLowerCase()}
-                style={{ margin: 0 }}
-              >
-                <Input.TextArea 
+              <Form.Item name={fieldName} style={{ margin: 0 }}>
+                <Input.TextArea
                   autoSize={{ minRows: 2, maxRows: 20 }}
                   style={{ width: '100%' }}
                   maxLength={255}
@@ -548,57 +613,42 @@ export default function Sudo() {
               </Form.Item>
             );
           }
-          
           return (
-            <div 
-              style={{ 
-                whiteSpace: 'pre-wrap', 
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word'
-              }}
-            >
+            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {text}
             </div>
           );
         }
-      }
+      };
     }
     return {
-      title: element,
-      dataIndex: element.toLowerCase(),
-      key: element.toLowerCase(),
+      title: fieldLabel,
+      dataIndex: fieldName,
+      key: fieldName,
       render: (text, record) => {
         const isEditing = editing[record.id];
-        
         if (isEditing) {
           return (
             <Form.Item
-              name={element.toLowerCase()}
+              name={fieldName}
               style={{ margin: 0 }}
               valuePropName={typeof text === 'boolean' ? 'checked' : 'value'}
             >
-              {typeof text === 'boolean' ? (
-                <Checkbox />
-              ) : (
-                <Input />
-              )}
+              {typeof text === 'boolean' ? <Checkbox /> : <Input />}
             </Form.Item>
           );
         }
-        
-        //display booleans as check or x
         let visibleValue = text;
-        if (typeof text == "boolean") {
+        if (typeof text === 'boolean') {
           visibleValue = text ? "✅" : "❌";
         }
-        //show red if 0
         let style = {};
-        if (text == 0) {
+        if (text === 0) {
           style = { color: "red" };
         }
         return <div style={style}>{visibleValue}</div>;
       },
-      sorter: (a, b) => sort(a, b, element.toLowerCase()),
+      sorter: (a, b) => sort(a, b, fieldName),
       editable: true,
     };
   });
@@ -634,40 +684,6 @@ export default function Sudo() {
       }),
     };
   });
-
-  // Group data fields for mobile view
-  const autoFields = [
-    'autol1success', 'autol1fail', 'autol2success', 'autol2fail',
-    'autol3success', 'autol3fail', 'autol4success', 'autol4fail',
-    'autoalgaeremoved', 'autoprocessorsuccess', 'autoprocessorfail',
-    'autonetsuccess', 'autonetfail'
-  ];
-  
-  const teleFields = [
-    'telel1success', 'telel1fail', 'telel2success', 'telel2fail',
-    'telel3success', 'telel3fail', 'telel4success', 'telel4fail',
-    'telealgaeremoved', 'teleprocessorsuccess', 'teleprocessorfail',
-    'telenetsuccess', 'telenetfail', 'hpsuccess', 'hpfail'
-  ];
-  
-  const endFields = [
-    'endlocation', 'coralspeed', 'processorspeed', 'netspeed',
-    'algaeremovalspeed', 'climbspeed', 'maneuverability'
-  ];
-  
-  const miscFields = [
-    'defenseplayed', 'defenseevasion', 'aggression', 'cagehazard',
-    'coralgrndintake', 'coralstationintake', 'lollipop',
-    'algaegrndintake', 'algaelowreefintake', 'algaehighreefintake'
-  ];
-  
-  const commentFields = [
-    'generalcomments', 'breakdowncomments', 'defensecomments'
-  ];
-  
-  const generalFields = [
-    'scoutname', 'team', 'match', 'scoutteam', 'noshow', 'leave'
-  ];
 
   // Render the mobile detail drawer
   const renderMobileDetailDrawer = () => (

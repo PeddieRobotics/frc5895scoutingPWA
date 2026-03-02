@@ -96,6 +96,7 @@ function TeamView() {
     const commentsConfig = tvConfig.comments || [];
     const intakeDisplayConfig = tvConfig.intakeDisplay || [];
     const defenseBarField = tvConfig.defenseBarField || "";
+    const scouterConfidenceField = tvConfig.scouterConfidenceField || null;
 
     // Initialize URL parameters on the client side
     useEffect(() => {
@@ -431,6 +432,8 @@ function TeamView() {
         attemptCage: data?.attemptCage || 0,
         successCage: data?.successCage || 0,
         qualitative: data?.qualitative || [],
+        scouterConfidenceOverTime: data?.scouterConfidenceOverTime || [],
+        avgScouterConfidence: data?.avgScouterConfidence ?? null,
         auto: data?.auto || {},
         tele: data?.tele || {},
         endPlacement: data?.endPlacement || {},
@@ -1149,6 +1152,36 @@ function TeamView() {
                                         </BarChart>
                                     </div>
                                 </div>
+                                {scouterConfidenceField && safeData.scouterConfidenceOverTime.length > 0 && (
+                                    <div className={styles.radarContainer}>
+                                        <h4 className={styles.graphTitle}>Scouter Confidence Per Match</h4>
+                                        <div style={{ marginTop: "50px", display: "flex", justifyContent: "center", width: "100%" }}>
+                                            <BarChart
+                                                width={400}
+                                                height={300}
+                                                data={safeData.scouterConfidenceOverTime}
+                                                margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis
+                                                    dataKey="match"
+                                                    angle={-90}
+                                                    textAnchor="end"
+                                                    height={70}
+                                                    tick={{ dy: 10 }}
+                                                    label={{ value: "Match", position: "insideBottom", offset: -5 }}
+                                                />
+                                                <YAxis
+                                                    domain={[0, 5]}
+                                                    ticks={[0, 1, 2, 3, 4, 5]}
+                                                    interval={0}
+                                                />
+                                                <Tooltip formatter={(value) => value.toFixed(1)} />
+                                                <Bar dataKey="confidence" fill={Colors[4][1]} />
+                                            </BarChart>
+                                        </div>
+                                    </div>
+                                )}
                                 <table className={styles.differentTable}>
                                     <tbody>
                                         {intakeDisplayConfig.map((intake, idx) => (

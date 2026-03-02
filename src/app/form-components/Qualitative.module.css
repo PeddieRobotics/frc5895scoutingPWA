@@ -26,6 +26,19 @@
     text-align: center;
 }
 
+.description {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-bottom: 6px;
+    font-style: italic;
+}
+
+.ratingLabel {
+    font-size: 0.9em;
+    margin-top: 6px;
+    opacity: 0.85;
+}
+
 .clearButton {
     background-color: #ff9999; /* Pastel red */
     color: #333;

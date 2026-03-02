@@ -600,6 +600,88 @@
   font-size: 0.8rem;
 }
 
+/* Confirmation Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #152a42;
+  border: 1px solid rgba(189, 151, 72, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modalMessage {
+  font-size: 1rem;
+  color: #ffffff;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modalCancelButton {
+  padding: 0.6rem 1.25rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.modalCancelButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modalConfirmButton {
+  padding: 0.6rem 1.25rem;
+  background-color: #bd9748;
+  border: none;
+  color: #0b233b;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.modalConfirmButton:hover {
+  background-color: #d2ac5e;
+}
+
+.modalDangerButton {
+  padding: 0.6rem 1.25rem;
+  background-color: #e53e3e;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.modalDangerButton:hover {
+  background-color: #c53030;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {

@@ -45,6 +45,7 @@ export default function Qualitative ({ visibleName, internalName, description, s
             <label htmlFor={internalName}>{visibleName}</label>
             <input type="hidden" name={internalName} value={rating}/>
             <hr></hr>
+            {description && <div className={styles.description}>{description}</div>}
             <div className={styles.ratings}>
                 {[1,2,3,4,5,6].map(ratingValue => {
                     return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => {
@@ -105,8 +106,8 @@ export default function Qualitative ({ visibleName, internalName, description, s
             )}
 
             {rating > 0 && (
-                <div>
-                    {ratingDescriptions[rating]} {description}
+                <div className={styles.ratingLabel}>
+                    {ratingDescriptions[rating].trim()}
                 </div>
             )}
         </div>

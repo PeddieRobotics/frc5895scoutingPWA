@@ -581,6 +581,14 @@ function validateHoldTimerField(field, path, fieldNames, result) {
       result.addWarning('holdTimer scoutLeads.defaultRate should be a number', `${path}.scoutLeads.defaultRate`);
     }
 
+    if (field.scoutLeads.group !== undefined && typeof field.scoutLeads.group !== 'string') {
+      result.addWarning('holdTimer scoutLeads.group should be a string', `${path}.scoutLeads.group`);
+    }
+
+    if (field.scoutLeads.groupLabel !== undefined && typeof field.scoutLeads.groupLabel !== 'string') {
+      result.addWarning('holdTimer scoutLeads.groupLabel should be a string', `${path}.scoutLeads.groupLabel`);
+    }
+
     if (field.scoutLeads.dbColumn !== undefined) {
       validateDbColumn(field.scoutLeads.dbColumn, `${path}.scoutLeads`, result);
     }

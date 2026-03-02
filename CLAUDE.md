@@ -28,7 +28,7 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
 
 1. **Admin uploads a JSON game config** at `/admin/games` → validated, stored in `game_configs` table, scouting table (`scouting_<gameName>`) and scout-leads table (`scoutleads_<gameName>`) are auto-created.
 2. **Scouts open the app** → form is dynamically rendered from the active game config → submissions write rows to `scouting_<gameName>`.
-3. **Scout leads open `/scout-leads`** → enter per-second rates for `holdTimer` fields → stored in `scoutleads_<gameName>`.
+3. **Scout leads open `/scout-leads`** → enter per-second rates for `holdTimer` fields (individual or grouped) → stored in `scoutleads_<gameName>`.
 4. **Display pages** (`/team-view`, `/match-view`, `/picklist`, `/compare`) call API routes which use the display engine to aggregate data from `scouting_<gameName>` using field references from the active config.
 
 ### Key Directories
@@ -83,6 +83,15 @@ See `README.md` for full reference. Key top-level keys:
 - `display` — config for all display pages: `teamView`, `matchView`, `picklist`, `compare`, `apiAggregation`
 
 Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`/`qualitative`, `table`, `collapsible`
+
+#### holdTimer & Scout Leads Grouping
+
+`holdTimer` fields with a `scoutLeads` object can optionally include `group` (string key) and `groupLabel` (display name). Fields sharing the same `group` string are collapsed into a single combined rate card on `/scout-leads`:
+- One rate input controls all fields in the group simultaneously.
+- The same rate value is written to each field's individual column in `scoutleads_<gameName>` on save.
+- `extractTimerFieldsFromConfig()` in `schema-generator.js` propagates `group` and `groupLabel` to the returned field metadata.
+- The GET `/api/scout-leads` response includes `group`/`groupLabel` on each `timerSummary` item; the `/scout-leads` page builds grouped display items using `buildDisplayItems()`.
+- The DB schema is **unchanged** — each `holdTimer` still has its own column; grouping is purely a UI concern.
 
 ### Display Config Validation
 

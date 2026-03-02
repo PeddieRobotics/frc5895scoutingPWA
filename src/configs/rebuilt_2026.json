@@ -1,7 +1,8 @@
 {
   "gameName": "rebuilt_2026",
   "displayName": "REBUILT 2026",
-  "formTitle": "KUNPENGOUTER",
+  "tbaEventCode": "2026rebu",
+  "formTitle": "KUNPENSCOUTER",
   "version": "1.0",
   "basics": {
     "description": "Pre-match fields displayed at the top of the form",
@@ -30,7 +31,7 @@
         {
           "type": "holdTimer",
           "name": "autofuelsuccess",
-          "label": "Auto Fuel Time (s)",
+          "label": "Auto Fuel (s)",
           "buttonLabel": "Hold While Shooting Auto Fuel",
           "precision": 2,
           "dbColumn": {
@@ -38,9 +39,11 @@
             "default": 0
           },
           "scoutLeads": {
-            "rateLabel": "Auto Balls / Second",
+            "rateLabel": "Balls / Second",
             "placeholder": "e.g. 2.40",
             "defaultRate": 0,
+            "group": "Fuel",
+            "groupLabel": "Fuel Scoring",
             "dbColumn": {
               "type": "NUMERIC(10,4)",
               "default": 0
@@ -48,19 +51,9 @@
           }
         },
         {
-          "type": "counter",
-          "name": "autofuelfail",
-          "subHeader": "Fuel Missed",
-          "variant": "Fail",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": 0
-          }
-        },
-        {
           "type": "holdTimer",
           "name": "autopasssuccess",
-          "label": "Auto Pass Time (s)",
+          "label": "Auto Pass (s)",
           "buttonLabel": "Hold While Passing Auto",
           "precision": 2,
           "dbColumn": {
@@ -68,9 +61,11 @@
             "default": 0
           },
           "scoutLeads": {
-            "rateLabel": "Auto Passes / Second",
+            "rateLabel": "Passes / Second",
             "placeholder": "e.g. 1.50",
             "defaultRate": 0,
+            "group": "Pass",
+            "groupLabel": "Pass Scoring",
             "dbColumn": {
               "type": "NUMERIC(10,4)",
               "default": 0
@@ -114,7 +109,7 @@
         {
           "type": "holdTimer",
           "name": "telefuelsuccess",
-          "label": "Tele Fuel Time (s)",
+          "label": "Tele Fuel (s)",
           "buttonLabel": "Hold While Shooting Tele Fuel",
           "precision": 2,
           "dbColumn": {
@@ -122,9 +117,11 @@
             "default": 0
           },
           "scoutLeads": {
-            "rateLabel": "Tele Balls / Second",
+            "rateLabel": "Balls / Second",
             "placeholder": "e.g. 2.70",
             "defaultRate": 0,
+            "group": "Fuel",
+            "groupLabel": "Fuel Scoring",
             "dbColumn": {
               "type": "NUMERIC(10,4)",
               "default": 0
@@ -132,19 +129,9 @@
           }
         },
         {
-          "type": "counter",
-          "name": "telefuelfail",
-          "subHeader": "Fuel Missed",
-          "variant": "Fail",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": 0
-          }
-        },
-        {
           "type": "holdTimer",
           "name": "telepasssuccess",
-          "label": "Tele Pass Time (s)",
+          "label": "Tele Pass (s)",
           "buttonLabel": "Hold While Passing Tele",
           "precision": 2,
           "dbColumn": {
@@ -152,58 +139,15 @@
             "default": 0
           },
           "scoutLeads": {
-            "rateLabel": "Tele Passes / Second",
+            "rateLabel": "Passes / Second",
             "placeholder": "e.g. 1.50",
             "defaultRate": 0,
+            "group": "Pass",
+            "groupLabel": "Pass Scoring",
             "dbColumn": {
               "type": "NUMERIC(10,4)",
               "default": 0
             }
-          }
-        },
-        {
-          "type": "table",
-          "id": "teleHPTable",
-          "subHeader": "Human Player",
-          "columns": [
-            "",
-            "Success",
-            "Fail",
-            ""
-          ],
-          "rows": [
-            {
-              "label": "",
-              "fields": [
-                {
-                  "type": "counter",
-                  "name": "hpsuccess",
-                  "variant": "Success",
-                  "dbColumn": {
-                    "type": "INTEGER",
-                    "default": 0
-                  }
-                },
-                {
-                  "type": "counter",
-                  "name": "hpfail",
-                  "variant": "Fail",
-                  "dbColumn": {
-                    "type": "INTEGER",
-                    "default": 0
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "comment",
-          "name": "generalcomments",
-          "label": "General Comments",
-          "dbColumn": {
-            "type": "TEXT",
-            "default": null
           }
         },
         {
@@ -295,6 +239,18 @@
       },
       "fields": [
         {
+          "type": "starRating",
+          "name": "scouterconfidence",
+          "label": "Scouter Confidence",
+          "description": "How confident are you in your scouting this match?",
+          "max": 5,
+          "minWhenVisible": 1,
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
           "type": "multiSelect",
           "subHeader": "Intake",
           "name": "intakeOptions",
@@ -371,6 +327,15 @@
               }
             }
           ]
+        },
+        {
+          "type": "comment",
+          "name": "generalcomments",
+          "label": "General Comments",
+          "dbColumn": {
+            "type": "TEXT",
+            "default": null
+          }
         }
       ]
     },
@@ -467,10 +432,9 @@
       ]
     },
     "tele": {
-      "formula": "telefuelsuccess + hpsuccess",
+      "formula": "telefuelsuccess",
       "fields": [
-        "telefuelsuccess",
-        "hpsuccess"
+        "telefuelsuccess"
       ]
     },
     "end": {
@@ -574,11 +538,6 @@
             "label": "Tele Fuel",
             "autoField": null,
             "teleField": "tele.avgFuel"
-          },
-          {
-            "label": "HP",
-            "autoField": null,
-            "teleField": "tele.avgHP"
           }
         ]
       },
@@ -602,6 +561,11 @@
           "key": "matchesScouted",
           "title": "Matches",
           "format": "number"
+        },
+        {
+          "key": "avgScouterConfidence",
+          "title": "Avg Confidence",
+          "format": "decimal"
         }
       ],
       "sections": {
@@ -649,23 +613,6 @@
               "label": "Tele Passes Over Time",
               "dataKey": "telePassOverTime",
               "valueKey": "telepasssuccess"
-            }
-          ],
-          "extraStats": [
-            {
-              "title": "HP",
-              "columns": [
-                "Success",
-                "Avg"
-              ],
-              "rows": [
-                {
-                  "values": [
-                    "tele.successHP",
-                    "tele.avgHP"
-                  ]
-                }
-              ]
             }
           ],
           "statTables": [
@@ -748,7 +695,8 @@
           "inverted": true
         }
       ],
-      "defenseBarField": "defenseplayed"
+      "defenseBarField": "defenseplayed",
+      "scouterConfidenceField": "scouterconfidence"
     },
     "matchView": {
       "allianceMetrics": [
@@ -770,10 +718,6 @@
           {
             "label": "Tele Fuel",
             "key": "teleFuel"
-          },
-          {
-            "label": "HP",
-            "key": "HP"
           }
         ]
       },
@@ -817,10 +761,6 @@
             {
               "key": "teleFuel",
               "threshold": 18
-            },
-            {
-              "key": "HP",
-              "threshold": 3
             }
           ],
           "greenCount": 2,
@@ -847,8 +787,7 @@
           "type": "sum",
           "fields": [
             "autofuelsuccess",
-            "telefuelsuccess",
-            "hpsuccess"
+            "telefuelsuccess"
           ]
         },
         {
@@ -884,11 +823,6 @@
           "key": "end",
           "label": "End",
           "default": 0.7
-        },
-        {
-          "key": "fuelAccuracy",
-          "label": "Fuel %",
-          "default": 0.9
         },
         {
           "key": "consistency",
@@ -939,12 +873,6 @@
           "format": "three"
         },
         {
-          "key": "fuelAccuracy",
-          "label": "Fuel %",
-          "colorScale": "normal",
-          "format": "three"
-        },
-        {
           "key": "consistency",
           "label": "Cnstcy",
           "colorScale": "normal",
@@ -969,44 +897,23 @@
           "type": "sumFields",
           "fields": [
             "autofuelsuccess",
-            "telefuelsuccess",
-            "hpsuccess"
-          ]
-        },
-        {
-          "key": "fuelAccuracy",
-          "type": "successRate",
-          "successFields": [
-            "autofuelsuccess",
-            "telefuelsuccess",
-            "hpsuccess"
-          ],
-          "failFields": [
-            "autofuelfail",
-            "telefuelfail",
-            "hpfail"
+            "telefuelsuccess"
           ]
         }
       ],
-      "consistencyMetricKey": "fuelAccuracy",
       "scatterPlot": {
         "xAxis": {
           "label": "Total Fuel",
           "fields": [
             "autofuelsuccess",
-            "telefuelsuccess",
-            "hpsuccess"
+            "telefuelsuccess"
           ]
         },
         "yAxis": {
           "label": "Fuel Attempts",
           "fields": [
             "autofuelsuccess",
-            "autofuelfail",
-            "telefuelsuccess",
-            "telefuelfail",
-            "hpsuccess",
-            "hpfail"
+            "telefuelsuccess"
           ]
         }
       },
@@ -1035,7 +942,7 @@
         {
           "key": "fuel",
           "label": "Fuel Avg",
-          "compute": "auto.avgFuel + tele.avgFuel + tele.avgHP"
+          "compute": "auto.avgFuel + tele.avgFuel"
         }
       ],
       "endgameChart": {
@@ -1080,22 +987,16 @@
       "leaveField": "leave",
       "successFailPairs": [
         {
-          "key": "HP",
-          "phase": "tele",
-          "successField": "hpsuccess",
-          "failField": "hpfail"
-        },
-        {
           "key": "Fuel",
           "phase": "auto",
           "successField": "autofuelsuccess",
-          "failField": "autofuelfail"
+          "failField": null
         },
         {
           "key": "Fuel",
           "phase": "tele",
           "successField": "telefuelsuccess",
-          "failField": "telefuelfail"
+          "failField": null
         },
         {
           "key": "Pass",
@@ -1157,12 +1058,6 @@
           "fields": [
             "telefuelsuccess"
           ]
-        },
-        {
-          "key": "HP",
-          "fields": [
-            "hpsuccess"
-          ]
         }
       ],
       "customSumFields": [
@@ -1170,8 +1065,7 @@
           "key": "totalFuel",
           "fields": [
             "autofuelsuccess",
-            "telefuelsuccess",
-            "hpsuccess"
+            "telefuelsuccess"
           ]
         },
         {

@@ -70,6 +70,7 @@ Notes:
 
 - Uploading/activating a game config triggers validation and table generation (`scouting_<game>` and `scoutleads_<game>`).
 - Display config mistakes may show a config error panel instead of crashing UI (runtime validation).
+- `holdTimer` fields with a `scoutLeads.group` key will appear as a single combined card on `/scout-leads` — verify the card title, per-field breakdown, and rate input work correctly after any config changes.
 
 ### 4. API / Database Change Workflow
 
@@ -109,8 +110,59 @@ At minimum (unless the task is docs-only):
 2. `npm run build` for non-trivial changes
 3. Manual smoke test of changed pages/routes
 
+## Scout Leads Timer Grouping
+
+Multiple `holdTimer` fields can be **grouped** into a single rate-entry card on `/scout-leads` when they share a "per-second" rate (e.g. Auto Fuel and Tele Fuel both shot at the same speed).
+
+### How to configure a group
+
+Add `group` (string key) and optionally `groupLabel` (display name) inside the `scoutLeads` object of each timer field you want to combine:
+
+```json
+{
+  "type": "holdTimer",
+  "name": "autofuelsuccess",
+  "label": "Auto Fuel (s)",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Balls / Second",
+    "group": "Fuel",
+    "groupLabel": "Fuel Scoring",
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+}
+```
+
+All fields with `"group": "Fuel"` collapse into one "Fuel Scoring" card with:
+- A per-field breakdown (label + average seconds)
+- One rate input that updates all fields in the group simultaneously
+- Combined estimated output
+
+### Key invariants
+
+| Concern | Answer |
+|---------|--------|
+| DB schema change? | **No.** Each `holdTimer` keeps its own column in `scoutleads_<gameName>`. |
+| How is the rate saved? | The client sends the same value for every field in the group in the `rates` object. `POST /api/scout-leads` writes it to each column independently. |
+| Rate processing (`applyScoutLeadRatesToRows`)? | Unchanged — operates per field. All grouped fields have identical rates so results are correct. |
+| Card order on `/scout-leads`? | Follows first-appearance order in the config. |
+| Which field's `rateLabel` is used for the group card? | The first field in the group. Use a generic label for all members (e.g. `"Balls / Second"`). |
+
+### Implementation file map
+
+| File | Role |
+|------|------|
+| `src/lib/schema-generator.js` `extractTimerFieldsFromConfig()` | Reads `scoutLeads.group` and `scoutLeads.groupLabel`; adds them to the returned timer field metadata |
+| `src/app/api/scout-leads/route.js` GET | Includes `group` and `groupLabel` on each `timerSummary` and `timerFields` item |
+| `src/app/scout-leads/page.js` `buildDisplayItems()` | Groups `timerSummary` items by group key; ungrouped items pass through |
+| `src/lib/config-validator.js` `validateHoldTimerField()` | Warns if `group` or `groupLabel` is not a string |
+
+---
+
 ## Known Constraints / Gotchas
 
 - No dedicated automated test suite is configured in `package.json` (lint/build/manual verification are the main checks).
 - Client bundling is protected by mocks/aliases in `next.config.js` for server-only modules (`bcrypt`, Neon serverless pieces).
 - The active game config is cached (`getActiveGame()`), so config-related behavior may appear stale briefly during development.
+- Timer grouping is **UI-only** — never add a "group column" to the DB schema. The group key exists only in the JSON config and in the API/page layer.
+- Match number stored in DB uses an offset via `normalizeMatchForStorage()`. Always use the utility functions in `match-utils.js` for match number conversion.

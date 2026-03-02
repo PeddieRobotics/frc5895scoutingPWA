@@ -53,7 +53,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" sizes="192x192" href="/apple-touch-icon-192x192.png" />
         <script src="/auto-auth-cleanup.js"></script>

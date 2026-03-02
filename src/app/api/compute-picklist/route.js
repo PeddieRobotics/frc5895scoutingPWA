@@ -64,7 +64,7 @@ export async function POST(request) {
 
   // Fetch TBA Rankings (best effort)
   try {
-    const tbaEventCode = gameConfig?.tbaEventCode || process.env.TBA_EVENT_CODE || '2025njbe';
+    const tbaEventCode = gameConfig?.tbaEventCode || process.env.TBA_EVENT_CODE;
     const response = await fetch(`https://www.thebluealliance.com/api/v3/event/${tbaEventCode}/rankings`, {
       headers: {
         'X-TBA-Auth-Key': process.env.TBA_AUTH_KEY,

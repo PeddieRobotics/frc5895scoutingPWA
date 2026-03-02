@@ -393,6 +393,20 @@ export function aggregateTeamData(rows, config, calcFns) {
   const attemptCage = totalMatchCount > 0 ? (attemptedMatches / totalMatchCount) * 100 : 0;
   const successCage = attemptedMatches > 0 ? (successfulMatches / attemptedMatches) * 100 : 0;
 
+  // Scouter confidence over time
+  const scouterConfidenceField = teamViewConfig.scouterConfidenceField;
+  let scouterConfidenceOverTime = [];
+  let avgScouterConfidence = null;
+  if (scouterConfidenceField) {
+    const confRows = rows.filter(r => r[scouterConfidenceField] != null && r[scouterConfidenceField] !== -1);
+    scouterConfidenceOverTime = computeMatchAverages(
+      confRows.map(r => ({ ...r, [scouterConfidenceField]: Number(r[scouterConfidenceField]) })),
+      scouterConfidenceField
+    ).map(d => ({ match: d.match, confidence: Math.round(d[scouterConfidenceField] * 100) / 100 }));
+    const vals = confRows.map(r => Number(r[scouterConfidenceField]));
+    avgScouterConfidence = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10 : null;
+  }
+
   // Qualitative
   const qualitative = (teamViewConfig.qualitativeDisplay || []).map(q => {
     const vals = rows.filter(r => r[q.name] != null && r[q.name] != -1).map(r => Number(r[q.name]));
@@ -433,6 +447,8 @@ export function aggregateTeamData(rows, config, calcFns) {
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
     ...commentData,
+    scouterConfidenceOverTime,
+    avgScouterConfidence,
     auto: autoStats,
     tele: teleStats,
     endPlacement,

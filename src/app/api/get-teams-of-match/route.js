@@ -17,12 +17,19 @@ export async function GET(request) {
   }
   
   try {
-    let tbaEventCode = process.env.TBA_EVENT_CODE || '2025njbe';
+    let tbaEventCode = process.env.TBA_EVENT_CODE || null;
     try {
       const activeGame = await getActiveGame();
       tbaEventCode = activeGame?.config_json?.tbaEventCode || tbaEventCode;
     } catch (eventError) {
       console.error("[get-teams-of-match] Failed to load active game event code:", eventError);
+    }
+
+    if (!tbaEventCode) {
+      return NextResponse.json(
+        { message: "No TBA event code configured. Set tbaEventCode in the game config or TBA_EVENT_CODE env var." },
+        { status: 200 }
+      );
     }
 
     const response = await fetch(

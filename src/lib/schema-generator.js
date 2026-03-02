@@ -326,6 +326,8 @@ function extractTimerFieldsFromConfig(config) {
             ? scoutLeadsDbColumn.default
             : (rateDefaultFromConfig !== undefined ? rateDefaultFromConfig : 0),
         },
+        group: field.scoutLeads?.group || null,
+        groupLabel: field.scoutLeads?.groupLabel || field.scoutLeads?.group || null,
       });
       return;
     }

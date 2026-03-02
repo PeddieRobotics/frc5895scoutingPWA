@@ -123,3 +123,25 @@
 .timerCard p {
   margin: 0;
 }
+
+.timerCardGroup {
+  border-color: #0969da;
+  background: #f0f6ff;
+}
+
+.groupFieldList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(9, 105, 218, 0.06);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.groupFieldItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.87rem;
+  color: #57606a;
+}

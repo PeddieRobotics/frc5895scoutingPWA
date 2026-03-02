@@ -505,16 +505,18 @@ Important behavior:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `rateLabel` | string | No | Label shown on `/scout-leads` input |
+| `rateLabel` | string | No | Label shown on the rate input on `/scout-leads` |
 | `placeholder` | string | No | Placeholder text shown on `/scout-leads` input |
 | `defaultRate` | number | No | Optional UI default/prefill for scout-leads entry |
 | `dbColumn` | object | No | DB config for the scout-leads rate column |
+| `group` | string | No | Group key — fields sharing the same `group` value are combined into a single rate card on `/scout-leads` |
+| `groupLabel` | string | No | Human-readable title for the combined group card (defaults to the `group` key value if omitted) |
 
 **Database Types:**
 - Scouting table column: recommended `NUMERIC(10,3)`
 - Scout-leads table column: recommended `NUMERIC(10,4)`
 
-**Example:**
+**Example (ungrouped):**
 
 ```json
 {
@@ -528,6 +530,35 @@ Important behavior:
     "rateLabel": "Stops per second",
     "placeholder": "e.g. 0.75",
     "defaultRate": 0,
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+}
+```
+
+**Example (grouped — two fields share one rate card):**
+
+```json
+{
+  "type": "holdTimer",
+  "name": "autofuelsuccess",
+  "label": "Auto Fuel (s)",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Balls / Second",
+    "group": "Fuel",
+    "groupLabel": "Fuel Scoring",
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+},
+{
+  "type": "holdTimer",
+  "name": "telefuelsuccess",
+  "label": "Tele Fuel (s)",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Balls / Second",
+    "group": "Fuel",
+    "groupLabel": "Fuel Scoring",
     "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
   }
 }
@@ -1427,6 +1458,18 @@ When you upload a configuration, it goes through validation. Here are common err
 "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 }
 ```
 
+### Warning: "holdTimer scoutLeads.group should be a string"
+**Fix:** `group` must be a plain string key shared between the fields you want to combine:
+```json
+"scoutLeads": { "group": "Fuel", "groupLabel": "Fuel Scoring" }
+```
+
+### Warning: "holdTimer scoutLeads.groupLabel should be a string"
+**Fix:** `groupLabel` is the display title shown on the combined group card. Use a plain string:
+```json
+"scoutLeads": { "group": "Fuel", "groupLabel": "Fuel Scoring" }
+```
+
 ### Error: "Table field requires rows"
 **Fix:** Add a `rows` array to your table field.
 
@@ -1732,7 +1775,7 @@ Here is a **complete, working configuration** for reference (REEFSCAPE 2025):
 
 1. Scouts collect time-in-seconds on the main form by holding timer buttons.
 2. Scout leads open `/scout-leads`, enter team + match, and load match data for timer-derived metrics.
-3. For each timer field, scout leads enter a configurable per-second rate.
+3. For each timer field (or timer group), scout leads enter a configurable per-second rate.
 4. The app stores those rates in a game-specific `scoutleads_*` table.
 
 ### Table Creation Rules
@@ -1777,9 +1820,59 @@ If `scoutLeads` is omitted:
 - rate default falls back to `0`
 - rate column defaults to `NUMERIC(10,4)`
 
+### Grouping Timer Fields on Scout-Leads
+
+When multiple `holdTimer` fields represent the same physical action (e.g. Auto Fuel and Tele Fuel both use the same shooting rate), they can be **grouped** into a single card on the `/scout-leads` page. The scout lead enters one rate that is applied identically to all fields in the group.
+
+**How to configure a group:**
+Add `group` (required) and optionally `groupLabel` to the `scoutLeads` object of each timer field that should be combined:
+
+```json
+{
+  "type": "holdTimer",
+  "name": "autofuelsuccess",
+  "label": "Auto Fuel (s)",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Balls / Second",
+    "group": "Fuel",
+    "groupLabel": "Fuel Scoring",
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+},
+{
+  "type": "holdTimer",
+  "name": "telefuelsuccess",
+  "label": "Tele Fuel (s)",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 },
+  "scoutLeads": {
+    "rateLabel": "Balls / Second",
+    "group": "Fuel",
+    "groupLabel": "Fuel Scoring",
+    "dbColumn": { "type": "NUMERIC(10,4)", "default": 0 }
+  }
+}
+```
+
+**What the scout-leads UI shows for a grouped card:**
+- The `groupLabel` (or `group` key) as the card title
+- A breakdown list of each member field's label and average seconds
+- Combined average seconds across all fields in the group
+- The saved average rate (from prior entries for that match)
+- A single rate input — changing it updates the rate for **all** fields in the group simultaneously
+- Estimated combined output (combined average seconds × entered rate)
+
+**Important notes on grouping:**
+- The `group` value is purely a UI-level key — it does not change the database schema. Each `holdTimer` field still gets its own dedicated column in `scoutleads_<gameName>`.
+- When saving, the same entered rate is written to every field in the group. Rate processing (`applyScoutLeadRatesToRows`) remains per-field, which is correct since all fields in a group have the same rate.
+- Fields in different sections of the form (e.g. Auto section and Tele section) can be part of the same group as long as they share the same `group` string.
+- The card order on `/scout-leads` follows the order of first appearance of each group key in the config.
+- The rate input label shown on the grouped card uses the `rateLabel` of the first field in the group. Set it to a generic label (e.g. `"Balls / Second"`) for all fields in the group to keep it readable.
+- `groupLabel` defaults to the `group` key value if omitted.
+
 ### Missing Rate Handling (Critical)
 
-For any `holdTimer` field:
+For any `holdTimer` field (grouped or ungrouped):
 - If scouting recorded timer seconds for a team/match but no valid scout-leads rate exists for that same team/match/matchtype, that match is **excluded from scoring calculations**.
 - Team view, match view, and picklist show a **red error box** listing which matches were skipped and why.
 - This prevents raw timer seconds from being treated as scored piece counts.
@@ -1790,6 +1883,8 @@ For any `holdTimer` field:
 - `holdTimer.scoutLeads` (if provided) must be an object.
 - `scoutLeads.rateLabel` must be a string when present.
 - `scoutLeads.defaultRate` must be numeric when present.
+- `scoutLeads.group` must be a string when present.
+- `scoutLeads.groupLabel` must be a string when present.
 - `holdTimer.dbColumn.type` should be numeric (`NUMERIC`, `DECIMAL`, or `INTEGER`).
 
 ---

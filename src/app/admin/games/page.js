@@ -63,9 +63,22 @@ const BackIcon = () => (
   </svg>
 );
 
+const LockIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
 export default function GamesPage() {
+  // Auth state
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [adminPassword, setAdminPassword] = useState('');
+
+  // Data state
   const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -79,13 +92,108 @@ export default function GamesPage() {
   const [validationResult, setValidationResult] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
 
+  // Custom confirm modal state
+  const [modal, setModal] = useState(null);
+
   const fileInputRef = useRef(null);
+  const createFormRef = useRef(null);
   const router = useRouter();
 
-  // Fetch games on mount
+  // Check admin auth on mount
   useEffect(() => {
-    fetchGames();
+    checkAuth();
   }, []);
+
+  // Scroll to create form when shown
+  useEffect(() => {
+    if (showCreateForm && createFormRef.current) {
+      setTimeout(() => {
+        createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [showCreateForm]);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/admin/validate', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Auth-Check': 'true',
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        setAuthenticated(true);
+        fetchGames();
+      } else {
+        setAuthenticated(false);
+      }
+    } catch (err) {
+      setAuthenticated(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleAdminAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sudoPassword: adminPassword }),
+      });
+      if (response.ok) {
+        setAuthenticated(true);
+        setAdminPassword('');
+        fetchGames();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Authentication failed');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+      setAdminPassword('');
+    }
+  };
+
+  // --- Custom modal helpers ---
+  const hideModal = () => setModal(null);
+
+  const showConfirm = (message) =>
+    new Promise((resolve) => {
+      setModal({
+        message,
+        actions: [
+          { label: 'Cancel', className: styles.modalCancelButton, callback: () => { hideModal(); resolve(false); } },
+          { label: 'Confirm', className: styles.modalConfirmButton, callback: () => { hideModal(); resolve(true); } },
+        ],
+      });
+    });
+
+  const showDeleteConfirm = (gameName, hasData) =>
+    new Promise((resolve) => {
+      const message = hasData
+        ? `Delete "${gameName}"? This game has scouting data. You can delete just the config, or the config and all scouting data.`
+        : `Delete "${gameName}"?`;
+      const actions = hasData
+        ? [
+            { label: 'Cancel', className: styles.modalCancelButton, callback: () => { hideModal(); resolve(null); } },
+            { label: 'Delete Config Only', className: styles.modalConfirmButton, callback: () => { hideModal(); resolve(false); } },
+            { label: 'Delete With All Data', className: styles.modalDangerButton, callback: () => { hideModal(); resolve(true); } },
+          ]
+        : [
+            { label: 'Cancel', className: styles.modalCancelButton, callback: () => { hideModal(); resolve(null); } },
+            { label: 'Delete', className: styles.modalDangerButton, callback: () => { hideModal(); resolve(false); } },
+          ];
+      setModal({ message, actions });
+    });
+  // ----------------------------
 
   const fetchGames = async () => {
     setLoading(true);
@@ -98,7 +206,7 @@ export default function GamesPage() {
         const data = await response.json();
         setGames(data.games || []);
       } else if (response.status === 401) {
-        router.push('/admin');
+        setAuthenticated(false);
       } else {
         const data = await response.json();
         setError(data.message || 'Failed to fetch games');
@@ -131,12 +239,9 @@ export default function GamesPage() {
         return;
       }
 
-      // Use POST with a validate action
       const response = await fetch('/api/admin/games', {
         method: 'OPTIONS',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ configJson: config }),
         credentials: 'include',
       });
@@ -146,7 +251,6 @@ export default function GamesPage() {
 
       if (data.valid) {
         setSuccess('Configuration is valid!');
-        // Auto-fill game name and display name from config if empty
         if (!newGame.gameName && config.gameName) {
           setNewGame(prev => ({ ...prev, gameName: config.gameName }));
         }
@@ -187,9 +291,7 @@ export default function GamesPage() {
 
       const response = await fetch('/api/admin/games', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gameName: newGame.gameName,
           displayName: newGame.displayName,
@@ -224,9 +326,10 @@ export default function GamesPage() {
   };
 
   const handleActivateGame = async (gameId, gameName) => {
-    if (!confirm(`Activate "${gameName}" as the current game? This will deactivate any other active game.`)) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      `Activate "${gameName}" as the current game? This will deactivate any other active game.`
+    );
+    if (!confirmed) return;
 
     setLoading(true);
     setError('');
@@ -254,18 +357,8 @@ export default function GamesPage() {
   };
 
   const handleDeleteGame = async (gameId, gameName, hasData) => {
-    const confirmMsg = hasData
-      ? `Delete "${gameName}"? This game has scouting data. Do you also want to delete all the data?`
-      : `Delete "${gameName}"?`;
-
-    if (!confirm(confirmMsg)) {
-      return;
-    }
-
-    let dropTable = false;
-    if (hasData) {
-      dropTable = confirm('Click OK to also delete all scouting data, or Cancel to keep the data table.');
-    }
+    const dropTable = await showDeleteConfirm(gameName, hasData);
+    if (dropTable === null) return; // cancelled
 
     setLoading(true);
     setError('');
@@ -299,7 +392,6 @@ export default function GamesPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        // Validate it's valid JSON
         JSON.parse(event.target.result);
         setNewGame(prev => ({ ...prev, configJson: event.target.result }));
         setError('');
@@ -312,14 +404,12 @@ export default function GamesPage() {
       setError('Failed to read file');
     };
     reader.readAsText(file);
-
-    // Reset file input
     e.target.value = '';
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString(undefined, {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -330,8 +420,84 @@ export default function GamesPage() {
 
   const activeGame = games.find(g => g.is_active);
 
+  // --- Auth loading screen ---
+  if (authLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Verifying authentication...</div>
+      </div>
+    );
+  }
+
+  // --- Admin login form ---
+  if (!authenticated) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            <BackIcon /> Back to Admin
+          </button>
+          <h1 className={styles.title}>
+            <GameIcon /> Game Management
+          </h1>
+          <div />
+        </div>
+
+        <div className={styles.card} style={{ maxWidth: 480, margin: '0 auto' }}>
+          <div className={styles.cardHeader}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: '#bd9748' }}>
+              <LockIcon /> Admin Authentication Required
+            </h2>
+          </div>
+          {error && <div className={styles.errorBanner}>{error}</div>}
+          <form onSubmit={handleAdminAuth} className={styles.createForm}>
+            <div className={styles.formGroup}>
+              <label htmlFor="adminPassword">Admin Password</label>
+              <input
+                type="password"
+                id="adminPassword"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className={styles.input}
+                placeholder="Enter administrator password"
+                autoFocus
+                autoComplete="current-password"
+              />
+            </div>
+            <div className={styles.formActions}>
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={loading || !adminPassword}
+              >
+                {loading ? 'Verifying...' : 'Login'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main page ---
   return (
     <div className={styles.container}>
+      {/* Custom confirmation modal */}
+      {modal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <p className={styles.modalMessage}>{modal.message}</p>
+            <div className={styles.modalActions}>
+              {modal.actions.map((action, i) => (
+                <button key={i} className={action.className} onClick={action.callback}>
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.header}>
         <button onClick={() => router.push('/admin')} className={styles.backButton}>
           <BackIcon /> Back to Admin
@@ -370,7 +536,7 @@ export default function GamesPage() {
             onClick={() => setShowCreateForm(!showCreateForm)}
             className={styles.createButton}
           >
-            <PlusIcon /> Create New Game
+            <PlusIcon /> {showCreateForm ? 'Cancel' : 'Create New Game'}
           </button>
         </div>
 
@@ -435,7 +601,7 @@ export default function GamesPage() {
 
       {/* Create New Game Form */}
       {showCreateForm && (
-        <div className={styles.card}>
+        <div className={styles.card} ref={createFormRef}>
           <div className={styles.cardHeader}>
             <h2>Create New Game</h2>
             <button onClick={() => setShowCreateForm(false)} className={styles.closeButton}>

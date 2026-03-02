@@ -73,7 +73,8 @@ export async function GET(request) {
 
     // Fetch team names from TBA (best effort)
     try {
-      const tbaEventCode = gameConfig?.tbaEventCode || process.env.TBA_EVENT_CODE || '2025njbe';
+      const tbaEventCode = gameConfig?.tbaEventCode || process.env.TBA_EVENT_CODE;
+      if (!tbaEventCode) throw new Error("No TBA event code configured");
       const tbaResp = await fetch(`https://www.thebluealliance.com/api/v3/event/${tbaEventCode}/teams`, {
         headers: {
           "X-TBA-Auth-Key": process.env.TBA_AUTH_KEY,
