@@ -47,11 +47,11 @@ function buildDisplayItems(timerSummary) {
 
 /**
  * Compute a soft hsl background color from a confidence average.
- * value=1 → red (hue 0), value=max → green (hue 120).
+ * value=1 → red (hue 0), value=6 → green (hue 120).
  */
-function getConfidenceColor(value, max) {
-  if (!value || !max || max <= 1) return "#ffffff";
-  const ratio = Math.min(1, Math.max(0, (value - 1) / (max - 1)));
+function getConfidenceColor(value) {
+  if (!value || value <= 1) return "#ffffff";
+  const ratio = Math.min(1, Math.max(0, (value - 1) / 5)); // 1–6 scale → 0–1
   const hue = Math.round(ratio * 120);
   return `hsl(${hue}, 65%, 93%)`;
 }
@@ -61,7 +61,7 @@ function getConfidenceColor(value, max) {
  * For multiSelect, fieldDef.options is an array of { name, label }.
  */
 function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
-  const { type, name, options = [], max = 5 } = fieldDef;
+  const { type, name, options = [] } = fieldDef;
   const value = editing ? (editValues[name] !== undefined ? editValues[name] : entry[name]) : entry[name];
 
   if (type === "checkbox") {
@@ -172,12 +172,15 @@ function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
   }
 
   if (type === "starRating" || type === "qualitative") {
-    if (!editing) return <span>{value != null ? `${value} / ${max} ★` : "—"}</span>;
+    if (!editing) {
+      if (value == null) return <span>—</span>;
+      return <span>{value} / 6 ★</span>;
+    }
     return (
       <input
         type="number"
         min={0}
-        max={max}
+        max={6}
         value={editValues[name] ?? ""}
         onChange={(e) => onChange(name, e.target.value === "" ? null : Number(e.target.value))}
         className={styles.entryInput}
@@ -242,11 +245,23 @@ function flattenConfigFields(config) {
 
   function processField(field) {
     if (!field) return;
-    // table and collapsible are containers — include them so nested fields render grouped
+    // Named containers: push the whole thing so renderEntryField can show them grouped.
+    // Unnamed containers (e.g. collapsibles with only "id"): recurse into content so their
+    // leaf fields still appear — otherwise any star ratings / counters inside are silently lost.
     if (field.type === "table" || field.type === "collapsible") {
       if (field.name && !seen.has(field.name)) {
         seen.add(field.name);
         fields.push(field);
+        return; // grouped rendering handled by renderEntryField
+      }
+      // unnamed container — flatten content directly
+      if (field.type === "table" && Array.isArray(field.rows)) {
+        field.rows.forEach((row) => {
+          if (Array.isArray(row.fields)) row.fields.forEach(processField);
+        });
+      } else if (field.type === "collapsible") {
+        if (field.trigger) processField(field.trigger);
+        if (Array.isArray(field.content)) field.content.forEach(processField);
       }
       return;
     }
@@ -539,7 +554,7 @@ export default function ScoutLeadsPage() {
       .filter((v) => Number.isFinite(v) && v > 0);
     if (!values.length) return "#ffffff";
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    return getConfidenceColor(avg, confidenceRatingField.max || 5);
+    return getConfidenceColor(avg);
   }, [confidenceRatingField, allScoutingRows]);
 
   const formatTimestamp = (ts) => {

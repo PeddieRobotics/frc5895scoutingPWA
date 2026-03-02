@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> [!CAUTION]
+> **🚨✨ DO NOT HARDCODE DATA ✨🚨**
+> **ALL game-specific values — team numbers, field names, table names, match data, thresholds, labels, config keys — MUST come from the active JSON game config or the database. Never hardcode these into source code. The entire system is config-driven by design. Violating this breaks every future game season.**
+
 ## Commands
 
 ```bash
@@ -103,6 +107,7 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 - `isConfidenceRating: true` on a single `starRating`/`qualitative` field drives a red→green section background based on average confidence. `extractConfidenceRatingField()` in `schema-generator.js` extracts this field client-side.
 - The GET `/api/scout-leads` now returns `allScoutingRows` (all rows including noshow) and `currentUserTeam` in addition to existing timer data.
 - Edits are saved via `PATCH /api/edit-match-entry` which validates auth, checks allowed fields against config, and uses parameterized SQL.
+- **`starRating`/`qualitative` fields always render 6 stars.** The `Qualitative` component hardcodes `[1,2,3,4,5,6]`. Do not add `max` to these fields — it is stripped from all configs and ignored everywhere in the codebase.
 
 ### Display Config Validation
 

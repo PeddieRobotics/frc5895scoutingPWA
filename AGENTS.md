@@ -2,6 +2,10 @@
 
 Project-specific guidance for coding agents working in `frc5895scoutingPWA`.
 
+> [!CAUTION]
+> **🚨✨ DO NOT HARDCODE DATA ✨🚨**
+> **ALL game-specific values — team numbers, field names, table names, match data, thresholds, labels, config keys — MUST come from the active JSON game config or the database. Never hardcode these into source code. The entire system is config-driven by design. Violating this breaks every future game season.**
+
 ## Overview
 
 - Stack: Next.js 15 (App Router), React 19, Node/npm
@@ -175,6 +179,10 @@ All fields with `"group": "Fuel"` collapse into one "Fuel Scoring" card with:
   4. Otherwise → 403
 - **Allowed fields:** All config-defined fields from `extractFieldsFromConfig(config)` **minus** `IMMUTABLE_FIELDS` (`id`, `team`, `match`, `matchtype`, `scoutteam`, `timestamp`). `scoutname` and `noshow` are always editable.
 - **Why NOT `update-row`:** The legacy `/api/update-row` is hardcoded to a specific table with a hardcoded field allowlist. The new endpoint is fully config-driven using `getActiveGame()` and `extractFieldsFromConfig()`.
+
+### `starRating` / `qualitative` — always 6 stars
+
+The `Qualitative.js` component hardcodes `[1,2,3,4,5,6]`. The `max` property **does not exist** for these field types — it is not in the JSON configs, not validated, not passed to components, and not used anywhere in calculations or display. All star rating values are on a fixed 1–6 scale. Inverted ratings (e.g. aggression) are calculated as `6 - rating`.
 
 ### `isConfidenceRating` tag
 

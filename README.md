@@ -741,11 +741,12 @@ A star-based rating system (1-N stars).
 | `name` | string | Yes | Database column name |
 | `label` | string | Yes | Display label |
 | `description` | string | No | Tooltip or helper text |
-| `max` | number | No | Maximum stars (default: 5, max: 10) |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
 | `isConfidenceRating` | boolean | No | Marks this field as the primary confidence indicator for `/scout-leads` section background (red→green). At most one field per config. |
 | `dbColumn` | object | Yes | Database column configuration |
+
+> **Star ratings are always out of 6.** The `Qualitative` component renders exactly 6 stars for both `starRating` and `qualitative` field types. Do not add a `max` property — it is not used by the component, the form, or any display/calculation logic.
 
 **Database Type:** `INTEGER`
 
@@ -779,6 +780,7 @@ A star-based rating system (1-N stars).
 **Renders as:** Clickable stars. User clicks to select rating (1 to max).
 
 **About `minWhenVisible`:** Use this inside collapsible sections to require a rating when the section is expanded. Example: If defense is checked, require a defense rating.
+
 
 ---
 

@@ -189,7 +189,7 @@ export default function Home() {
     }
 
     new JSConfetti().addConfetti({
-      emojis: ['🐠', '🐡', '🦀', '🪸'],
+      emojis: ['🦴', '🧱', '☀️', '⭐'],
       emojiSize: 100,
       confettiRadius: 3,
       confettiNumber: 100,

@@ -190,13 +190,18 @@ export function aggregateTeamData(rows, config, calcFns) {
     ...d, tele: Math.round(d.tele * 100) / 100
   }));
 
-  // Pass over time — computed for any holdTimer pass fields present in the data
-  const autoPassOverTime = computeMatchAverages(teamTable, 'autopasssuccess').map(d => ({
-    ...d, autopasssuccess: Math.round(d.autopasssuccess * 100) / 100
-  }));
-  const telePassOverTime = computeMatchAverages(teamTable, 'telepasssuccess').map(d => ({
-    ...d, telepasssuccess: Math.round(d.telepasssuccess * 100) / 100
-  }));
+  // Pass-line data — config-driven from passLine chart entries in teamView sections
+  const passLineData = {};
+  Object.values(teamViewConfig.sections || {}).forEach(section => {
+    (section.charts || []).forEach(chart => {
+      if (chart.type === 'passLine' && chart.dataKey && chart.valueKey) {
+        passLineData[chart.dataKey] = computeMatchAverages(teamTable, chart.valueKey).map(d => ({
+          ...d,
+          [chart.valueKey]: Math.round(d[chart.valueKey] * 100) / 100,
+        }));
+      }
+    });
+  });
 
   // Consistency — use config-driven breakdown field
   const uniqueMatches = new Set(teamTable.map(r => r.match));
@@ -411,7 +416,7 @@ export function aggregateTeamData(rows, config, calcFns) {
   const qualitative = (teamViewConfig.qualitativeDisplay || []).map(q => {
     const vals = rows.filter(r => r[q.name] != null && r[q.name] != -1).map(r => Number(r[q.name]));
     let rating = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-    if (q.inverted) rating = (q.max || 5) - rating;
+    if (q.inverted) rating = 6 - rating;
     return { name: q.label, rating };
   });
 
@@ -443,7 +448,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     avgEpa, avgAuto, avgTele, avgEnd,
     last3Epa, last3Auto, last3Tele, last3End,
     epaOverTime, autoOverTime, teleOverTime,
-    autoPassOverTime, telePassOverTime,
+    ...passLineData,
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
     ...commentData,

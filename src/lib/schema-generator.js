@@ -307,6 +307,7 @@ function extractTimerFieldsFromConfig(config) {
 
     if (field.type === 'holdTimer' && field.name && !seen.has(field.name)) {
       seen.add(field.name);
+      if (!field.scoutLeads) return; // raw-only field: no scout-leads rate, skip scoutleads table
       const dbColumn = field.dbColumn || getDefaultDbColumn('holdTimer');
       const scoutLeadsDbColumn = field.scoutLeads?.dbColumn || { type: 'NUMERIC(10,4)', default: 0 };
       const rateDefaultFromConfig = field.scoutLeads?.defaultRate;
@@ -487,7 +488,7 @@ function extractConfidenceRatingField(config) {
       (field.type === 'starRating' || field.type === 'qualitative') &&
       field.name
     ) {
-      found = { name: field.name, label: field.label || field.name, max: field.max || 5 };
+      found = { name: field.name, label: field.label || field.name };
       return;
     }
 

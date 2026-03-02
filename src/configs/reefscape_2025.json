@@ -492,7 +492,6 @@
               "name": "defenseplayed",
               "label": "Defense Played",
               "description": "Ability to Play Defense",
-              "max": 6,
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -641,7 +640,6 @@
           "type": "starRating",
           "name": "coralspeed",
           "label": "Coral Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -651,7 +649,6 @@
           "type": "starRating",
           "name": "processorspeed",
           "label": "Processor Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -661,7 +658,6 @@
           "type": "starRating",
           "name": "netspeed",
           "label": "Net Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -671,7 +667,6 @@
           "type": "starRating",
           "name": "algaeremovalspeed",
           "label": "Algae Removal Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -681,7 +676,6 @@
           "type": "starRating",
           "name": "climbspeed",
           "label": "Climb Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -691,7 +685,6 @@
           "type": "starRating",
           "name": "maneuverability",
           "label": "Maneuverability",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -701,7 +694,6 @@
           "type": "starRating",
           "name": "defenseevasion",
           "label": "Defense Evasion",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -711,7 +703,6 @@
           "type": "starRating",
           "name": "aggression",
           "label": "Aggression",
-          "max": 6,
           "inverted": true,
           "dbColumn": {
             "type": "INTEGER",
@@ -722,7 +713,6 @@
           "type": "starRating",
           "name": "cagehazard",
           "label": "Cage Hazard",
-          "max": 6,
           "inverted": true,
           "dbColumn": {
             "type": "INTEGER",

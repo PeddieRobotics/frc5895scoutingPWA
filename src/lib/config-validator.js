@@ -547,13 +547,6 @@ function validateStarRatingField(field, path, fieldNames, result) {
     result.confidenceRatingCount++;
   }
 
-  // Validate max
-  if (field.max !== undefined) {
-    if (typeof field.max !== 'number' || field.max < 1 || field.max > 10) {
-      result.addWarning('starRating max should be a number between 1 and 10', `${path}.max`);
-    }
-  }
-
   // Validate minWhenVisible
   if (field.minWhenVisible !== undefined) {
     if (typeof field.minWhenVisible !== 'number') {

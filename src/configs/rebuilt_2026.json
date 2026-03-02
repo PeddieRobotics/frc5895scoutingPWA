@@ -59,17 +59,6 @@
           "dbColumn": {
             "type": "NUMERIC(10,3)",
             "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Passes / Second",
-            "placeholder": "e.g. 1.50",
-            "defaultRate": 0,
-            "group": "Pass",
-            "groupLabel": "Pass Scoring",
-            "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
-            }
           }
         },
         {
@@ -137,17 +126,6 @@
           "dbColumn": {
             "type": "NUMERIC(10,3)",
             "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Passes / Second",
-            "placeholder": "e.g. 1.50",
-            "defaultRate": 0,
-            "group": "Pass",
-            "groupLabel": "Pass Scoring",
-            "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
-            }
           }
         },
         {
@@ -177,7 +155,6 @@
               "name": "defenseplayed",
               "label": "Defense Played",
               "description": "Ability to Play Defense",
-              "max": 6,
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -243,8 +220,8 @@
           "name": "scouterconfidence",
           "label": "Scouter Confidence",
           "description": "How confident are you in your scouting this match?",
-          "max": 5,
           "minWhenVisible": 1,
+          "isConfidenceRating": true,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -353,7 +330,6 @@
           "type": "starRating",
           "name": "shootingspeed",
           "label": "Shooting Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -363,7 +339,6 @@
           "type": "starRating",
           "name": "shootingaccuracy",
           "label": "Shooting Accuracy",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -373,7 +348,6 @@
           "type": "starRating",
           "name": "intakespeed",
           "label": "Intake Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -383,7 +357,6 @@
           "type": "starRating",
           "name": "climbspeed",
           "label": "Climb Speed",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -393,7 +366,6 @@
           "type": "starRating",
           "name": "maneuverability",
           "label": "Maneuverability",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -403,7 +375,6 @@
           "type": "starRating",
           "name": "defenseevasion",
           "label": "Defense Evasion",
-          "max": 6,
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -413,7 +384,6 @@
           "type": "starRating",
           "name": "aggression",
           "label": "Aggression",
-          "max": 6,
           "inverted": true,
           "dbColumn": {
             "type": "INTEGER",
