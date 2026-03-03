@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useGameConfig from "../../lib/useGameConfig";
 import { extractTimerFieldsFromConfig, extractConfidenceRatingField } from "../../lib/schema-generator";
 import styles from "./page.module.css";
@@ -341,6 +341,22 @@ export default function ScoutLeadsPage() {
   const [savingEntry, setSavingEntry] = useState(false);
   const [entryError, setEntryError] = useState("");
 
+  // Scout lead comment state
+  const [commentText, setCommentText] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
+  const [commentError, setCommentError] = useState("");
+  const [commentSuccess, setCommentSuccess] = useState("");
+  const [scoutLeadsRows, setScoutLeadsRows] = useState([]);
+
+  // Sidebar rankings state
+  const [sidebarWeights, setSidebarWeights] = useState({});
+  const [sidebarTeams, setSidebarTeams] = useState([]);
+  const [sidebarLoading, setSidebarLoading] = useState(false);
+  const [sidebarError, setSidebarError] = useState("");
+  const [expandedTeam, setExpandedTeam] = useState(null);
+  const [allComments, setAllComments] = useState([]);
+  const sidebarWeightsRef = useRef();
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const profile = localStorage.getItem("ScoutProfile");
@@ -358,6 +374,36 @@ export default function ScoutLeadsPage() {
       // Ignore malformed localStorage profile.
     }
   }, []);
+
+  // Load all scout lead comments on mount
+  useEffect(() => {
+    async function loadAllComments() {
+      try {
+        const response = await fetch("/api/scout-lead-comments", {
+          credentials: "include",
+          headers: getAuthHeaders(),
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        setAllComments(data.comments || []);
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+    loadAllComments();
+  }, []);
+
+  // Initialize sidebar weights (all zero) when config loads
+  useEffect(() => {
+    const weightsConfig = config?.display?.picklist?.weights || [];
+    if (weightsConfig.length === 0) return;
+    setSidebarWeights((prev) => {
+      if (Object.keys(prev).length > 0) return prev;
+      const initial = {};
+      weightsConfig.forEach((w) => { initial[w.key] = "0"; });
+      return initial;
+    });
+  }, [config]);
 
   const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
     setError("");
@@ -404,6 +450,14 @@ export default function ScoutLeadsPage() {
       setRates(normalizedRates);
       setAllScoutingRows(data.allScoutingRows || []);
       setCurrentUserTeam(data.currentUserTeam ?? null);
+
+      const fetchedLeadsRows = data.scoutLeadsRows || [];
+      setScoutLeadsRows(fetchedLeadsRows);
+      const myRow = fetchedLeadsRows.find(
+        (r) => r.scoutname && scoutName &&
+          r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
+      );
+      setCommentText(myRow?.comment || "");
       setLoadedRecordMeta({
         scoutingRows: (data.allScoutingRows || []).length,
         scoutLeadRows: data.scoutLeadsRows?.length || 0,
@@ -473,6 +527,92 @@ export default function ScoutLeadsPage() {
       setError(saveError.message || "Failed to save scout lead rates.");
     } finally {
       setSavingData(false);
+    }
+  };
+
+  const generateRankings = async () => {
+    setSidebarError("");
+    setSidebarLoading(true);
+    try {
+      const formData = new FormData(sidebarWeightsRef.current);
+      const weightEntries = [...formData.entries()];
+      const response = await fetch("/api/compute-picklist", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(weightEntries),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || `Server error (${response.status})`);
+      }
+
+      const data = await response.json();
+      setSidebarTeams(data.teamTable || []);
+
+      // Refresh all comments after generating rankings
+      const commentRes = await fetch("/api/scout-lead-comments", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (commentRes.ok) {
+        const commentData = await commentRes.json();
+        setAllComments(commentData.comments || []);
+      }
+    } catch (err) {
+      setSidebarError(err.message || "Failed to generate rankings.");
+    } finally {
+      setSidebarLoading(false);
+    }
+  };
+
+  const saveComment = async () => {
+    setCommentError("");
+    setCommentSuccess("");
+
+    if (!team || !match) {
+      setCommentError("Load a team and match first.");
+      return;
+    }
+
+    if (!scoutName.trim()) {
+      setCommentError("Enter your Scout Lead Name above before saving a comment.");
+      return;
+    }
+
+    setSavingComment(true);
+    try {
+      const response = await fetch("/api/scout-leads", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          scoutname: scoutName.trim(),
+          team: Number(team),
+          match: Number(match),
+          matchType: Number(matchType),
+          comment: commentText,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to save comment (${response.status})`);
+      }
+
+      setCommentSuccess("Comment saved.");
+      await fetchTimerData({ showLoadedMessage: false });
+    } catch (err) {
+      setCommentError(err.message || "Failed to save comment.");
+    } finally {
+      setSavingComment(false);
     }
   };
 
@@ -569,8 +709,124 @@ export default function ScoutLeadsPage() {
     }
   };
 
+  const picklistWeightsConfig = config?.display?.picklist?.weights || [];
+  const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"];
+
+  // Group all comments by team for the sidebar
+  const commentsByTeam = useMemo(() => {
+    const map = {};
+    allComments.forEach((c) => {
+      if (!map[c.team]) map[c.team] = [];
+      map[c.team].push(c);
+    });
+    return map;
+  }, [allComments]);
+
   return (
     <div className={styles.page}>
+      <div className={styles.pageLayout}>
+
+      {/* ── Rankings Sidebar ──────────────────────────────── */}
+      <aside className={styles.sidebar}>
+        <h2 className={styles.sidebarTitle}>Team Rankings</h2>
+
+        {picklistWeightsConfig.length === 0 && !configLoading && (
+          <p className={styles.sidebarNote}>
+            No picklist weights configured. Add a <code>display.picklist.weights</code> section to your game config.
+          </p>
+        )}
+
+        {picklistWeightsConfig.length > 0 && (
+          <form ref={sidebarWeightsRef} onSubmit={(e) => { e.preventDefault(); generateRankings(); }}>
+            {/* Hidden inputs so FormData still sends all weight values */}
+            {picklistWeightsConfig.map((w) => (
+              <input key={w.key} type="hidden" name={w.key} value={sidebarWeights[w.key] ?? "0"} />
+            ))}
+            <label className={styles.field}>
+              Sort by
+              <select
+                className={styles.weightSelect}
+                value={picklistWeightsConfig.find((w) => sidebarWeights[w.key] === "1")?.key ?? ""}
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  const next = {};
+                  picklistWeightsConfig.forEach((w) => {
+                    next[w.key] = w.key === selected ? "1" : "0";
+                  });
+                  setSidebarWeights(next);
+                }}
+              >
+                <option value="" disabled>Select a metric…</option>
+                {picklistWeightsConfig.map((w) => (
+                  <option key={w.key} value={w.key}>{w.label}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className={styles.primaryButton}
+              disabled={sidebarLoading}
+            >
+              {sidebarLoading ? "Calculating..." : "Generate Rankings"}
+            </button>
+          </form>
+        )}
+
+        {sidebarError && <div className={styles.error}>{sidebarError}</div>}
+
+        {sidebarTeams.length > 0 && (
+          <ol className={styles.teamRankList}>
+            {sidebarTeams.map((t, idx) => {
+              const teamComments = commentsByTeam[t.team] || [];
+              const isExpanded = expandedTeam === t.team;
+              return (
+                <li
+                  key={t.team}
+                  className={`${styles.teamRankItem} ${isExpanded ? styles.teamRankItemExpanded : ""} ${teamComments.length > 0 ? styles.teamRankItemHasComments : ""}`}
+                  onClick={() => setExpandedTeam(isExpanded ? null : t.team)}
+                >
+                  <div className={styles.teamRankRow}>
+                    <span className={styles.teamRankNum}>{idx + 1}</span>
+                    <span className={styles.teamRankTeam}>
+                      {t.team}
+                      {teamComments.length > 0 && (
+                        <span className={styles.teamCommentBadge}>{teamComments.length}</span>
+                      )}
+                    </span>
+                    <span className={styles.teamRankScore}>{Number(t.score ?? 0).toFixed(1)}</span>
+                    {teamComments.length > 0 && (
+                      <span className={styles.teamExpandIcon}>{isExpanded ? "▲" : "▼"}</span>
+                    )}
+                  </div>
+                  {isExpanded && teamComments.length > 0 && (
+                    <div className={styles.teamCommentExpanded}>
+                      {teamComments.map((c) => (
+                        <div key={c.id} className={styles.teamCommentEntry}>
+                          <div className={styles.teamCommentMeta}>
+                            <strong>{c.scoutname || "Unknown"}</strong>
+                            <span>
+                              {matchTypeLabel[c.matchtype] ?? `Type ${c.matchtype}`} {c.match}
+                            </span>
+                          </div>
+                          <p className={styles.teamCommentText}>{c.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {isExpanded && teamComments.length === 0 && (
+                    <p className={styles.teamCommentEmpty}>No scout lead comments for this team.</p>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+
+        {sidebarTeams.length === 0 && !sidebarLoading && picklistWeightsConfig.length > 0 && (
+          <p className={styles.sidebarNote}>Set weights and click Generate Rankings.</p>
+        )}
+      </aside>
+
       <div className={styles.container}>
         <h1 className={styles.title}>Scout Leads</h1>
         <p className={styles.subtitle}>
@@ -772,6 +1028,69 @@ export default function ScoutLeadsPage() {
           </button>
         )}
 
+        {/* Scout Lead Comments section */}
+        {loadedRecordMeta && (
+          <section className={styles.commentsSection}>
+            <h2 className={styles.commentsSectionTitle}>Scout Lead Comments</h2>
+
+            {/* Other scout leads' comments (read-only) */}
+            {scoutLeadsRows.filter((r) => r.comment && r.comment.trim()).length > 0 && (
+              <div className={styles.commentsList}>
+                {scoutLeadsRows
+                  .filter((r) => r.comment && r.comment.trim())
+                  .reduce((acc, r) => {
+                    // dedupe by scoutname, keep first occurrence
+                    const key = (r.scoutname || "").trim().toLowerCase();
+                    if (!acc.seen.has(key)) {
+                      acc.seen.add(key);
+                      acc.rows.push(r);
+                    }
+                    return acc;
+                  }, { seen: new Set(), rows: [] })
+                  .rows
+                  .filter((r) => {
+                    const key = (r.scoutname || "").trim().toLowerCase();
+                    const myKey = scoutName.trim().toLowerCase();
+                    return key !== myKey;
+                  })
+                  .map((r) => (
+                    <div key={r.id} className={styles.commentCard}>
+                      <span className={styles.commentAuthor}>{r.scoutname || "Unknown"}</span>
+                      <p className={styles.commentText}>{r.comment}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Current scout lead's editable comment */}
+            {commentError && <div className={styles.error}>{commentError}</div>}
+            {commentSuccess && <div className={styles.success}>{commentSuccess}</div>}
+            <div className={styles.commentEntry}>
+              {scoutName.trim() && (
+                <span className={styles.commentEntryLabel}>
+                  {scoutName.trim()} (you)
+                </span>
+              )}
+              <textarea
+                className={styles.commentTextarea}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={scoutName.trim() ? "Add your scout lead comment…" : "Enter your name above to add a comment"}
+                disabled={!scoutName.trim() || !loadedRecordMeta}
+                rows={3}
+              />
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={saveComment}
+                disabled={savingComment || !scoutName.trim() || !loadedRecordMeta}
+              >
+                {savingComment ? "Saving..." : "Save Comment"}
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Admin unlock section */}
         {allScoutingRows.length > 0 && !adminUnlocked && (
           <div className={styles.adminUnlock}>
@@ -925,6 +1244,7 @@ export default function ScoutLeadsPage() {
         {timerSummary.length === 0 && allScoutingRows.length === 0 && !loadingData && loadedRecordMeta && (
           <div className={styles.info}>No scouting entries found for this team/match.</div>
         )}
+      </div>
       </div>
     </div>
   );

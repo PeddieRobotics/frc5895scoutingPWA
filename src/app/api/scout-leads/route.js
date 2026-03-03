@@ -237,6 +237,92 @@ export async function GET(request) {
   }
 }
 
+export async function PATCH(request) {
+  const { isValid, teamName, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json(
+      { message: error || "Authentication required" },
+      { status: 401 }
+    );
+  }
+
+  const body = await request.json();
+  const team = parseNumber(body.team);
+  const match = parseNumber(body.match);
+  const matchTypeRaw = body.matchType ?? body.matchtype ?? 2;
+  const scoutName = typeof body.scoutname === "string" ? body.scoutname.trim() : null;
+  const comment = typeof body.comment === "string" ? body.comment : "";
+
+  if (!Number.isInteger(team) || !Number.isInteger(match)) {
+    return NextResponse.json(
+      { message: "team and match are required" },
+      { status: 400 }
+    );
+  }
+
+  if (!scoutName) {
+    return NextResponse.json(
+      { message: "scoutname is required to save a comment" },
+      { status: 400 }
+    );
+  }
+
+  let activeGame = null;
+  try {
+    activeGame = await getActiveGame();
+  } catch (gameError) {
+    console.error("[scout-leads] Error loading active game:", gameError);
+  }
+
+  if (!activeGame?.table_name) {
+    return NextResponse.json(
+      { message: "No active game configured.", error: "NO_ACTIVE_GAME" },
+      { status: 400 }
+    );
+  }
+
+  const { match: storedMatch, matchType } = normalizeMatchForStorage(match, matchTypeRaw);
+  if (!Number.isInteger(storedMatch)) {
+    return NextResponse.json({ message: "Invalid match number" }, { status: 400 });
+  }
+
+  let scoutLeadsInfo;
+  try {
+    scoutLeadsInfo = await ensureScoutLeadsTableForGame(activeGame);
+  } catch (tableError) {
+    return NextResponse.json(
+      { message: "Failed to initialize scout leads table", error: tableError.message },
+      { status: 500 }
+    );
+  }
+
+  const scoutLeadsTableName = assertSafeTableName(scoutLeadsInfo.tableName);
+  const client = await pool.connect();
+  try {
+    // Try to update an existing row for this scout lead + team + match
+    const updateResult = await client.query(
+      `UPDATE ${scoutLeadsTableName}
+       SET comment = $1
+       WHERE LOWER(TRIM(scoutname)) = LOWER(TRIM($2)) AND team = $3 AND match = $4 AND matchtype = $5
+       RETURNING *`,
+      [comment, scoutName, team, storedMatch, matchType]
+    );
+
+    if (updateResult.rowCount === 0) {
+      // No existing row — insert a comment-only row
+      await client.query(
+        `INSERT INTO ${scoutLeadsTableName} (scoutname, scoutteam, team, match, matchtype, comment)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [scoutName, teamName || null, team, storedMatch, matchType, comment]
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Comment saved." });
+  } finally {
+    client.release();
+  }
+}
+
 export async function POST(request) {
   const { isValid, teamName, error } = await validateAuthToken(request);
   if (!isValid) {

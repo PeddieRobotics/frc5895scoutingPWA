@@ -3,12 +3,197 @@
   padding: 20px 12px 40px;
 }
 
-.container {
+/* ── Two-column layout ───────────────────────────────────────── */
+.pageLayout {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  max-width: 1360px;
   margin: 0 auto;
-  max-width: 980px;
+  align-items: flex-start;
+}
+
+.container {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* ── Rankings Sidebar ────────────────────────────────────────── */
+.sidebar {
+  order: -1;
+  /* left on desktop */
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sidebarNote {
+  margin: 0;
+  font-size: 0.87rem;
+  color: #57606a;
+}
+
+.weightSelect {
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.93rem;
+  width: 100%;
+  background: #fff;
+  margin-bottom: 5px;
+}
+
+.teamRankList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.teamRankItem {
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.teamRankItem:hover {
+  border-color: #0969da;
+}
+
+.teamRankItemExpanded {
+  border-color: #0969da;
+  background: #f0f6ff;
+}
+
+.teamRankItemHasComments {
+  background: #fffbe6;
+  border-color: #d4a72c;
+}
+
+.teamRankItemHasComments:hover {
+  border-color: #b08800;
+}
+
+.teamRankItemExpanded.teamRankItemHasComments {
+  background: #fff3c4;
+  border-color: #0969da;
+}
+
+.teamRankRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.teamRankNum {
+  width: 22px;
+  text-align: right;
+  color: #57606a;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.teamRankTeam {
+  flex: 1;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.teamCommentBadge {
+  background: #0969da;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0px 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.teamRankScore {
+  color: #57606a;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.teamExpandIcon {
+  color: #0969da;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.teamCommentExpanded {
+  border-top: 1px solid #d0d7de;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.teamCommentEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.teamCommentMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #57606a;
+}
+
+.teamCommentMeta strong {
+  color: #24292f;
+}
+
+.teamCommentText {
+  margin: 0;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+}
+
+.teamCommentEmpty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
+@media (max-width: 768px) {
+  .pageLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    order: 1;
+    /* below main content on mobile */
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
 }
 
 .title {
@@ -225,7 +410,7 @@
   border: 1px solid #d0d7de;
   border-radius: 10px;
   padding: 12px;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -321,7 +506,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(0,0,0,0.03);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 6px;
   padding: 6px 8px;
 }
@@ -387,4 +572,78 @@
 .cancelButton:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+/* ── Scout Lead Comments section ─────────────────────────────── */
+.commentsSection {
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentsSectionTitle {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commentCard {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.commentAuthor {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #57606a;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.commentText {
+  margin: 0;
+  font-size: 0.93rem;
+  white-space: pre-wrap;
+}
+
+.commentEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.commentEntryLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0969da;
+}
+
+.commentTextarea {
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.93rem;
+  font-family: inherit;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.commentTextarea:disabled {
+  background: #f6f8fa;
+  color: #57606a;
+  cursor: not-allowed;
 }

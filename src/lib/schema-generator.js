@@ -21,6 +21,7 @@ const SCOUT_LEADS_CORE_FIELDS = [
   { name: 'match', type: 'INTEGER', required: true, default: null },
   { name: 'matchtype', type: 'INTEGER', required: false, default: 2 },
   { name: 'timestamp', type: 'TIMESTAMP', required: false, default: 'CURRENT_TIMESTAMP' },
+  { name: 'comment', type: 'TEXT', required: false, default: null },
 ];
 
 /**

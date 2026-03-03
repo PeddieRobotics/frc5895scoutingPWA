@@ -352,6 +352,9 @@ async function ensureScoutLeadsTableForGame(game, existingClient = null) {
   try {
     await client.query(createTableSQL);
 
+    // Ensure comment column exists for tables created before this was added.
+    await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS comment TEXT`);
+
     // Older versions created a unique constraint on (team, match, matchtype).
     // Remove it so multiple scout-lead entries can be averaged per match.
     const constraintsResult = await client.query(`

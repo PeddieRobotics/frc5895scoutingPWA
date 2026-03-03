@@ -58,6 +58,7 @@ function TeamView() {
     const [team, setTeam] = useState(null);
     const [hasTopBar, setHasTopBar] = useState(false);
     const [source, setSource] = useState(null);
+    const [scoutLeadComments, setScoutLeadComments] = useState([]);
 
     const { config, loading: configLoading } = useGameConfig();
     const configIssues = useMemo(() => {
@@ -122,6 +123,19 @@ function TeamView() {
             fetchTeamData(team);
         }
     }, [team, currentUserTeam, configIssues.length]);
+
+    // Fetch scout lead comments for this team
+    useEffect(() => {
+        if (!team) return;
+        const creds = (() => {
+            try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
+        })();
+        const headers = creds ? { Authorization: `Basic ${creds}` } : {};
+        fetch(`/api/scout-lead-comments?team=${team}`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d?.comments) setScoutLeadComments(d.comments); })
+            .catch(() => {});
+    }, [team]);
 
     function AllianceButtons({ t1, t2, t3, colors }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
@@ -749,6 +763,29 @@ function TeamView() {
         return [{ name: 'TOTAL', value: 0 }];
     };
 
+    // Group scout lead comments by match, deduped by (scoutname, match, matchtype, comment)
+    const commentMatchGroups = (() => {
+        const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"];
+        const seen = new Set();
+        const byMatch = {};
+        scoutLeadComments.forEach((c) => {
+            const key = `${c.scoutname}|${c.match}|${c.matchtype}|${c.comment}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            const matchKey = `${c.matchtype}_${c.match}`;
+            if (!byMatch[matchKey]) {
+                byMatch[matchKey] = {
+                    match: c.match,
+                    matchtype: c.matchtype,
+                    label: `${matchTypeLabel[c.matchtype] ?? `Type ${c.matchtype}`} ${c.match}`,
+                    entries: [],
+                };
+            }
+            byMatch[matchKey].entries.push(c);
+        });
+        return Object.values(byMatch).sort((a, b) => a.match - b.match);
+    })();
+
     return (
         <div className={styles.container}>
             {unscoredMatches.length > 0 && (
@@ -843,6 +880,24 @@ function TeamView() {
                             </div>
                             <HBox color1={Colors[0][1]} color2={Colors[0][0]} title={"Scouts"} value={safeData.scouts} />
                         </div>
+                        {commentMatchGroups.length > 0 && (
+                            <section className={styles.slCommentsSection}>
+                                <h2 className={styles.slCommentsSectionTitle}>Scout Lead Comments</h2>
+                                <div className={styles.slMatchList}>
+                                    {commentMatchGroups.map((group) => (
+                                        <div key={`${group.matchtype}_${group.match}`} className={styles.slMatchGroup}>
+                                            <div className={styles.slMatchLabel}>{group.label}</div>
+                                            {group.entries.map((c) => (
+                                                <div key={c.id} className={styles.slCommentEntry}>
+                                                    <span className={styles.slCommentAuthor}>{c.scoutname || "Unknown"}</span>
+                                                    <p className={styles.slCommentText}>{c.comment}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
                     </div>
                     <div className={styles.rightColumn}>
                         <div className={styles.topRow}>
@@ -1208,6 +1263,7 @@ function TeamView() {
                     </div>
                 </div>
             </div>
+
         </div>
     );
 }

@@ -571,4 +571,66 @@
     .graphContainer {
         width: 325px;
         margin: 10px auto;
-    }}
+    }
+}
+
+/* ── Scout Lead Comments section ─────────────────────────────── */
+.slCommentsSection {
+    margin: 24px 0 8px;
+    padding: 16px 20px;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    background: #fffbe6;
+    border-color: #d4a72c;
+}
+
+.slCommentsSectionTitle {
+    margin: 0 0 14px;
+    font-size: 1.15rem;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.slMatchList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.slMatchGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slMatchLabel {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #856404;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.slCommentEntry {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid #e6cc7a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.slCommentAuthor {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #57606a;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.slCommentText {
+    margin: 0;
+    font-size: 0.93rem;
+    white-space: pre-wrap;
+    font-family: 'Montserrat', sans-serif;
+}
