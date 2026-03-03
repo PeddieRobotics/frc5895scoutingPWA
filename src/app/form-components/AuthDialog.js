@@ -121,21 +121,8 @@ export default function AuthDialog({ isOpen, onClose, onLogin, errorMessage }) {
           
           console.log("Login successful, handling redirect");
           
-          // Call onLogin handler
+          // Call onLogin handler — it owns the redirect via authRedirectTarget
           onLogin(credentials, validateData.scoutTeam);
-          
-          // Handle redirection if a redirect URL is provided
-          if (redirectUrl) {
-            console.log(`Redirecting to: ${redirectUrl}`);
-            
-            // Use a timeout to ensure the cookies are set before redirecting
-            // A slightly longer timeout helps ensure iOS Safari has processed the cookies
-            setTimeout(() => {
-              // Use window.location for a full page reload instead of router.push
-              // This ensures the browser has the latest cookies when loading the page
-              window.location.href = redirectUrl;
-            }, 300);
-          }
         } else {
           // Something went wrong creating the session
           setError(sessionData.message || 'Error creating session');

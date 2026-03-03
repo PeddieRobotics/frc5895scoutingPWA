@@ -62,19 +62,10 @@
       }
     });
     
-    // Check for auth data in storage but no proper session cookies
-    const hasStorageAuth = localStorage.getItem('auth_credentials') || sessionStorage.getItem('auth_credentials');
-    const hasValidSessionCookie = cookies['auth_session'] || cookies['auth_session_lax'] || cookies['auth_session_secure'];
-    
-    // Only flag this as an issue if we're on a page that requires auth and user seems to expect to be logged in
-    const isAuthRequiredPage = window.location.search.includes('authRequired') || 
-                              window.location.pathname !== '/';
-    
-    if (hasStorageAuth && !hasValidSessionCookie && isAuthRequiredPage) {
-      issues.push('storage_cookie_mismatch');
-      console.log('[Auto Auth Cleanup] ⚠️ Auth in storage but no session cookies on auth-required page');
-    }
-    
+    // NOTE: auth_session, auth_session_lax, auth_session_secure are all set httpOnly by the server.
+    // JavaScript cannot read or detect httpOnly cookies via document.cookie. Session validity is
+    // enforced server-side by middleware — no client-side check needed or possible here.
+
     return issues;
   }
   
@@ -252,8 +243,7 @@
     // Clean up conflicting cookies
     cleanupConflictingCookies();
     
-    // If we have any auth issues, just clean up and ask user to log in manually
-    if (issues.includes('storage_cookie_mismatch') || hasSignificantIssues) {
+    if (hasSignificantIssues) {
       handleAuthIssues();
     }
     

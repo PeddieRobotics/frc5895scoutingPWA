@@ -62,11 +62,14 @@ export default function Home() {
           if (isValid) {
             window.location.href = target;
           } else {
-            // If validation failed, clear credentials and show auth dialog
+            // Auth definitively failed — clear and show login dialog
             clearAuthCookies();
             setAuthCredentials(null);
             setShowAuthDialog(true);
           }
+        }).catch(() => {
+          // Network error — navigate anyway and let server middleware validate
+          window.location.href = target;
         });
       }
     }
@@ -137,8 +140,10 @@ export default function Home() {
       console.log("Failed to validate credentials in client-side");
       return false;
     } catch (error) {
-      console.error("Error validating credentials:", error);
-      return false;
+      // Re-throw so callers can distinguish a real auth failure (returns false)
+      // from a transient network/abort error (throws). This prevents a fetch
+      // abort caused by page navigation from being treated as "logged out".
+      throw error;
     }
   };
 
@@ -473,10 +478,15 @@ export default function Home() {
             setAuthCredentials(credentials);
             console.log("Credentials validated successfully, server will handle cookies");
           } else {
-            // If validation failed, clear credentials
+            // If validation definitively failed (authenticated: false), clear credentials
             clearAuthCookies();
             setAuthCredentials(null);
           }
+        }).catch(err => {
+          // Network or abort error — do NOT clear the session.
+          // The server-side middleware validates the httpOnly session cookie on every
+          // request, so a transient fetch failure here is harmless.
+          console.log("Credential check network error, preserving existing auth:", err.message);
         });
       }
 

@@ -100,9 +100,11 @@ function extractAuthFromCookies(request) {
   const authCookieSecure = request.cookies.get('auth_session_secure');
   const authCredentials = request.cookies.get('auth_credentials');
   
-  // Priority order: secure > lax > regular > credentials
-  // This ensures we use the most reliable cookie available
-  const cookieValue = authCookieSecure?.value || authCookieLax?.value || authCookie?.value || authCredentials?.value;
+  // Priority order: lax > regular > secure > credentials
+  // SameSite=Lax cookies are the most reliably sent across all browsers.
+  // SameSite=None (secure variant) has stricter requirements and Firefox/iOS
+  // may not send it in all navigation contexts, so it is the last resort.
+  const cookieValue = authCookieLax?.value || authCookie?.value || authCookieSecure?.value || authCredentials?.value;
   
   if (!cookieValue) {
     return null;
@@ -153,6 +155,22 @@ function extractAuthFromCookies(request) {
   return null;
 }
 
+// Helper to clear all auth cookies with correct attributes on a redirect response.
+// Each cookie must be cleared with attributes that match how it was set so that
+// every browser (including Firefox with ETP and iOS Safari with ITP) reliably
+// processes the deletion.
+function clearAuthCookies(response) {
+  const base = { maxAge: 0, path: '/', expires: new Date(0), httpOnly: true };
+
+  // auth_session and auth_session_lax were set with SameSite=Lax
+  ['auth_session', 'auth_session_lax', 'auth_credentials'].forEach(name => {
+    response.cookies.set(name, '', { ...base, sameSite: 'lax' });
+  });
+
+  // auth_session_secure was set with SameSite=None; Secure — clear with matching attrs
+  response.cookies.set('auth_session_secure', '', { ...base, sameSite: 'none', secure: true });
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const { isVercelPreview, isProduction, isDevelopment } = getEnvironmentType(request);
@@ -195,13 +213,6 @@ export async function middleware(request) {
     }
     
     return response;
-  }
-
-  // Check if this is a client-initiated validation request
-  const clientValidating = request.headers.get('x-client-validating') === 'true';
-  if (clientValidating) {
-    console.log(`[Middleware] Client-side validation in progress, skipping middleware validation`);
-    return NextResponse.next();
   }
 
   // Extract auth data from cookies
@@ -309,7 +320,9 @@ export async function middleware(request) {
     // For non-API protected routes, validate session directly in middleware
   // This avoids internal API calls that get intercepted by Vercel SSO in production
   
-  if (authData.sessionId && authData.team && authData.team !== 'pending_lookup') {
+  // Note: authData.team may be 'pending_lookup' when the cookie contains a plain
+  // session ID (not JSON). The inner block handles the team lookup in that case.
+  if (authData.sessionId && authData.team) {
     console.log(`[Middleware] Auth data found, validating session ${authData.sessionId.substring(0,8)}... for team ${authData.team} via direct DB`);
     
     try {
@@ -341,18 +354,10 @@ export async function middleware(request) {
           url.searchParams.set('rc', (redirectCount + 1).toString());
 
           const response = NextResponse.redirect(url);
-          ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
-            .forEach(name => {
-              response.cookies.set(name, '', {
-                maxAge: 0,
-                path: '/',
-                expires: new Date(0)
-              });
-            });
-
+          clearAuthCookies(response);
           return response;
         }
-        
+
         teamName = teamLookupResult[0].team_name;
         console.log('[Middleware] Found team name for session:', teamName);
       }
@@ -381,18 +386,10 @@ export async function middleware(request) {
         url.searchParams.set('rc', (redirectCount + 1).toString());
 
         const response = NextResponse.redirect(url);
-        ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
-          .forEach(name => {
-            response.cookies.set(name, '', {
-              maxAge: 0,
-              path: '/',
-              expires: new Date(0)
-            });
-          });
-
+        clearAuthCookies(response);
         return response;
       }
-      
+
       const session = sessionResult[0];
       console.log('[Middleware] Session found:', session);
       
@@ -415,18 +412,10 @@ export async function middleware(request) {
         url.searchParams.set('rc', (redirectCount + 1).toString());
 
         const response = NextResponse.redirect(url);
-        ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
-          .forEach(name => {
-            response.cookies.set(name, '', {
-              maxAge: 0,
-              path: '/',
-              expires: new Date(0)
-            });
-          });
-
+        clearAuthCookies(response);
         return response;
       }
-      
+
       // Update last accessed time
       await sql`
         UPDATE user_sessions SET last_accessed = NOW()
@@ -450,29 +439,20 @@ export async function middleware(request) {
       
     } catch (error) {
       console.error(`[Middleware] Database validation error:`, error);
-      
-      // On database error, we should fail closed and redirect to login.
-      // This maintains security by not allowing potentially invalid sessions through
-      console.log(`[Middleware] Redirecting to login due to database validation error`);
-      
+
+      // Fail closed (redirect to login) but do NOT clear the user's cookies.
+      // A DB error does not mean the session is invalid — the DB may just be
+      // temporarily unreachable (e.g. flaky competition WiFi). Preserving the
+      // cookies lets the user retry the page once the DB recovers without having
+      // to log in again.
       const url = new URL('/', request.url);
       url.searchParams.set('authRequired', 'true');
       url.searchParams.set('redirect', pathname);
-      url.searchParams.set('error', 'validation_db_failed');
+      url.searchParams.set('error', 'db_unavailable');
       url.searchParams.set('t', Date.now().toString());
       url.searchParams.set('rc', (redirectCount + 1).toString());
 
-      const response = NextResponse.redirect(url);
-      ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
-        .forEach(name => {
-          response.cookies.set(name, '', {
-            maxAge: 0,
-            path: '/',
-            expires: new Date(0)
-          });
-        });
-
-      return response;
+      return NextResponse.redirect(url);
     }
   }
   
@@ -486,15 +466,7 @@ export async function middleware(request) {
   url.searchParams.set('rc', (redirectCount + 1).toString());
 
   const response = NextResponse.redirect(url);
-  ['auth_session','auth_session_lax','auth_session_secure','auth_credentials']
-    .forEach(name => {
-      response.cookies.set(name, '', {
-        maxAge: 0,
-        path: '/',
-        expires: new Date(0)
-      });
-    });
-
+  clearAuthCookies(response);
   return response;
 }
 

@@ -223,6 +223,7 @@ Every configuration file must have these top-level properties:
 {
   "gameName": "reefscape_2025",
   "displayName": "REEFSCAPE 2025",
+  "tbaEventCode": "2026rebu",
   "formTitle": "5895 SKOUTER",
   "version": "1.0",
   "basics": { ... },
