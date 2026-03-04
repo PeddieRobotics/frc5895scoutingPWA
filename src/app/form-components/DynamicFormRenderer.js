@@ -4,7 +4,7 @@
  * All form content is driven entirely by the JSON game configuration.
  * No hardcoded field names or game-specific components.
  */
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState, useCallback } from 'react';
 import Header from './Header';
 import SubHeader from './SubHeader';
 import TextInput from './TextInput';
@@ -57,6 +57,11 @@ export default function DynamicFormRenderer({
   defense,
   setDefense
 }) {
+  // Generic state for any collapsible whose trigger isn't a named prop above
+  const [collapsibleStates, setCollapsibleStates] = useState({});
+  const setCollapsibleState = useCallback((name, value) => {
+    setCollapsibleStates((prev) => ({ ...prev, [name]: value }));
+  }, []);
   if (!config) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
@@ -96,6 +101,8 @@ export default function DynamicFormRenderer({
           changeListener = (e) => setBreakdown(e.target.checked);
         } else if (field.name === 'defense') {
           changeListener = (e) => setDefense(e.target.checked);
+        } else if (field._isCollapsibleTrigger) {
+          changeListener = (e) => setCollapsibleState(field.name, e.target.checked);
         }
 
         return (
@@ -268,11 +275,17 @@ export default function DynamicFormRenderer({
 
     let isExpanded = false;
     if (trigger?.name === 'defense') isExpanded = defense;
-    if (trigger?.name === 'breakdown') isExpanded = breakdown;
+    else if (trigger?.name === 'breakdown') isExpanded = breakdown;
+    else if (trigger?.name) isExpanded = !!collapsibleStates[trigger.name];
+
+    // Tag the trigger so its checkbox handler knows to update collapsibleStates
+    const taggedTrigger = trigger && trigger.name !== 'defense' && trigger.name !== 'breakdown' && trigger.name !== 'noshow'
+      ? { ...trigger, _isCollapsibleTrigger: true }
+      : trigger;
 
     return (
       <div key={key}>
-        {trigger && renderField(trigger, `${key}-trigger`)}
+        {taggedTrigger && renderField(taggedTrigger, `${key}-trigger`)}
         {isExpanded && (
           <div className={styles.collapsibleContent}>
             {content.map((field, i) => renderField(field, `${key}-content-${i}`))}

@@ -58,7 +58,7 @@
           "label": "Auto Pass (s)",
           "buttonLabel": "Hold While Passing Auto",
           "inline": true,
-          "buttonColor": "#cf222e",
+          "buttonColor": "#ff7c61",
           "precision": 2,
           "dbColumn": {
             "type": "NUMERIC(10,3)",
@@ -129,7 +129,7 @@
           "label": "Tele Pass (s)",
           "buttonLabel": "Hold While Passing Tele",
           "inline": true,
-          "buttonColor": "#cf222e",
+          "buttonColor": "#ff7c61",
           "precision": 2,
           "dbColumn": {
             "type": "NUMERIC(10,3)",
@@ -224,18 +224,6 @@
       },
       "fields": [
         {
-          "type": "starRating",
-          "name": "scouterconfidence",
-          "label": "Scouter Confidence",
-          "description": "How confident are you in your scouting this match?",
-          "minWhenVisible": 1,
-          "isConfidenceRating": true,
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
           "type": "multiSelect",
           "subHeader": "Intake",
           "name": "intakeOptions",
@@ -306,6 +294,31 @@
               "type": "comment",
               "name": "breakdowncomments",
               "label": "Breakdown Elaboration",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "collapsible",
+          "trigger": {
+            "type": "checkbox",
+            "name": "notconfident",
+            "label": "Not confident?",
+            "isConfidenceRating": true,
+            "invertColor": true,
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "comment",
+              "name": "confidenceconcerns",
+              "label": "Concerns",
               "dbColumn": {
                 "type": "TEXT",
                 "default": null
@@ -539,11 +552,6 @@
           "key": "matchesScouted",
           "title": "Matches",
           "format": "number"
-        },
-        {
-          "key": "avgScouterConfidence",
-          "title": "Avg Confidence",
-          "format": "decimal"
         }
       ],
       "sections": {
@@ -673,8 +681,7 @@
           "inverted": true
         }
       ],
-      "defenseBarField": "defenseplayed",
-      "scouterConfidenceField": "scouterconfidence"
+      "defenseBarField": "defenseplayed"
     },
     "matchView": {
       "allianceMetrics": [

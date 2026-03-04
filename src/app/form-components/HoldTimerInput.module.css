@@ -60,6 +60,8 @@
 .containerInline .holdButtonSizer {
   width: 100%;
   min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
 }
 
 .holdButton,
@@ -68,7 +70,8 @@
   font-size: 16px;
   font-weight: 700;
   padding: 16px 20px;
-  min-height: 72px;
+  /* Match the natural height of inline square buttons on mobile */
+  min-height: min(200px, max(120px, calc((100vw - 48px) / 2)));
   min-width: 160px;
   max-width: 100%;
   line-height: 1.2;
@@ -257,6 +260,5 @@
     min-width: 0;
     font-size: 15px;
     padding: 14px 16px;
-    min-height: 64px;
   }
 }

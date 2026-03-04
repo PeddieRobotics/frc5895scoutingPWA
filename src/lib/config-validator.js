@@ -141,7 +141,7 @@ function validateConfig(config) {
   // Validate isConfidenceRating uniqueness across all processed fields
   if (result.confidenceRatingCount > 1) {
     result.addError(
-      `Only one starRating/qualitative field may have isConfidenceRating: true (found ${result.confidenceRatingCount})`,
+      `Only one starRating, qualitative, or checkbox field may have isConfidenceRating: true (found ${result.confidenceRatingCount})`,
       'isConfidenceRating'
     );
   }
@@ -329,12 +329,28 @@ function validateStandardField(field, path, fieldNames, result) {
     validateQuickButtons(field.quickButtons, path, result);
   }
 
-  // Warn if isConfidenceRating is used on a non-star field
-  if (field.isConfidenceRating === true && field.type !== 'starRating' && field.type !== 'qualitative') {
+  // Warn if isConfidenceRating is used on an unsupported field type
+  if (field.isConfidenceRating === true && field.type !== 'starRating' && field.type !== 'qualitative' && field.type !== 'checkbox') {
     result.addWarning(
-      'isConfidenceRating is only meaningful on starRating or qualitative fields',
+      'isConfidenceRating is only meaningful on starRating, qualitative, or checkbox fields',
       `${path}.isConfidenceRating`
     );
+  }
+
+  // Track color-controlling checkboxes
+  if (field.isConfidenceRating === true && field.type === 'checkbox') {
+    result.confidenceRatingCount++;
+  }
+
+  // invertColor is only meaningful on checkbox fields with isConfidenceRating
+  if (field.invertColor !== undefined && field.type !== 'checkbox') {
+    result.addWarning(
+      'invertColor is only meaningful on checkbox fields with isConfidenceRating: true',
+      `${path}.invertColor`
+    );
+  }
+  if (field.invertColor !== undefined && typeof field.invertColor !== 'boolean') {
+    result.addWarning('invertColor must be a boolean', `${path}.invertColor`);
   }
 }
 

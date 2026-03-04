@@ -34,7 +34,24 @@ function extractFieldsFromConfig(config) {
   const fieldNames = new Set(CORE_FIELDS.map(f => f.name));
 
   function processField(field) {
-    if (!field || !field.name || fieldNames.has(field.name)) {
+    if (!field) return;
+
+    // Container types (collapsible, table) have no own name — process their children directly
+    if (field.type === 'collapsible') {
+      if (field.trigger) processField(field.trigger);
+      if (field.content) field.content.forEach(f => processField(f));
+      return;
+    }
+    if (field.type === 'table') {
+      if (field.rows) {
+        field.rows.forEach(row => {
+          if (row.fields) row.fields.forEach(f => processField(f));
+        });
+      }
+      return;
+    }
+
+    if (!field.name || fieldNames.has(field.name)) {
       // Skip if already exists or invalid
       if (field && field.type === 'multiSelect' && field.options) {
         // For multiSelect, process each option as a separate boolean field
@@ -144,25 +161,6 @@ function extractFieldsFromConfig(config) {
           required: false,
           label: field.label || field.name,
         });
-        break;
-
-      case 'table':
-        // Process fields within table rows
-        if (field.rows) {
-          field.rows.forEach(row => {
-            if (row.fields) {
-              row.fields.forEach(f => processField(f));
-            }
-          });
-        }
-        break;
-
-      case 'collapsible':
-        // Process the trigger field and content fields
-        if (field.trigger) processField(field.trigger);
-        if (field.content) {
-          field.content.forEach(f => processField(f));
-        }
         break;
 
       default:
@@ -474,9 +472,10 @@ function generateInsertTemplate(tableName, fields) {
 
 /**
  * Find the single field marked with isConfidenceRating: true in the config.
- * Returns { name, label, max } or null if none.
+ * Supports starRating/qualitative (gradient 1–6) and checkbox (boolean ratio).
+ * Returns { name, label, fieldType, invertColor } or null if none.
  * @param {Object} config - The game configuration JSON
- * @returns {{ name: string, label: string, max: number } | null}
+ * @returns {{ name: string, label: string, fieldType: string, invertColor: boolean } | null}
  */
 function extractConfidenceRatingField(config) {
   let found = null;
@@ -484,13 +483,15 @@ function extractConfidenceRatingField(config) {
   function processField(field) {
     if (!field || found) return;
 
-    if (
-      field.isConfidenceRating === true &&
-      (field.type === 'starRating' || field.type === 'qualitative') &&
-      field.name
-    ) {
-      found = { name: field.name, label: field.label || field.name };
-      return;
+    if (field.isConfidenceRating === true && field.name) {
+      if (field.type === 'starRating' || field.type === 'qualitative') {
+        found = { name: field.name, label: field.label || field.name, fieldType: 'qualitative', invertColor: false };
+        return;
+      }
+      if (field.type === 'checkbox') {
+        found = { name: field.name, label: field.label || field.name, fieldType: 'checkbox', invertColor: field.invertColor === true };
+        return;
+      }
     }
 
     if (field.type === 'table' && Array.isArray(field.rows)) {

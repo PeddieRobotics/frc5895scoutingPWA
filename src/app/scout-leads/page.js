@@ -57,6 +57,17 @@ function getConfidenceColor(value) {
 }
 
 /**
+ * Compute background color from the proportion of true values for a boolean field.
+ * ratio=1 → green (hue 120), ratio=0 → red (hue 0).
+ * If invertColor: ratio=1 → red (hue 0), ratio=0 → green (hue 120).
+ */
+function getBooleanColor(ratio, invertColor) {
+  const r = invertColor ? (1 - ratio) : ratio;
+  const hue = Math.round(r * 120);
+  return `hsl(${hue}, 65%, 93%)`;
+}
+
+/**
  * Render a single config field value — read-only or editable.
  * For multiSelect, fieldDef.options is an array of { name, label }.
  */
@@ -689,9 +700,17 @@ export default function ScoutLeadsPage() {
     }
   };
 
-  // Section background color driven by confidence rating average
+  // Section background color driven by the color-controlling field
   const sectionBackground = useMemo(() => {
     if (!confidenceRatingField || !allScoutingRows.length) return "#ffffff";
+
+    if (confidenceRatingField.fieldType === "checkbox") {
+      const trueCount = allScoutingRows.filter((r) => r[confidenceRatingField.name] === true).length;
+      const ratio = trueCount / allScoutingRows.length;
+      return getBooleanColor(ratio, confidenceRatingField.invertColor);
+    }
+
+    // qualitative / starRating
     const values = allScoutingRows
       .map((r) => Number(r[confidenceRatingField.name]))
       .filter((v) => Number.isFinite(v) && v > 0);
@@ -863,6 +882,7 @@ export default function ScoutLeadsPage() {
                 min="1"
                 value={team}
                 onChange={(event) => setTeam(event.target.value)}
+                onWheel={(e) => e.target.blur()}
                 required
               />
             </label>
@@ -874,6 +894,7 @@ export default function ScoutLeadsPage() {
                 min="1"
                 value={match}
                 onChange={(event) => setMatch(event.target.value)}
+                onWheel={(e) => e.target.blur()}
                 required
               />
             </label>
@@ -958,6 +979,7 @@ export default function ScoutLeadsPage() {
                             return { ...previous, ...updates };
                           });
                         }}
+                        onWheel={(e) => e.target.blur()}
                       />
                     </label>
 
@@ -997,6 +1019,7 @@ export default function ScoutLeadsPage() {
                           [timer.name]: nextValue,
                         }));
                       }}
+                      onWheel={(e) => e.target.blur()}
                     />
                   </label>
 
@@ -1136,7 +1159,8 @@ export default function ScoutLeadsPage() {
               </h2>
               {confidenceRatingField && (
                 <span className={styles.confidenceLabel}>
-                  Confidence: {confidenceRatingField.label}
+                  {confidenceRatingField.fieldType === "checkbox" ? "Color: " : "Confidence: "}
+                  {confidenceRatingField.label}
                 </span>
               )}
             </div>

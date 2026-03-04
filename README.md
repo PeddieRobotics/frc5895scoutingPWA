@@ -789,7 +789,7 @@ A star-based rating system (1-N stars).
 | `description` | string | No | Tooltip or helper text |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
-| `isConfidenceRating` | boolean | No | Marks this field as the primary confidence indicator for `/scout-leads` section background (red→green). At most one field per config. |
+| `isConfidenceRating` | boolean | No | Marks this field as the primary color controller for the `/scout-leads` entries section background. Supported on `starRating`/`qualitative` (red→green gradient) and `checkbox` (boolean ratio, see `invertColor`). At most one field per config. |
 | `dbColumn` | object | Yes | Database column configuration |
 
 > **Star ratings are always out of 6.** The `Qualitative` component renders exactly 6 stars for both `starRating` and `qualitative` field types. Do not add a `max` property — it is not used by the component, the form, or any display/calculation logic.
@@ -1926,23 +1926,59 @@ Add `group` (required) and optionally `groupLabel` to the `scoutLeads` object of
 **Features:**
 - **Edit button** appears on an entry if the logged-in team submitted it, or if admin editing is unlocked.
 - **Admin unlock:** Enter the master admin password below the Save button and click "Unlock Editing" to enable editing of all entries regardless of which team submitted them.
-- **Section background color:** If exactly one `starRating` or `qualitative` field in the config carries `isConfidenceRating: true`, the entire entries section transitions from red (low average confidence) to green (high average confidence). The background is white when no confidence field is configured.
+- **Section background color:** If exactly one field in the config carries `isConfidenceRating: true`, the entire entries section changes color based on the scouted values. Supported field types are `starRating`/`qualitative` (red→green gradient) and `checkbox` (white→green when checked, or white→red when `invertColor: true` is also set). The background is white when no color-controlling field is configured.
 
-**Configuring confidence color:**
-Add `"isConfidenceRating": true` to exactly one `starRating` or `qualitative` field:
-
+**Configuring confidence color — qualitative field (1–6 gradient):**
 ```json
 {
   "type": "starRating",
   "name": "scoutconfidence",
   "label": "Scouting Confidence",
-  "max": 5,
   "isConfidenceRating": true,
   "dbColumn": { "type": "INTEGER", "default": null }
 }
 ```
+The section background interpolates from red (avg = 1) to green (avg = 6) across all scouting entries.
 
-At most one field per config may carry this tag — having more than one is a validation **error**. Placing it on a non-star field is a validation **warning** and is ignored at runtime.
+**Configuring confidence color — boolean field (checkbox):**
+```json
+{
+  "type": "checkbox",
+  "name": "notconfident",
+  "label": "Not confident?",
+  "isConfidenceRating": true,
+  "invertColor": true,
+  "dbColumn": { "type": "BOOLEAN", "default": false }
+}
+```
+- Without `invertColor`: a higher proportion of checked entries → greener background.
+- With `invertColor: true`: a higher proportion of checked entries → redder background (useful for a "Not confident?" flag where checked = concern).
+- The background interpolates from white (0% checked) to the target hue (100% checked).
+
+A `collapsible` field is a natural pairing — use the checkbox as the `trigger` and include a `comment` field in `content` for details:
+```json
+{
+  "type": "collapsible",
+  "trigger": {
+    "type": "checkbox",
+    "name": "notconfident",
+    "label": "Not confident?",
+    "isConfidenceRating": true,
+    "invertColor": true,
+    "dbColumn": { "type": "BOOLEAN", "default": false }
+  },
+  "content": [
+    {
+      "type": "comment",
+      "name": "confidenceconcerns",
+      "label": "Concerns",
+      "dbColumn": { "type": "TEXT", "default": null }
+    }
+  ]
+}
+```
+
+At most one field per config may carry `isConfidenceRating: true` — having more than one is a validation **error**. Placing it on any unsupported field type is a validation **warning** and is ignored at runtime.
 
 **Edit flow:**
 1. Click "Edit" on an entry card.
@@ -1974,8 +2010,9 @@ For any `holdTimer` field (grouped or ungrouped):
 - `scoutLeads.group` must be a string when present.
 - `scoutLeads.groupLabel` must be a string when present.
 - `holdTimer.dbColumn.type` should be numeric (`NUMERIC`, `DECIMAL`, or `INTEGER`).
-- At most **one** field per config may have `isConfidenceRating: true`. Having more than one is an **error** (not a warning): `"Only one starRating/qualitative field may have isConfidenceRating: true (found N)"`. Fix: remove the flag from all but one field.
-- `isConfidenceRating` on a non-`starRating`/`qualitative` field produces a **warning** and is ignored by `/scout-leads`.
+- At most **one** field per config may have `isConfidenceRating: true`. Having more than one is an **error** (not a warning): `"Only one starRating, qualitative, or checkbox field may have isConfidenceRating: true (found N)"`. Fix: remove the flag from all but one field.
+- `isConfidenceRating` on an unsupported field type produces a **warning** and is ignored by `/scout-leads`. Supported types: `starRating`, `qualitative`, `checkbox`.
+- `invertColor` is only meaningful on `checkbox` fields with `isConfidenceRating: true`. Using it on any other field type produces a **warning** and is ignored.
 
 ---
 
