@@ -512,6 +512,17 @@
   font-weight: 600;
 }
 
+.excludedBadge {
+  background: #ffebe9;
+  border: 1px solid #ff8182;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 0.82rem;
+  color: #7d1f1f;
+  font-weight: 600;
+  cursor: help;
+}
+
 .editNoshowRow {
   display: flex;
   align-items: center;

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import useGameConfig from "../../lib/useGameConfig";
-import { extractTimerFieldsFromConfig, extractConfidenceRatingField } from "../../lib/schema-generator";
+import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScoringRequirementFields } from "../../lib/schema-generator";
 import styles from "./page.module.css";
 
 function getAuthHeaders() {
@@ -318,6 +318,10 @@ export default function ScoutLeadsPage() {
   );
   const confidenceRatingField = useMemo(
     () => extractConfidenceRatingField(config || {}),
+    [config]
+  );
+  const scoringRequirementFields = useMemo(
+    () => extractScoringRequirementFields(config || {}),
     [config]
   );
   const allConfigFields = useMemo(() => flattenConfigFields(config || {}), [config]);
@@ -1253,6 +1257,12 @@ export default function ScoutLeadsPage() {
               const canEdit =
                 String(entry.scoutteam) === String(currentUserTeam) || adminUnlocked;
 
+              const failedRequirements = scoringRequirementFields.filter((req) => {
+                const rawValue = entry[req.name];
+                const boolValue = rawValue === true || rawValue === "true" || rawValue === 1;
+                return boolValue !== req.requiredValue;
+              });
+
               return (
                 <div key={entry.id} className={styles.entryCard}>
                   <div className={styles.entryCardHeader}>
@@ -1267,6 +1277,11 @@ export default function ScoutLeadsPage() {
                     </span>
                     {entry.noshow && (
                       <span className={styles.noshowBadge}>No Show</span>
+                    )}
+                    {failedRequirements.length > 0 && (
+                      <span className={styles.excludedBadge} title={failedRequirements.map((r) => `${r.label} must be ${r.requiredValue}`).join("; ")}>
+                        Excluded from scoring
+                      </span>
                     )}
                   </div>
 

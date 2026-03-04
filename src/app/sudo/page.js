@@ -1019,10 +1019,10 @@ export default function Sudo() {
           alignItems: "center",
           width: mobileView ? "100%" : "90vw",
           margin: "auto",
-          padding: mobileView ? "10px" : 0
+          padding: mobileView ? "10px" : 0,
+        paddingTop: mobileView ? "50px" : "60px"
         }}
       >
-        <br/>
         <div style={{ 
           display: "flex", 
           flexDirection: mobileView ? "column" : "row",
@@ -1074,9 +1074,9 @@ export default function Sudo() {
             )}
           </div>
           
-          <div style={{ 
-            display: "flex", 
-            gap: "10px", 
+          <div suppressHydrationWarning style={{
+            display: "flex",
+            gap: "10px",
             flexGrow: 1,
             justifyContent: mobileView ? "space-between" : "flex-end"
           }}>

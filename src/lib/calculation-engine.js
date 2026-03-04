@@ -132,6 +132,13 @@ function createFormulaCalculation(calcConfig) {
         expression = expression.replace(regex, numValue.toString());
       }
 
+      // Handle equality ternary expressions (e.g., "(autoclimb==1?15:0)")
+      // Must run BEFORE the simple boolean ternary so the == isn't stripped first.
+      expression = expression.replace(
+        /\((-?\d+(?:\.\d+)?)==(-?\d+(?:\.\d+)?)\?(-?\d+(?:\.\d+)?):(-?\d+(?:\.\d+)?)\)/g,
+        (_, lhs, rhs, ifTrue, ifFalse) => (parseFloat(lhs) === parseFloat(rhs) ? ifTrue : ifFalse)
+      );
+
       // Handle boolean ternary expressions (e.g., "(leave?3:0)")
       expression = expression.replace(/\((\d+)\?(\d+):(\d+)\)/g, (_, cond, ifTrue, ifFalse) => {
         return parseInt(cond) ? ifTrue : ifFalse;
@@ -198,8 +205,8 @@ function createWeightedCalculation(calcConfig) {
  * @returns {number} Result of the evaluation
  */
 function safeEval(expression) {
-  // Only allow numbers, operators, and parentheses
-  const sanitized = expression.replace(/[^0-9+\-*/().?\s:]/g, '');
+  // Allow numbers, arithmetic operators, parentheses, and comparison/ternary operators
+  const sanitized = expression.replace(/[^0-9+\-*/().?\s:=!<>]/g, '');
 
   // Handle ternary expressions
   let expr = sanitized.replace(/(\d+)\?(\d+):(\d+)/g, (_, cond, ifTrue, ifFalse) => {

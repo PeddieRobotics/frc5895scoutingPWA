@@ -306,10 +306,12 @@
           "trigger": {
             "type": "checkbox",
             "name": "notconfident",
-            "label": "Not confident?",
+            "label": "Made a Mistake?",
             "isConfidenceRating": true,
             "invertColor": true,
-            "scoringRequirement": { "requiredValue": false },
+            "scoringRequirement": {
+              "requiredValue": false
+            },
             "dbColumn": {
               "type": "BOOLEAN",
               "default": false
