@@ -329,6 +329,8 @@ export default function ScoutLeadsPage() {
 
   const [timerSummary, setTimerSummary] = useState([]);
   const [rates, setRates] = useState({});
+  const [fInputs, setFInputs] = useState({});
+  const [sInputs, setSInputs] = useState({});
   const displayItems = useMemo(() => buildDisplayItems(timerSummary), [timerSummary]);
   const [loadingData, setLoadingData] = useState(false);
   const [savingData, setSavingData] = useState(false);
@@ -449,16 +451,11 @@ export default function ScoutLeadsPage() {
         throw new Error(data.message || `Failed to load data (${response.status})`);
       }
 
-      const normalizedRates = {};
-      (data.timerSummary || []).forEach((item) => {
-        const existingRate = data.averageRates?.[item.name];
-        normalizedRates[item.name] = existingRate !== undefined && existingRate !== null
-          ? String(existingRate)
-          : "";
-      });
-
       setTimerSummary(data.timerSummary || []);
-      setRates(normalizedRates);
+      // Clear f/s scratch inputs and computed rates on every load
+      setRates({});
+      setFInputs({});
+      setSInputs({});
       setAllScoutingRows(data.allScoutingRows || []);
       setCurrentUserTeam(data.currentUserTeam ?? null);
 
@@ -533,6 +530,9 @@ export default function ScoutLeadsPage() {
       }
 
       await fetchTimerData({ showLoadedMessage: false });
+      setRates({});
+      setFInputs({});
+      setSInputs({});
       setSuccess("Scout lead rates saved. Match averages refreshed.");
     } catch (saveError) {
       setError(saveError.message || "Failed to save scout lead rates.");
@@ -930,18 +930,30 @@ export default function ScoutLeadsPage() {
               if (item.type === "group") {
                 const { groupKey, groupLabel, fields } = item;
                 const firstField = fields[0];
-                const rateValue = Number(rates[firstField.name]);
                 const totalAverageSeconds = fields.reduce(
                   (sum, f) => sum + (Number(f.averageSeconds) || 0),
                   0
                 );
-                const estimatedOutput = Number.isFinite(rateValue)
-                  ? rateValue * totalAverageSeconds
-                  : null;
-                const allRateSamples = fields.flatMap((f) => f.rateSamples || []);
+                // Grouped fields share the same rate — use the first field's samples to avoid double-counting
+                const allRateSamples = firstField.rateSamples || [];
                 const combinedAverageRate = allRateSamples.length
                   ? allRateSamples.reduce((a, b) => a + b, 0) / allRateSamples.length
                   : 0;
+
+                const fVal = fInputs[firstField.name] ?? "";
+                const sVal = sInputs[firstField.name] ?? "";
+                const fNum = Number(fVal);
+                const sNum = Number(sVal);
+                const computedRate = fVal !== "" && sVal !== "" && Number.isFinite(fNum) && Number.isFinite(sNum) && sNum > 0
+                  ? fNum / sNum
+                  : null;
+                const estimatedOutput = computedRate !== null ? computedRate * totalAverageSeconds : null;
+
+                const myScoutRow = scoutLeadsRows.find(
+                  (r) => r.scoutname && scoutName &&
+                    r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
+                );
+                const myGroupRate = myScoutRow != null ? myScoutRow[firstField.name] : null;
 
                 return (
                   <div key={groupKey} className={`${styles.timerCard} ${styles.timerCardGroup}`}>
@@ -954,86 +966,155 @@ export default function ScoutLeadsPage() {
                         </div>
                       ))}
                     </div>
+                    <p>Combined avg seconds: {totalAverageSeconds.toFixed(2)}s</p>
                     <p>
-                      Combined avg seconds: {totalAverageSeconds.toFixed(2)}s
+                      Average saved rate: {Number(combinedAverageRate).toFixed(4)}
+                      {" "}({allRateSamples.length} {allRateSamples.length === 1 ? "entry" : "entries"})
                     </p>
-                    <p>
-                      Average saved rate for this match: {Number(combinedAverageRate).toFixed(3)}
-                      {" "}({allRateSamples.length} entry{allRateSamples.length === 1 ? "" : "ies"})
-                    </p>
+                    {myGroupRate != null && Number.isFinite(Number(myGroupRate)) && (
+                      <p className={styles.myRate}>
+                        Your saved rate: {Number(myGroupRate).toFixed(4)}
+                      </p>
+                    )}
 
-                    <label className={styles.field}>
-                      {firstField.rateLabel}
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={rates[firstField.name] ?? ""}
-                        placeholder={firstField.ratePlaceholder || "Per-second value"}
-                        onChange={(event) => {
-                          const nextValue = event.target.value;
-                          setRates((previous) => {
-                            const updates = {};
-                            fields.forEach((f) => {
-                              updates[f.name] = nextValue;
+                    <div className={styles.fsRow}>
+                      <label className={styles.fsPart}>
+                        f
+                        <input
+                          type="number"
+                          min="0"
+                          value={fVal}
+                          placeholder="0"
+                          onChange={(e) => {
+                            const f = e.target.value;
+                            setFInputs((prev) => ({ ...prev, [firstField.name]: f }));
+                            const s = sInputs[firstField.name] ?? "";
+                            const fn = Number(f); const sn = Number(s);
+                            const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                            setRates((prev) => {
+                              const updates = {};
+                              fields.forEach((field) => { updates[field.name] = r; });
+                              return { ...prev, ...updates };
                             });
-                            return { ...previous, ...updates };
-                          });
-                        }}
-                        onWheel={(e) => e.target.blur()}
-                      />
-                    </label>
+                          }}
+                          onWheel={(e) => e.target.blur()}
+                        />
+                      </label>
+                      <span className={styles.fsDivider}>/</span>
+                      <label className={styles.fsPart}>
+                        s
+                        <input
+                          type="number"
+                          min="0.001"
+                          step="0.001"
+                          value={sVal}
+                          placeholder="0"
+                          onChange={(e) => {
+                            const s = e.target.value;
+                            setSInputs((prev) => ({ ...prev, [firstField.name]: s }));
+                            const f = fInputs[firstField.name] ?? "";
+                            const fn = Number(f); const sn = Number(s);
+                            const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                            setRates((prev) => {
+                              const updates = {};
+                              fields.forEach((field) => { updates[field.name] = r; });
+                              return { ...prev, ...updates };
+                            });
+                          }}
+                          onWheel={(e) => e.target.blur()}
+                        />
+                      </label>
+                      <span className={styles.fsComputed}>
+                        = {computedRate !== null ? computedRate.toFixed(4) : "—"}
+                      </span>
+                    </div>
 
-                    <p>
-                      Estimated combined output: {estimatedOutput === null ? "N/A" : estimatedOutput.toFixed(2)}
-                    </p>
+                    {estimatedOutput !== null && (
+                      <p>Estimated combined output: {estimatedOutput.toFixed(2)}</p>
+                    )}
                   </div>
                 );
               }
 
               // Individual (ungrouped) card
               const { timer } = item;
-              const rateValue = Number(rates[timer.name]);
-              const estimatedOutput = Number.isFinite(rateValue)
-                ? rateValue * (Number(timer.averageSeconds) || 0)
+              const fVal = fInputs[timer.name] ?? "";
+              const sVal = sInputs[timer.name] ?? "";
+              const fNum = Number(fVal);
+              const sNum = Number(sVal);
+              const computedRate = fVal !== "" && sVal !== "" && Number.isFinite(fNum) && Number.isFinite(sNum) && sNum > 0
+                ? fNum / sNum
                 : null;
+              const estimatedOutput = computedRate !== null
+                ? computedRate * (Number(timer.averageSeconds) || 0)
+                : null;
+
+              const myScoutRow = scoutLeadsRows.find(
+                (r) => r.scoutname && scoutName &&
+                  r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
+              );
+              const myRate = myScoutRow != null ? myScoutRow[timer.name] : null;
 
               return (
                 <div key={timer.name} className={styles.timerCard}>
                   <h2>{timer.label}</h2>
                   <p>
-                    Average saved balls/sec for this match: {Number(timer.averageRate || 0).toFixed(3)}
-                    {" "}({timer.rateSamples?.length || 0} entry{(timer.rateSamples?.length || 0) === 1 ? "" : "ies"})
+                    Average saved rate: {Number(timer.averageRate || 0).toFixed(4)}
+                    {" "}({timer.rateSamples?.length || 0} {(timer.rateSamples?.length || 0) === 1 ? "entry" : "entries"})
                   </p>
+                  {myRate != null && Number.isFinite(Number(myRate)) && (
+                    <p className={styles.myRate}>
+                      Your saved rate: {Number(myRate).toFixed(4)}
+                    </p>
+                  )}
 
-                  <label className={styles.field}>
-                    {timer.rateLabel}
-                    <input
-                      type="number"
-                      step="0.001"
-                      value={rates[timer.name] ?? ""}
-                      placeholder={timer.ratePlaceholder || "Per-second value"}
-                      onChange={(event) => {
-                        const nextValue = event.target.value;
-                        setRates((previous) => ({
-                          ...previous,
-                          [timer.name]: nextValue,
-                        }));
-                      }}
-                      onWheel={(e) => e.target.blur()}
-                    />
-                  </label>
+                  <div className={styles.fsRow}>
+                    <label className={styles.fsPart}>
+                      f
+                      <input
+                        type="number"
+                        min="0"
+                        value={fVal}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const f = e.target.value;
+                          setFInputs((prev) => ({ ...prev, [timer.name]: f }));
+                          const s = sInputs[timer.name] ?? "";
+                          const fn = Number(f); const sn = Number(s);
+                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                          setRates((prev) => ({ ...prev, [timer.name]: r }));
+                        }}
+                        onWheel={(e) => e.target.blur()}
+                      />
+                    </label>
+                    <span className={styles.fsDivider}>/</span>
+                    <label className={styles.fsPart}>
+                      s
+                      <input
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        value={sVal}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const s = e.target.value;
+                          setSInputs((prev) => ({ ...prev, [timer.name]: s }));
+                          const f = fInputs[timer.name] ?? "";
+                          const fn = Number(f); const sn = Number(s);
+                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                          setRates((prev) => ({ ...prev, [timer.name]: r }));
+                        }}
+                        onWheel={(e) => e.target.blur()}
+                      />
+                    </label>
+                    <span className={styles.fsComputed}>
+                      = {computedRate !== null ? computedRate.toFixed(4) : "—"}
+                    </span>
+                  </div>
 
-                  <p>
-                    Estimated output: {estimatedOutput === null ? "N/A" : estimatedOutput.toFixed(2)}
-                  </p>
-                  <p>
-                    Balls by scouting entry using average balls/sec:{" "}
-                    {(timer.estimatedBallsByEntry || []).length > 0
-                      ? timer.estimatedBallsByEntry
-                        .map((entry) => Number(entry.estimatedBalls || 0).toFixed(2))
-                        .join(", ")
-                      : "None"}
-                  </p>
+                  {estimatedOutput !== null && (
+                    <p>Estimated output: {estimatedOutput.toFixed(2)}</p>
+                  )}
                 </div>
               );
             })}
