@@ -1,39 +1,38 @@
 {
-    "name": "JORMUNSCOUTR",
-    "short_name": "5895 SKOUTER",
-    
-    "icons": [
-      {
-        "src": "/favicon.ico",
-        "sizes": "48x48",
-        "type": "image/x-icon"
-      },
-      {
-        "src": "/apple-touch-icon.png",
-        "sizes": "180x180",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/apple-touch-icon-180x180.png",
-        "sizes": "180x180",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-192.png",
-        "sizes": "192x192",
-        "type": "image/png"
-      },
-      {
-        "src": "/icons/icon-512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ],
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#153256",
-    "theme_color": "#153256",
-    "orientation": "portrait"
-  }
+  "name": "5895 SCOUTER",
+  "short_name": "5895 SCOUTER",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#153256",
+  "theme_color": "#153256",
+  "orientation": "portrait"
+}

@@ -1237,7 +1237,7 @@ export default function Home() {
         }}
         style={{ display: (showQRCode || showSubmitDialog || showAuthDialog || showClearFormDialog) ? 'none' : 'block' }}
       >
-        <Header headerName={activeGameConfig?.config?.formTitle || "5895 SKOUTER"} className={compactStyles.header} />
+        <Header headerName={activeGameConfig?.config?.formTitle || "5895 SCOUTER"} className={compactStyles.header} />
         <div className={`${styles.allMatchInfo} ${compactStyles.allMatchInfo}`}>
           <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
             <TextInput

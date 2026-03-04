@@ -12,7 +12,7 @@ const montserrat = Montserrat({
 
 export const metadata = {
   manifest: '/manifest.json',
-  title: '5895 SKOUTER',
+  title: '5895 SCOUTER',
   description: 'Peddie Robotics\' Scouting & Analysis App',
   icons: {
     icon: '/favicon.ico',
@@ -24,7 +24,7 @@ export const metadata = {
 
   appleWebApp: {
     capable: true,
-    title: '5895 SKOUTER',
+    title: '5895 SCOUTER',
     statusBarStyle: 'black-translucent',
     startupImage: [
       {
@@ -33,11 +33,11 @@ export const metadata = {
       }
     ]
   },
-  
+
   other: {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'apple-mobile-web-app-title': '5895 SKOUTER',
+    'apple-mobile-web-app-title': '5895 SCOUTER',
   }
 }
 
