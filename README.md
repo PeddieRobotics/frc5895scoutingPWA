@@ -53,6 +53,7 @@ This guide documents how to build and validate JSON game configurations for form
 13. [Complete Example](#complete-example)
 14. [Best Practices](#best-practices)
 15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
+16. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -2067,5 +2068,13 @@ A: In `scoutleads_<gameName>`, with one numeric column per `holdTimer` field.
 
 **Q: Can I reuse field names across different games?**
 A: Yes! Field names only need to be unique within a single configuration. Different games can have the same field names.
+
+---
+
+## Acknowledgements
+
+This project is based on the scouting system originally developed by **FRC Team 2485 - Overclocked**. Their work served as the foundation for this app, and we're grateful for the open-source culture in the FRC community that makes projects like this possible.
+
+- GitHub: [https://github.com/team2485/](https://github.com/team2485/)
 
 ---

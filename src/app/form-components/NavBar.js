@@ -80,7 +80,7 @@ export default function NavBar() {
     };
 
     return <nav className={styles.navbar}>
-        <img className={styles.logo} src="https://static.wixstatic.com/media/01a1eb_8e7e35f6173149238e59205a31892fc9~mv2.png"></img>
+        <img className={styles.logo} src="/transLogo.png"></img>
         <div className={styles.pages}>
             <AuthLink href="/">Scouting Form</AuthLink>
             <AuthLink href="/scanner">Scanner</AuthLink>
