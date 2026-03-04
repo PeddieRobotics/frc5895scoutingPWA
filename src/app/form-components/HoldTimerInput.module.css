@@ -90,6 +90,8 @@
   color: white;
   touch-action: none;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .holdButtonSizer {

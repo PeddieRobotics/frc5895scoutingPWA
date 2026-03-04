@@ -57,6 +57,7 @@ export default function HoldTimerInput({
 
   const holdStartRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const pointerStartRef = useRef(null);
 
   const totalSeconds = recordings.reduce((sum, r) => sum + r.duration, 0);
 
@@ -110,6 +111,7 @@ export default function HoldTimerInput({
       const rounded = roundSeconds(elapsed);
 
       holdStartRef.current = null;
+      pointerStartRef.current = null;
       setIsHolding(false);
 
       if (animationFrameRef.current !== null) {
@@ -118,7 +120,7 @@ export default function HoldTimerInput({
       }
 
       if (commit && rounded > 0) {
-        setRecordings((prev) => [...prev, { id: Date.now(), duration: rounded }]);
+        setRecordings((prev) => [{ id: Date.now(), duration: rounded }, ...prev]);
       }
       setLiveSeconds(0);
     },
@@ -138,6 +140,7 @@ export default function HoldTimerInput({
         }
       }
 
+      pointerStartRef.current = { x: event.clientX, y: event.clientY };
       holdStartRef.current = nowMs();
       setIsHolding(true);
 
@@ -170,6 +173,18 @@ export default function HoldTimerInput({
     });
   }, [showConfirm]);
 
+  const handlePointerMove = useCallback(
+    (event) => {
+      if (pointerStartRef.current === null || holdStartRef.current === null) return;
+      const dy = Math.abs(event.clientY - pointerStartRef.current.y);
+      const dx = Math.abs(event.clientX - pointerStartRef.current.x);
+      if (dy > 20 && dy > dx) {
+        stopHolding(false);
+      }
+    },
+    [stopHolding]
+  );
+
   useEffect(() => {
     if (!isHolding) return undefined;
 
@@ -177,13 +192,15 @@ export default function HoldTimerInput({
     window.addEventListener("pointerup", release);
     window.addEventListener("pointercancel", release);
     window.addEventListener("blur", release);
+    window.addEventListener("pointermove", handlePointerMove);
 
     return () => {
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
       window.removeEventListener("blur", release);
+      window.removeEventListener("pointermove", handlePointerMove);
     };
-  }, [isHolding, stopHolding]);
+  }, [isHolding, stopHolding, handlePointerMove]);
 
   useEffect(() => {
     return () => {
