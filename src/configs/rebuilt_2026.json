@@ -309,6 +309,7 @@
             "label": "Not confident?",
             "isConfidenceRating": true,
             "invertColor": true,
+            "scoringRequirement": { "requiredValue": false },
             "dbColumn": {
               "type": "BOOLEAN",
               "default": false

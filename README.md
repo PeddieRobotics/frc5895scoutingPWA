@@ -53,7 +53,8 @@ This guide documents how to build and validate JSON game configurations for form
 13. [Complete Example](#complete-example)
 14. [Best Practices](#best-practices)
 15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
-16. [Acknowledgements](#acknowledgements)
+16. [Scoring Requirements](#scoring-requirements)
+17. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -341,6 +342,7 @@ A simple true/false toggle.
 | `label` | string | Yes | Display label next to checkbox |
 | `dbColumn` | object | Yes | Database column configuration |
 | `hidesForm` | boolean | No | If true, hides form sections when checked |
+| `scoringRequirement` | object | No | Excludes scouting rows from scoring when the field value doesn't match `requiredValue`. See [Scoring Requirements](#scoring-requirements). |
 
 **Database Type:** `BOOLEAN`
 
@@ -1999,10 +2001,90 @@ At most one field per config may carry `isConfidenceRating: true` — having mor
 
 For any `holdTimer` field (grouped or ungrouped):
 - If scouting recorded timer seconds for a team/match but no valid scout-leads rate exists for that same team/match/matchtype, that match is **excluded from scoring calculations**.
+- The system first looks for a match-specific rate, then falls back to the team's average rate across all matches.
 - Team view, match view, and picklist show a **red error box** listing which matches were skipped and why.
 - This prevents raw timer seconds from being treated as scored piece counts.
 
+---
+
+## Scoring Requirements
+
+Any `checkbox` field can be tagged with a `scoringRequirement` object to gate whether a scouting row is included in scoring calculations.
+
+### How It Works
+
+When `scoringRequirement` is set on a checkbox field, every scouting row is checked before aggregation:
+- If the row's boolean value **does not match** `requiredValue`, the row is **excluded from scoring**.
+- Excluded rows appear in the red warning box on team view, match view, and picklist — the same box that shows missing timer-rate warnings.
+
+This is the boolean equivalent of the holdTimer rate requirement: just as a match without a scout-leads rate is excluded, a match whose boolean flag doesn't meet the requirement is also excluded.
+
+### Configuration
+
+Add `scoringRequirement` to any `checkbox` field:
+
+```json
+{
+  "type": "checkbox",
+  "name": "dataverified",
+  "label": "Data Verified",
+  "dbColumn": { "type": "BOOLEAN", "default": false },
+  "scoringRequirement": {
+    "requiredValue": true
+  }
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `requiredValue` | boolean | Yes | `true` = only score rows where the field is checked; `false` = only score rows where the field is unchecked |
+
+### The `requiredValue` Polar Field
+
+`requiredValue` is the "polar" control:
+
+| `requiredValue` | Behaviour |
+|-----------------|-----------|
+| `true` | Rows are **scored** only when the checkbox is **checked**. Rows where it is unchecked are excluded. Use this when the checkbox means "this data is good / verified". |
+| `false` | Rows are **scored** only when the checkbox is **unchecked**. Rows where it is checked are excluded. Use this when the checkbox means "something went wrong / exclude me" (e.g. a "Breakdown" flag). |
+
+### Examples
+
+**Only score matches where a scout marked data as verified:**
+```json
+{
+  "type": "checkbox",
+  "name": "dataverified",
+  "label": "Data Verified",
+  "dbColumn": { "type": "BOOLEAN", "default": false },
+  "scoringRequirement": { "requiredValue": true }
+}
+```
+
+**Exclude matches where the robot broke down:**
+```json
+{
+  "type": "checkbox",
+  "name": "breakdown",
+  "label": "Robot Broke Down",
+  "dbColumn": { "type": "BOOLEAN", "default": false },
+  "scoringRequirement": { "requiredValue": false }
+}
+```
+
+### Combining with Timer Requirements
+
+Both requirement types operate independently. A scouting row must satisfy **all** active requirements to be scored:
+- If it fails a boolean requirement **and** is missing a timer rate, both reasons appear in the warning message.
+
 ### Validation Notes
+
+- `scoringRequirement` on a non-checkbox field type is a **warning** and is ignored.
+- `scoringRequirement.requiredValue` must be a boolean — a string, number, or missing value is a validation **error**.
+
+---
+
+### Scoring Validation Notes
 
 - `holdTimer` is a first-class validated field type.
 - `holdTimer.scoutLeads` (if provided) must be an object.
@@ -2014,6 +2096,8 @@ For any `holdTimer` field (grouped or ungrouped):
 - At most **one** field per config may have `isConfidenceRating: true`. Having more than one is an **error** (not a warning): `"Only one starRating, qualitative, or checkbox field may have isConfidenceRating: true (found N)"`. Fix: remove the flag from all but one field.
 - `isConfidenceRating` on an unsupported field type produces a **warning** and is ignored by `/scout-leads`. Supported types: `starRating`, `qualitative`, `checkbox`.
 - `invertColor` is only meaningful on `checkbox` fields with `isConfidenceRating: true`. Using it on any other field type produces a **warning** and is ignored.
+- `scoringRequirement` is only supported on `checkbox` fields. Using it on any other type is a **warning** and is ignored.
+- `scoringRequirement.requiredValue` must be a boolean. Any other type is a validation **error**.
 
 ---
 

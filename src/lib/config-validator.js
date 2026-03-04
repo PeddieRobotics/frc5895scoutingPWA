@@ -342,6 +342,26 @@ function validateStandardField(field, path, fieldNames, result) {
     result.confidenceRatingCount++;
   }
 
+  // Validate scoringRequirement (checkbox only)
+  if (field.scoringRequirement !== undefined) {
+    if (field.type !== 'checkbox') {
+      result.addWarning(
+        'scoringRequirement is only supported on checkbox fields and will be ignored',
+        `${path}.scoringRequirement`
+      );
+    } else if (typeof field.scoringRequirement !== 'object' || field.scoringRequirement === null) {
+      result.addError(
+        'scoringRequirement must be an object with a requiredValue property',
+        `${path}.scoringRequirement`
+      );
+    } else if (typeof field.scoringRequirement.requiredValue !== 'boolean') {
+      result.addError(
+        'scoringRequirement.requiredValue must be a boolean (true or false)',
+        `${path}.scoringRequirement.requiredValue`
+      );
+    }
+  }
+
   // invertColor is only meaningful on checkbox fields with isConfidenceRating
   if (field.invertColor !== undefined && field.type !== 'checkbox') {
     result.addWarning(

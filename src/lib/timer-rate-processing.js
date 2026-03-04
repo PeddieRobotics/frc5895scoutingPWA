@@ -1,4 +1,5 @@
 import { ensureScoutLeadsTableForGame } from "./game-config";
+import { extractScoringRequirementFields } from "./schema-generator";
 
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
@@ -51,7 +52,8 @@ function buildMatchKey(team, match, matchType) {
 
 /**
  * Convert holdTimer second values into scored counts using scout-leads average rates.
- * Rows with timer seconds but missing/invalid rate are excluded from scoring output.
+ * Also excludes rows that fail any boolean scoringRequirement fields.
+ * Excluded rows are collected into unscoredMatches with a reason string.
  */
 async function applyScoutLeadRatesToRows(rows, activeGame, client) {
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -60,7 +62,10 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
 
   const scoutLeadsInfo = await ensureScoutLeadsTableForGame(activeGame, client);
   const timerFields = scoutLeadsInfo?.timerFields || [];
-  if (timerFields.length === 0) {
+
+  // Extract boolean scoring requirement fields from the game config
+  const requirementFields = extractScoringRequirementFields(activeGame?.config_json || {});
+  if (timerFields.length === 0 && requirementFields.length === 0) {
     return {
       scoredRows: rows.map((row) => ({ ...row })),
       unscoredMatches: [],
@@ -68,7 +73,6 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
     };
   }
 
-  const scoutLeadsTableName = assertSafeTableName(scoutLeadsInfo.tableName);
   const teams = Array.from(
     new Set(
       rows
@@ -77,13 +81,15 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
     )
   );
 
-  const averageColumnsSql = timerFields
-    .map((field) => `AVG(NULLIF(${quoteIdentifier(field.name)}, 0)) AS ${quoteIdentifier(field.name)}`)
-    .join(", ");
-
+  // Only query the scout-leads table if there are timer fields to average
   let rateRows = [];
   let teamAverageRows = [];
-  if (teams.length > 0) {
+  if (timerFields.length > 0 && teams.length > 0) {
+    const scoutLeadsTableName = assertSafeTableName(scoutLeadsInfo.tableName);
+    const averageColumnsSql = timerFields
+      .map((field) => `AVG(NULLIF(${quoteIdentifier(field.name)}, 0)) AS ${quoteIdentifier(field.name)}`)
+      .join(", ");
+
     const [matchResult, teamResult] = await Promise.all([
       client.query(
         `SELECT team, match, COALESCE(matchtype, 2) AS matchtype, ${averageColumnsSql}
@@ -136,6 +142,7 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
     const matchRates = matchKey ? ratesByMatch.get(matchKey) : null;
     const teamRates = Number.isInteger(team) ? ratesByTeam.get(team) : null;
     const missingTimerFields = [];
+    const failedRequirements = [];
 
     timerFields.forEach((field) => {
       const seconds = parseNumber(row[field.name]);
@@ -162,7 +169,16 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
       convertedRow[field.name] = seconds * rate;
     });
 
-    if (missingTimerFields.length > 0) {
+    // Check boolean scoring requirements
+    requirementFields.forEach((req) => {
+      const rawValue = row[req.name];
+      const boolValue = rawValue === true || rawValue === 'true' || rawValue === 1;
+      if (boolValue !== req.requiredValue) {
+        failedRequirements.push({ field: req.name, label: req.label, requiredValue: req.requiredValue });
+      }
+    });
+
+    if (missingTimerFields.length > 0 || failedRequirements.length > 0) {
       if (!matchKey) {
         return;
       }
@@ -175,6 +191,7 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
           matchType,
           displayMatch: toDisplayMatch(match, matchType),
           missingTimerFields: [],
+          failedRequirements: [],
           rowsSkipped: 0,
         });
       }
@@ -186,6 +203,11 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
           entry.missingTimerFields.push(item);
         }
       });
+      failedRequirements.forEach((item) => {
+        if (!entry.failedRequirements.some((existing) => existing.field === item.field)) {
+          entry.failedRequirements.push(item);
+        }
+      });
       return;
     }
 
@@ -194,16 +216,27 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
 
   const unscoredMatches = Array.from(unscoredByKey.values())
     .map((entry) => {
-      const labels = entry.missingTimerFields.map((item) => item.label);
+      const timerLabels = entry.missingTimerFields.map((item) => item.label);
+      const reqParts = (entry.failedRequirements || []).map(
+        (item) => `${item.label} must be ${item.requiredValue}`
+      );
+      const reasonParts = [];
+      if (timerLabels.length > 0) {
+        reasonParts.push(`Missing scout-leads rate for ${timerLabels.join(", ")}`);
+      }
+      if (reqParts.length > 0) {
+        reasonParts.push(`Excluded by requirement: ${reqParts.join(", ")}`);
+      }
       return {
         team: entry.team,
         match: entry.match,
         matchType: entry.matchType,
         displayMatch: entry.displayMatch,
         missingTimerFields: entry.missingTimerFields.map((item) => item.field),
-        missingTimerLabels: labels,
+        missingTimerLabels: timerLabels,
+        failedRequirements: (entry.failedRequirements || []).map((item) => item.field),
         rowsSkipped: entry.rowsSkipped,
-        reason: `Missing scout-leads balls/sec rate for ${labels.join(", ")}.`,
+        reason: reasonParts.join("; ") + ".",
       };
     })
     .sort((a, b) => {

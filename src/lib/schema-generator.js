@@ -471,6 +471,63 @@ function generateInsertTemplate(tableName, fields) {
 }
 
 /**
+ * Extract all checkbox fields that carry a scoringRequirement tag.
+ * Returns [{ name, label, requiredValue }] in config order.
+ * requiredValue: true  → row is excluded when the field is false/falsy
+ * requiredValue: false → row is excluded when the field is true/truthy
+ * @param {Object} config - The game configuration JSON
+ * @returns {Array<{ name: string, label: string, requiredValue: boolean }>}
+ */
+function extractScoringRequirementFields(config) {
+  const fields = [];
+  const seen = new Set();
+
+  function processField(field) {
+    if (!field) return;
+
+    if (
+      field.type === 'checkbox' &&
+      field.name &&
+      !seen.has(field.name) &&
+      field.scoringRequirement &&
+      typeof field.scoringRequirement.requiredValue === 'boolean'
+    ) {
+      seen.add(field.name);
+      fields.push({
+        name: field.name,
+        label: field.label || field.name,
+        requiredValue: field.scoringRequirement.requiredValue,
+      });
+      return;
+    }
+
+    if (field.type === 'table' && Array.isArray(field.rows)) {
+      field.rows.forEach((row) => {
+        if (Array.isArray(row.fields)) row.fields.forEach(processField);
+      });
+      return;
+    }
+
+    if (field.type === 'collapsible') {
+      if (field.trigger) processField(field.trigger);
+      if (Array.isArray(field.content)) field.content.forEach(processField);
+    }
+  }
+
+  if (config?.basics?.fields) {
+    config.basics.fields.forEach(processField);
+  }
+
+  if (config?.sections) {
+    config.sections.forEach((section) => {
+      if (section?.fields) section.fields.forEach(processField);
+    });
+  }
+
+  return fields;
+}
+
+/**
  * Find the single field marked with isConfidenceRating: true in the config.
  * Supports starRating/qualitative (gradient 1–6) and checkbox (boolean ratio).
  * Returns { name, label, fieldType, invertColor } or null if none.
@@ -523,6 +580,7 @@ function extractConfidenceRatingField(config) {
 export {
   extractFieldsFromConfig,
   extractConfidenceRatingField,
+  extractScoringRequirementFields,
   extractTimerFieldsFromConfig,
   generateCreateTableSQL,
   generateCreateScoutLeadsTableSQL,
