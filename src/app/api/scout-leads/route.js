@@ -409,12 +409,54 @@ export async function POST(request) {
   const placeholders = allColumns.map((_, index) => `$${index + 1}`).join(", ");
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO ${scoutLeadsTableName} (${allColumns.map((column) => quoteIdentifier(column)).join(", ")})
-       VALUES (${placeholders})
-       RETURNING *`,
-      allValues
-    );
+    let result;
+
+    // If a scoutname is provided, upsert: update the existing row for this person/match,
+    // or insert if no prior entry exists.
+    if (scoutName) {
+      // $1 = scoutName, $2..$(n+1) = timerValues, $(n+2) = scoutteam, $(n+3) = team, $(n+4) = match, $(n+5) = matchtype
+      const n = timerColumns.length;
+      const setClauses = timerColumns
+        .map((col, i) => `${quoteIdentifier(col)} = $${i + 2}`)
+        .join(", ");
+      const updateValues = [
+        scoutName,
+        ...timerValues,
+        teamName || null,
+        team,
+        storedMatch,
+        matchType,
+      ];
+
+      const updateResult = await client.query(
+        `UPDATE ${scoutLeadsTableName}
+         SET ${setClauses}, scoutteam = $${n + 2}, timestamp = CURRENT_TIMESTAMP
+         WHERE LOWER(TRIM(scoutname)) = LOWER(TRIM($1))
+           AND team = $${n + 3}
+           AND match = $${n + 4}
+           AND matchtype = $${n + 5}
+         RETURNING *`,
+        updateValues
+      );
+
+      if (updateResult.rowCount > 0) {
+        result = updateResult;
+      } else {
+        result = await client.query(
+          `INSERT INTO ${scoutLeadsTableName} (${allColumns.map((column) => quoteIdentifier(column)).join(", ")})
+           VALUES (${placeholders})
+           RETURNING *`,
+          allValues
+        );
+      }
+    } else {
+      result = await client.query(
+        `INSERT INTO ${scoutLeadsTableName} (${allColumns.map((column) => quoteIdentifier(column)).join(", ")})
+         VALUES (${placeholders})
+         RETURNING *`,
+        allValues
+      );
+    }
 
     return NextResponse.json({
       success: true,

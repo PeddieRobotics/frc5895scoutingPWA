@@ -82,15 +82,26 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
     .join(", ");
 
   let rateRows = [];
+  let teamAverageRows = [];
   if (teams.length > 0) {
-    const result = await client.query(
-      `SELECT team, match, COALESCE(matchtype, 2) AS matchtype, ${averageColumnsSql}
-       FROM ${scoutLeadsTableName}
-       WHERE team = ANY($1::int[])
-       GROUP BY team, match, COALESCE(matchtype, 2)`,
-      [teams]
-    );
-    rateRows = result.rows;
+    const [matchResult, teamResult] = await Promise.all([
+      client.query(
+        `SELECT team, match, COALESCE(matchtype, 2) AS matchtype, ${averageColumnsSql}
+         FROM ${scoutLeadsTableName}
+         WHERE team = ANY($1::int[])
+         GROUP BY team, match, COALESCE(matchtype, 2)`,
+        [teams]
+      ),
+      client.query(
+        `SELECT team, ${averageColumnsSql}
+         FROM ${scoutLeadsTableName}
+         WHERE team = ANY($1::int[])
+         GROUP BY team`,
+        [teams]
+      ),
+    ]);
+    rateRows = matchResult.rows;
+    teamAverageRows = teamResult.rows;
   }
 
   const ratesByMatch = new Map();
@@ -100,6 +111,14 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
     const matchType = normalizeMatchType(row.matchtype);
     if (!Number.isInteger(team) || !Number.isInteger(match)) return;
     ratesByMatch.set(buildMatchKey(team, match, matchType), row);
+  });
+
+  // Team-level average rates as fallback when a specific match has no entry
+  const ratesByTeam = new Map();
+  teamAverageRows.forEach((row) => {
+    const team = parseInteger(row.team, null);
+    if (!Number.isInteger(team)) return;
+    ratesByTeam.set(team, row);
   });
 
   const scoredRows = [];
@@ -114,7 +133,8 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
       ? buildMatchKey(team, match, matchType)
       : null;
 
-    const averagedRates = matchKey ? ratesByMatch.get(matchKey) : null;
+    const matchRates = matchKey ? ratesByMatch.get(matchKey) : null;
+    const teamRates = Number.isInteger(team) ? ratesByTeam.get(team) : null;
     const missingTimerFields = [];
 
     timerFields.forEach((field) => {
@@ -126,8 +146,10 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
         return;
       }
 
-      const averagedRate = averagedRates ? parseNumber(averagedRates[field.name]) : null;
-      const hasValidRate = averagedRate !== null && averagedRate > 0;
+      // Use match-specific rate first, fall back to team average across all matches
+      const rate = (matchRates ? parseNumber(matchRates[field.name]) : null)
+        ?? (teamRates ? parseNumber(teamRates[field.name]) : null);
+      const hasValidRate = rate !== null && rate > 0;
       if (!hasValidRate) {
         missingTimerFields.push({
           field: field.name,
@@ -137,7 +159,7 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
         return;
       }
 
-      convertedRow[field.name] = seconds * averagedRate;
+      convertedRow[field.name] = seconds * rate;
     });
 
     if (missingTimerFields.length > 0) {
