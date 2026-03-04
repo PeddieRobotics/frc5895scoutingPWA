@@ -496,6 +496,8 @@ Important behavior:
 | `name` | string | Yes | Database column name for stored seconds |
 | `label` | string | Yes | Display label on the scouting form |
 | `buttonLabel` | string | No | Custom text for the hold button |
+| `buttonColor` | string | No | CSS color for the idle hold button (e.g. `"#2da44e"`). Defaults to blue (`#1f6feb`). Does not affect the active/holding red state. |
+| `inline` | boolean | No | When `true`, consecutive `inline` holdTimers in the same section render side-by-side in a flex row instead of stacking. See [Side-by-Side Layout](#hold-timer-side-by-side-layout). |
 | `precision` | integer | No | Decimal places shown on form (0-4, default 2) |
 | `min` | number | No | Minimum allowed seconds (default 0) |
 | `max` | number | No | Maximum allowed seconds |
@@ -566,6 +568,49 @@ Important behavior:
 ```
 
 **Renders as:** A live seconds display, hold button, and clear button. Releasing the button commits elapsed time.
+
+**Example (custom button color):**
+
+```json
+{
+  "type": "holdTimer",
+  "name": "defensetime",
+  "label": "Defense Time",
+  "buttonLabel": "Hold While Defending",
+  "buttonColor": "#8250df",
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 }
+}
+```
+
+#### Hold Timer Side-by-Side Layout
+
+When `"inline": true` is set on consecutive holdTimer fields within the same section, they render in a flex row side-by-side instead of stacking vertically. Their recording lists also appear side-by-side below each timer. On narrow screens the row wraps to a single column automatically.
+
+```json
+{
+  "type": "holdTimer",
+  "name": "autofuel",
+  "label": "Auto Fuel (s)",
+  "buttonLabel": "Hold While Shooting",
+  "buttonColor": "#1f6feb",
+  "inline": true,
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 }
+},
+{
+  "type": "holdTimer",
+  "name": "autopass",
+  "label": "Auto Pass (s)",
+  "buttonLabel": "Hold While Passing",
+  "buttonColor": "#2da44e",
+  "inline": true,
+  "dbColumn": { "type": "NUMERIC(10,3)", "default": 0 }
+}
+```
+
+Notes:
+- Only consecutive `holdTimer` fields with `inline: true` are grouped — other field types between them break the group.
+- A single `inline: true` field with no inline neighbors just renders full-width.
+- `inline` has no effect on the database schema or `/scout-leads` display.
 
 ---
 

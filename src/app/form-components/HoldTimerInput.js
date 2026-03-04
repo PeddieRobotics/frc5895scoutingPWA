@@ -14,6 +14,10 @@ export default function HoldTimerInput({
   visibleName,
   internalName,
   buttonLabel,
+  buttonColor,
+  inline = false,
+  minButtonHeight = 0,
+  buttonWrapRef,
   precision = 2,
   min = 0,
   max = 9999,
@@ -196,7 +200,7 @@ export default function HoldTimerInput({
     idleHoldLabel.length >= activeHoldLabel.length ? idleHoldLabel : activeHoldLabel;
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${inline ? styles.containerInline : ""}`}>
       <label htmlFor={internalName} className={styles.label}>
         {visibleName}
       </label>
@@ -206,13 +210,18 @@ export default function HoldTimerInput({
       </div>
 
       <div className={styles.timerButtonsGroup}>
-        <div className={styles.holdButtonWrap}>
+        <div
+          className={styles.holdButtonWrap}
+          ref={buttonWrapRef}
+          style={minButtonHeight ? { minHeight: `${minButtonHeight}px` } : undefined}
+        >
           <span className={styles.holdButtonSizer} aria-hidden="true">
             {sizingHoldLabel}
           </span>
           <button
             type="button"
             className={`${styles.holdButton} ${isHolding ? styles.holding : ""}`}
+            style={{ "--btn-color": buttonColor || "#1f6feb" }}
             onPointerDown={startHolding}
             onPointerUp={() => stopHolding(true)}
             onPointerCancel={() => stopHolding(true)}
@@ -237,77 +246,30 @@ export default function HoldTimerInput({
       />
 
       {recordings.length > 0 && (
-        <>
-          <table className={styles.recordingsTable}>
-            <thead>
-              <tr>
-                <th className={styles.indexColumn}>#</th>
-                <th className={styles.durationColumn}>Duration</th>
-                <th className={styles.actionColumn}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {recordings.map((r, idx) => (
-                <tr key={r.id}>
-                  <td className={styles.indexCell}>{idx + 1}</td>
-                  <td className={styles.durationCell}>
-                    {r.duration.toFixed(normalizedPrecision)}s
-                  </td>
-                  <td className={styles.actionCell}>
-                    <button
-                      type="button"
-                      className={styles.deleteBtn}
-                      onClick={() => deleteRecording(r.id)}
-                      aria-label={`Delete recording ${idx + 1}`}
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className={styles.totalRow}>
-                <td colSpan={2} className={styles.totalCell}>
-                  Total: {totalSeconds.toFixed(normalizedPrecision)}s
-                </td>
-                <td className={styles.actionCell}></td>
-              </tr>
-            </tfoot>
-          </table>
-
-          <div
-            className={styles.recordingsMobileList}
-            role="list"
-            aria-label={`${visibleName || internalName} recordings`}
-          >
-            {recordings.map((r, idx) => (
-              <div key={`mobile-${r.id}`} className={styles.mobileRecordingRow} role="listitem">
-                <div className={styles.mobileRecordingMain}>
-                  <span className={styles.mobileRecordingIndex}>Recording #{idx + 1}</span>
-                  <span className={styles.mobileRecordingDuration}>
-                    {r.duration.toFixed(normalizedPrecision)}s
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.deleteBtn}
-                  onClick={() => deleteRecording(r.id)}
-                  aria-label={`Delete recording ${idx + 1}`}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-
-            <div className={styles.mobileTotalRow} role="listitem" aria-label="Total recorded time">
-              <span className={styles.mobileTotalLabel}>Total</span>
-              <span className={styles.mobileTotalValue}>
-                {totalSeconds.toFixed(normalizedPrecision)}s
+        <div
+          className={inline ? styles.recordingsListSingle : styles.recordingsList}
+          role="list"
+          aria-label={`${visibleName || internalName} recordings`}
+        >
+          {recordings.map((r, idx) => (
+            <div key={r.id} className={styles.recordingCard} role="listitem">
+              <span className={styles.recordingDuration}>
+                {r.duration.toFixed(normalizedPrecision)}s
               </span>
+              <button
+                type="button"
+                className={styles.deleteBtn}
+                onClick={() => deleteRecording(r.id)}
+                aria-label={`Delete recording ${idx + 1}`}
+              >
+                ✕
+              </button>
             </div>
+          ))}
+          <div className={styles.recordingTotal} role="listitem" aria-label="Total recorded time">
+            Total: {totalSeconds.toFixed(normalizedPrecision)}s
           </div>
-        </>
+        </div>
       )}
 
       {confirmDialog.show && (

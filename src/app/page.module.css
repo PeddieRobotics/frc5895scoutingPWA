@@ -1246,6 +1246,20 @@ hr.subsubheading {
   gap: 8px;
 }
 
+/* Side-by-side holdTimer row — wraps consecutive inline: true holdTimer fields */
+.holdTimerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.holdTimerRow > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 /* Collapsible expanded content area */
 .collapsibleContent {
   display: flex;

@@ -4,7 +4,7 @@
  * All form content is driven entirely by the JSON game configuration.
  * No hardcoded field names or game-specific components.
  */
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import Header from './Header';
 import SubHeader from './SubHeader';
 import TextInput from './TextInput';
@@ -16,6 +16,37 @@ import MultiSelect from './MultiSelect';
 import Qualitative from './Qualitative';
 import HoldTimerInput from './HoldTimerInput';
 import styles from '../page.module.css';
+
+function InlineTimerGroup({ fields, groupKey }) {
+  const buttonWrapRefs = useRef([]);
+  const [syncedHeight, setSyncedHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const heights = buttonWrapRefs.current.map(r => r?.getBoundingClientRect().height ?? 0);
+    const maxH = Math.max(...heights);
+    setSyncedHeight(prev => (prev !== maxH ? maxH : prev));
+  });
+
+  return (
+    <div className={styles.holdTimerRow}>
+      {fields.map((f, gi) => (
+        <HoldTimerInput
+          key={f.name || gi}
+          visibleName={f.label || f.name}
+          internalName={f.name}
+          buttonLabel={f.buttonLabel}
+          buttonColor={f.buttonColor}
+          precision={f.precision}
+          min={f.min}
+          max={f.max}
+          inline
+          minButtonHeight={syncedHeight}
+          buttonWrapRef={el => { buttonWrapRefs.current[gi] = el; }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function DynamicFormRenderer({
   config,
@@ -100,6 +131,7 @@ export default function DynamicFormRenderer({
             visibleName={field.label || field.name}
             internalName={field.name}
             buttonLabel={field.buttonLabel}
+            buttonColor={field.buttonColor}
             precision={field.precision}
             min={field.min}
             max={field.max}
@@ -168,6 +200,33 @@ export default function DynamicFormRenderer({
         console.warn(`Unknown field type: ${field.type}`);
         return null;
     }
+  };
+
+  // Render a list of fields, grouping consecutive inline holdTimers into a flex row
+  const renderSectionFields = (fields, prefix = 'field') => {
+    const result = [];
+    let i = 0;
+    while (i < fields.length) {
+      const field = fields[i];
+      if (field?.type === 'holdTimer' && field.inline) {
+        const group = [];
+        while (i < fields.length && fields[i]?.type === 'holdTimer' && fields[i].inline) {
+          group.push(fields[i]);
+          i++;
+        }
+        result.push(
+          <InlineTimerGroup
+            key={`${prefix}-inline-group-${i}`}
+            fields={group}
+            groupKey={`${prefix}-inline-group-${i}`}
+          />
+        );
+      } else {
+        result.push(renderField(field, `${prefix}-${i}`));
+        i++;
+      }
+    }
+    return result;
   };
 
   // Render a table structure
@@ -240,9 +299,7 @@ export default function DynamicFormRenderer({
           <div key={section.id || `section-${sectionIndex}`} className={styles.SectionWrapper}>
             {section.header && <Header headerName={section.header} />}
             <div className={styles.SectionContent}>
-              {section.fields?.map((field, fieldIndex) =>
-                renderField(field, `${section.id}-${fieldIndex}`)
-              )}
+              {renderSectionFields(section.fields || [], section.id || `section-${sectionIndex}`)}
             </div>
           </div>
         );
