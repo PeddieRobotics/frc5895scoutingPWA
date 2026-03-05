@@ -398,6 +398,16 @@ export default function Home() {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.config) {
+            // Clear form field data if the active game has changed
+            const storedGameId = localStorage.getItem('active_game_id');
+            if (storedGameId !== null && storedGameId !== String(data.gameId)) {
+              console.log('[Form] Active game changed, clearing saved form data');
+              Object.keys(localStorage)
+                .filter(k => k.startsWith('form_field_'))
+                .forEach(k => localStorage.removeItem(k));
+            }
+            localStorage.setItem('active_game_id', String(data.gameId));
+
             setActiveGameConfig({
               gameId: data.gameId,
               gameName: data.gameName,
