@@ -90,6 +90,7 @@
         },
         {
           "type": "singleSelect",
+          "subHeader": "End Position",
           "name": "autoclimb",
           "label": "Auto Climb",
           "dbColumn": {

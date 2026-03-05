@@ -403,7 +403,7 @@ export default function Home() {
             if (storedGameId !== null && storedGameId !== String(data.gameId)) {
               console.log('[Form] Active game changed, clearing saved form data');
               Object.keys(localStorage)
-                .filter(k => k.startsWith('form_field_'))
+                .filter(k => k.startsWith('form_field_') || k.startsWith('holdtimer_') || k.startsWith('form_multiselect_'))
                 .forEach(k => localStorage.removeItem(k));
             }
             localStorage.setItem('active_game_id', String(data.gameId));
