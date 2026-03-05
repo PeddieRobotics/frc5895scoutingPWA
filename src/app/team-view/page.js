@@ -2,6 +2,7 @@
 import styles from "./page.module.css";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import VBox from "./components/VBox";
 import HBox from "./components/HBox";
 import Comments from "./components/Comments";
@@ -59,6 +60,11 @@ function TeamView() {
     const [hasTopBar, setHasTopBar] = useState(false);
     const [source, setSource] = useState(null);
     const [scoutLeadComments, setScoutLeadComments] = useState([]);
+    const [tbaRank, setTbaRank] = useState(null);
+    const [fetchingTbaRank, setFetchingTbaRank] = useState(false);
+    const [tbaRankError, setTbaRankError] = useState(null);
+    const [loadingMatch, setLoadingMatch] = useState(null);
+    const router = useRouter();
 
     const { config, gameId, loading: configLoading } = useGameConfig();
     const configIssues = useMemo(() => {
@@ -138,6 +144,43 @@ function TeamView() {
             .then(d => { if (d?.comments) setScoutLeadComments(d.comments); })
             .catch(() => {});
     }, [team, gameId]);
+
+    async function fetchTbaRank() {
+        setFetchingTbaRank(true);
+        setTbaRankError(null);
+        try {
+            const res = await fetch(`/api/get-tba-rank?team=${team}`);
+            const data = await res.json();
+            if (!res.ok) {
+                setTbaRankError(data.message || 'TBA fetch failed');
+            } else {
+                setTbaRank(data.rank ? `#${data.rank} of ${data.totalTeams}` : 'Not ranked');
+            }
+        } catch {
+            setTbaRankError('TBA fetch failed');
+        } finally {
+            setFetchingTbaRank(false);
+        }
+    }
+
+    async function handleMatchClick(matchNumber) {
+        setLoadingMatch(matchNumber);
+        try {
+            const params = new URLSearchParams({ match: matchNumber });
+            if (gameId) params.set('gameId', String(gameId));
+            const res = await fetch(`/api/get-teams-of-match?${params.toString()}`);
+            const data = await res.json();
+            if (data.team1 && data.team2 && data.team3) {
+                router.push(`/match-view?match=${matchNumber}&team1=${data.team1}&team2=${data.team2}&team3=${data.team3}&team4=${data.team4}&team5=${data.team5}&team6=${data.team6}`);
+            } else {
+                router.push(`/match-view?match=${matchNumber}`);
+            }
+        } catch {
+            router.push(`/match-view?match=${matchNumber}`);
+        } finally {
+            setLoadingMatch(null);
+        }
+    }
 
     function AllianceButtons({ t1, t2, t3, colors }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
@@ -849,15 +892,29 @@ function TeamView() {
                                         .filter(match => match.team == safeData.team)
                                         .sort((a, b) => a.match - b.match)
                                         .map((match, index) => (
-                                            <Link
+                                            <button
                                                 key={index}
-                                                href={`/match-view?match=${match.match}`}
                                                 className={styles.matchLink}
+                                                onClick={() => handleMatchClick(match.match)}
+                                                disabled={loadingMatch === match.match}
                                             >
-                                                <span style={{ background: Colors[0][0] }}>{match.match}</span>
-                                            </Link>
+                                                <span style={{ background: loadingMatch === match.match ? '#aaa' : Colors[0][0] }}>
+                                                    {loadingMatch === match.match ? '…' : match.match}
+                                                </span>
+                                            </button>
                                         ))
                                     }
+                                </div>
+                                <div className={styles.tbaRankRow}>
+                                    {tbaRank && <span className={styles.tbaRankBadge}>TBA Rank: {tbaRank}</span>}
+                                    {tbaRankError && <span className={styles.tbaRankError}>{tbaRankError}</span>}
+                                    <button
+                                        className={styles.tbaRankButton}
+                                        onClick={fetchTbaRank}
+                                        disabled={fetchingTbaRank}
+                                    >
+                                        {fetchingTbaRank ? 'Fetching...' : 'TBA Rank'}
+                                    </button>
                                 </div>
                             </div>
                         </div>

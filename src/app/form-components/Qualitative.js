@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import styles from './Qualitative.module.css'
 
-export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0 }) {
+export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0, max = 6 }) {
     const lsKey = `form_field_${internalName}`;
     const [rating, setRating] = useState(() => {
         if (typeof window === 'undefined') return forcedMinRating;
@@ -47,7 +47,7 @@ export default function Qualitative ({ visibleName, internalName, description, s
             <hr></hr>
             {description && <div className={styles.description}>{description}</div>}
             <div className={styles.ratings}>
-                {[1,2,3,4,5,6].map(ratingValue => {
+                {Array.from({ length: max }, (_, i) => i + 1).map(ratingValue => {
                     return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => {
                         setRating(ratingValue);
                         if (typeof window !== 'undefined') {

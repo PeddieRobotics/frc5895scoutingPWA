@@ -722,7 +722,7 @@ function validateDisplaySection(display, fieldNames, result) {
       return;
     }
     if (fieldName && !fieldNames.has(fieldName.toLowerCase())) {
-      result.addWarning(`Display references unknown field: "${fieldName}"`, path);
+      result.addError(`Display references unknown field: "${fieldName}"`, path);
     }
   };
 

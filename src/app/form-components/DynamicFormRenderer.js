@@ -194,6 +194,7 @@ export default function DynamicFormRenderer({
             internalName={field.name}
             description={field.description}
             minWhenVisible={field.minWhenVisible}
+            max={6}
           />
         );
 

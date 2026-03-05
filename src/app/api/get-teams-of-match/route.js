@@ -35,6 +35,8 @@ export async function GET(request) {
       );
     }
 
+    console.log(`[get-teams-of-match] Fetching match ${matchNumber} from TBA event: ${tbaEventCode}`);
+
     const response = await fetch(
         `https://www.thebluealliance.com/api/v3/event/${tbaEventCode}/matches/simple`,       {
         headers: {

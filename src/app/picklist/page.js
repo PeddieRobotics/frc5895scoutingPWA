@@ -179,7 +179,7 @@ export default function Picklist() {
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [teamData, setTeamData] = useState([]);
-  const [eventCode, setEventCode] = useState('2025njbe'); // Default event code
+  const [eventCode, setEventCode] = useState('');
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
   const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Add authentication state
@@ -354,6 +354,13 @@ export default function Picklist() {
 
     validateToken();
   }, [isClient, gameId]);
+
+  // Set default event code from game config (URL param takes priority)
+  useEffect(() => {
+    if (config?.tbaEventCode && !eventCode) {
+      setEventCode(config.tbaEventCode);
+    }
+  }, [config]);
 
   // Split the initialization into separate effects to avoid unnecessary re-fetches
   useEffect(() => {

@@ -6,8 +6,15 @@ import {
   deleteGame,
   getGameDataCount,
   getTableColumns,
+  getScoutLeadsTableName,
+  migrateScoutingTable,
+  migrateScoutLeadsTable,
 } from '../../../../../lib/game-config';
 import { validateConfig } from '../../../../../lib/config-validator';
+import {
+  extractFieldsFromConfig,
+  extractTimerFieldsFromConfig,
+} from '../../../../../lib/schema-generator';
 
 export const revalidate = 0;
 
@@ -58,6 +65,7 @@ export async function GET(request, { params }) {
         tableName: game.table_name,
         config: game.config_json,
         isActive: game.is_active,
+        tbaEventCode: game.tba_event_code || game.config_json?.tbaEventCode || '',
         createdAt: game.created_at,
         updatedAt: game.updated_at,
         createdBy: game.created_by,
@@ -93,30 +101,29 @@ export async function PUT(request, { params }) {
     const gameId = parseInt(id, 10);
 
     if (isNaN(gameId)) {
-      return NextResponse.json(
-        { message: 'Invalid game ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Invalid game ID' }, { status: 400 });
     }
 
     const body = await request.json();
-    const { displayName, configJson } = body;
+    const { displayName, configJson, tbaEventCode } = body;
 
-    // Validate configJson if provided
-    if (configJson) {
-      let config = configJson;
+    // Parse and validate configJson if provided
+    let parsedConfig = undefined;
+    if (configJson !== undefined) {
       if (typeof configJson === 'string') {
         try {
-          config = JSON.parse(configJson);
+          parsedConfig = JSON.parse(configJson);
         } catch (e) {
           return NextResponse.json(
             { message: 'Invalid JSON configuration', error: e.message },
             { status: 400 }
           );
         }
+      } else {
+        parsedConfig = configJson;
       }
 
-      const validationResult = validateConfig(config);
+      const validationResult = validateConfig(parsedConfig);
       if (!validationResult.valid) {
         return NextResponse.json(
           {
@@ -129,39 +136,59 @@ export async function PUT(request, { params }) {
       }
     }
 
-    // Get current game to check if config is changing
+    // Get current game
     const currentGame = await getGameById(gameId);
     if (!currentGame) {
-      return NextResponse.json(
-        { message: 'Game not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Game not found' }, { status: 404 });
     }
 
-    // Check if there's data and config is changing
-    if (configJson) {
-      const dataCount = await getGameDataCount(currentGame.table_name);
-      if (dataCount > 0) {
-        return NextResponse.json(
-          {
-            message: 'Cannot update configuration when data exists. This could cause data loss.',
-            dataCount,
-            warning: 'If you need to update the config, either delete all data first or create a new game.',
-          },
-          { status: 400 }
-        );
+    // If tbaEventCode is being updated standalone (no full config replacement),
+    // patch it into the current config_json so the column and JSON stay in sync.
+    if (tbaEventCode !== undefined && parsedConfig === undefined) {
+      const currentConfig = { ...currentGame.config_json };
+      if (tbaEventCode) {
+        currentConfig.tbaEventCode = tbaEventCode;
+      } else {
+        delete currentConfig.tbaEventCode;
+      }
+      parsedConfig = currentConfig;
+    } else if (tbaEventCode !== undefined && parsedConfig !== undefined) {
+      // Explicit tbaEventCode takes precedence over what's in the JSON
+      if (tbaEventCode) {
+        parsedConfig.tbaEventCode = tbaEventCode;
+      } else {
+        delete parsedConfig.tbaEventCode;
       }
     }
 
-    // Update the game
-    const game = await updateGame(gameId, {
-      displayName,
-      configJson: configJson ? (typeof configJson === 'string' ? JSON.parse(configJson) : configJson) : undefined,
-    });
+    // Run schema migrations for new fields
+    let columnsAdded = [];
+    if (parsedConfig !== undefined) {
+      const currentColumns = await getTableColumns(currentGame.table_name);
+      const currentColNames = new Set(currentColumns.map(c => c.column_name));
+
+      const newFields = extractFieldsFromConfig(parsedConfig);
+      const addedFields = newFields.filter(f => !currentColNames.has(f.name));
+
+      if (addedFields.length > 0) {
+        const result = await migrateScoutingTable(currentGame.table_name, addedFields);
+        columnsAdded = result.columnsAdded;
+      }
+
+      const newTimerFields = extractTimerFieldsFromConfig(parsedConfig);
+      if (newTimerFields.length > 0) {
+        const scoutLeadsTableName = getScoutLeadsTableName(currentGame.game_name);
+        await migrateScoutLeadsTable(scoutLeadsTableName, newTimerFields);
+      }
+    }
+
+    // Update the game config and/or display name
+    const game = await updateGame(gameId, { displayName, configJson: parsedConfig });
 
     return NextResponse.json({
       success: true,
       message: 'Game updated successfully',
+      columnsAdded,
       game: {
         id: game.id,
         gameName: game.game_name,

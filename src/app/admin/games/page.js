@@ -562,6 +562,7 @@ export default function GamesPage() {
                   <div className={styles.gameMeta}>
                     <span>Table: {game.table_name}</span>
                     <span>Records: {game.dataCount || 0}</span>
+                    {game.tba_event_code && <span>TBA: {game.tba_event_code}</span>}
                     <span>Created: {formatDate(game.created_at)}</span>
                     {game.created_by && <span>By: {game.created_by}</span>}
                   </div>

@@ -43,6 +43,8 @@ function Compare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
+  const [tbaRanks, setTbaRanks] = useState({});
+  const [fetchingTbaRanks, setFetchingTbaRanks] = useState(false);
   const { config, gameId, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(
@@ -201,6 +203,27 @@ function Compare() {
     };
   }, [teams, gameId]);
 
+  async function fetchTbaRanks() {
+    setFetchingTbaRanks(true);
+    try {
+      const results = await Promise.all(
+        teams.map(team =>
+          fetch(`/api/get-tba-rank?team=${team}`)
+            .then(r => r.json())
+            .then(d => ({ team, rank: d.rank, total: d.totalTeams, error: d.message }))
+            .catch(() => ({ team, rank: null, error: 'Failed' }))
+        )
+      );
+      const ranks = {};
+      results.forEach(({ team, rank, total, error }) => {
+        ranks[team] = rank ? `#${rank}/${total}` : (error || 'N/A');
+      });
+      setTbaRanks(ranks);
+    } finally {
+      setFetchingTbaRanks(false);
+    }
+  }
+
   if (loading || configLoading) {
     return (
       <div className={styles.container}>
@@ -230,10 +253,14 @@ function Compare() {
         {teams.map((team, index) => (
           <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
             <button style={{ backgroundColor: COLORS[index] }}>
-              View Team {team} Details
+              {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
+              View Team {team}
             </button>
           </Link>
         ))}
+        <button onClick={fetchTbaRanks} disabled={fetchingTbaRanks} style={{ marginLeft: '0.5rem' }}>
+          {fetchingTbaRanks ? 'Fetching...' : 'TBA Ranks'}
+        </button>
       </div>
 
       <div className={styles.comparisonGrid}>

@@ -82,7 +82,20 @@ export async function PATCH(request) {
   allowedFieldNames.add("scoutname");
   allowedFieldNames.add("noshow");
 
-  const filteredUpdates = Object.entries(updates).filter(([key]) => allowedFieldNames.has(key));
+  const qualitativeFieldNames = new Set(
+    configFields
+      .filter((f) => f.type === "starRating" || f.type === "qualitative")
+      .map((f) => f.name)
+  );
+
+  const filteredUpdates = Object.entries(updates)
+    .filter(([key]) => allowedFieldNames.has(key))
+    .map(([key, val]) => {
+      if (qualitativeFieldNames.has(key) && typeof val === "number") {
+        return [key, Math.max(0, Math.min(6, val))];
+      }
+      return [key, val];
+    });
 
   if (filteredUpdates.length === 0) {
     return NextResponse.json({ message: "No valid fields to update" }, { status: 400 });

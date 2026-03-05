@@ -94,7 +94,7 @@ async function getAllGames() {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT id, game_name, display_name, table_name, is_active, created_at, updated_at, created_by
+      SELECT id, game_name, display_name, table_name, is_active, tba_event_code, created_at, updated_at, created_by
       FROM game_configs
       ORDER BY created_at DESC
     `);
@@ -262,11 +262,12 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     console.log(`[GameConfig] Created scout leads table: ${scoutLeadsTableName}`);
 
     // Insert into game_configs
+    const tbaEventCode = configJson.tbaEventCode || null;
     const insertResult = await client.query(`
-      INSERT INTO game_configs (game_name, display_name, table_name, config_json, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO game_configs (game_name, display_name, table_name, config_json, created_by, tba_event_code)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [gameName, displayName, tableName, JSON.stringify(configJson), createdBy]);
+    `, [gameName, displayName, tableName, JSON.stringify(configJson), createdBy, tbaEventCode]);
 
     await client.query('COMMIT');
 
@@ -307,6 +308,9 @@ async function updateGame(id, { displayName, configJson }) {
     if (configJson !== undefined) {
       updates.push(`config_json = $${paramIndex}`);
       values.push(JSON.stringify(configJson));
+      paramIndex++;
+      updates.push(`tba_event_code = $${paramIndex}`);
+      values.push(configJson.tbaEventCode || null);
       paramIndex++;
     }
 
@@ -546,6 +550,70 @@ async function getTableColumns(tableName) {
   }
 }
 
+/**
+ * Add new columns to the scouting table for fields added to the config.
+ * Uses ADD COLUMN IF NOT EXISTS — safe to call multiple times, never drops columns.
+ * @param {string} tableName - The scouting table name
+ * @param {Array} newFields - Field definitions (name, type, default) from extractFieldsFromConfig
+ */
+async function migrateScoutingTable(tableName, newFields) {
+  if (!newFields || newFields.length === 0) return { columnsAdded: [] };
+
+  const client = await pool.connect();
+  try {
+    const columnsAdded = [];
+    for (const field of newFields) {
+      let def = `${field.name} ${field.type}`;
+
+      if (field.default !== undefined && field.default !== null) {
+        if (typeof field.default === 'boolean') {
+          def += ` DEFAULT ${field.default ? 'TRUE' : 'FALSE'}`;
+        } else if (typeof field.default === 'string' && field.default.includes('CURRENT')) {
+          def += ` DEFAULT ${field.default}`;
+        } else if (typeof field.default === 'number') {
+          def += ` DEFAULT ${field.default}`;
+        }
+      }
+
+      await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${def}`);
+      columnsAdded.push(field.name);
+    }
+    return { columnsAdded };
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Add new rate columns to the scout leads table for holdTimer fields added to the config.
+ * Uses ADD COLUMN IF NOT EXISTS — safe to call multiple times, never drops columns.
+ * @param {string} scoutLeadsTableName - The scout leads table name
+ * @param {Array} timerFields - Timer field definitions from extractTimerFieldsFromConfig
+ */
+async function migrateScoutLeadsTable(scoutLeadsTableName, timerFields) {
+  if (!timerFields || timerFields.length === 0) return { columnsAdded: [] };
+
+  const client = await pool.connect();
+  try {
+    const columnsAdded = [];
+    for (const field of timerFields) {
+      const colType = field.scoutLeadsDbColumn?.type || 'NUMERIC(10,4)';
+      const colDefault = field.scoutLeadsDbColumn?.default;
+
+      let def = `${field.name} ${colType}`;
+      if (colDefault !== undefined && colDefault !== null && typeof colDefault === 'number') {
+        def += ` DEFAULT ${colDefault}`;
+      }
+
+      await client.query(`ALTER TABLE ${scoutLeadsTableName} ADD COLUMN IF NOT EXISTS ${def}`);
+      columnsAdded.push(field.name);
+    }
+    return { columnsAdded };
+  } finally {
+    client.release();
+  }
+}
+
 export {
   initializeGameConfigsTable,
   getAllGames,
@@ -564,4 +632,6 @@ export {
   getTableColumns,
   getScoutLeadsTableName,
   ensureScoutLeadsTableForGame,
+  migrateScoutingTable,
+  migrateScoutLeadsTable,
 };
