@@ -17,7 +17,7 @@ export default function MatchViewPage() {
 }
 
 function MatchView() {
-  const { config, loading: configLoading } = useGameConfig();
+  const { config, gameId, loading: configLoading } = useGameConfig();
   const matchViewConfig = config?.display?.matchView;
   const configIssues = useMemo(() => {
     if (configLoading || !config) return [];
@@ -106,7 +106,11 @@ function MatchView() {
       console.error('Error getting user team:', e);
     }
 
-    fetch(`/api/get-alliance-data${useRecent ? '?scope=last3' : ''}`, {
+    const allianceParams = new URLSearchParams();
+    if (useRecent) allianceParams.set('scope', 'last3');
+    if (gameId) allianceParams.set('gameId', String(gameId));
+
+    fetch(`/api/get-alliance-data?${allianceParams.toString()}`, {
       headers: {
         'Authorization': (() => {
           try {
@@ -144,7 +148,7 @@ function MatchView() {
         }
         setLoading(false);
       });
-  }, [urlParams, configLoading, configIssues.length, useRecent]);
+  }, [urlParams, configLoading, configIssues.length, useRecent, gameId]);
 
   useEffect(() => {
     if (configLoading || configIssues.length > 0) return;
@@ -187,7 +191,9 @@ function MatchView() {
           console.error('Error getting user team:', e);
         }
 
-        fetch('/api/get-teams-of-match?match=' + urlParams.match, {
+        const matchParams = new URLSearchParams({ match: String(urlParams.match) });
+        if (gameId) matchParams.set('gameId', String(gameId));
+        fetch(`/api/get-teams-of-match?${matchParams.toString()}`, {
           headers: {
             'Authorization': (() => {
               try {
@@ -265,7 +271,7 @@ function MatchView() {
           });
       }
     }
-  }, [urlParams, allData, configLoading, configIssues.length]);
+  }, [urlParams, allData, configLoading, configIssues.length, gameId]);
 
   if (configLoading) {
     return (
@@ -727,6 +733,7 @@ function MatchView() {
             colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
             defenseField={matchViewConfig?.defenseBarField}
             scope={useRecent ? 'last3' : 'all'}
+            gameId={gameId}
             teamNumbers={[
               (data.team1 || defaultTeam).team,
               (data.team2 || defaultTeam).team,
@@ -745,6 +752,7 @@ function MatchView() {
             colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
             defenseField={matchViewConfig?.defenseBarField}
             scope={useRecent ? 'last3' : 'all'}
+            gameId={gameId}
             teamNumbers={[
               (data.team4 || defaultTeam).team,
               (data.team5 || defaultTeam).team,

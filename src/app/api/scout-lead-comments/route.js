@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
-import { getActiveGame, ensureScoutLeadsTableForGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId, ensureScoutLeadsTableForGame } from "../../../lib/game-config";
 
 export const revalidate = 0;
 
@@ -20,14 +20,25 @@ export async function GET(request) {
     );
   }
 
+  const { searchParams } = new URL(request.url);
+  const requestedGameId = parseRequestedGameId(
+    searchParams.get("gameId") || request.headers.get("X-Game-Id")
+  );
+
   let activeGame;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (e) {
     console.error("[scout-lead-comments] Error loading active game:", e);
   }
 
   if (!activeGame?.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json(
+        { message: `Selected game ${requestedGameId} was not found.`, error: "INVALID_GAME_SELECTION" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { message: "No active game configured.", error: "NO_ACTIVE_GAME" },
       { status: 400 }
@@ -45,7 +56,6 @@ export async function GET(request) {
   }
 
   const tableName = assertSafeTableName(scoutLeadsInfo.tableName);
-  const { searchParams } = new URL(request.url);
   const teamFilter = searchParams.get("team");
 
   const client = await pool.connect();

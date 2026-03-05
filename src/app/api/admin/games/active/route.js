@@ -24,25 +24,48 @@ export async function GET(request) {
           message: 'No active game configured',
           activeGame: null,
         },
-        { status: 200 } // Return 200 so frontend can handle gracefully
+        {
+          status: 200, // Return 200 so frontend can handle gracefully
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      gameId: activeGame.id,
-      gameName: activeGame.game_name,
-      displayName: activeGame.display_name,
-      tableName: activeGame.table_name,
-      scoutLeadsTableName: sanitizeScoutLeadsTableName(activeGame.game_name),
-      config: activeGame.config_json,
-      updatedAt: activeGame.updated_at,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        gameId: activeGame.id,
+        gameName: activeGame.game_name,
+        displayName: activeGame.display_name,
+        tableName: activeGame.table_name,
+        scoutLeadsTableName: sanitizeScoutLeadsTableName(activeGame.game_name),
+        config: activeGame.config_json,
+        updatedAt: activeGame.updated_at,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('[Games API] Error getting active game:', error);
     return NextResponse.json(
       { message: 'Failed to get active game', error: error.message },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
     );
   }
 }

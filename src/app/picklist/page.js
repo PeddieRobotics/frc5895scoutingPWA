@@ -167,7 +167,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
 });
 
 export default function Picklist() {
-  const { config, loading: configLoading } = useGameConfig();
+  const { config, gameId, loading: configLoading } = useGameConfig();
 
   const [fields, setFields] = useState([]);
   const [picklist, setPicklist] = useState([]);
@@ -282,7 +282,9 @@ export default function Picklist() {
         console.log('Validating token for scatter plot graph...');
 
         // First try to get data - if we can get data, we're authenticated
-        const dataResponse = await fetch('/api/get-data', {
+        const tokenParams = new URLSearchParams();
+        if (gameId) tokenParams.set('gameId', String(gameId));
+        const dataResponse = await fetch(`/api/get-data${tokenParams.toString() ? `?${tokenParams.toString()}` : ''}`, {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -351,7 +353,7 @@ export default function Picklist() {
     }
 
     validateToken();
-  }, [isClient]);
+  }, [isClient, gameId]);
 
   // Split the initialization into separate effects to avoid unnecessary re-fetches
   useEffect(() => {
@@ -441,7 +443,9 @@ export default function Picklist() {
       }
 
       // Use credentials: 'include' to send cookies with the request
-      const response = await fetch('/api/get-data', {
+      const dataParams = new URLSearchParams();
+      if (gameId) dataParams.set('gameId', String(gameId));
+      const response = await fetch(`/api/get-data${dataParams.toString() ? `?${dataParams.toString()}` : ''}`, {
         method: 'GET',
         credentials: 'include',
         headers,
@@ -484,7 +488,13 @@ export default function Picklist() {
       setTeamData([]);
       setUnscoredMatches([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, gameId]);
+
+  useEffect(() => {
+    setTeamData([]);
+    setPicklist([]);
+    setUnscoredMatches([]);
+  }, [gameId]);
 
   // Guard: if no picklist config, show fallback (must be after all hooks)
   if (!configLoading && !picklistConfig.weights) {
@@ -520,6 +530,9 @@ export default function Picklist() {
         'Content-Type': 'application/json',
         'X-Source-Page': 'picklist'
       };
+      if (gameId) {
+        headers['X-Game-Id'] = String(gameId);
+      }
 
       // Add Authorization header if we have client-side team info
       const storedCreds = (typeof window !== 'undefined') ? (sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials')) : null;

@@ -60,7 +60,7 @@ function TeamView() {
     const [source, setSource] = useState(null);
     const [scoutLeadComments, setScoutLeadComments] = useState([]);
 
-    const { config, loading: configLoading } = useGameConfig();
+    const { config, gameId, loading: configLoading } = useGameConfig();
     const configIssues = useMemo(() => {
         if (configLoading || !config) return [];
         return getTeamViewConfigIssues(config);
@@ -119,10 +119,10 @@ function TeamView() {
 
     // Effect to fetch data when team changes
     useEffect(() => {
-        if (team && configIssues.length === 0) {
+        if (!configLoading && team && configIssues.length === 0) {
             fetchTeamData(team);
         }
-    }, [team, currentUserTeam, configIssues.length]);
+    }, [team, currentUserTeam, configIssues.length, gameId, configLoading]);
 
     // Fetch scout lead comments for this team
     useEffect(() => {
@@ -131,11 +131,13 @@ function TeamView() {
             try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
         })();
         const headers = creds ? { Authorization: `Basic ${creds}` } : {};
-        fetch(`/api/scout-lead-comments?team=${team}`, { headers })
+        const commentsParams = new URLSearchParams({ team: String(team) });
+        if (gameId) commentsParams.set("gameId", String(gameId));
+        fetch(`/api/scout-lead-comments?${commentsParams.toString()}`, { headers })
             .then(r => r.ok ? r.json() : null)
             .then(d => { if (d?.comments) setScoutLeadComments(d.comments); })
             .catch(() => {});
-    }, [team]);
+    }, [team, gameId]);
 
     function AllianceButtons({ t1, t2, t3, colors }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
@@ -257,7 +259,13 @@ function TeamView() {
             }
         }
 
-        fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+        const params = new URLSearchParams({
+            team: String(team),
+            includeRows: "true",
+        });
+        if (gameId) params.set("gameId", String(gameId));
+
+        fetch(`/api/get-team-data?${params.toString()}`, {
             headers: (() => {
                 const hdrs = {};
                 try {
@@ -280,9 +288,11 @@ function TeamView() {
                     throw new Error('Authentication required');
                 }
 
-                // Check for 404 Not Found
+                // Check for 404 Not Found and surface server details
                 if (response.status === 404) {
-                    throw new Error('Team data not found');
+                    return response.json().then((payload) => {
+                        throw new Error(payload?.message || 'Team data not found');
+                    });
                 }
 
                 return response.json();

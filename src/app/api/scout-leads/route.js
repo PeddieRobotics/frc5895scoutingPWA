@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
-import { getActiveGame, ensureScoutLeadsTableForGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId, ensureScoutLeadsTableForGame } from "../../../lib/game-config";
 import { normalizeMatchForStorage } from "../../../lib/match-utils";
 
 export const revalidate = 0;
@@ -42,6 +42,9 @@ export async function GET(request) {
   const team = parseNumber(searchParams.get("team"));
   const match = parseNumber(searchParams.get("match"));
   const matchTypeRaw = searchParams.get("matchType") ?? searchParams.get("matchtype") ?? 2;
+  const requestedGameId = parseRequestedGameId(
+    searchParams.get("gameId") || request.headers.get("X-Game-Id")
+  );
 
   if (!Number.isInteger(team) || !Number.isInteger(match)) {
     return NextResponse.json(
@@ -52,12 +55,21 @@ export async function GET(request) {
 
   let activeGame = null;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (gameError) {
     console.error("[scout-leads] Error loading active game:", gameError);
   }
 
   if (!activeGame?.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json(
+        {
+          message: `Selected game ${requestedGameId} was not found.`,
+          error: "INVALID_GAME_SELECTION",
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       {
         message: "No active game configured. Please go to /admin/games to create and activate a game.",
@@ -252,6 +264,9 @@ export async function PATCH(request) {
   const matchTypeRaw = body.matchType ?? body.matchtype ?? 2;
   const scoutName = typeof body.scoutname === "string" ? body.scoutname.trim() : null;
   const comment = typeof body.comment === "string" ? body.comment : "";
+  const requestedGameId = parseRequestedGameId(
+    body.gameId ?? body?.__meta?.gameId ?? request.headers.get("X-Game-Id")
+  );
 
   if (!Number.isInteger(team) || !Number.isInteger(match)) {
     return NextResponse.json(
@@ -269,12 +284,18 @@ export async function PATCH(request) {
 
   let activeGame = null;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (gameError) {
     console.error("[scout-leads] Error loading active game:", gameError);
   }
 
   if (!activeGame?.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json(
+        { message: `Selected game ${requestedGameId} was not found.`, error: "INVALID_GAME_SELECTION" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { message: "No active game configured.", error: "NO_ACTIVE_GAME" },
       { status: 400 }
@@ -337,6 +358,9 @@ export async function POST(request) {
   const match = parseNumber(body.match);
   const matchTypeRaw = body.matchType ?? body.matchtype ?? 2;
   const scoutName = typeof body.scoutname === "string" ? body.scoutname.trim() : null;
+  const requestedGameId = parseRequestedGameId(
+    body.gameId ?? body?.__meta?.gameId ?? request.headers.get("X-Game-Id")
+  );
 
   if (!Number.isInteger(team) || !Number.isInteger(match)) {
     return NextResponse.json(
@@ -347,12 +371,21 @@ export async function POST(request) {
 
   let activeGame = null;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (gameError) {
     console.error("[scout-leads] Error loading active game:", gameError);
   }
 
   if (!activeGame?.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json(
+        {
+          message: `Selected game ${requestedGameId} was not found.`,
+          error: "INVALID_GAME_SELECTION",
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       {
         message: "No active game configured. Please go to /admin/games to create and activate a game.",

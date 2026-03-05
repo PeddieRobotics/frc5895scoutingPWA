@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import _ from 'lodash';
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 
 export const revalidate = 60; // caches for 60 seconds
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const matchNumber = searchParams.get("match");
+  const requestedGameId = parseRequestedGameId(
+    searchParams.get("gameId") || request.headers.get("X-Game-Id")
+  );
   
   // Validate match number
   if (_.isNumber(+matchNumber) === false) {
@@ -19,7 +22,7 @@ export async function GET(request) {
   try {
     let tbaEventCode = process.env.TBA_EVENT_CODE || null;
     try {
-      const activeGame = await getActiveGame();
+      const activeGame = await getGameByIdOrActive(requestedGameId);
       tbaEventCode = activeGame?.config_json?.tbaEventCode || tbaEventCode;
     } catch (eventError) {
       console.error("[get-teams-of-match] Failed to load active game event code:", eventError);

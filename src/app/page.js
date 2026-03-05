@@ -388,8 +388,11 @@ export default function Home() {
         setGameConfigLoading(true);
         setGameConfigError(null);
 
-        const response = await fetch('/api/admin/games/active', {
+        const response = await fetch(`/api/admin/games/active?_ts=${Date.now()}`, {
           cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
         });
 
         if (response.ok) {
@@ -685,6 +688,10 @@ export default function Home() {
 
     data.timestamp = new Date().toISOString();
     data.id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    data.__meta = {
+      gameId: activeGameConfig?.gameId ?? null,
+      gameName: activeGameConfig?.gameName ?? null,
+    };
 
     console.log("Processed form data:", data);
     return data;
@@ -763,7 +770,8 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Basic ${authCredentials}`
+          "Authorization": `Basic ${authCredentials}`,
+          ...(activeGameConfig?.gameId ? { "X-Game-Id": String(activeGameConfig.gameId) } : {}),
         },
         body: JSON.stringify(submissionData),
       });

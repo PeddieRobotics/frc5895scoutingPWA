@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { extractFieldsFromConfig } from "../../../lib/schema-generator";
 
 export const revalidate = 0;
@@ -36,6 +36,9 @@ export async function PATCH(request) {
   }
 
   const { id, updates, adminPassword } = body;
+  const requestedGameId = parseRequestedGameId(
+    body.gameId ?? body?.__meta?.gameId ?? request.headers.get("X-Game-Id")
+  );
 
   if (id === undefined || id === null) {
     return NextResponse.json({ message: "id is required" }, { status: 400 });
@@ -47,12 +50,18 @@ export async function PATCH(request) {
 
   let activeGame;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (gameError) {
     console.error("[edit-match-entry] Error loading active game:", gameError);
   }
 
   if (!activeGame?.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json(
+        { message: `Selected game ${requestedGameId} was not found.`, error: "INVALID_GAME_SELECTION" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { message: "No active game configured", error: "NO_ACTIVE_GAME" },
       { status: 400 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from '../../../lib/auth';
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateTeamData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
@@ -27,6 +27,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = searchParams.get('team');
   const includeRows = searchParams.get('includeRows') === 'true';
+  const requestedGameId = parseRequestedGameId(
+    searchParams.get("gameId") || request.headers.get("X-Game-Id")
+  );
 
   if (!team || isNaN(+team)) {
     return NextResponse.json({ message: "ERROR: Invalid team number" }, { status: 400 });
@@ -35,12 +38,18 @@ export async function GET(request) {
   // Get active game - required
   let activeGame = null;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (e) {
     console.error("[get-team-data] Error getting active game:", e);
   }
 
   if (!activeGame || !activeGame.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json({
+        message: `Selected game ${requestedGameId} was not found.`,
+        error: "INVALID_GAME_SELECTION"
+      }, { status: 400 });
+    }
     return NextResponse.json({
       message: "No active game configured. Please go to /admin/games to create and activate a game.",
       error: "NO_ACTIVE_GAME"
@@ -67,7 +76,15 @@ export async function GET(request) {
   }
 
   if (rows.length === 0) {
-    return NextResponse.json({ message: `ERROR: No data for team ${team}` }, { status: 404 });
+    return NextResponse.json({
+      message: `ERROR: No data for team ${team} in game "${activeGame.display_name || activeGame.game_name}" (${tableName}).`,
+      error: "TEAM_NOT_FOUND_IN_ACTIVE_GAME",
+      team: Number(team),
+      gameId: activeGame.id,
+      gameName: activeGame.game_name,
+      displayName: activeGame.display_name,
+      tableName,
+    }, { status: 404 });
   }
 
   // Use config-driven aggregation

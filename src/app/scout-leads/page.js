@@ -311,7 +311,7 @@ function flattenConfigFields(config) {
 }
 
 export default function ScoutLeadsPage() {
-  const { config, loading: configLoading } = useGameConfig();
+  const { config, gameId, loading: configLoading } = useGameConfig();
   const configuredTimerFields = useMemo(
     () => extractTimerFieldsFromConfig(config || {}),
     [config]
@@ -396,7 +396,9 @@ export default function ScoutLeadsPage() {
   useEffect(() => {
     async function loadAllComments() {
       try {
-        const response = await fetch("/api/scout-lead-comments", {
+        const params = new URLSearchParams();
+        if (gameId) params.set("gameId", String(gameId));
+        const response = await fetch(`/api/scout-lead-comments${params.toString() ? `?${params.toString()}` : ""}`, {
           credentials: "include",
           headers: getAuthHeaders(),
         });
@@ -408,7 +410,7 @@ export default function ScoutLeadsPage() {
       }
     }
     loadAllComments();
-  }, []);
+  }, [gameId]);
 
   // Initialize sidebar weights (all zero) when config loads
   useEffect(() => {
@@ -440,6 +442,7 @@ export default function ScoutLeadsPage() {
         match: String(match),
         matchType: String(matchType),
       });
+      if (gameId) params.set("gameId", String(gameId));
 
       const response = await fetch(`/api/scout-leads?${params.toString()}`, {
         method: "GET",
@@ -524,6 +527,7 @@ export default function ScoutLeadsPage() {
           team: Number(team),
           match: Number(match),
           matchType: Number(matchType),
+          gameId: gameId ?? null,
           rates,
         }),
       });
@@ -556,6 +560,7 @@ export default function ScoutLeadsPage() {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...(gameId ? { "X-Game-Id": String(gameId) } : {}),
           ...getAuthHeaders(),
         },
         body: JSON.stringify(weightEntries),
@@ -570,7 +575,9 @@ export default function ScoutLeadsPage() {
       setSidebarTeams(data.teamTable || []);
 
       // Refresh all comments after generating rankings
-      const commentRes = await fetch("/api/scout-lead-comments", {
+      const commentParams = new URLSearchParams();
+      if (gameId) commentParams.set("gameId", String(gameId));
+      const commentRes = await fetch(`/api/scout-lead-comments${commentParams.toString() ? `?${commentParams.toString()}` : ""}`, {
         credentials: "include",
         headers: getAuthHeaders(),
       });
@@ -613,6 +620,7 @@ export default function ScoutLeadsPage() {
           team: Number(team),
           match: Number(match),
           matchType: Number(matchType),
+          gameId: gameId ?? null,
           comment: commentText,
         }),
       });
@@ -684,6 +692,7 @@ export default function ScoutLeadsPage() {
         body: JSON.stringify({
           id: entryId,
           updates: editValues,
+          gameId: gameId ?? null,
           adminPassword: adminUnlocked ? adminPassword : undefined,
         }),
       });

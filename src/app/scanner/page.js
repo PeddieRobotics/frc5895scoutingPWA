@@ -67,7 +67,8 @@ export default function Scanner() {
           method: "POST",
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Basic ${authCredentials}`
+            'Authorization': `Basic ${authCredentials}`,
+            ...(entry?.__meta?.gameId ? { 'X-Game-Id': String(entry.__meta.gameId) } : {})
           },
           body: JSON.stringify(enrichedEntry)
         });

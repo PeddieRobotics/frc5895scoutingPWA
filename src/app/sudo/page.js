@@ -50,7 +50,7 @@ export default function Sudo() {
   const [activeTab, setActiveTab] = useState("1");
 
   // Load active game config and derive calc functions + field lists
-  const { config } = useGameConfig();
+  const { config, gameId } = useGameConfig();
 
   const { calcAuto, calcTele, calcEnd, calcEPA } = useMemo(() => {
     if (!config) {
@@ -201,6 +201,7 @@ export default function Sudo() {
         body: JSON.stringify({ 
           id: record.id, 
           data: updatedRecord,
+          gameId: gameId ?? null,
           password: adminMode ? adminPassword : undefined 
         }),
       });
@@ -274,7 +275,9 @@ export default function Sudo() {
     setLoading(true);
     try {
       // Make a direct request with the admin password in the headers
-      const response = await fetch("/api/get-data?all=true", {
+      const params = new URLSearchParams({ all: "true" });
+      if (gameId) params.set("gameId", String(gameId));
+      const response = await fetch(`/api/get-data?${params.toString()}`, {
         method: "GET",
         headers: {
           'Cache-Control': 'no-cache',
@@ -316,7 +319,10 @@ export default function Sudo() {
   const fetchData = async (fetchAll = false) => {
     setLoading(true);
     try {
-      const url = fetchAll ? "/api/get-data?all=true" : "/api/get-data";
+      const params = new URLSearchParams();
+      if (fetchAll) params.set("all", "true");
+      if (gameId) params.set("gameId", String(gameId));
+      const url = `/api/get-data${params.toString() ? `?${params.toString()}` : ""}`;
       const headers = {
         'Cache-Control': 'no-cache',
       };
@@ -378,7 +384,7 @@ export default function Sudo() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [gameId]);
 
   // Mobile drawer handlers
   const showMobileDetails = (record) => {
@@ -416,6 +422,7 @@ export default function Sudo() {
         },
         body: JSON.stringify({ 
           id: record.id, 
+          gameId: gameId ?? null,
           password: adminMode ? adminPassword : undefined 
         }),
       });

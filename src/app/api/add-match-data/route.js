@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { pool } from "../../../lib/auth";
 import { validateAuthToken } from "../../../lib/auth";
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { extractFieldsFromConfig, getNumericFields, getBooleanFields } from "../../../lib/schema-generator";
 import { normalizeMatchForStorage } from "../../../lib/match-utils";
 
 export async function POST(req) {
   try {
     // Validate auth token
-    const { isValid, teamName: authTeamName, error } = await validateAuthToken(req);
+    const { isValid, error } = await validateAuthToken(req);
 
     if (!isValid) {
       return NextResponse.json({
@@ -23,24 +23,50 @@ export async function POST(req) {
       });
     }
 
-    let body = await req.json();
+    const body = await req.json();
+    const requestedGameId = parseRequestedGameId(
+      body?.__meta?.gameId ?? body?.gameId ?? req.headers.get("X-Game-Id")
+    );
+    const requestedGameName = typeof body?.__meta?.gameName === 'string'
+      ? body.__meta.gameName
+      : null;
 
-    // Try to get active game config
+    // Resolve game from request metadata first, then fall back to active game.
     let activeGame = null;
     try {
-      activeGame = await getActiveGame();
+      activeGame = await getGameByIdOrActive(requestedGameId);
     } catch (e) {
       console.error("[add-match-data] Error getting active game:", e);
     }
 
     // Require an active game - no fallback
     if (!activeGame || !activeGame.table_name) {
+      if (requestedGameId !== null) {
+        return NextResponse.json(
+          {
+            message: `Selected game ${requestedGameId} was not found.`,
+            error: "INVALID_GAME_SELECTION"
+          },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
         {
           message: "No active game configured. Please go to /admin/games to create and activate a game.",
           error: "NO_ACTIVE_GAME"
         },
         { status: 400 }
+      );
+    }
+
+    if (requestedGameName && activeGame.game_name !== requestedGameName) {
+      return NextResponse.json(
+        {
+          message: "Submitted game metadata does not match the selected game.",
+          error: "GAME_METADATA_MISMATCH"
+        },
+        { status: 409 }
       );
     }
 

@@ -43,7 +43,7 @@ function Compare() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teams, setTeams] = useState([]);
-  const { config, loading: configLoading } = useGameConfig();
+  const { config, gameId, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(
     () => config?.display?.compare,
@@ -121,8 +121,14 @@ function Compare() {
           console.error('Error getting user team:', e);
         }
 
-        const teamDataPromises = teams.map(team =>
-          fetch(`/api/get-team-data?team=${team}&includeRows=true`, {
+        const teamDataPromises = teams.map(team => {
+          const params = new URLSearchParams({
+            team: String(team),
+            includeRows: "true",
+          });
+          if (gameId) params.set("gameId", String(gameId));
+
+          return fetch(`/api/get-team-data?${params.toString()}`, {
             headers: {
               'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
             }
@@ -139,8 +145,8 @@ function Compare() {
                 throw new Error(data.message);
               }
               return data;
-            })
-        );
+            });
+        });
 
         const results = await Promise.all(teamDataPromises);
 
@@ -193,7 +199,7 @@ function Compare() {
     return () => {
       isMounted = false;
     };
-  }, [teams]);
+  }, [teams, gameId]);
 
   if (loading || configLoading) {
     return (

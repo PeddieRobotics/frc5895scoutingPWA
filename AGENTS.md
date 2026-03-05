@@ -34,7 +34,12 @@ npm run dev        # Start local dev server (http://localhost:3000)
 npm run build      # Production build (catches many runtime/config issues)
 npm run start      # Run built app locally
 npm run lint       # Lint via Next.js
+npm run lint && npm run build   # Recommended pre-handoff validation for code changes
 ```
+
+Notes:
+
+- There is no dedicated `test` script in `package.json`; validation is lint + build + manual smoke tests.
 
 ## Common Workflows
 
@@ -98,6 +103,32 @@ Because PWA is disabled in dev:
 3. Test installability/cache/service-worker behavior in the browser.
 4. Re-test auth flows because cached assets can affect client behavior.
 
+### 6. Scout Leads Entry Edit + Comments Workflow
+
+Use this when changing `/scout-leads`, `PATCH /api/edit-match-entry`, or comments behavior.
+
+1. Run `npm run dev`.
+2. Load `/scout-leads` with a valid team + match + match type.
+3. Verify entries render (including no-show rows).
+4. Verify edit permissions:
+   - Own-team entry can be edited without admin override.
+   - Other-team entry is blocked unless admin password unlock is used.
+5. Save an entry edit and confirm persisted values after reload.
+6. Add/update scout-lead comments and verify comments appear in both scout-leads and team-view surfaces.
+7. Recheck timer-derived metrics are unchanged for no-show exclusion behavior.
+
+### 7. Confidence Color + Scoring Requirement Workflow
+
+Use this when changing confidence tags, checkbox gating, or scout-leads background behavior.
+
+1. In a JSON config, mark exactly one field with `isConfidenceRating: true`.
+2. If using checkbox confidence, optionally set `invertColor: true` and verify color direction flips.
+3. Run through config upload + activation in `/admin/games`.
+4. On `/scout-leads`, verify background behavior:
+   - `starRating`/`qualitative`: red→green gradient by average 1..6.
+   - `checkbox`: ratio-based boolean color with optional inversion.
+5. If using `scoringRequirement` on checkbox fields, verify excluded rows are not scored in display APIs.
+
 ## High-Value Paths (For Faster Navigation)
 
 - `src/lib/` - config validation, schema generation, calculations, display aggregation
@@ -105,6 +136,36 @@ Because PWA is disabled in dev:
 - `src/app/form-components/` - reusable form UI components
 - `src/configs/` - JSON game config examples
 - `src/middleware.js` - auth enforcement and public-path handling
+
+## Route Map (Current)
+
+- Scouting data and analytics:
+  - `/api/add-match-data`
+  - `/api/get-data`
+  - `/api/get-team-data`
+  - `/api/get-alliance-data`
+  - `/api/compute-picklist`
+  - `/api/scout-leads`
+  - `/api/scout-lead-comments`
+  - `/api/edit-match-entry`
+- Auth/session:
+  - `/api/auth`
+  - `/api/auth/session`
+  - `/api/auth/sessions`
+  - `/api/auth/validate`
+  - `/api/auth/validate-session`
+  - `/api/auth/validate-token`
+- Admin:
+  - `/api/admin/auth`
+  - `/api/admin/validate`
+  - `/api/admin/logout`
+  - `/api/admin/games`
+  - `/api/admin/teams`
+- Legacy/debug (avoid for new config-driven work unless explicitly needed):
+  - `/api/update-row`
+  - `/api/delete-row`
+  - `/api/debug`
+  - `/api/debug-db`
 
 ## Expected Validation Before Hand-off
 
@@ -186,18 +247,28 @@ The `Qualitative.js` component hardcodes `[1,2,3,4,5,6]`. The `max` property **d
 
 ### `isConfidenceRating` tag
 
-- A single `starRating` or `qualitative` field may carry `"isConfidenceRating": true`.
-- `extractConfidenceRatingField(config)` in `schema-generator.js` returns `{ name, label, max }` or `null`.
-- The `/scout-leads` page computes `sectionBackground` via `getConfidenceColor(avg, max)`:
-  - Maps average from 1→max to hue 0 (red) → 120 (green) in `hsl(hue, 65%, 93%)` (soft pastel).
-  - Background is `#ffffff` when no confidence field configured or no entries loaded.
-- **Validation:** more than one field with `isConfidenceRating: true` → **error** in config-validator. On a non-star field → **warning**.
+- A single `starRating`, `qualitative`, or `checkbox` field may carry `"isConfidenceRating": true`.
+- `extractConfidenceRatingField(config)` in `schema-generator.js` returns `{ name, label, fieldType, invertColor }` or `null`.
+- The `/scout-leads` page computes `sectionBackground` as:
+  - `starRating`/`qualitative`: red→green gradient from average 1..6.
+  - `checkbox`: ratio-based boolean color with optional inversion via `invertColor: true`.
+- Background is `#ffffff` when no confidence field configured or no entries loaded.
+- **Validation:** more than one field with `isConfidenceRating: true` → **error** in config-validator. Unsupported field types → **warning**.
 
-### Background color algorithm
+### Background color algorithm (star/qualitative)
 
 ```
 ratio = clamp((avg - 1) / (max - 1), 0, 1)
 hue   = round(ratio * 120)
+color = hsl(hue, 65%, 93%)
+```
+
+### Background color algorithm (checkbox)
+
+```
+ratio = checked_count / total_count
+effective = invertColor ? (1 - ratio) : ratio
+hue = round(clamp(effective, 0, 1) * 120)
 color = hsl(hue, 65%, 93%)
 ```
 
@@ -215,6 +286,7 @@ color = hsl(hue, 65%, 93%)
 | `src/app/api/scout-leads/route.js` | GET additions (allScoutingRows, currentUserTeam) |
 | `src/app/scout-leads/page.js` | Entry display, edit UI, admin unlock, confidence background |
 | `src/app/scout-leads/page.module.css` | Entry card styles |
+| `src/app/api/scout-lead-comments/route.js` | Scout-lead comments CRUD endpoint |
 | `src/lib/schema-generator.js` | `extractConfidenceRatingField()` |
 | `src/lib/config-validator.js` | isConfidenceRating validation rules |
 

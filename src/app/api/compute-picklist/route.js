@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from '../../../lib/auth';
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
@@ -22,17 +22,29 @@ export async function POST(request) {
     });
   }
 
-  const requestBody = await request.json(); // Weight inputs
+  const requestBody = await request.json(); // Weight inputs (legacy: array)
+  const requestedGameId = parseRequestedGameId(
+    (!Array.isArray(requestBody) ? requestBody?.gameId : null) || request.headers.get("X-Game-Id")
+  );
+  const weightInputs = Array.isArray(requestBody)
+    ? requestBody
+    : (Array.isArray(requestBody?.weightEntries) ? requestBody.weightEntries : []);
 
   // Get active game config dynamically
   let activeGame;
   try {
-    activeGame = await getActiveGame();
+    activeGame = await getGameByIdOrActive(requestedGameId);
   } catch (e) {
     console.error("[compute-picklist] Error getting active game:", e);
   }
 
   if (!activeGame || !activeGame.table_name) {
+    if (requestedGameId !== null) {
+      return NextResponse.json({
+        message: `Selected game ${requestedGameId} was not found.`,
+        error: "INVALID_GAME_SELECTION"
+      }, { status: 400 });
+    }
     return NextResponse.json({
       message: "No active game configured. Please go to /admin/games to create and activate a game.",
       error: "NO_ACTIVE_GAME"
@@ -59,7 +71,7 @@ export async function POST(request) {
 
   // Use config-driven picklist computation
   let teamTable = scoredRows.length > 0
-    ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, requestBody)
+    ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, weightInputs)
     : [];
 
   // Fetch TBA Rankings (best effort)

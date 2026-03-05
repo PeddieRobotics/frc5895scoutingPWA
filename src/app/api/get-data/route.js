@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
@@ -36,15 +36,26 @@ export async function GET(request) {
         });
     }
 
+    const url = new URL(request.url);
+    const requestedGameId = parseRequestedGameId(
+      url.searchParams.get("gameId") || request.headers.get("X-Game-Id")
+    );
+
     // Get active game for dynamic table name
     let activeGame;
     try {
-        activeGame = await getActiveGame();
+        activeGame = await getGameByIdOrActive(requestedGameId);
     } catch (e) {
         console.error("[get-data] Error getting active game:", e);
     }
 
     if (!activeGame || !activeGame.table_name) {
+        if (requestedGameId !== null) {
+            return NextResponse.json({
+                rows: [],
+                error: `Selected game ${requestedGameId} was not found.`
+            }, { status: 400 });
+        }
         return NextResponse.json({
             rows: [],
             error: "No active game configured. Please go to /admin/games to create and activate a game."
@@ -113,7 +124,6 @@ export async function GET(request) {
     }
 
     // Standard data request processing for authenticated users
-    const url = new URL(request.url);
     const allData = url.searchParams.get('all') === 'true';
     const adminPassword = request.headers.get('Admin-Password');
     const isAdmin = adminPassword === process.env.ADMIN_PASSWORD;

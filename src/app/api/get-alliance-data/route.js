@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool, validateAuthToken } from "../../../lib/auth";
-import { getActiveGame } from "../../../lib/game-config";
+import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateAllianceData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
@@ -25,15 +25,26 @@ export async function GET(request) {
       });
     }
 
+    const { searchParams } = new URL(request.url);
+    const requestedGameId = parseRequestedGameId(
+      searchParams.get("gameId") || request.headers.get("X-Game-Id")
+    );
+
     // Get active game - required
     let activeGame;
     try {
-      activeGame = await getActiveGame();
+      activeGame = await getGameByIdOrActive(requestedGameId);
     } catch (e) {
       console.error("[get-alliance-data] Error getting active game:", e);
     }
 
     if (!activeGame || !activeGame.table_name) {
+      if (requestedGameId !== null) {
+        return NextResponse.json({
+          message: `Selected game ${requestedGameId} was not found.`,
+          error: "INVALID_GAME_SELECTION"
+        }, { status: 400 });
+      }
       return NextResponse.json({
         message: "No active game configured. Please go to /admin/games to create and activate a game.",
         error: "NO_ACTIVE_GAME"
@@ -59,7 +70,7 @@ export async function GET(request) {
     }
 
     // Optionally filter to last 3 matches per team
-    const scope = new URL(request.url).searchParams.get('scope');
+    const scope = searchParams.get('scope');
     if (scope === 'last3') {
       const byTeam = {};
       scoredRows.forEach(r => { (byTeam[r.team] = byTeam[r.team] || []).push(r); });

@@ -17,10 +17,9 @@ function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
-// Cache for active game config (5 minute TTL)
-let activeGameCache = null;
-let cacheTimestamp = null;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// No in-memory cache: serverless environments (Vercel) run each API route in a
+// separate Lambda instance, so a cache cleared in one Lambda is invisible to
+// others.  The DB round-trip is fast enough that we query fresh every time.
 
 /**
  * Initialize the game_configs table if it doesn't exist
@@ -42,7 +41,40 @@ async function initializeGameConfigsTable() {
       );
     `);
 
-    // Create unique index for active game (only one can be active)
+    // Migration: ensure is_active column exists for older installations
+    await client.query(`
+      ALTER TABLE game_configs ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE;
+    `);
+
+    // Migration: fix any wrong DEFAULT (set it to FALSE)
+    await client.query(`
+      ALTER TABLE game_configs ALTER COLUMN is_active SET DEFAULT FALSE;
+    `);
+
+    // Migration: ensure rows that somehow have NULL is_active are treated as inactive
+    await client.query(`
+      UPDATE game_configs SET is_active = FALSE WHERE is_active IS NULL;
+    `);
+
+    // Create unique index for active game (only one can be active at a time).
+    // Drop duplicates first if somehow the table ended up with multiple active games.
+    await client.query(`
+      DO $$
+      DECLARE dup_count INTEGER;
+      BEGIN
+        SELECT COUNT(*) INTO dup_count FROM game_configs WHERE is_active = TRUE;
+        IF dup_count > 1 THEN
+          -- Keep only the most recently updated active game; deactivate the rest
+          UPDATE game_configs SET is_active = FALSE
+          WHERE is_active = TRUE
+            AND id NOT IN (
+              SELECT id FROM game_configs WHERE is_active = TRUE
+              ORDER BY updated_at DESC LIMIT 1
+            );
+        END IF;
+      END $$;
+    `);
+
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_single_active_game
       ON game_configs (is_active) WHERE is_active = TRUE;
@@ -108,42 +140,73 @@ async function getGameByName(gameName) {
 
 /**
  * Get the currently active game configuration
- * @param {boolean} useCache - Whether to use cached value
  * @returns {Promise<Object|null>} Active game config or null
  */
-async function getActiveGame(useCache = true) {
-  // Check cache
-  if (useCache && activeGameCache && cacheTimestamp) {
-    const age = Date.now() - cacheTimestamp;
-    if (age < CACHE_TTL) {
-      return activeGameCache;
-    }
-  }
-
+async function getActiveGame() {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT * FROM game_configs WHERE is_active = TRUE
+      SELECT * FROM game_configs
+      WHERE is_active = TRUE
+      ORDER BY updated_at DESC, id DESC
+      LIMIT 1
     `);
-
-    const activeGame = result.rows[0] || null;
-
-    // Update cache
-    activeGameCache = activeGame;
-    cacheTimestamp = Date.now();
-
-    return activeGame;
+    return result.rows[0] || null;
   } finally {
     client.release();
   }
 }
 
 /**
- * Clear the active game cache
+ * Parse a game ID from query/body/header input.
+ * @param {unknown} value
+ * @returns {number|null}
+ */
+function parseRequestedGameId(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+/**
+ * Resolve a game by explicit ID, or fall back to active game.
+ * @param {number|string|null|undefined} gameId
+ * @param {{ preferActive?: boolean }} [options]
+ * @returns {Promise<Object|null>}
+ */
+async function getGameByIdOrActive(gameId, options = {}) {
+  const preferActive = options.preferActive !== false;
+  const parsedId = parseRequestedGameId(gameId);
+
+  // Default behavior for app data endpoints: always prefer the currently active
+  // game so stale client IDs cannot force requests onto an inactive config.
+  if (preferActive) {
+    const activeGame = await getActiveGame();
+    if (activeGame) {
+      return activeGame;
+    }
+  }
+
+  if (parsedId === null) {
+    return null;
+  }
+
+  return getGameById(parsedId);
+}
+
+/**
+ * No-op: cache was removed (serverless environments have per-Lambda module
+ * instances so clearing one Lambda's cache doesn't affect others).
  */
 function clearActiveGameCache() {
-  activeGameCache = null;
-  cacheTimestamp = null;
+  // intentionally empty
 }
 
 /**
@@ -487,8 +550,10 @@ export {
   initializeGameConfigsTable,
   getAllGames,
   getGameById,
+  getGameByIdOrActive,
   getGameByName,
   getActiveGame,
+  parseRequestedGameId,
   clearActiveGameCache,
   createGame,
   updateGame,
