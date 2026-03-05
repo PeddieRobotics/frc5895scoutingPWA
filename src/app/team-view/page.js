@@ -496,8 +496,6 @@ function TeamView() {
         defenseComments: data?.defenseComments || 'No comments',
         scouts: data?.scouts || [],
         leave: data?.leave || 0,
-        attemptCage: data?.attemptCage || 0,
-        successCage: data?.successCage || 0,
         qualitative: data?.qualitative || [],
         scouterConfidenceOverTime: data?.scouterConfidenceOverTime || [],
         avgScouterConfidence: data?.avgScouterConfidence ?? null,
@@ -1231,19 +1229,6 @@ function TeamView() {
                                         color={endgameColors}
                                     />
                                 </div>
-                                <table className={styles.differentTable} style={{ borderRadius: "5px" }}>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ backgroundColor: Colors[3][2] }} rowSpan="2">Cage</td>
-                                            <td style={{ backgroundColor: Colors[3][1] }}>Attempt</td>
-                                            <td style={{ backgroundColor: Colors[3][1] }}>Success</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={{ backgroundColor: Colors[3][0] }}>{`${Math.round(10 * safeData.attemptCage) / 10}%`}</td>
-                                            <td style={{ backgroundColor: Colors[3][0] }}>{`${Math.round(10 * safeData.successCage) / 10}%`}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
                             <div className={styles.qualitative}>
                                 <h1 className={styles.header} style={{ color: Colors[4][3] }}>Qualitative</h1>
