@@ -66,6 +66,29 @@
           }
         },
         {
+          "type": "multiSelect",
+          "subHeader": "Intake",
+          "name": "autoIntakeOptions",
+          "options": [
+            {
+              "name": "fueldepotintake",
+              "label": "Fuel Depot",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            },
+            {
+              "name": "fueloutpostintake",
+              "label": "Fuel Outpost (HP)",
+              "dbColumn": {
+                "type": "BOOLEAN",
+                "default": false
+              }
+            }
+          ]
+        },
+        {
           "type": "singleSelect",
           "name": "autoclimb",
           "label": "Auto Climb",
@@ -231,22 +254,6 @@
             {
               "name": "fuelgrndintake",
               "label": "Fuel Ground",
-              "dbColumn": {
-                "type": "BOOLEAN",
-                "default": false
-              }
-            },
-            {
-              "name": "fueldepotintake",
-              "label": "Fuel Depot",
-              "dbColumn": {
-                "type": "BOOLEAN",
-                "default": false
-              }
-            },
-            {
-              "name": "fueloutpostintake",
-              "label": "Fuel Outpost (HP)",
               "dbColumn": {
                 "type": "BOOLEAN",
                 "default": false
