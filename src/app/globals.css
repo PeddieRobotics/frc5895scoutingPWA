@@ -15,7 +15,6 @@ html, body {
 
 body {
   overflow-y: auto; /* Allow vertical scrolling */
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Add viewport meta settings equivalents in CSS */
