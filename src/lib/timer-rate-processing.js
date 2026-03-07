@@ -153,9 +153,12 @@ async function applyScoutLeadRatesToRows(rows, activeGame, client) {
         return;
       }
 
-      // Use match-specific rate first, fall back to team average across all matches
-      const rate = (matchRates ? parseNumber(matchRates[field.name]) : null)
-        ?? (teamRates ? parseNumber(teamRates[field.name]) : null);
+      // Use match-specific rate first, fall back to team average across all matches.
+      // Explicitly check > 0 at each step so a null/zero match-specific entry
+      // (e.g. a comment-only scout-leads row) still falls through to team averages.
+      const matchRate = matchRates != null ? parseNumber(matchRates[field.name]) : null;
+      const teamRate = teamRates != null ? parseNumber(teamRates[field.name]) : null;
+      const rate = (matchRate !== null && matchRate > 0) ? matchRate : teamRate;
       const hasValidRate = rate !== null && rate > 0;
       if (!hasValidRate) {
         missingTimerFields.push({
