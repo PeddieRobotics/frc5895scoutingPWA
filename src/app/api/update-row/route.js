@@ -53,6 +53,13 @@ export async function POST(request) {
   );
   allowedFields.add('scoutname');
   allowedFields.add('noshow');
+  // Admins can also update match metadata fields (but never id or timestamp)
+  if (isAdmin) {
+    allowedFields.add('match');
+    allowedFields.add('team');
+    allowedFields.add('matchtype');
+    allowedFields.add('scoutteam');
+  }
 
   const updates = [];
   const values = [];
