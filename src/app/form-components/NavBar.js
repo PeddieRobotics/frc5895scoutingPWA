@@ -112,9 +112,6 @@ export default function NavBar() {
                 <AuthLink href="/match-view">Match View</AuthLink>
                 <AuthLink href="/compare">Compare</AuthLink>
                 <AuthLink href="/picklist">Picklist</AuthLink>
-                {sudo &&
-                    <AuthLink href='/sudo'>Sudo</AuthLink>
-                }
             </div>
         </nav>
 
