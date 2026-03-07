@@ -8,6 +8,7 @@
     z-index: 10;
     width: 100vw;
     overflow: hidden;
+    padding-top: env(safe-area-inset-top);
 }
 
 .logo {
