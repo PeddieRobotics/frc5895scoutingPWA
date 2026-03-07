@@ -338,7 +338,6 @@ export default function ScoutLeadsPage() {
   const [scoutName, setScoutName] = useState("");
 
   const [timerSummary, setTimerSummary] = useState([]);
-  const [rates, setRates] = useState({});
   const [fInputs, setFInputs] = useState({});
   const [sInputs, setSInputs] = useState({});
   const displayItems = useMemo(() => buildDisplayItems(timerSummary), [timerSummary]);
@@ -489,8 +488,7 @@ export default function ScoutLeadsPage() {
       }
 
       setTimerSummary(data.timerSummary || []);
-      // Clear f/s scratch inputs and computed rates on every load
-      setRates({});
+      // Clear f/s scratch inputs on every load
       setFInputs({});
       setSInputs({});
       setAllScoutingRows(data.allScoutingRows || []);
@@ -545,6 +543,32 @@ export default function ScoutLeadsPage() {
 
     setSavingData(true);
     try {
+      // Compute rates directly from fInputs/sInputs at save time to avoid stale closure issues.
+      // For grouped timers, all fields in the group get the same rate (keyed by firstField.name f/s).
+      const computedRates = {};
+      displayItems.forEach((item) => {
+        if (item.type === "group") {
+          const firstField = item.fields[0];
+          const f = fInputs[firstField.name] ?? "";
+          const s = sInputs[firstField.name] ?? "";
+          const fn = Number(f);
+          const sn = Number(s);
+          if (f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0) {
+            const r = fn / sn;
+            item.fields.forEach((field) => { computedRates[field.name] = r; });
+          }
+        } else {
+          const { timer } = item;
+          const f = fInputs[timer.name] ?? "";
+          const s = sInputs[timer.name] ?? "";
+          const fn = Number(f);
+          const sn = Number(s);
+          if (f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0) {
+            computedRates[timer.name] = fn / sn;
+          }
+        }
+      });
+
       const response = await fetch("/api/scout-leads", {
         method: "POST",
         credentials: "include",
@@ -558,7 +582,7 @@ export default function ScoutLeadsPage() {
           match: Number(match),
           matchType: Number(matchType),
           gameId: gameId ?? null,
-          rates,
+          rates: computedRates,
         }),
       });
 
@@ -568,9 +592,6 @@ export default function ScoutLeadsPage() {
       }
 
       await fetchTimerData({ showLoadedMessage: false });
-      setRates({});
-      setFInputs({});
-      setSInputs({});
       setSuccess("Scout lead rates saved. Match averages refreshed.");
     } catch (saveError) {
       setError(saveError.message || "Failed to save scout lead rates.");
@@ -1041,16 +1062,7 @@ export default function ScoutLeadsPage() {
                           value={fVal}
                           placeholder="0"
                           onChange={(e) => {
-                            const f = e.target.value;
-                            setFInputs((prev) => ({ ...prev, [firstField.name]: f }));
-                            const s = sInputs[firstField.name] ?? "";
-                            const fn = Number(f); const sn = Number(s);
-                            const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                            setRates((prev) => {
-                              const updates = {};
-                              fields.forEach((field) => { updates[field.name] = r; });
-                              return { ...prev, ...updates };
-                            });
+                            setFInputs((prev) => ({ ...prev, [firstField.name]: e.target.value }));
                           }}
                           onWheel={(e) => e.target.blur()}
                         />
@@ -1065,16 +1077,7 @@ export default function ScoutLeadsPage() {
                           value={sVal}
                           placeholder="0"
                           onChange={(e) => {
-                            const s = e.target.value;
-                            setSInputs((prev) => ({ ...prev, [firstField.name]: s }));
-                            const f = fInputs[firstField.name] ?? "";
-                            const fn = Number(f); const sn = Number(s);
-                            const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                            setRates((prev) => {
-                              const updates = {};
-                              fields.forEach((field) => { updates[field.name] = r; });
-                              return { ...prev, ...updates };
-                            });
+                            setSInputs((prev) => ({ ...prev, [firstField.name]: e.target.value }));
                           }}
                           onWheel={(e) => e.target.blur()}
                         />
@@ -1132,12 +1135,7 @@ export default function ScoutLeadsPage() {
                         value={fVal}
                         placeholder="0"
                         onChange={(e) => {
-                          const f = e.target.value;
-                          setFInputs((prev) => ({ ...prev, [timer.name]: f }));
-                          const s = sInputs[timer.name] ?? "";
-                          const fn = Number(f); const sn = Number(s);
-                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                          setRates((prev) => ({ ...prev, [timer.name]: r }));
+                          setFInputs((prev) => ({ ...prev, [timer.name]: e.target.value }));
                         }}
                         onWheel={(e) => e.target.blur()}
                       />
@@ -1152,12 +1150,7 @@ export default function ScoutLeadsPage() {
                         value={sVal}
                         placeholder="0"
                         onChange={(e) => {
-                          const s = e.target.value;
-                          setSInputs((prev) => ({ ...prev, [timer.name]: s }));
-                          const f = fInputs[timer.name] ?? "";
-                          const fn = Number(f); const sn = Number(s);
-                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                          setRates((prev) => ({ ...prev, [timer.name]: r }));
+                          setSInputs((prev) => ({ ...prev, [timer.name]: e.target.value }));
                         }}
                         onWheel={(e) => e.target.blur()}
                       />
