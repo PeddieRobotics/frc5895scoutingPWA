@@ -453,7 +453,7 @@ export default function ScoutLeadsPage() {
     });
   }, [config]);
 
-  const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
+  const fetchTimerData = async ({ showLoadedMessage = true, clearInputs = true } = {}) => {
     setError("");
     if (showLoadedMessage) {
       setSuccess("");
@@ -488,9 +488,12 @@ export default function ScoutLeadsPage() {
       }
 
       setTimerSummary(data.timerSummary || []);
-      // Clear f/s scratch inputs on every load
-      setFInputs({});
-      setSInputs({});
+      // Clear f/s scratch inputs on every load (but not after a comment save,
+      // so in-progress FPS values aren't wiped mid-workflow).
+      if (clearInputs) {
+        setFInputs({});
+        setSInputs({});
+      }
       setAllScoutingRows(data.allScoutingRows || []);
       setCurrentUserTeam(data.currentUserTeam ?? null);
 
@@ -682,7 +685,7 @@ export default function ScoutLeadsPage() {
       }
 
       setCommentSuccess("Comment saved.");
-      await fetchTimerData({ showLoadedMessage: false });
+      await fetchTimerData({ showLoadedMessage: false, clearInputs: false });
     } catch (err) {
       setCommentError(err.message || "Failed to save comment.");
     } finally {
