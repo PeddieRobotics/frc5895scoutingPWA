@@ -1,12 +1,26 @@
 'use client';
 import Link from "next/link";
 import styles from "./NavBar.module.css";
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
+const SITE_PAGES = [
+    { href: '/', label: 'Scouting Form' },
+    { href: '/scanner', label: 'Scanner' },
+    { href: '/scout-leads', label: 'Scout Leads' },
+    { href: '/team-view', label: 'Team View' },
+    { href: '/match-view', label: 'Match View' },
+    { href: '/compare', label: 'Compare' },
+    { href: '/picklist', label: 'Picklist' },
+    { href: '/admin', label: 'Admin', sudoOnly: true },
+    { href: '/admin/games', label: 'Game Config', sudoOnly: true },
+    { href: '/sudo', label: 'Sudo', sudoOnly: true },
+];
 
 export default function NavBar() {
     const [sudo, setSudo] = useState(false);
     const [authCredentials, setAuthCredentials] = useState(null);
+    const [siteMapOpen, setSiteMapOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -15,10 +29,10 @@ export default function NavBar() {
             if (window.localStorage.getItem("sudo") == "true") {
                 setSudo(true);
             }
-            
+
             // Get auth credentials from localStorage or sessionStorage
-            const storedCreds = sessionStorage.getItem('auth_credentials') || 
-                                localStorage.getItem('auth_credentials');
+            const storedCreds = sessionStorage.getItem('auth_credentials') ||
+                localStorage.getItem('auth_credentials');
             if (storedCreds) {
                 setAuthCredentials(storedCreds);
             }
@@ -26,20 +40,21 @@ export default function NavBar() {
     }, []);
 
     // Create a custom Link component that passes auth in headers
-    const AuthLink = ({ href, children }) => {
+    const AuthLink = ({ href, children, onClose }) => {
         // Function to handle navigation with auth credentials
         const handleClick = (e) => {
+            if (onClose) onClose();
             // Check if we have auth credentials
-            const credentials = sessionStorage.getItem('auth_credentials') || 
-                                localStorage.getItem('auth_credentials');
-            
+            const credentials = sessionStorage.getItem('auth_credentials') ||
+                localStorage.getItem('auth_credentials');
+
             if (!credentials) {
                 e.preventDefault();
                 // No credentials, redirect to home with auth params
                 window.location.href = `/?authRequired=true&redirect=${href}&t=${Date.now().toString()}`;
                 return;
             }
-            
+
             // If we already have credentials, perform a quick client-side validation
             const validateToken = async () => {
                 try {
@@ -55,9 +70,9 @@ export default function NavBar() {
                         },
                         cache: 'no-store'
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (response.ok && data.authenticated) {
                         // Credentials are valid, proceed with full page navigation
                         window.location.href = href;
@@ -71,27 +86,54 @@ export default function NavBar() {
                     window.location.href = `/?authRequired=true&redirect=${href}&t=${Date.now().toString()}`;
                 }
             };
-            
+
             e.preventDefault();
             validateToken();
         };
-        
+
         return <Link href={href} onClick={handleClick}>{children}</Link>;
     };
 
-    return <nav className={styles.navbar}>
-        <img className={styles.logo} src="/transLogo.png"></img>
-        <div className={styles.pages}>
-            <AuthLink href="/">Scouting Form</AuthLink>
-            <AuthLink href="/scanner">Scanner</AuthLink>
-            <AuthLink href="/scout-leads">Scout Leads</AuthLink>
-            <AuthLink href="/team-view">Team View</AuthLink>
-            <AuthLink href="/match-view">Match View</AuthLink>
-            <AuthLink href="/compare">Compare</AuthLink>
-            <AuthLink href="/picklist">Picklist</AuthLink>
-            {sudo && 
-                <AuthLink href='/sudo'>Sudo</AuthLink>
-            }
-        </div>
-    </nav>
+    const visiblePages = SITE_PAGES.filter(p => !p.sudoOnly || sudo);
+
+    return <>
+        <nav className={styles.navbar}>
+            <img
+                className={styles.logo}
+                src="/transLogo.png"
+                onClick={() => setSiteMapOpen(o => !o)}
+                style={{ cursor: 'pointer' }}
+            />
+            <div className={styles.pages}>
+                <AuthLink href="/">Scouting Form</AuthLink>
+                <AuthLink href="/scanner">Scanner</AuthLink>
+                <AuthLink href="/scout-leads">Scout Leads</AuthLink>
+                <AuthLink href="/team-view">Team View</AuthLink>
+                <AuthLink href="/match-view">Match View</AuthLink>
+                <AuthLink href="/compare">Compare</AuthLink>
+                <AuthLink href="/picklist">Picklist</AuthLink>
+                {sudo &&
+                    <AuthLink href='/sudo'>Sudo</AuthLink>
+                }
+            </div>
+        </nav>
+
+        {siteMapOpen && <>
+            <div className={styles.siteMapOverlay} onClick={() => setSiteMapOpen(false)} />
+            <div className={styles.siteMap}>
+                <div className={styles.siteMapHeader}>Site Map</div>
+                <ul className={styles.siteMapTree}>
+                    {visiblePages.map(p => (
+                        <li key={p.href}>
+                            <span className={styles.siteMapBranch}>├─</span>
+                            <AuthLink href={p.href} onClose={() => setSiteMapOpen(false)}>
+                                {p.label}
+                                <span className={styles.siteMapPath}>{p.href}</span>
+                            </AuthLink>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </>}
+    </>
 }

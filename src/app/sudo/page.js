@@ -43,6 +43,7 @@ export default function Sudo() {
   const [adminMode, setAdminMode] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [userTeam, setUserTeam] = useState(null);
+  const [sudoMode, setSudoMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [mobileView, setMobileView] = useState(false);
@@ -137,6 +138,20 @@ export default function Sudo() {
     const basicsFields = (config?.basics?.fields || []).map(f => f.name);
     return ['scoutname', 'team', 'match', 'scoutteam', ...basicsFields];
   }, [config]);
+
+  useEffect(() => {
+    setSudoMode(window.localStorage.getItem("sudo") === "true");
+  }, []);
+
+  const toggleSudoMode = () => {
+    const next = !sudoMode;
+    if (next) {
+      window.localStorage.setItem("sudo", "true");
+    } else {
+      window.localStorage.removeItem("sudo");
+    }
+    setSudoMode(next);
+  };
 
   // Track screen size for responsive design
   useEffect(() => {
@@ -1045,11 +1060,19 @@ export default function Sudo() {
             alignItems: "center",
             gap: "10px"
           }}>
-            <Switch 
-              checkedChildren="Simple View" 
-              unCheckedChildren="Complex View" 
+            <Switch
+              checkedChildren="Simple View"
+              unCheckedChildren="Complex View"
               onChange={setSimplified}
             />
+            <Button
+              type={sudoMode ? "primary" : "default"}
+              danger={sudoMode}
+              onClick={toggleSudoMode}
+              icon={<LockOutlined />}
+            >
+              {sudoMode ? "Revoke Sudo" : "Get Sudo"}
+            </Button>
             
             {userTeam && (
               <div style={{ fontWeight: 'bold' }}>
