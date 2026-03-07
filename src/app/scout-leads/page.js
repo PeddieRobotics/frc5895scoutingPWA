@@ -67,6 +67,12 @@ function getBooleanColor(ratio, invertColor) {
   return `hsl(${hue}, 65%, 93%)`;
 }
 
+function formatUnscoredMatch(issue) {
+  const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
+  const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
+  return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
+}
+
 /**
  * Render a single config field value — read-only or editable.
  * For multiSelect, fieldDef.options is an array of { name, label }.
@@ -346,6 +352,9 @@ export default function ScoutLeadsPage() {
   const [allScoutingRows, setAllScoutingRows] = useState([]);
   const [currentUserTeam, setCurrentUserTeam] = useState(null);
 
+  // Unscored matches (all teams, for the informational popup)
+  const [unscoredMatches, setUnscoredMatches] = useState([]);
+
   // Admin unlock state
   const [adminPassword, setAdminPassword] = useState("");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
@@ -391,6 +400,27 @@ export default function ScoutLeadsPage() {
       // Ignore malformed localStorage profile.
     }
   }, []);
+
+  // Fetch all unscored matches on mount for the informational popup
+  useEffect(() => {
+    async function loadUnscoredMatches() {
+      try {
+        const body = gameId ? { gameId: String(gameId) } : [];
+        const response = await fetch("/api/compute-picklist", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        setUnscoredMatches(Array.isArray(data.unscoredMatches) ? data.unscoredMatches : []);
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+    loadUnscoredMatches();
+  }, [gameId]);
 
   // Load all scout lead comments on mount
   useEffect(() => {
@@ -756,6 +786,18 @@ export default function ScoutLeadsPage() {
 
   return (
     <div className={styles.page}>
+      {unscoredMatches.length > 0 && (
+        <div style={{ margin: "0 12px 12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
+          <strong>Matches missing scout-lead rates:</strong>
+          <ul style={{ margin: "8px 0 0 18px" }}>
+            {unscoredMatches.map((issue, index) => (
+              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
+                {formatUnscoredMatch(issue)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className={styles.pageLayout}>
 
       {/* ── Rankings Sidebar ──────────────────────────────── */}
