@@ -600,8 +600,8 @@ function MatchView() {
           }))}
         />
       </div>
+      <h2 style={{ textAlign: "center", marginTop: "20px", marginBottom: "0px" }}>Endgame %</h2>
       <div className={styles.chartContainer}>
-        <h2 style={{ marginBottom: "-40px", marginTop: "60px" }}>Endgame %</h2>
         <Endgame
           colors={colors}
           endgameData={endgameData}
