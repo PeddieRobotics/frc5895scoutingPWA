@@ -168,6 +168,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
   return (
     <div>
       <h3>Alliance Defense Rating</h3>
+      <div style={{ touchAction: 'pan-y' }}>
       <BarChart
         width={400}
         height={300}
@@ -188,6 +189,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
         <Bar dataKey="team3" name={`Team ${teamNumbers[2] || 'N/A'}`} fill={colors[2]} />
         <Bar dataKey="alliance" name="Alliance Average" fill="#000000" />
       </BarChart>
+      </div>
     </div>
   );
 } 

@@ -306,16 +306,51 @@
     transform: translateX(-20px);
 }
 
+/* Allow vertical touch scrolling through chart containers */
+.graphContainer svg,
+.graphContainer canvas,
+.lineGraphContainer svg,
+.lineGraphContainer canvas,
+.barchartContainer canvas,
+.chartContainer svg,
+.chartContainer canvas {
+    touch-action: pan-y;
+}
+
 @media screen and (max-width: 1150px) {
     .MainDiv {
         margin: 0px;
     }
-    
+
     .barchartContainer {
         width: 400px;
     }
 
     .chartContainer {
         width: 400px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .graphContainer {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .graphContainer svg,
+    .lineGraphContainer svg {
+        max-width: 100%;
+    }
+
+    .barchartContainer {
+        width: 100%;
+    }
+
+    .chartContainer {
+        width: 100%;
+    }
+
+    .matchNav button {
+        font-size: 32px;
     }
 }

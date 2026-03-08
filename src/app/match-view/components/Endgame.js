@@ -14,21 +14,23 @@ export default function Endgame({ colors, endgameData }) {
   }
 
   return (
-    <VictoryPie
-      padding={100}
-      data={endgameData}
-      colorScale={colors}
-      labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : null}
-      style={{
-        data: {
-          stroke: '#000', // Black border
-          strokeWidth: 1.5, // Border width
-        },
-        labels: {
-          fontFamily: "'Montserrat', sans-serif",
-          fill: "black"
-        }
-      }}
-    />
+    <div style={{ touchAction: 'pan-y' }}>
+      <VictoryPie
+        padding={100}
+        data={endgameData}
+        colorScale={colors}
+        labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : null}
+        style={{
+          data: {
+            stroke: '#000', // Black border
+            strokeWidth: 1.5, // Border width
+          },
+          labels: {
+            fontFamily: "'Montserrat', sans-serif",
+            fill: "black"
+          }
+        }}
+      />
+    </div>
   );
 }

@@ -87,6 +87,6 @@ export default function PiecePlacement({ colors, matchMax, bars = [] }) {
     };
   }, [bars, labels, values, matchMax, colors]);
 
-  return <canvas ref={chartRef} />;
+  return <canvas ref={chartRef} style={{ touchAction: 'pan-y' }} />;
 }
 
