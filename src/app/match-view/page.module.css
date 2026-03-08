@@ -134,10 +134,12 @@
     display: flex;
     flex-direction: column;
     min-width: 30%;
+    width: 100%;
     text-align: center;
     justify-content: center;
     align-content: center;
     align-items: center;
+    overflow: hidden;
 }
 .lineGraphContainer {
     display: flex;
@@ -147,9 +149,6 @@
     justify-content: center;
     align-content: center;
     align-items: center;
-}
-.lineGraphContainer svg {
-    transform: translateX(-20px);
 }
 .RPs {
     display: flex;
@@ -278,32 +277,31 @@
 }
 
 .chartContainer {
-    width: 30vw;
+    width: 100%;
+    max-width: 320px;
     height: 300px;
     margin: auto;
     margin-bottom: -40px;
+    overflow: hidden;
 }
 .barchartContainer {
-    width: 30vw;
+    width: 100%;
     height: 300px;
     margin: auto;
     margin-bottom: -30px;
     padding: 10px;
-}
-.barchartContainer svg {
-    transform: translateX(-20px);
+    overflow: hidden;
 }
 .lineGraphContainer {
     display: flex;
     flex-direction: column;
     min-width: 30%;
+    width: 100%;
     text-align: center;
     justify-content: center;
     align-content: center;
     align-items: center;
-}
-.lineGraphContainer svg {
-    transform: translateX(-20px);
+    overflow: hidden;
 }
 
 /* Allow vertical touch scrolling through chart containers */
