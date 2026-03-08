@@ -14,10 +14,10 @@ export default function Endgame({ colors, endgameData }) {
   }
 
   return (
-    <div style={{ touchAction: 'pan-y', width: '100%', overflow: 'hidden' }}>
+    <div style={{ touchAction: 'pan-y', width: '100%', height: '100%', overflow: 'hidden' }}>
       <VictoryPie
         padding={60}
-        containerComponent={<VictoryContainer responsive={true} />}
+        containerComponent={<VictoryContainer responsive={true} style={{ height: '100%' }} />}
         data={endgameData}
         colorScale={colors}
         labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : null}
