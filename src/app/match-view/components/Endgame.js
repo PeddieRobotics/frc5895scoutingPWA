@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { VictoryPie } from "victory";
+import { VictoryPie, VictoryContainer } from "victory";
 
 export default function Endgame({ colors, endgameData }) {
   const [isClient, setIsClient] = useState(false);
@@ -17,8 +17,7 @@ export default function Endgame({ colors, endgameData }) {
     <div style={{ touchAction: 'pan-y', width: '100%', overflow: 'hidden' }}>
       <VictoryPie
         padding={60}
-        width={300}
-        height={300}
+        containerComponent={<VictoryContainer responsive={true} />}
         data={endgameData}
         colorScale={colors}
         labels={({ datum }) => datum.y > 0 ? `${datum.x}: ${Math.round(datum.y)}%` : null}
