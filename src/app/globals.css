@@ -6,15 +6,15 @@
 }
 
 /* Fix scrolling behavior */
-html, body {
-  max-width: 100%;
-  overflow-x: hidden;
+html {
   min-height: 100%;
-  position: relative;
 }
 
 body {
-  overflow-y: auto; /* Allow vertical scrolling */
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100%;
 }
 
 /* Add viewport meta settings equivalents in CSS */
