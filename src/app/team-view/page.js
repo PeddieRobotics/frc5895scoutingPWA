@@ -1,8 +1,8 @@
 "use client";
 import styles from "./page.module.css";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import VBox from "./components/VBox";
 import HBox from "./components/HBox";
 import Comments from "./components/Comments";
@@ -19,7 +19,7 @@ import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 
 export default function TeamViewPage() {
-    return <TeamView />;
+    return <Suspense><TeamView /></Suspense>;
 }
 
 // Helper to resolve a dotted path like "auto.coral.successL1" from an object
@@ -66,6 +66,7 @@ function TeamView() {
     const [loadingMatch, setLoadingMatch] = useState(null);
     const router = useRouter();
 
+    const searchParams = useSearchParams();
     const { config, gameId, loading: configLoading } = useGameConfig();
     const configIssues = useMemo(() => {
         if (configLoading || !config) return [];
@@ -105,23 +106,18 @@ function TeamView() {
     const defenseBarField = tvConfig.defenseBarField || "";
     const scouterConfidenceField = tvConfig.scouterConfidenceField || null;
 
-    // Initialize URL parameters on the client side
+    // Sync URL parameters reactively (re-runs on soft navigation)
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const teamParam = params.get("team");
-            setTeam(teamParam);
-            setHasTopBar(params.get('team1') !== null);
-            setSource(params.get('source'));
+        setTeam(searchParams.get("team"));
+        setHasTopBar(searchParams.get('team1') !== null);
+        setSource(searchParams.get('source'));
 
-            // Store all URL parameters
-            const paramsObj = {};
-            for (const [key, value] of params.entries()) {
-                paramsObj[key] = value;
-            }
-            setUrlParams(paramsObj);
+        const paramsObj = {};
+        for (const [key, value] of searchParams.entries()) {
+            paramsObj[key] = value;
         }
-    }, []);
+        setUrlParams(paramsObj);
+    }, [searchParams]);
 
     // Effect to fetch data when team changes
     useEffect(() => {
