@@ -40,6 +40,7 @@ export default function EPALineChart({
   };
 
   return (
+    <div style={{ touchAction: 'pan-y' }}>
     <LineChart width={width} height={height} data={data}>
       <XAxis dataKey="name"/>
       <YAxis/>
@@ -48,5 +49,6 @@ export default function EPALineChart({
       <Line type="monotone" dataKey="red" stroke="#EDB3BA" />
       <Tooltip content={<CustomTooltip />} />
     </LineChart>
+    </div>
   );
 }
