@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function EPALineChart({ 
   data, 
@@ -40,13 +40,17 @@ export default function EPALineChart({
   };
 
   return (
-    <LineChart width={width} height={height} data={data}>
-      <XAxis dataKey="name"/>
-      <YAxis/>
-      <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-      <Line type="monotone" dataKey="blue" stroke="#99ADEF" />
-      <Line type="monotone" dataKey="red" stroke="#EDB3BA" />
-      <Tooltip content={<CustomTooltip />} />
-    </LineChart>
+    <div style={{ touchAction: 'pan-y', width: '100%' }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data}>
+          <XAxis dataKey="name"/>
+          <YAxis/>
+          <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+          <Line type="monotone" dataKey="blue" stroke="#99ADEF" />
+          <Line type="monotone" dataKey="red" stroke="#EDB3BA" />
+          <Tooltip content={<CustomTooltip />} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

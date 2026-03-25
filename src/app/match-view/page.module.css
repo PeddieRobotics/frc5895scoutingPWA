@@ -138,6 +138,13 @@
     justify-content: center;
     align-content: center;
     align-items: center;
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .graphContainer {
+        width: 100%;
+    }
 }
 .lineGraphContainer {
     display: flex;
@@ -147,9 +154,6 @@
     justify-content: center;
     align-content: center;
     align-items: center;
-}
-.lineGraphContainer svg {
-    transform: translateX(-20px);
 }
 .RPs {
     display: flex;
@@ -190,6 +194,7 @@
     flex-grow: 1;
     border-radius: 10px;
     box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
+    overflow: hidden;
 }
 
 .lightBorderBox h1, .lightBorderBox h2 {
@@ -278,44 +283,66 @@
 }
 
 .chartContainer {
-    width: 30vw;
+    width: 100%;
+    max-width: 320px;
     height: 300px;
     margin: auto;
-    margin-bottom: -40px;
+    overflow: hidden;
 }
 .barchartContainer {
-    width: 30vw;
+    width: 100%;
     height: 300px;
     margin: auto;
     margin-bottom: -30px;
     padding: 10px;
+    overflow: hidden;
 }
-.barchartContainer svg {
-    transform: translateX(-20px);
-}
-.lineGraphContainer {
-    display: flex;
-    flex-direction: column;
-    min-width: 30%;
-    text-align: center;
-    justify-content: center;
-    align-content: center;
-    align-items: center;
-}
-.lineGraphContainer svg {
-    transform: translateX(-20px);
+
+/* Allow vertical touch scrolling through chart containers */
+.graphContainer svg,
+.graphContainer canvas,
+.lineGraphContainer svg,
+.lineGraphContainer canvas,
+.barchartContainer canvas,
+.chartContainer svg,
+.chartContainer canvas {
+    touch-action: pan-y;
 }
 
 @media screen and (max-width: 1150px) {
     .MainDiv {
         margin: 0px;
     }
-    
+
     .barchartContainer {
         width: 400px;
     }
 
     .chartContainer {
         width: 400px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .graphContainer {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .graphContainer svg,
+    .lineGraphContainer svg {
+        max-width: 100%;
+    }
+
+    .barchartContainer {
+        width: 100%;
+    }
+
+    .chartContainer {
+        width: 100%;
+    }
+
+    .matchNav button {
+        font-size: 32px;
     }
 }
