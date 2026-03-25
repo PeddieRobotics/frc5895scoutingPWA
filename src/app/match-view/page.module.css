@@ -297,17 +297,6 @@
     padding: 10px;
     overflow: hidden;
 }
-.lineGraphContainer {
-    display: flex;
-    flex-direction: column;
-    min-width: 30%;
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-    align-content: center;
-    align-items: center;
-    overflow: hidden;
-}
 
 /* Allow vertical touch scrolling through chart containers */
 .graphContainer svg,
