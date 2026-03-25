@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useGameConfig from "../../lib/useGameConfig";
 import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScoringRequirementFields } from "../../lib/schema-generator";
+import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
 
 function getAuthHeaders() {
@@ -374,6 +375,15 @@ export default function ScoutLeadsPage() {
   const [commentSuccess, setCommentSuccess] = useState("");
   const [scoutLeadsRows, setScoutLeadsRows] = useState([]);
 
+  // OPR sidebar state (active when config.usePPR === true)
+  const [oprMatches, setOprMatches] = useState([]);
+  const [oprEnabled, setOprEnabled] = useState({});  // { "Q1": true, "SF2": false, ... }
+  const [oprResults, setOprResults] = useState(null); // [{team, opr}] | null after recalculate
+  const [oprLoading, setOprLoading] = useState(false);
+  const [oprError, setOprError] = useState("");
+  const [oprShowMatches, setOprShowMatches] = useState(false);
+  const [oprHasCalculated, setOprHasCalculated] = useState(false);
+
   // Sidebar rankings state
   const [sidebarWeights, setSidebarWeights] = useState({});
   const [sidebarTeams, setSidebarTeams] = useState([]);
@@ -442,6 +452,45 @@ export default function ScoutLeadsPage() {
     loadAllComments();
   }, [gameId]);
 
+  // Fetch OPR match list from TBA when config indicates usePPR is enabled
+  useEffect(() => {
+    if (configLoading || !config?.usePPR) return;
+
+    async function fetchOprMatches() {
+      setOprLoading(true);
+      setOprError("");
+      try {
+        const params = new URLSearchParams();
+        if (gameId) params.set("gameId", String(gameId));
+        const res = await fetch(`/api/opr${params.toString() ? `?${params.toString()}` : ""}`, {
+          credentials: "include",
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `OPR fetch failed (${res.status})`);
+        }
+        const data = await res.json();
+        const fetchedMatches = data.matches || [];
+        setOprMatches(fetchedMatches);
+        // Default all matches to enabled
+        const initialEnabled = {};
+        fetchedMatches.forEach((m) => {
+          initialEnabled[`${m.type}${m.number}`] = true;
+        });
+        setOprEnabled(initialEnabled);
+        setOprHasCalculated(false);
+        setOprResults(null);
+      } catch (err) {
+        setOprError(err.message || "Failed to load OPR match data.");
+      } finally {
+        setOprLoading(false);
+      }
+    }
+
+    fetchOprMatches();
+  }, [config, gameId, configLoading]);
+
   // Initialize sidebar weights (all zero) when config loads
   useEffect(() => {
     const weightsConfig = config?.display?.picklist?.weights || [];
@@ -453,6 +502,15 @@ export default function ScoutLeadsPage() {
       return initial;
     });
   }, [config]);
+
+  const handleOprRecalculate = () => {
+    const enabledMatches = oprMatches.filter(
+      (m) => oprEnabled[`${m.type}${m.number}`] !== false
+    );
+    const results = computeOPR(enabledMatches);
+    setOprResults(results);
+    setOprHasCalculated(true);
+  };
 
   const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
     setError("");
@@ -954,15 +1012,6 @@ export default function ScoutLeadsPage() {
               />
             </label>
 
-            <label className={styles.field}>
-              Match Type
-              <select value={matchType} onChange={(event) => setMatchType(event.target.value)}>
-                <option value="0">Practice</option>
-                <option value="1">Test</option>
-                <option value="2">Qualification</option>
-                <option value="3">Playoff</option>
-              </select>
-            </label>
           </div>
 
           <button type="submit" className={styles.primaryButton} disabled={loadingData}>
@@ -1416,6 +1465,102 @@ export default function ScoutLeadsPage() {
           <div className={styles.info}>No scouting entries found for this team/match.</div>
         )}
       </div>
+
+      {/* ── OPR Rankings Sidebar ──────────────────────────────── */}
+      {config?.usePPR && (
+        <aside className={styles.oprSidebar}>
+          <h2 className={styles.sidebarTitle}>OPR Rankings</h2>
+
+          {oprLoading && (
+            <p className={styles.sidebarNote}>Loading TBA match data...</p>
+          )}
+          {oprError && <div className={styles.error}>{oprError}</div>}
+
+          {!oprLoading && !oprError && oprMatches.length === 0 && (
+            <p className={styles.sidebarNote}>No played matches found at this event yet.</p>
+          )}
+
+          {oprMatches.length > 0 && !oprLoading && (
+            <>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleOprRecalculate}
+              >
+                Recalculate
+              </button>
+
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setOprShowMatches((prev) => !prev)}
+              >
+                {oprShowMatches
+                  ? `▲ Hide Matches (${oprMatches.length})`
+                  : `▼ Show Matches (${oprMatches.length})`}
+              </button>
+
+              {oprShowMatches && (
+                <div className={styles.oprMatchList}>
+                  {oprMatches.map((m) => {
+                    const key = `${m.type}${m.number}`;
+                    const enabled = oprEnabled[key] !== false;
+                    return (
+                      <div
+                        key={key}
+                        className={`${styles.oprMatchRow} ${!enabled ? styles.oprMatchRowDisabled : ""}`}
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.oprToggleBtn} ${enabled ? styles.oprToggleBtnOn : styles.oprToggleBtnOff}`}
+                          onClick={() =>
+                            setOprEnabled((prev) => ({ ...prev, [key]: !enabled }))
+                          }
+                          title={enabled ? "Click to exclude from OPR" : "Click to include in OPR"}
+                        >
+                          {enabled ? "✓" : "✗"}
+                        </button>
+                        <span className={styles.oprMatchLabel}>{key}</span>
+                        <span className={styles.oprMatchScoreRed}>{m.redScore}</span>
+                        <span className={styles.oprMatchScoreBlue}>{m.blueScore}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {oprHasCalculated && oprResults === null && (
+                <p className={styles.sidebarNote}>
+                  Not enough match data to compute OPR yet.
+                  Try including more matches or wait for more to be played.
+                </p>
+              )}
+
+              {oprResults && oprResults.length > 0 && (
+                <ol className={styles.teamRankList}>
+                  {oprResults.map((r, idx) => (
+                    <li key={r.team} className={styles.teamRankItem}>
+                      <div className={styles.teamRankRow}>
+                        <span className={styles.teamRankNum}>{idx + 1}</span>
+                        <span className={styles.teamRankTeam}>{r.team}</span>
+                        <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {!oprHasCalculated && (
+                <p className={styles.sidebarNote}>
+                  {oprMatches.length} match{oprMatches.length === 1 ? "" : "es"} loaded.
+                  Click Recalculate to compute OPR.
+                </p>
+              )}
+            </>
+          )}
+        </aside>
+      )}
+
       </div>
     </div>
   );

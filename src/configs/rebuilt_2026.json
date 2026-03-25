@@ -2,6 +2,7 @@
   "gameName": "rebuilt_2026",
   "displayName": "REBUILT 2026",
   "tbaEventCode": "2026rebu",
+  "usePPR": true,
   "formTitle": "KUNPENSCOUTER",
   "version": "1.0",
   "basics": {

@@ -166,6 +166,21 @@ function validateConfig(config) {
     result.addWarning('No display section defined - display pages will show a fallback message', 'display');
   }
 
+  // Validate usePPR (optional boolean that enables the OPR Rankings sidebar)
+  if (config.usePPR !== undefined) {
+    if (typeof config.usePPR !== 'boolean') {
+      result.addWarning('usePPR should be a boolean (true or false)', 'usePPR');
+    } else if (config.usePPR === true) {
+      const code = config.tbaEventCode;
+      if (!code || typeof code !== 'string' || !code.trim()) {
+        result.addWarning(
+          'usePPR is true but tbaEventCode is missing or empty. The OPR Rankings sidebar requires a valid tbaEventCode.',
+          'tbaEventCode'
+        );
+      }
+    }
+  }
+
   return result;
 }
 

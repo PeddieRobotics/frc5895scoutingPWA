@@ -182,6 +182,85 @@
   color: #57606a;
 }
 
+/* ── OPR Rankings Sidebar ────────────────────────────────────── */
+.oprSidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.oprMatchList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.oprMatchRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  padding: 3px 4px;
+  border-radius: 6px;
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+}
+
+.oprMatchRowDisabled {
+  opacity: 0.45;
+}
+
+.oprMatchLabel {
+  flex: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.oprMatchScoreRed {
+  color: #cf222e;
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.oprMatchScoreBlue {
+  color: #0969da;
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.oprToggleBtn {
+  border: 1px solid #d0d7de;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  background: transparent;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.oprToggleBtnOn {
+  border-color: #4ac26b;
+  color: #1a7f37;
+  background: #dafbe1;
+}
+
+.oprToggleBtnOff {
+  border-color: #ff8182;
+  color: #d1242f;
+  background: #ffebe9;
+}
+
 @media (max-width: 768px) {
   .pageLayout {
     flex-direction: column;
@@ -190,6 +269,12 @@
   .sidebar {
     order: 1;
     /* below main content on mobile */
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+
+  .oprSidebar {
     width: 100%;
     position: static;
     max-height: none;

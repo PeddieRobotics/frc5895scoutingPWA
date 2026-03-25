@@ -10,6 +10,13 @@ Next, configure the game collection JSON configuration file at /admin/games
 
 Please note that the PostgreSQL database keys, as well as ADMIN_PASSWORD must be defined in environment variables.
 
+Required environment variables:
+- `DATABASE_URL` — Neon PostgreSQL connection string
+- `ADMIN_PASSWORD` — Admin panel password
+
+Optional environment variables:
+- `TBA_AUTH_KEY` — The Blue Alliance API key (required when `usePPR: true` is set in the game config to enable the OPR Rankings sidebar). Obtain from https://www.thebluealliance.com/account
+
 ---
 
 # JSON Game Configuration Guide
@@ -54,7 +61,8 @@ This guide documents how to build and validate JSON game configurations for form
 14. [Best Practices](#best-practices)
 15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
 16. [Scoring Requirements](#scoring-requirements)
-17. [Acknowledgements](#acknowledgements)
+17. [OPR Rankings Sidebar](#opr-rankings-sidebar)
+18. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -214,6 +222,8 @@ Every configuration file must have these top-level properties:
 |----------|------|-------------|---------|
 | `formTitle` | string | Title shown at the top of the scouting form | `displayName` |
 | `version` | string | Version number for tracking changes | None |
+| `tbaEventCode` | string | TBA event code (e.g. `"2026njski"`); used by `/api/get-tba-rank` and the OPR Rankings sidebar | None |
+| `usePPR` | boolean | If `true`, shows the OPR Rankings sidebar on `/scout-leads`. Requires `tbaEventCode` to be set and `TBA_AUTH_KEY` env var configured | `false` |
 | `basics` | object | Pre-match fields (like "No Show") | None |
 | `sections` | array | Main form sections (Auto, Tele, etc.) | Required for form |
 | `calculations` | object | EPA point calculation formulas | None |
@@ -2155,10 +2165,56 @@ A: Yes! Field names only need to be unique within a single configuration. Differ
 
 ---
 
+## OPR Rankings Sidebar
+
+When `usePPR: true` is set in the game config, the `/scout-leads` page shows an **OPR Rankings** sidebar to the right of the main content column.
+
+### Setup
+
+1. Set `"tbaEventCode"` to your event code (e.g. `"2026njski"`) in your game config JSON.
+2. Set `"usePPR": true` in the game config JSON.
+3. Set the `TBA_AUTH_KEY` environment variable to your TBA API key (obtain from https://www.thebluealliance.com/account).
+
+### How It Works
+
+- On page load, the sidebar fetches all **played** matches for the configured event from The Blue Alliance API.
+- Click **"▼ Show Matches"** to expand the match list. Each row shows the match identifier, and the red and blue alliance scores.
+- Each match has a **✓/✗ toggle** to include or exclude it from the OPR calculation.
+- Click **Recalculate** to run OPR computation client-side using the currently enabled matches.
+- The results appear as a ranked list of teams with their OPR values (higher = better).
+
+### Algorithm
+
+OPR is solved as a least-squares system: **X = (Mᵀ·M)⁻¹ · Mᵀ · s**
+
+- **M** — match participation matrix (2 rows per match, one per alliance; column j = 1 if team j played)
+- **s** — score vector (one entry per alliance per match)
+- **X** — OPR value per team
+
+The system is solved using Gaussian elimination with partial pivoting (no external dependencies). If the matrix is singular (too few matches relative to teams), the sidebar shows a message to include more matches.
+
+### Config Example
+
+```json
+{
+  "gameName": "my_game_2026",
+  "displayName": "MY GAME 2026",
+  "tbaEventCode": "2026njski",
+  "usePPR": true,
+  ...
+}
+```
+
+---
+
 ## Acknowledgements
 
 This project is based on the scouting system originally developed by **FRC Team 2485 - Overclocked**. Their work served as the foundation for this app, and we're grateful for the open-source culture in the FRC community that makes projects like this possible.
 
 - GitHub: [https://github.com/team2485/](https://github.com/team2485/)
+
+The OPR viewer tool included in this repository (`testingshit/frc-opr-viewer-main`) was originally created by **Jayden Li (glolichen)**, used under the MIT License.
+
+- GitHub: [https://github.com/glolichen/frc-opr-viewer](https://github.com/glolichen/frc-opr-viewer)
 
 ---
