@@ -472,11 +472,13 @@ export default function ScoutLeadsPage() {
         }
         const data = await res.json();
         const fetchedMatches = data.matches || [];
+        const savedBlacklist = new Set(data.blacklist || []);
         setOprMatches(fetchedMatches);
-        // Default all matches to enabled
+        // Restore toggle state: blacklisted matches start disabled
         const initialEnabled = {};
         fetchedMatches.forEach((m) => {
-          initialEnabled[`${m.type}${m.number}`] = true;
+          const key = `${m.type}${m.number}`;
+          initialEnabled[key] = !savedBlacklist.has(key);
         });
         setOprEnabled(initialEnabled);
         setOprHasCalculated(false);
@@ -503,13 +505,34 @@ export default function ScoutLeadsPage() {
     });
   }, [config]);
 
-  const handleOprRecalculate = () => {
+  const handleOprRecalculate = async () => {
     const enabledMatches = oprMatches.filter(
       (m) => oprEnabled[`${m.type}${m.number}`] !== false
     );
+    // Build blacklist = match keys that are toggled OFF
+    const blacklist = oprMatches
+      .filter((m) => oprEnabled[`${m.type}${m.number}`] === false)
+      .map((m) => `${m.type}${m.number}`);
+
+    // Compute and display OPR immediately
     const results = computeOPR(enabledMatches);
     setOprResults(results);
     setOprHasCalculated(true);
+    setOprShowMatches(false);
+
+    // Persist blacklist to DB (fire-and-forget; non-fatal)
+    try {
+      const params = new URLSearchParams();
+      if (gameId) params.set("gameId", String(gameId));
+      await fetch(`/api/opr${params.toString() ? `?${params.toString()}` : ""}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ blacklist, gameId: gameId ?? null }),
+      });
+    } catch (_e) {
+      // Non-fatal: OPR still updates locally; blacklist will sync on next Recalculate
+    }
   };
 
   const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
@@ -845,7 +868,7 @@ export default function ScoutLeadsPage() {
   return (
     <div className={styles.page}>
       {unscoredMatches.length > 0 && (
-        <div style={{ margin: "0 12px 12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
+        <div style={{ marginBottom: "12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
           <strong>Matches missing scout-lead rates:</strong>
           <ul style={{ margin: "8px 0 0 18px" }}>
             {unscoredMatches.map((issue, index) => (

@@ -11,6 +11,7 @@ import {
   generateCreateScoutLeadsTableSQL,
   sanitizeTableName,
   sanitizeScoutLeadsTableName,
+  sanitizeOprSettingsTableName,
 } from './schema-generator.js';
 
 function quoteIdentifier(identifier) {
@@ -614,6 +615,34 @@ async function migrateScoutLeadsTable(scoutLeadsTableName, timerFields) {
   }
 }
 
+/**
+ * Ensure the OPR settings table exists for a given game.
+ * Creates opr_settings_{gameName} with a single JSON blacklist row.
+ * @param {Object} game - Game row with game_name
+ * @param {Object|null} existingClient - Optional PG client to reuse
+ * @returns {Promise<string>} The table name
+ */
+async function ensureOprSettingsTableForGame(game, existingClient = null) {
+  if (!game) throw new Error('Game is required');
+  const gameName = game.game_name || game.gameName || game.config_json?.gameName;
+  if (!gameName) throw new Error('Game name is required');
+
+  const tableName = sanitizeOprSettingsTableName(gameName);
+  const client = existingClient || await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${tableName} (
+        id SERIAL PRIMARY KEY,
+        blacklist JSONB NOT NULL DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } finally {
+    if (!existingClient) client.release();
+  }
+  return tableName;
+}
+
 export {
   initializeGameConfigsTable,
   getAllGames,
@@ -632,6 +661,7 @@ export {
   getTableColumns,
   getScoutLeadsTableName,
   ensureScoutLeadsTableForGame,
+  ensureOprSettingsTableForGame,
   migrateScoutingTable,
   migrateScoutLeadsTable,
 };

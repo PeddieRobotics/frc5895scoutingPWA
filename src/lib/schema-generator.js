@@ -297,6 +297,10 @@ function sanitizeScoutLeadsTableName(gameName) {
   return sanitizeTableName(gameName, 'scoutleads_');
 }
 
+function sanitizeOprSettingsTableName(gameName) {
+  return sanitizeTableName(gameName, 'opr_settings_');
+}
+
 function extractTimerFieldsFromConfig(config) {
   const timerFields = [];
   const seen = new Set();
@@ -586,6 +590,7 @@ export {
   generateCreateScoutLeadsTableSQL,
   sanitizeTableName,
   sanitizeScoutLeadsTableName,
+  sanitizeOprSettingsTableName,
   getFieldDefaults,
   getNumericFields,
   getBooleanFields,

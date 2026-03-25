@@ -1,31 +1,28 @@
 import { NextResponse } from "next/server";
-import { validateAuthToken } from "../../../lib/auth";
+import { pool, validateAuthToken } from "../../../lib/auth";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
+import { getTBAMatches, getOprBlacklist, saveOprBlacklist } from "../../../lib/opr-service";
 
 export const revalidate = 0;
+
+function resolveGame(activeGame) {
+  const configJson = activeGame?.config_json || {};
+  const tbaEventCode = (activeGame?.tba_event_code || configJson.tbaEventCode || "").trim();
+  return { configJson, tbaEventCode };
+}
 
 /**
  * GET /api/opr?gameId=<optional>
  *
- * Fetches played match data from The Blue Alliance for the active game's event
- * and returns it in a normalized format for client-side OPR computation.
- *
- * Requires:
- *   - usePPR: true in the game config JSON
- *   - tbaEventCode set in the game config (or tba_event_code DB column)
- *   - TBA_AUTH_KEY environment variable
+ * Returns played TBA match data for the active game's event, plus the
+ * currently saved OPR blacklist so the sidebar can restore toggle state.
  */
 export async function GET(request) {
-  // Auth check — same pattern as other scout-leads routes
   const { isValid, error } = await validateAuthToken(request);
   if (!isValid) {
-    return NextResponse.json(
-      { message: error || "Authentication required" },
-      { status: 401 }
-    );
+    return NextResponse.json({ message: error || "Authentication required" }, { status: 401 });
   }
 
-  // Resolve game config
   const { searchParams } = new URL(request.url);
   const requestedGameId = parseRequestedGameId(
     searchParams.get("gameId") || request.headers.get("X-Game-Id")
@@ -34,121 +31,97 @@ export async function GET(request) {
   let activeGame;
   try {
     activeGame = await getGameByIdOrActive(requestedGameId);
-  } catch (gameError) {
-    console.error("[opr] Error loading active game:", gameError);
-    return NextResponse.json(
-      { message: "Failed to load game config" },
-      { status: 500 }
-    );
+  } catch (e) {
+    console.error("[opr GET] Error loading active game:", e);
+    return NextResponse.json({ message: "Failed to load game config" }, { status: 500 });
   }
 
-  const configJson = activeGame?.config_json || {};
+  const { configJson, tbaEventCode } = resolveGame(activeGame);
 
-  // Guard: only proceed if usePPR is explicitly enabled
   if (configJson.usePPR !== true) {
-    return NextResponse.json(
-      { message: "usePPR is not enabled for this game config" },
-      { status: 400 }
-    );
+    return NextResponse.json({ message: "usePPR is not enabled for this game config" }, { status: 400 });
+  }
+  if (!tbaEventCode) {
+    return NextResponse.json({ message: "No tbaEventCode configured." }, { status: 400 });
+  }
+  if (!process.env.TBA_AUTH_KEY) {
+    return NextResponse.json({ message: "TBA_AUTH_KEY environment variable is not configured" }, { status: 500 });
   }
 
-  // Resolve event code — prefer DB column, fall back to config JSON
-  const tbaEventCode =
-    activeGame?.tba_event_code || configJson.tbaEventCode || "";
-  if (!tbaEventCode || !tbaEventCode.trim()) {
-    return NextResponse.json(
-      { message: "No tbaEventCode configured. Set tbaEventCode in the game config." },
-      { status: 400 }
-    );
-  }
-
-  const tbaAuthKey = process.env.TBA_AUTH_KEY;
-  if (!tbaAuthKey) {
-    return NextResponse.json(
-      { message: "TBA_AUTH_KEY environment variable is not configured" },
-      { status: 500 }
-    );
-  }
-
-  // Fetch matches from TBA
-  let rawMatches;
+  let matches, blacklist;
   try {
-    const tbaUrl = `https://www.thebluealliance.com/api/v3/event/${tbaEventCode.trim()}/matches`;
-    const tbaResponse = await fetch(tbaUrl, {
-      headers: { "X-TBA-Auth-Key": tbaAuthKey },
-      cache: "no-store",
-    });
-
-    if (!tbaResponse.ok) {
-      const errorBody = await tbaResponse.text().catch(() => "");
-      console.error("[opr] TBA API error:", tbaResponse.status, errorBody);
-      return NextResponse.json(
-        { message: `TBA API error: ${tbaResponse.status}` },
-        { status: tbaResponse.status }
-      );
+    const client = await pool.connect();
+    try {
+      [matches, blacklist] = await Promise.all([
+        getTBAMatches(tbaEventCode),
+        getOprBlacklist(activeGame.game_name, client),
+      ]);
+    } finally {
+      client.release();
     }
-
-    rawMatches = await tbaResponse.json();
   } catch (fetchError) {
-    console.error("[opr] Failed to fetch from TBA:", fetchError);
+    console.error("[opr GET] Error:", fetchError);
     return NextResponse.json(
-      { message: "Failed to fetch match data from The Blue Alliance" },
+      { message: fetchError.message || "Failed to fetch OPR data" },
       { status: 502 }
     );
   }
 
-  if (!Array.isArray(rawMatches)) {
-    return NextResponse.json(
-      { message: "Unexpected response format from TBA" },
-      { status: 502 }
-    );
+  return NextResponse.json({ matches, blacklist, eventCode: tbaEventCode });
+}
+
+/**
+ * POST /api/opr
+ *
+ * Saves the OPR blacklist (excluded match keys) for the active game.
+ * Called by the scout-leads Recalculate button.
+ *
+ * Body: { blacklist: string[], gameId?: string|number }
+ */
+export async function POST(request) {
+  const { isValid, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json({ message: error || "Authentication required" }, { status: 401 });
   }
 
-  // Parse and normalize — only include matches that have been played (score >= 0)
-  const matches = [];
-  for (const m of rawMatches) {
-    const { comp_level, match_number, set_number, alliances } = m;
-
-    let type, number;
-    if (comp_level === "qm") {
-      type = "Q";
-      number = match_number;
-    } else if (comp_level === "sf") {
-      type = "SF";
-      number = set_number;
-    } else if (comp_level === "f") {
-      type = "F";
-      number = match_number;
-    } else {
-      // Skip ef, qf, or any other level not relevant to standard FRC events
-      continue;
-    }
-
-    const redScore = alliances?.red?.score ?? -1;
-    const blueScore = alliances?.blue?.score ?? -1;
-
-    // Skip unplayed matches (TBA uses -1 for not-yet-played)
-    if (redScore < 0 || blueScore < 0) continue;
-
-    const redTeams = (alliances?.red?.team_keys || []).map((k) =>
-      parseInt(k.replace("frc", ""), 10)
-    );
-    const blueTeams = (alliances?.blue?.team_keys || []).map((k) =>
-      parseInt(k.replace("frc", ""), 10)
-    );
-
-    // Skip if team data is malformed
-    if (redTeams.some(isNaN) || blueTeams.some(isNaN)) continue;
-
-    matches.push({ type, number, redTeams, blueTeams, redScore, blueScore });
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Sort: Q → SF → F, then ascending by number within each level
-  const levelOrder = { Q: 0, SF: 1, F: 2 };
-  matches.sort((a, b) => {
-    const lo = (levelOrder[a.type] ?? 99) - (levelOrder[b.type] ?? 99);
-    return lo !== 0 ? lo : a.number - b.number;
-  });
+  const { blacklist, gameId: bodyGameId } = body;
+  if (!Array.isArray(blacklist)) {
+    return NextResponse.json({ message: "blacklist must be an array" }, { status: 400 });
+  }
 
-  return NextResponse.json({ matches, eventCode: tbaEventCode.trim() });
+  const requestedGameId = parseRequestedGameId(
+    bodyGameId ?? request.headers.get("X-Game-Id")
+  );
+
+  let activeGame;
+  try {
+    activeGame = await getGameByIdOrActive(requestedGameId);
+  } catch (e) {
+    console.error("[opr POST] Error loading active game:", e);
+    return NextResponse.json({ message: "Failed to load game config" }, { status: 500 });
+  }
+
+  const { configJson } = resolveGame(activeGame);
+  if (configJson.usePPR !== true) {
+    return NextResponse.json({ message: "usePPR is not enabled for this game config" }, { status: 400 });
+  }
+
+  const client = await pool.connect();
+  try {
+    await saveOprBlacklist(activeGame.game_name, blacklist, client);
+  } catch (saveError) {
+    console.error("[opr POST] Error saving blacklist:", saveError);
+    return NextResponse.json({ message: "Failed to save OPR blacklist" }, { status: 500 });
+  } finally {
+    client.release();
+  }
+
+  return NextResponse.json({ ok: true, blacklistCount: blacklist.length });
 }

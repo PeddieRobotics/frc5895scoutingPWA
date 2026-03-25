@@ -4,6 +4,7 @@ import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-con
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateAllianceData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
+import { getTeamOPRMap } from "../../../lib/opr-service";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -81,6 +82,24 @@ export async function GET(request) {
 
     // Use config-driven aggregation
     const responseObject = aggregateAllianceData(scoredRows, gameConfig, calculationFunctions);
+
+    // If usePPR, override EPA fields with OPR for each team
+    if (gameConfig?.usePPR === true) {
+      try {
+        const oprMap = await getTeamOPRMap(activeGame);
+        if (oprMap) {
+          Object.keys(responseObject).forEach((teamNum) => {
+            const opr = oprMap.get(Number(teamNum));
+            if (opr != null) {
+              responseObject[teamNum].avgEpa   = opr;
+              responseObject[teamNum].last3Epa = opr;
+            }
+          });
+        }
+      } catch (oprError) {
+        console.error("[get-alliance-data] OPR injection error:", oprError);
+      }
+    }
 
     // Fetch team names from TBA (best effort)
     try {

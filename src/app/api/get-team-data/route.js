@@ -4,6 +4,7 @@ import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-con
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateTeamData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
+import { getTeamOPRMap } from "../../../lib/opr-service";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -118,6 +119,32 @@ export async function GET(request) {
       successCage: 0,
       qualitative: [],
     };
+
+  // If usePPR, override EPA fields with OPR from TBA
+  if (gameConfig?.usePPR === true) {
+    try {
+      const oprMap = await getTeamOPRMap(activeGame);
+      if (oprMap) {
+        const opr = oprMap.get(Number(team));
+        if (opr != null) {
+          returnObject.avgEpa   = opr;
+          returnObject.last3Epa = opr;
+          returnObject.avgAuto  = 0;
+          returnObject.avgTele  = 0;
+          returnObject.avgEnd   = 0;
+          returnObject.last3Auto = 0;
+          returnObject.last3Tele = 0;
+          returnObject.last3End  = 0;
+          // Flatten time-series to OPR value per match so charts reflect OPR
+          returnObject.epaOverTime  = (returnObject.epaOverTime  || []).map(p => ({ ...p, epa: opr }));
+          returnObject.autoOverTime = [];
+          returnObject.teleOverTime = [];
+        }
+      }
+    } catch (oprError) {
+      console.error("[get-team-data] OPR injection error:", oprError);
+    }
+  }
 
   // Fetch team name from TBA
   try {

@@ -4,6 +4,7 @@ import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
+import { getTeamOPRMap } from "../../../lib/opr-service";
 
 export async function POST(request) {
   // First validate the auth token
@@ -73,6 +74,24 @@ export async function POST(request) {
   let teamTable = scoredRows.length > 0
     ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, weightInputs)
     : [];
+
+  // If usePPR, override each team's score and EPA fields with OPR
+  if (gameConfig?.usePPR === true) {
+    try {
+      const oprMap = await getTeamOPRMap(activeGame);
+      if (oprMap) {
+        teamTable = teamTable.map((entry) => {
+          const opr = oprMap.get(Number(entry.team));
+          if (opr == null) return entry;
+          return { ...entry, score: opr, avgEpa: opr, epa: opr };
+        });
+        // Re-sort by OPR descending
+        teamTable.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      }
+    } catch (oprError) {
+      console.error("[compute-picklist] OPR injection error:", oprError);
+    }
+  }
 
   // Fetch TBA Rankings (best effort)
   try {
