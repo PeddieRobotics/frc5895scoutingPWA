@@ -447,15 +447,15 @@ function MatchView() {
   }
 
   function AllianceDisplay({ teams, opponents, colors }) {
-    //calc alliance espm breakdown
-    const validTeams = teams.filter(team => team && team.auto !== null);
+    //calc alliance score breakdown
+    const usePPR = config?.usePPR === true;
+    const validTeams = usePPR
+      ? teams.filter(team => team && team.avgEpa != null)
+      : teams.filter(team => team && team.auto !== null);
     const auto = validTeams.reduce((sum, team) => sum + (team.auto || 0), 0);
     const tele = validTeams.reduce((sum, team) => sum + (team.tele || 0), 0);
     const end = validTeams.reduce((sum, team) => sum + (team.end || 0), 0);
-
-    console.log(auto)
-    console.log(tele)
-    console.log(end)
+    const alliancePPR = usePPR ? validTeams.reduce((sum, team) => sum + (team.avgEpa || 0), 0) : null;
 
     //calc ranking points
     const RGBColors = {
@@ -463,11 +463,17 @@ function MatchView() {
       green: "#BFFEC1",
       yellow: "#FFDD9A"
     }
-    //win = higher espm than opponents
-    const teamEPA = (team) => team && team.auto !== null ? team.auto + team.tele + team.end : 0;
-    const validOpponents = opponents.filter(opponent => opponent && opponent.auto !== null);
+    //win = higher score than opponents
+    const teamEPA = (team) => {
+      if (!team) return 0;
+      if (usePPR) return team.avgEpa || 0;
+      return team.auto !== null ? team.auto + team.tele + team.end : 0;
+    };
+    const validOpponents = usePPR
+      ? opponents.filter(opponent => opponent && opponent.avgEpa != null)
+      : opponents.filter(opponent => opponent && opponent.auto !== null);
     const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
-    const currentAllianceEPA = auto + tele + end;
+    const currentAllianceEPA = usePPR ? (alliancePPR || 0) : auto + tele + end;
     let RP_WIN = RGBColors.red;
     if (currentAllianceEPA > opponentsEPA) RP_WIN = RGBColors.green;
     else if (currentAllianceEPA == opponentsEPA) RP_WIN = RGBColors.yellow;
@@ -544,11 +550,12 @@ function MatchView() {
 
     return <div className={styles.lightBorderBox}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>{((auto + tele + end) || 0).toFixed(1)}</div>        <div className={styles.EPABreakdown}>
+        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
+        {!usePPR && <div className={styles.EPABreakdown}>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {(end || 0).toFixed(1)}</div>
-        </div>
+        </div>}
       </div>
       <div className={styles.RPs}>
         <div style={{ background: colors[1] }}>RPs:</div>
@@ -579,13 +586,13 @@ function MatchView() {
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
         <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>
-          {teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
+          {config?.usePPR ? (teamData.avgEpa != null ? (teamData.avgEpa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
-        <div className={styles.EPABreakdown}>
+        {!config?.usePPR && <div className={styles.EPABreakdown}>
           <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A"}</div>
           <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A"}</div>
           <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A"}</div>
-        </div>
+        </div>}
       </div>
       <div className={styles.barchartContainer}>
         <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>Average Piece Placement</h2>
@@ -638,18 +645,28 @@ function MatchView() {
     data?.team6?.team,
   ].filter((value) => value !== undefined && value !== null).map((value) => String(value)));
   const visibleUnscoredMatches = unscoredMatches.filter((issue) => visibleTeamNumbers.has(String(issue.team)));
-  let blueScores = [0, get(blueAlliance, "auto")]
-  blueScores.push(blueScores[1] + get(blueAlliance, "tele"))
-  blueScores.push(blueScores[2] + get(blueAlliance, "end"))
-  let redScores = [0, get(redAlliance, "auto")]
-  redScores.push(redScores[1] + get(redAlliance, "tele"))
-  redScores.push(redScores[2] + get(redAlliance, "end"));
-  let epaData = [
-    { name: "Start", blue: 0, red: 0 },
-    { name: "Auto", blue: blueScores[1], red: redScores[1] },
-    { name: "Tele", blue: blueScores[2], red: redScores[2] },
-    { name: "End", blue: blueScores[3], red: redScores[3] },
-  ];
+  let epaData;
+  if (config?.usePPR) {
+    const blueTotal = blueAlliance.reduce((s, t) => s + (t?.avgEpa || 0), 0);
+    const redTotal = redAlliance.reduce((s, t) => s + (t?.avgEpa || 0), 0);
+    epaData = [
+      { name: "Start", blue: 0, red: 0 },
+      { name: "PPR", blue: blueTotal, red: redTotal },
+    ];
+  } else {
+    let blueScores = [0, get(blueAlliance, "auto")];
+    blueScores.push(blueScores[1] + get(blueAlliance, "tele"));
+    blueScores.push(blueScores[2] + get(blueAlliance, "end"));
+    let redScores = [0, get(redAlliance, "auto")];
+    redScores.push(redScores[1] + get(redAlliance, "tele"));
+    redScores.push(redScores[2] + get(redAlliance, "end"));
+    epaData = [
+      { name: "Start", blue: 0, red: 0 },
+      { name: "Auto", blue: blueScores[1], red: redScores[1] },
+      { name: "Tele", blue: blueScores[2], red: redScores[2] },
+      { name: "End", blue: blueScores[3], red: redScores[3] },
+    ];
+  }
 
   //getting radar data from config
   let radarData = [];
@@ -742,7 +759,7 @@ function MatchView() {
           />
         </div>
         <div className={styles.lineGraphContainer}>
-          <h2>EPA / time</h2>
+          <h2>{config?.usePPR ? "PPR" : "EPA / time"}</h2>
           <br></br>
           <EPALineChart data={epaData} />
         </div>

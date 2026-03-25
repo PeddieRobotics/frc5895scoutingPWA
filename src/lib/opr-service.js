@@ -124,29 +124,28 @@ async function saveOprBlacklist(gameName, blacklist, client) {
   }
 }
 
+// ─── Internal helper ──────────────────────────────────────────────────────────
+
 /**
- * Compute a team → OPR map for the active game.
- * Returns null if usePPR is not set, tbaEventCode is missing, or OPR cannot be computed.
+ * Fetch enabled matches (blacklist applied) for an active game.
+ * Returns null if the game isn't PPR-enabled, tbaEventCode is missing, or no matches.
  *
- * @param {Object} activeGame - game row with config_json and game_name
- * @returns {Promise<Map<number, number>|null>}
+ * @param {Object} activeGame
+ * @returns {Promise<Array|null>}
  */
-async function getTeamOPRMap(activeGame) {
+async function getEnabledMatches(activeGame) {
   const config = activeGame?.config_json || {};
   if (config.usePPR !== true) return null;
 
   const tbaEventCode = activeGame.tba_event_code || config.tbaEventCode;
   if (!tbaEventCode) return null;
 
-  const gameName = activeGame.game_name;
-
-  // Fetch TBA matches (cached) and blacklist in parallel
   let allMatches, blacklist;
   const client = await pool.connect();
   try {
     [allMatches, blacklist] = await Promise.all([
       getTBAMatches(tbaEventCode),
-      getOprBlacklist(gameName, client),
+      getOprBlacklist(activeGame.game_name, client),
     ]);
   } finally {
     client.release();
@@ -154,13 +153,24 @@ async function getTeamOPRMap(activeGame) {
 
   if (!allMatches || allMatches.length === 0) return null;
 
-  // Filter out blacklisted matches
   const blacklistSet = new Set(blacklist);
-  const enabledMatches = allMatches.filter(
-    m => !blacklistSet.has(`${m.type}${m.number}`)
-  );
+  const enabled = allMatches.filter(m => !blacklistSet.has(`${m.type}${m.number}`));
+  return enabled.length > 0 ? enabled : null;
+}
 
-  if (enabledMatches.length === 0) return null;
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Compute a team → overall PPR map for the active game.
+ * Uses all enabled (non-blacklisted) matches.
+ * Returns null if usePPR is not set, tbaEventCode is missing, or PPR cannot be computed.
+ *
+ * @param {Object} activeGame - game row with config_json and game_name
+ * @returns {Promise<Map<number, number>|null>}
+ */
+async function getTeamOPRMap(activeGame) {
+  const enabledMatches = await getEnabledMatches(activeGame);
+  if (!enabledMatches) return null;
 
   const results = computeOPR(enabledMatches);
   if (!results) return null;
@@ -168,4 +178,105 @@ async function getTeamOPRMap(activeGame) {
   return new Map(results.map(r => [r.team, r.opr]));
 }
 
-export { getTBAMatches, getOprBlacklist, saveOprBlacklist, getTeamOPRMap };
+/**
+ * Compute a team → last-3-matches PPR map for the active game.
+ *
+ * For each team, their contribution to the match matrix is temporarily limited
+ * to their 3 most recent enabled matches; all other teams keep all their matches
+ * (preserving matrix conditioning). PPR is then solved once per team.
+ *
+ * Returns null if usePPR is not set, tbaEventCode is missing, or data is insufficient.
+ *
+ * @param {Object} activeGame
+ * @returns {Promise<Map<number, number>|null>}
+ */
+async function getLast3OPRMap(activeGame) {
+  const enabledMatches = await getEnabledMatches(activeGame);
+  if (!enabledMatches) return null;
+
+  // Match sort order: Q < SF < F, ascending by number
+  const levelOrder = { Q: 0, SF: 1, F: 2 };
+  const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
+
+  // Build per-team sorted match list
+  const teamMatchList = {};
+  enabledMatches.forEach(m => {
+    [...m.redTeams, ...m.blueTeams].forEach(team => {
+      if (!teamMatchList[team]) teamMatchList[team] = [];
+      teamMatchList[team].push(m);
+    });
+  });
+  Object.values(teamMatchList).forEach(list =>
+    list.sort((a, b) => matchOrder(a) - matchOrder(b))
+  );
+
+  const last3Map = new Map();
+
+  for (const [teamStr, matchList] of Object.entries(teamMatchList)) {
+    const team = Number(teamStr);
+
+    // The 3 most recent match keys for this team
+    const last3Keys = new Set(matchList.slice(-3).map(m => `${m.type}${m.number}`));
+
+    // Temporarily exclude this team's older matches; all others stay
+    const filteredMatches = enabledMatches.filter(m => {
+      const hasTeam = m.redTeams.includes(team) || m.blueTeams.includes(team);
+      return hasTeam ? last3Keys.has(`${m.type}${m.number}`) : true;
+    });
+
+    const results = computeOPR(filteredMatches);
+    if (results) {
+      const entry = results.find(r => r.team === team);
+      if (entry) last3Map.set(team, entry.opr);
+    }
+  }
+
+  return last3Map.size > 0 ? last3Map : null;
+}
+
+/**
+ * Compute running PPR (OPR) for a team across qualification matches.
+ * At each Q match the team played, OPR is computed using only matches
+ * played up to and including that match — showing how their PPR evolved
+ * over the course of the event.
+ *
+ * Returns [{match: number, epa: ppr}, ...] in ascending match order,
+ * or [] if usePPR is not enabled / insufficient data.
+ *
+ * @param {Object} activeGame
+ * @param {number} teamNumber
+ * @returns {Promise<Array>}
+ */
+async function getPPROverTime(activeGame, teamNumber) {
+  const enabledMatches = await getEnabledMatches(activeGame);
+  if (!enabledMatches) return [];
+
+  const levelOrder = { Q: 0, SF: 1, F: 2 };
+  const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
+
+  // Qualification matches the target team participated in, sorted ascending
+  const teamQualMatches = enabledMatches
+    .filter(m => m.type === 'Q' && (m.redTeams.includes(teamNumber) || m.blueTeams.includes(teamNumber)))
+    .sort((a, b) => a.number - b.number);
+
+  if (teamQualMatches.length === 0) return [];
+
+  const result = [];
+
+  for (const m of teamQualMatches) {
+    const cutoff = matchOrder(m);
+    // All enabled matches played up to and including this match
+    const subset = enabledMatches.filter(x => matchOrder(x) <= cutoff);
+    // λ=1.0 regularisation stabilises early matches where MTM is singular
+    const oprResults = computeOPR(subset, 1.0);
+    if (!oprResults) continue;
+    const entry = oprResults.find(r => r.team === teamNumber);
+    if (entry) {
+      result.push({ match: m.number, epa: Math.round(entry.opr * 100) / 100 });
+    }
+  }
+
+  return result;
+}
+
+export { getTBAMatches, getOprBlacklist, saveOprBlacklist, getTeamOPRMap, getLast3OPRMap, getPPROverTime };

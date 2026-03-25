@@ -4,7 +4,7 @@ import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
-import { getTeamOPRMap } from "../../../lib/opr-service";
+import { getTeamOPRMap, getLast3OPRMap } from "../../../lib/opr-service";
 
 export async function POST(request) {
   // First validate the auth token
@@ -75,21 +75,25 @@ export async function POST(request) {
     ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, weightInputs)
     : [];
 
-  // If usePPR, override each team's score and EPA fields with OPR
+  // If usePPR, override each team's score and EPA fields with PPR (Peddie Power Rating)
   if (gameConfig?.usePPR === true) {
     try {
-      const oprMap = await getTeamOPRMap(activeGame);
+      const [oprMap, last3OprMap] = await Promise.all([
+        getTeamOPRMap(activeGame),
+        getLast3OPRMap(activeGame),
+      ]);
       if (oprMap) {
         teamTable = teamTable.map((entry) => {
           const opr = oprMap.get(Number(entry.team));
+          const last3Opr = last3OprMap?.get(Number(entry.team));
           if (opr == null) return entry;
-          return { ...entry, score: opr, avgEpa: opr, epa: opr };
+          return { ...entry, score: opr, avgEpa: opr, epa: opr, last3Epa: last3Opr ?? opr, realEpa: opr, realEpa3: last3Opr ?? opr };
         });
-        // Re-sort by OPR descending
+        // Re-sort by PPR descending
         teamTable.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
       }
     } catch (oprError) {
-      console.error("[compute-picklist] OPR injection error:", oprError);
+      console.error("[compute-picklist] PPR injection error:", oprError);
     }
   }
 

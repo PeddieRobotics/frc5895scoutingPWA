@@ -125,12 +125,16 @@ function gaussianElimination(A, b) {
  *   blueScore: number
  * }>} matches - Matches to include. Each entry must have arrays of team numbers
  *               and numeric scores for both alliances.
+ * @param {number} [lambda=0] - Tikhonov regularization parameter. Adding a small
+ *   positive value (e.g. 1.0) to the diagonal of MT·M stabilises the solve when
+ *   few matches have been played and the system would otherwise be singular.
+ *   Has negligible effect once teams have played several matches.
  *
  * @returns {Array<{team: number, opr: number}>|null}
  *   Teams sorted descending by OPR, or null if the system cannot be solved
  *   (e.g. too few matches, singular participation matrix).
  */
-export function computeOPR(matches) {
+export function computeOPR(matches, lambda = 0) {
   if (!matches || matches.length === 0) return null;
 
   // 1. Collect all unique team numbers
@@ -175,11 +179,16 @@ export function computeOPR(matches) {
     }
   }
 
-  // 5. Solve MTM · X = MTs
+  // 5. Optional Tikhonov regularisation: add λ to diagonal of MT·M
+  if (lambda > 0) {
+    for (let i = 0; i < n; i++) MTM[i][i] += lambda;
+  }
+
+  // 6. Solve (MTM + λI) · X = MTs
   const X = gaussianElimination(MTM, MTs);
   if (!X) return null;
 
-  // 6. Return sorted results
+  // 7. Return sorted results
   return teams
     .map((team, i) => ({ team, opr: X[i] }))
     .sort((a, b) => b.opr - a.opr);
