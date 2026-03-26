@@ -2213,7 +2213,7 @@ This project is based on the scouting system originally developed by **FRC Team 
 
 - GitHub: [https://github.com/team2485/](https://github.com/team2485/)
 
-The OPR viewer tool included in this repository (`testingshit/frc-opr-viewer-main`) was originally created by **Jayden Li (glolichen)**, used under the MIT License.
+The OPR viewer tool included in this repository was originally created by **Jayden Li (glolichen)**, used under the MIT License.
 
 - GitHub: [https://github.com/glolichen/frc-opr-viewer](https://github.com/glolichen/frc-opr-viewer)
 
