@@ -450,7 +450,7 @@ function MatchView() {
     //calc alliance score breakdown
     const usePPR = config?.usePPR === true;
     // For PPR box: only teams with OPR computed; for A/T/E: period OPR if available, else scouting
-    const pprTeams = teams.filter(team => team && team.avgEpa != null);
+    const pprTeams = teams.filter(team => team && team.last3Epa != null);
     const hasPeriodOPR = usePPR && teams.some(team => team?.autoEpa != null);
     const periodTeams = hasPeriodOPR ? teams.filter(team => team && team.autoEpa != null) : null;
     const scoutingTeams = teams.filter(team => team && team.auto !== null);
@@ -463,7 +463,7 @@ function MatchView() {
     const end = hasPeriodOPR
       ? periodTeams.reduce((sum, team) => sum + (team.endEpa || 0), 0)
       : scoutingTeams.reduce((sum, team) => sum + (team.end || 0), 0);
-    const alliancePPR = usePPR ? pprTeams.reduce((sum, team) => sum + (team.avgEpa || 0), 0) : null;
+    const alliancePPR = usePPR ? pprTeams.reduce((sum, team) => sum + (team.last3Epa || 0), 0) : null;
 
     //calc ranking points
     const RGBColors = {
@@ -474,10 +474,10 @@ function MatchView() {
     //win = higher score than opponents
     const teamEPA = (team) => {
       if (!team) return 0;
-      if (usePPR) return team.avgEpa || 0;
+      if (usePPR) return team.last3Epa || 0;
       return team.auto !== null ? team.auto + team.tele + team.end : 0;
     };
-    const validOpponents = opponents.filter(opponent => opponent && (usePPR ? opponent.avgEpa != null : opponent.auto !== null));
+    const validOpponents = opponents.filter(opponent => opponent && (usePPR ? opponent.last3Epa != null : opponent.auto !== null));
     const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
     const currentAllianceEPA = usePPR ? (alliancePPR || 0) : auto + tele + end;
     let RP_WIN = RGBColors.red;
@@ -556,7 +556,7 @@ function MatchView() {
 
     return <div className={styles.lightBorderBox} style={{ paddingTop: '20px' }}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
+        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
         <div className={styles.EPABreakdown}>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
@@ -591,8 +591,8 @@ function MatchView() {
       <h1 style={{ color: colors[3], marginTop: "10px", marginBottom: "0px" }}>{teamData.team}</h1>
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"PPR"' : '"EPA"' }} className={styles.EPABox}>
-          {config?.usePPR ? (teamData.avgEpa != null ? (teamData.avgEpa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
+        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>
+          {config?.usePPR ? (teamData.last3Epa != null ? (teamData.last3Epa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
         {!config?.usePPR && <div className={styles.EPABreakdown}>
           <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A"}</div>

@@ -881,226 +881,317 @@ export default function ScoutLeadsPage() {
       )}
       <div className={styles.pageLayout}>
 
-      {/* ── Rankings Sidebar ──────────────────────────────── */}
-      <aside className={styles.sidebar}>
-        <h2 className={styles.sidebarTitle}>Team Rankings</h2>
+        {/* ── Rankings Sidebar ──────────────────────────────── */}
+        <aside className={styles.sidebar}>
+          <h2 className={styles.sidebarTitle}>Team Rankings</h2>
 
-        {picklistWeightsConfig.length === 0 && !configLoading && (
-          <p className={styles.sidebarNote}>
-            No picklist weights configured. Add a <code>display.picklist.weights</code> section to your game config.
-          </p>
-        )}
+          {picklistWeightsConfig.length === 0 && !configLoading && (
+            <p className={styles.sidebarNote}>
+              No picklist weights configured. Add a <code>display.picklist.weights</code> section to your game config.
+            </p>
+          )}
 
-        {picklistWeightsConfig.length > 0 && (
-          <form ref={sidebarWeightsRef} onSubmit={(e) => { e.preventDefault(); generateRankings(); }}>
-            {/* Hidden inputs so FormData still sends all weight values */}
-            {picklistWeightsConfig.map((w) => (
-              <input key={w.key} type="hidden" name={w.key} value={sidebarWeights[w.key] ?? "0"} />
-            ))}
-            <label className={styles.field}>
-              Sort by
-              <select
-                className={styles.weightSelect}
-                value={picklistWeightsConfig.find((w) => sidebarWeights[w.key] === "1")?.key ?? ""}
-                onChange={(e) => {
-                  const selected = e.target.value;
-                  const next = {};
-                  picklistWeightsConfig.forEach((w) => {
-                    next[w.key] = w.key === selected ? "1" : "0";
-                  });
-                  setSidebarWeights(next);
-                }}
+          {picklistWeightsConfig.length > 0 && (
+            <form ref={sidebarWeightsRef} onSubmit={(e) => { e.preventDefault(); generateRankings(); }}>
+              {/* Hidden inputs so FormData still sends all weight values */}
+              {picklistWeightsConfig.map((w) => (
+                <input key={w.key} type="hidden" name={w.key} value={sidebarWeights[w.key] ?? "0"} />
+              ))}
+              <label className={styles.field}>
+                Sort by
+                <select
+                  className={styles.weightSelect}
+                  value={picklistWeightsConfig.find((w) => sidebarWeights[w.key] === "1")?.key ?? ""}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    const next = {};
+                    picklistWeightsConfig.forEach((w) => {
+                      next[w.key] = w.key === selected ? "1" : "0";
+                    });
+                    setSidebarWeights(next);
+                  }}
+                >
+                  <option value="" disabled>Select a metric…</option>
+                  {picklistWeightsConfig.map((w) => (
+                    <option key={w.key} value={w.key}>{w.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={sidebarLoading}
               >
-                <option value="" disabled>Select a metric…</option>
-                {picklistWeightsConfig.map((w) => (
-                  <option key={w.key} value={w.key}>{w.label}</option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="submit"
-              className={styles.primaryButton}
-              disabled={sidebarLoading}
-            >
-              {sidebarLoading ? "Calculating..." : "Generate Rankings"}
+                {sidebarLoading ? "Calculating..." : "Generate Rankings"}
+              </button>
+            </form>
+          )}
+
+          {sidebarError && <div className={styles.error}>{sidebarError}</div>}
+
+          {sidebarTeams.length > 0 && (
+            <ol className={styles.teamRankList}>
+              {sidebarTeams.map((t, idx) => {
+                const teamComments = commentsByTeam[t.team] || [];
+                const isExpanded = expandedTeam === t.team;
+                return (
+                  <li
+                    key={t.team}
+                    className={`${styles.teamRankItem} ${isExpanded ? styles.teamRankItemExpanded : ""} ${teamComments.length > 0 ? styles.teamRankItemHasComments : ""}`}
+                    onClick={() => setExpandedTeam(isExpanded ? null : t.team)}
+                  >
+                    <div className={styles.teamRankRow}>
+                      <span className={styles.teamRankNum}>{idx + 1}</span>
+                      <span className={styles.teamRankTeam}>
+                        {t.team}
+                        {teamComments.length > 0 && (
+                          <span className={styles.teamCommentBadge}>{teamComments.length}</span>
+                        )}
+                      </span>
+                      <span className={styles.teamRankScore}>{Number(t.score ?? 0).toFixed(1)}</span>
+                      {teamComments.length > 0 && (
+                        <span className={styles.teamExpandIcon}>{isExpanded ? "▲" : "▼"}</span>
+                      )}
+                    </div>
+                    {isExpanded && teamComments.length > 0 && (
+                      <div className={styles.teamCommentExpanded}>
+                        {teamComments.map((c) => (
+                          <div key={c.id} className={styles.teamCommentEntry}>
+                            <div className={styles.teamCommentMeta}>
+                              <strong>{c.scoutname || "Unknown"}</strong>
+                              <span>
+                                {matchTypeLabel[c.matchtype] ?? `Type ${c.matchtype}`} {c.match}
+                              </span>
+                            </div>
+                            <p className={styles.teamCommentText}>{c.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {isExpanded && teamComments.length === 0 && (
+                      <p className={styles.teamCommentEmpty}>No scout lead comments for this team.</p>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          {sidebarTeams.length === 0 && !sidebarLoading && picklistWeightsConfig.length > 0 && (
+            <p className={styles.sidebarNote}>Set weights and click Generate Rankings.</p>
+          )}
+        </aside>
+
+        <div className={styles.container}>
+          <h1 className={styles.title}>Scout Leads</h1>
+          <p className={styles.subtitle}>
+            Load a team + match and enter a configurable per-second rate for each timer metric.
+          </p>
+
+          {configLoading && <div className={styles.info}>Loading active game config...</div>}
+
+          {!configLoading && configuredTimerFields.length === 0 && (
+            <div className={styles.warning}>
+              No <code>holdTimer</code> fields found in the active game config. Timer rate entry is unavailable, but scouting entries are shown below.
+            </div>
+          )}
+
+          {error && <div className={styles.error}>{error}</div>}
+          {success && <div className={styles.success}>{success}</div>}
+
+          <form onSubmit={loadTimerData} className={styles.lookupForm}>
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                Scout Lead Name
+                <input
+                  type="text"
+                  value={scoutName}
+                  onChange={(event) => setScoutName(event.target.value)}
+                  placeholder="Optional"
+                />
+              </label>
+
+              <label className={styles.field}>
+                Team
+                <input
+                  type="number"
+                  min="1"
+                  value={team}
+                  onChange={(event) => setTeam(event.target.value)}
+                  onWheel={(e) => e.target.blur()}
+                  required
+                />
+              </label>
+
+              <label className={styles.field}>
+                Match
+                <input
+                  type="number"
+                  min="1"
+                  value={match}
+                  onChange={(event) => setMatch(event.target.value)}
+                  onWheel={(e) => e.target.blur()}
+                  required
+                />
+              </label>
+
+            </div>
+
+            <button type="submit" className={styles.primaryButton} disabled={loadingData}>
+              {loadingData ? "Loading..." : "Load Match Data"}
             </button>
           </form>
-        )}
 
-        {sidebarError && <div className={styles.error}>{sidebarError}</div>}
+          {loadedRecordMeta && (
+            <div className={styles.meta}>
+              <span>Scouting rows found: {loadedRecordMeta.scoutingRows}</span>
+              <span>
+                Scout-leads rate entries: {loadedRecordMeta.scoutLeadRows}
+              </span>
+            </div>
+          )}
 
-        {sidebarTeams.length > 0 && (
-          <ol className={styles.teamRankList}>
-            {sidebarTeams.map((t, idx) => {
-              const teamComments = commentsByTeam[t.team] || [];
-              const isExpanded = expandedTeam === t.team;
-              return (
-                <li
-                  key={t.team}
-                  className={`${styles.teamRankItem} ${isExpanded ? styles.teamRankItemExpanded : ""} ${teamComments.length > 0 ? styles.teamRankItemHasComments : ""}`}
-                  onClick={() => setExpandedTeam(isExpanded ? null : t.team)}
-                >
-                  <div className={styles.teamRankRow}>
-                    <span className={styles.teamRankNum}>{idx + 1}</span>
-                    <span className={styles.teamRankTeam}>
-                      {t.team}
-                      {teamComments.length > 0 && (
-                        <span className={styles.teamCommentBadge}>{teamComments.length}</span>
-                      )}
-                    </span>
-                    <span className={styles.teamRankScore}>{Number(t.score ?? 0).toFixed(1)}</span>
-                    {teamComments.length > 0 && (
-                      <span className={styles.teamExpandIcon}>{isExpanded ? "▲" : "▼"}</span>
-                    )}
-                  </div>
-                  {isExpanded && teamComments.length > 0 && (
-                    <div className={styles.teamCommentExpanded}>
-                      {teamComments.map((c) => (
-                        <div key={c.id} className={styles.teamCommentEntry}>
-                          <div className={styles.teamCommentMeta}>
-                            <strong>{c.scoutname || "Unknown"}</strong>
-                            <span>
-                              {matchTypeLabel[c.matchtype] ?? `Type ${c.matchtype}`} {c.match}
-                            </span>
+          {timerSummary.length > 0 && (
+            <div className={styles.timerList}>
+              {displayItems.map((item) => {
+                if (item.type === "group") {
+                  const { groupKey, groupLabel, fields } = item;
+                  const firstField = fields[0];
+                  const totalAverageSeconds = fields.reduce(
+                    (sum, f) => sum + (Number(f.averageSeconds) || 0),
+                    0
+                  );
+                  // Grouped fields share the same rate — use the first field's samples to avoid double-counting
+                  const allRateSamples = firstField.rateSamples || [];
+                  const combinedAverageRate = allRateSamples.length
+                    ? allRateSamples.reduce((a, b) => a + b, 0) / allRateSamples.length
+                    : 0;
+
+                  const fVal = fInputs[firstField.name] ?? "";
+                  const sVal = sInputs[firstField.name] ?? "";
+                  const fNum = Number(fVal);
+                  const sNum = Number(sVal);
+                  const computedRate = fVal !== "" && sVal !== "" && Number.isFinite(fNum) && Number.isFinite(sNum) && sNum > 0
+                    ? fNum / sNum
+                    : null;
+                  const estimatedOutput = computedRate !== null ? computedRate * totalAverageSeconds : null;
+
+                  const myScoutRow = scoutLeadsRows.find(
+                    (r) => r.scoutname && scoutName &&
+                      r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
+                  );
+                  const myGroupRate = myScoutRow != null ? myScoutRow[firstField.name] : null;
+
+                  return (
+                    <div key={groupKey} className={`${styles.timerCard} ${styles.timerCardGroup}`}>
+                      <h2>{groupLabel}</h2>
+                      <div className={styles.groupFieldList}>
+                        {fields.map((f) => (
+                          <div key={f.name} className={styles.groupFieldItem}>
+                            <span>{f.label}</span>
+                            <span>{Number(f.averageSeconds || 0).toFixed(2)}s avg</span>
                           </div>
-                          <p className={styles.teamCommentText}>{c.comment}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      <p>Combined avg seconds: {totalAverageSeconds.toFixed(2)}s</p>
+                      <p>
+                        Average saved rate: {Number(combinedAverageRate).toFixed(4)}
+                        {" "}({allRateSamples.length} {allRateSamples.length === 1 ? "entry" : "entries"})
+                      </p>
+                      {myGroupRate != null && Number.isFinite(Number(myGroupRate)) && (
+                        <p className={styles.myRate}>
+                          Your saved rate: {Number(myGroupRate).toFixed(4)}
+                        </p>
+                      )}
+
+                      <div className={styles.fsRow}>
+                        <label className={styles.fsPart}>
+                          f
+                          <input
+                            type="number"
+                            min="0"
+                            value={fVal}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const f = e.target.value;
+                              setFInputs((prev) => ({ ...prev, [firstField.name]: f }));
+                              const s = sInputs[firstField.name] ?? "";
+                              const fn = Number(f); const sn = Number(s);
+                              const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                              setRates((prev) => {
+                                const updates = {};
+                                fields.forEach((field) => { updates[field.name] = r; });
+                                return { ...prev, ...updates };
+                              });
+                            }}
+                            onWheel={(e) => e.target.blur()}
+                          />
+                        </label>
+                        <span className={styles.fsDivider}>/</span>
+                        <label className={styles.fsPart}>
+                          s
+                          <input
+                            type="number"
+                            min="0.001"
+                            step="0.001"
+                            value={sVal}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const s = e.target.value;
+                              setSInputs((prev) => ({ ...prev, [firstField.name]: s }));
+                              const f = fInputs[firstField.name] ?? "";
+                              const fn = Number(f); const sn = Number(s);
+                              const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
+                              setRates((prev) => {
+                                const updates = {};
+                                fields.forEach((field) => { updates[field.name] = r; });
+                                return { ...prev, ...updates };
+                              });
+                            }}
+                            onWheel={(e) => e.target.blur()}
+                          />
+                        </label>
+                        <span className={styles.fsComputed}>
+                          = {computedRate !== null ? computedRate.toFixed(4) : "—"}
+                        </span>
+                      </div>
+
+                      {estimatedOutput !== null && (
+                        <p>Estimated combined output: {estimatedOutput.toFixed(2)}</p>
+                      )}
                     </div>
-                  )}
-                  {isExpanded && teamComments.length === 0 && (
-                    <p className={styles.teamCommentEmpty}>No scout lead comments for this team.</p>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        )}
+                  );
+                }
 
-        {sidebarTeams.length === 0 && !sidebarLoading && picklistWeightsConfig.length > 0 && (
-          <p className={styles.sidebarNote}>Set weights and click Generate Rankings.</p>
-        )}
-      </aside>
-
-      <div className={styles.container}>
-        <h1 className={styles.title}>Scout Leads</h1>
-        <p className={styles.subtitle}>
-          Load a team + match and enter a configurable per-second rate for each timer metric.
-        </p>
-
-        {configLoading && <div className={styles.info}>Loading active game config...</div>}
-
-        {!configLoading && configuredTimerFields.length === 0 && (
-          <div className={styles.warning}>
-            No <code>holdTimer</code> fields found in the active game config. Timer rate entry is unavailable, but scouting entries are shown below.
-          </div>
-        )}
-
-        {error && <div className={styles.error}>{error}</div>}
-        {success && <div className={styles.success}>{success}</div>}
-
-        <form onSubmit={loadTimerData} className={styles.lookupForm}>
-          <div className={styles.grid}>
-            <label className={styles.field}>
-              Scout Lead Name
-              <input
-                type="text"
-                value={scoutName}
-                onChange={(event) => setScoutName(event.target.value)}
-                placeholder="Optional"
-              />
-            </label>
-
-            <label className={styles.field}>
-              Team
-              <input
-                type="number"
-                min="1"
-                value={team}
-                onChange={(event) => setTeam(event.target.value)}
-                onWheel={(e) => e.target.blur()}
-                required
-              />
-            </label>
-
-            <label className={styles.field}>
-              Match
-              <input
-                type="number"
-                min="1"
-                value={match}
-                onChange={(event) => setMatch(event.target.value)}
-                onWheel={(e) => e.target.blur()}
-                required
-              />
-            </label>
-
-          </div>
-
-          <button type="submit" className={styles.primaryButton} disabled={loadingData}>
-            {loadingData ? "Loading..." : "Load Match Data"}
-          </button>
-        </form>
-
-        {loadedRecordMeta && (
-          <div className={styles.meta}>
-            <span>Scouting rows found: {loadedRecordMeta.scoutingRows}</span>
-            <span>
-              Scout-leads rate entries: {loadedRecordMeta.scoutLeadRows}
-            </span>
-          </div>
-        )}
-
-        {timerSummary.length > 0 && (
-          <div className={styles.timerList}>
-            {displayItems.map((item) => {
-              if (item.type === "group") {
-                const { groupKey, groupLabel, fields } = item;
-                const firstField = fields[0];
-                const totalAverageSeconds = fields.reduce(
-                  (sum, f) => sum + (Number(f.averageSeconds) || 0),
-                  0
-                );
-                // Grouped fields share the same rate — use the first field's samples to avoid double-counting
-                const allRateSamples = firstField.rateSamples || [];
-                const combinedAverageRate = allRateSamples.length
-                  ? allRateSamples.reduce((a, b) => a + b, 0) / allRateSamples.length
-                  : 0;
-
-                const fVal = fInputs[firstField.name] ?? "";
-                const sVal = sInputs[firstField.name] ?? "";
+                // Individual (ungrouped) card
+                const { timer } = item;
+                const fVal = fInputs[timer.name] ?? "";
+                const sVal = sInputs[timer.name] ?? "";
                 const fNum = Number(fVal);
                 const sNum = Number(sVal);
                 const computedRate = fVal !== "" && sVal !== "" && Number.isFinite(fNum) && Number.isFinite(sNum) && sNum > 0
                   ? fNum / sNum
                   : null;
-                const estimatedOutput = computedRate !== null ? computedRate * totalAverageSeconds : null;
+                const estimatedOutput = computedRate !== null
+                  ? computedRate * (Number(timer.averageSeconds) || 0)
+                  : null;
 
                 const myScoutRow = scoutLeadsRows.find(
                   (r) => r.scoutname && scoutName &&
                     r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
                 );
-                const myGroupRate = myScoutRow != null ? myScoutRow[firstField.name] : null;
+                const myRate = myScoutRow != null ? myScoutRow[timer.name] : null;
 
                 return (
-                  <div key={groupKey} className={`${styles.timerCard} ${styles.timerCardGroup}`}>
-                    <h2>{groupLabel}</h2>
-                    <div className={styles.groupFieldList}>
-                      {fields.map((f) => (
-                        <div key={f.name} className={styles.groupFieldItem}>
-                          <span>{f.label}</span>
-                          <span>{Number(f.averageSeconds || 0).toFixed(2)}s avg</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p>Combined avg seconds: {totalAverageSeconds.toFixed(2)}s</p>
+                  <div key={timer.name} className={styles.timerCard}>
+                    <h2>{timer.label}</h2>
                     <p>
-                      Average saved rate: {Number(combinedAverageRate).toFixed(4)}
-                      {" "}({allRateSamples.length} {allRateSamples.length === 1 ? "entry" : "entries"})
+                      Average saved rate: {Number(timer.averageRate || 0).toFixed(4)}
+                      {" "}({timer.rateSamples?.length || 0} {(timer.rateSamples?.length || 0) === 1 ? "entry" : "entries"})
                     </p>
-                    {myGroupRate != null && Number.isFinite(Number(myGroupRate)) && (
+                    {myRate != null && Number.isFinite(Number(myRate)) && (
                       <p className={styles.myRate}>
-                        Your saved rate: {Number(myGroupRate).toFixed(4)}
+                        Your saved rate: {Number(myRate).toFixed(4)}
                       </p>
                     )}
 
@@ -1114,15 +1205,11 @@ export default function ScoutLeadsPage() {
                           placeholder="0"
                           onChange={(e) => {
                             const f = e.target.value;
-                            setFInputs((prev) => ({ ...prev, [firstField.name]: f }));
-                            const s = sInputs[firstField.name] ?? "";
+                            setFInputs((prev) => ({ ...prev, [timer.name]: f }));
+                            const s = sInputs[timer.name] ?? "";
                             const fn = Number(f); const sn = Number(s);
                             const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                            setRates((prev) => {
-                              const updates = {};
-                              fields.forEach((field) => { updates[field.name] = r; });
-                              return { ...prev, ...updates };
-                            });
+                            setRates((prev) => ({ ...prev, [timer.name]: r }));
                           }}
                           onWheel={(e) => e.target.blur()}
                         />
@@ -1138,15 +1225,11 @@ export default function ScoutLeadsPage() {
                           placeholder="0"
                           onChange={(e) => {
                             const s = e.target.value;
-                            setSInputs((prev) => ({ ...prev, [firstField.name]: s }));
-                            const f = fInputs[firstField.name] ?? "";
+                            setSInputs((prev) => ({ ...prev, [timer.name]: s }));
+                            const f = fInputs[timer.name] ?? "";
                             const fn = Number(f); const sn = Number(s);
                             const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                            setRates((prev) => {
-                              const updates = {};
-                              fields.forEach((field) => { updates[field.name] = r; });
-                              return { ...prev, ...updates };
-                            });
+                            setRates((prev) => ({ ...prev, [timer.name]: r }));
                           }}
                           onWheel={(e) => e.target.blur()}
                         />
@@ -1157,432 +1240,349 @@ export default function ScoutLeadsPage() {
                     </div>
 
                     {estimatedOutput !== null && (
-                      <p>Estimated combined output: {estimatedOutput.toFixed(2)}</p>
+                      <p>Estimated output: {estimatedOutput.toFixed(2)}</p>
                     )}
                   </div>
                 );
-              }
+              })}
+            </div>
+          )}
 
-              // Individual (ungrouped) card
-              const { timer } = item;
-              const fVal = fInputs[timer.name] ?? "";
-              const sVal = sInputs[timer.name] ?? "";
-              const fNum = Number(fVal);
-              const sNum = Number(sVal);
-              const computedRate = fVal !== "" && sVal !== "" && Number.isFinite(fNum) && Number.isFinite(sNum) && sNum > 0
-                ? fNum / sNum
-                : null;
-              const estimatedOutput = computedRate !== null
-                ? computedRate * (Number(timer.averageSeconds) || 0)
-                : null;
+          {timerSummary.length > 0 && (
+            <button
+              type="button"
+              className={styles.primaryButton}
+              disabled={savingData || timerSummary.length === 0}
+              onClick={saveScoutLeadRates}
+            >
+              {savingData ? "Saving..." : "Save Scout Lead Entry"}
+            </button>
+          )}
 
-              const myScoutRow = scoutLeadsRows.find(
-                (r) => r.scoutname && scoutName &&
-                  r.scoutname.trim().toLowerCase() === scoutName.trim().toLowerCase()
-              );
-              const myRate = myScoutRow != null ? myScoutRow[timer.name] : null;
+          {/* Scout Lead Comments section */}
+          {loadedRecordMeta && (
+            <section className={styles.commentsSection}>
+              <h2 className={styles.commentsSectionTitle}>Scout Lead Comments</h2>
 
-              return (
-                <div key={timer.name} className={styles.timerCard}>
-                  <h2>{timer.label}</h2>
-                  <p>
-                    Average saved rate: {Number(timer.averageRate || 0).toFixed(4)}
-                    {" "}({timer.rateSamples?.length || 0} {(timer.rateSamples?.length || 0) === 1 ? "entry" : "entries"})
-                  </p>
-                  {myRate != null && Number.isFinite(Number(myRate)) && (
-                    <p className={styles.myRate}>
-                      Your saved rate: {Number(myRate).toFixed(4)}
-                    </p>
-                  )}
-
-                  <div className={styles.fsRow}>
-                    <label className={styles.fsPart}>
-                      f
-                      <input
-                        type="number"
-                        min="0"
-                        value={fVal}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const f = e.target.value;
-                          setFInputs((prev) => ({ ...prev, [timer.name]: f }));
-                          const s = sInputs[timer.name] ?? "";
-                          const fn = Number(f); const sn = Number(s);
-                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                          setRates((prev) => ({ ...prev, [timer.name]: r }));
-                        }}
-                        onWheel={(e) => e.target.blur()}
-                      />
-                    </label>
-                    <span className={styles.fsDivider}>/</span>
-                    <label className={styles.fsPart}>
-                      s
-                      <input
-                        type="number"
-                        min="0.001"
-                        step="0.001"
-                        value={sVal}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const s = e.target.value;
-                          setSInputs((prev) => ({ ...prev, [timer.name]: s }));
-                          const f = fInputs[timer.name] ?? "";
-                          const fn = Number(f); const sn = Number(s);
-                          const r = f !== "" && s !== "" && Number.isFinite(fn) && Number.isFinite(sn) && sn > 0 ? String(fn / sn) : "";
-                          setRates((prev) => ({ ...prev, [timer.name]: r }));
-                        }}
-                        onWheel={(e) => e.target.blur()}
-                      />
-                    </label>
-                    <span className={styles.fsComputed}>
-                      = {computedRate !== null ? computedRate.toFixed(4) : "—"}
-                    </span>
-                  </div>
-
-                  {estimatedOutput !== null && (
-                    <p>Estimated output: {estimatedOutput.toFixed(2)}</p>
-                  )}
+              {/* Other scout leads' comments (read-only) */}
+              {scoutLeadsRows.filter((r) => r.comment && r.comment.trim()).length > 0 && (
+                <div className={styles.commentsList}>
+                  {scoutLeadsRows
+                    .filter((r) => r.comment && r.comment.trim())
+                    .reduce((acc, r) => {
+                      // dedupe by scoutname, keep first occurrence
+                      const key = (r.scoutname || "").trim().toLowerCase();
+                      if (!acc.seen.has(key)) {
+                        acc.seen.add(key);
+                        acc.rows.push(r);
+                      }
+                      return acc;
+                    }, { seen: new Set(), rows: [] })
+                    .rows
+                    .filter((r) => {
+                      const key = (r.scoutname || "").trim().toLowerCase();
+                      const myKey = scoutName.trim().toLowerCase();
+                      return key !== myKey;
+                    })
+                    .map((r) => (
+                      <div key={r.id} className={styles.commentCard}>
+                        <span className={styles.commentAuthor}>{r.scoutname || "Unknown"}</span>
+                        <p className={styles.commentText}>{r.comment}</p>
+                      </div>
+                    ))}
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {timerSummary.length > 0 && (
-          <button
-            type="button"
-            className={styles.primaryButton}
-            disabled={savingData || timerSummary.length === 0}
-            onClick={saveScoutLeadRates}
-          >
-            {savingData ? "Saving..." : "Save Scout Lead Entry"}
-          </button>
-        )}
-
-        {/* Scout Lead Comments section */}
-        {loadedRecordMeta && (
-          <section className={styles.commentsSection}>
-            <h2 className={styles.commentsSectionTitle}>Scout Lead Comments</h2>
-
-            {/* Other scout leads' comments (read-only) */}
-            {scoutLeadsRows.filter((r) => r.comment && r.comment.trim()).length > 0 && (
-              <div className={styles.commentsList}>
-                {scoutLeadsRows
-                  .filter((r) => r.comment && r.comment.trim())
-                  .reduce((acc, r) => {
-                    // dedupe by scoutname, keep first occurrence
-                    const key = (r.scoutname || "").trim().toLowerCase();
-                    if (!acc.seen.has(key)) {
-                      acc.seen.add(key);
-                      acc.rows.push(r);
-                    }
-                    return acc;
-                  }, { seen: new Set(), rows: [] })
-                  .rows
-                  .filter((r) => {
-                    const key = (r.scoutname || "").trim().toLowerCase();
-                    const myKey = scoutName.trim().toLowerCase();
-                    return key !== myKey;
-                  })
-                  .map((r) => (
-                    <div key={r.id} className={styles.commentCard}>
-                      <span className={styles.commentAuthor}>{r.scoutname || "Unknown"}</span>
-                      <p className={styles.commentText}>{r.comment}</p>
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            {/* Current scout lead's editable comment */}
-            {commentError && <div className={styles.error}>{commentError}</div>}
-            {commentSuccess && <div className={styles.success}>{commentSuccess}</div>}
-            <div className={styles.commentEntry}>
-              {scoutName.trim() && (
-                <span className={styles.commentEntryLabel}>
-                  {scoutName.trim()} (you)
-                </span>
               )}
-              <textarea
-                className={styles.commentTextarea}
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder={scoutName.trim() ? "Add your scout lead comment…" : "Enter your name above to add a comment"}
-                disabled={!scoutName.trim() || !loadedRecordMeta}
-                rows={3}
+
+              {/* Current scout lead's editable comment */}
+              {commentError && <div className={styles.error}>{commentError}</div>}
+              {commentSuccess && <div className={styles.success}>{commentSuccess}</div>}
+              <div className={styles.commentEntry}>
+                {scoutName.trim() && (
+                  <span className={styles.commentEntryLabel}>
+                    {scoutName.trim()} (you)
+                  </span>
+                )}
+                <textarea
+                  className={styles.commentTextarea}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder={scoutName.trim() ? "Add your scout lead comment…" : "Enter your name above to add a comment"}
+                  disabled={!scoutName.trim() || !loadedRecordMeta}
+                  rows={3}
+                />
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={saveComment}
+                  disabled={savingComment || !scoutName.trim() || !loadedRecordMeta}
+                >
+                  {savingComment ? "Saving..." : "Save Comment"}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* Admin unlock section */}
+          {allScoutingRows.length > 0 && !adminUnlocked && (
+            <div className={styles.adminUnlock}>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="Admin password"
+                className={styles.adminPasswordInput}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") unlockAdmin();
+                }}
               />
               <button
                 type="button"
-                className={styles.primaryButton}
-                onClick={saveComment}
-                disabled={savingComment || !scoutName.trim() || !loadedRecordMeta}
-              >
-                {savingComment ? "Saving..." : "Save Comment"}
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* Admin unlock section */}
-        {allScoutingRows.length > 0 && !adminUnlocked && (
-          <div className={styles.adminUnlock}>
-            <input
-              type="password"
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-              placeholder="Admin password"
-              className={styles.adminPasswordInput}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") unlockAdmin();
-              }}
-            />
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={unlockAdmin}
-              disabled={unlocking || !adminPassword}
-            >
-              {unlocking ? "Verifying..." : "Unlock Editing"}
-            </button>
-            {adminUnlockError && (
-              <span className={styles.adminUnlockError}>{adminUnlockError}</span>
-            )}
-          </div>
-        )}
-
-        {adminUnlocked && (
-          <div className={styles.adminUnlockedBadge}>
-            Admin editing unlocked
-          </div>
-        )}
-
-        {/* Scouting entries section */}
-        {allScoutingRows.length > 0 && (
-          <section
-            className={styles.entriesSection}
-            style={{ background: sectionBackground, transition: "background 0.4s" }}
-          >
-            <div className={styles.entriesHeader}>
-              <h2 className={styles.entriesTitle}>
-                Scouting Entries ({allScoutingRows.length})
-              </h2>
-              {confidenceRatingField && (
-                <span className={styles.confidenceLabel}>
-                  {confidenceRatingField.fieldType === "checkbox" ? "Color: " : "Confidence: "}
-                  {confidenceRatingField.label}
-                </span>
-              )}
-            </div>
-
-            {entryError && <div className={styles.error}>{entryError}</div>}
-
-            {allScoutingRows.map((entry) => {
-              const isEditing = editingEntryId === entry.id;
-              const canEdit =
-                String(entry.scoutteam) === String(currentUserTeam) || adminUnlocked;
-
-              const failedRequirements = scoringRequirementFields.filter((req) => {
-                const rawValue = entry[req.name];
-                const boolValue = rawValue === true || rawValue === "true" || rawValue === 1;
-                return boolValue !== req.requiredValue;
-              });
-
-              return (
-                <div key={entry.id} className={styles.entryCard}>
-                  <div className={styles.entryCardHeader}>
-                    <span className={styles.entryMeta}>
-                      <strong>{entry.scoutname || "Unknown Scout"}</strong>
-                      {entry.scoutteam && (
-                        <span className={styles.entryTeamTag}>Team {entry.scoutteam}</span>
-                      )}
-                    </span>
-                    <span className={styles.entryTimestamp}>
-                      {formatTimestamp(entry.timestamp)}
-                    </span>
-                    {entry.noshow && (
-                      <span className={styles.noshowBadge}>No Show</span>
-                    )}
-                    {failedRequirements.length > 0 && (
-                      <span className={styles.excludedBadge} title={failedRequirements.map((r) => `${r.label} must be ${r.requiredValue}`).join("; ")}>
-                        Excluded from scoring
-                      </span>
-                    )}
-                  </div>
-
-                  {isEditing && (
-                    <div className={styles.editNoshowRow}>
-                      <label className={styles.editNoshowLabel}>
-                        <input
-                          type="checkbox"
-                          checked={!!editValues.noshow}
-                          onChange={(e) => handleFieldChange("noshow", e.target.checked)}
-                        />
-                        No Show
-                      </label>
-                      <input
-                        type="text"
-                        value={editValues.scoutname ?? ""}
-                        onChange={(e) => handleFieldChange("scoutname", e.target.value)}
-                        placeholder="Scout name"
-                        className={styles.entryInput}
-                      />
-                    </div>
-                  )}
-
-                  <div className={styles.entryFieldGrid}>
-                    {allConfigFields.map((fieldDef) => (
-                      <div key={fieldDef.name} className={styles.entryFieldRow}>
-                        <span className={styles.entryFieldLabel}>
-                          {fieldDef.label || fieldDef.name}
-                        </span>
-                        <span className={styles.entryFieldValue}>
-                          {renderEntryField(
-                            fieldDef,
-                            entry,
-                            isEditing,
-                            editValues,
-                            handleFieldChange
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className={styles.entryActions}>
-                    {!isEditing && canEdit && (
-                      <button
-                        type="button"
-                        className={styles.editButton}
-                        onClick={() => startEdit(entry)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                    {isEditing && (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.saveEntryButton}
-                          onClick={() => saveEntry(entry.id)}
-                          disabled={savingEntry}
-                        >
-                          {savingEntry ? "Saving..." : "Save"}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.cancelButton}
-                          onClick={cancelEdit}
-                          disabled={savingEntry}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        )}
-
-        {timerSummary.length === 0 && allScoutingRows.length === 0 && !loadingData && loadedRecordMeta && (
-          <div className={styles.info}>No scouting entries found for this team/match.</div>
-        )}
-      </div>
-
-      {/* ── OPR Rankings Sidebar ──────────────────────────────── */}
-      {config?.usePPR && (
-        <aside className={styles.oprSidebar}>
-          <h2 className={styles.sidebarTitle}>OPR Rankings</h2>
-
-          {oprLoading && (
-            <p className={styles.sidebarNote}>Loading TBA match data...</p>
-          )}
-          {oprError && <div className={styles.error}>{oprError}</div>}
-
-          {!oprLoading && !oprError && oprMatches.length === 0 && (
-            <p className={styles.sidebarNote}>No played matches found at this event yet.</p>
-          )}
-
-          {oprMatches.length > 0 && !oprLoading && (
-            <>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={handleOprRecalculate}
-              >
-                Recalculate
-              </button>
-
-              <button
-                type="button"
                 className={styles.secondaryButton}
-                onClick={() => setOprShowMatches((prev) => !prev)}
+                onClick={unlockAdmin}
+                disabled={unlocking || !adminPassword}
               >
-                {oprShowMatches
-                  ? `▲ Hide Matches (${oprMatches.length})`
-                  : `▼ Show Matches (${oprMatches.length})`}
+                {unlocking ? "Verifying..." : "Unlock Editing"}
               </button>
+              {adminUnlockError && (
+                <span className={styles.adminUnlockError}>{adminUnlockError}</span>
+              )}
+            </div>
+          )}
 
-              {oprShowMatches && (
-                <div className={styles.oprMatchList}>
-                  {oprMatches.map((m) => {
-                    const key = `${m.type}${m.number}`;
-                    const enabled = oprEnabled[key] !== false;
-                    return (
-                      <div
-                        key={key}
-                        className={`${styles.oprMatchRow} ${!enabled ? styles.oprMatchRowDisabled : ""}`}
-                      >
+          {adminUnlocked && (
+            <div className={styles.adminUnlockedBadge}>
+              Admin editing unlocked
+            </div>
+          )}
+
+          {/* Scouting entries section */}
+          {allScoutingRows.length > 0 && (
+            <section
+              className={styles.entriesSection}
+              style={{ background: sectionBackground, transition: "background 0.4s" }}
+            >
+              <div className={styles.entriesHeader}>
+                <h2 className={styles.entriesTitle}>
+                  Scouting Entries ({allScoutingRows.length})
+                </h2>
+                {confidenceRatingField && (
+                  <span className={styles.confidenceLabel}>
+                    {confidenceRatingField.fieldType === "checkbox" ? "Color: " : "Confidence: "}
+                    {confidenceRatingField.label}
+                  </span>
+                )}
+              </div>
+
+              {entryError && <div className={styles.error}>{entryError}</div>}
+
+              {allScoutingRows.map((entry) => {
+                const isEditing = editingEntryId === entry.id;
+                const canEdit =
+                  String(entry.scoutteam) === String(currentUserTeam) || adminUnlocked;
+
+                const failedRequirements = scoringRequirementFields.filter((req) => {
+                  const rawValue = entry[req.name];
+                  const boolValue = rawValue === true || rawValue === "true" || rawValue === 1;
+                  return boolValue !== req.requiredValue;
+                });
+
+                return (
+                  <div key={entry.id} className={styles.entryCard}>
+                    <div className={styles.entryCardHeader}>
+                      <span className={styles.entryMeta}>
+                        <strong>{entry.scoutname || "Unknown Scout"}</strong>
+                        {entry.scoutteam && (
+                          <span className={styles.entryTeamTag}>Team {entry.scoutteam}</span>
+                        )}
+                      </span>
+                      <span className={styles.entryTimestamp}>
+                        {formatTimestamp(entry.timestamp)}
+                      </span>
+                      {entry.noshow && (
+                        <span className={styles.noshowBadge}>No Show</span>
+                      )}
+                      {failedRequirements.length > 0 && (
+                        <span className={styles.excludedBadge} title={failedRequirements.map((r) => `${r.label} must be ${r.requiredValue}`).join("; ")}>
+                          Excluded from scoring
+                        </span>
+                      )}
+                    </div>
+
+                    {isEditing && (
+                      <div className={styles.editNoshowRow}>
+                        <label className={styles.editNoshowLabel}>
+                          <input
+                            type="checkbox"
+                            checked={!!editValues.noshow}
+                            onChange={(e) => handleFieldChange("noshow", e.target.checked)}
+                          />
+                          No Show
+                        </label>
+                        <input
+                          type="text"
+                          value={editValues.scoutname ?? ""}
+                          onChange={(e) => handleFieldChange("scoutname", e.target.value)}
+                          placeholder="Scout name"
+                          className={styles.entryInput}
+                        />
+                      </div>
+                    )}
+
+                    <div className={styles.entryFieldGrid}>
+                      {allConfigFields.map((fieldDef) => (
+                        <div key={fieldDef.name} className={styles.entryFieldRow}>
+                          <span className={styles.entryFieldLabel}>
+                            {fieldDef.label || fieldDef.name}
+                          </span>
+                          <span className={styles.entryFieldValue}>
+                            {renderEntryField(
+                              fieldDef,
+                              entry,
+                              isEditing,
+                              editValues,
+                              handleFieldChange
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={styles.entryActions}>
+                      {!isEditing && canEdit && (
                         <button
                           type="button"
-                          className={`${styles.oprToggleBtn} ${enabled ? styles.oprToggleBtnOn : styles.oprToggleBtnOff}`}
-                          onClick={() =>
-                            setOprEnabled((prev) => ({ ...prev, [key]: !enabled }))
-                          }
-                          title={enabled ? "Click to exclude from OPR" : "Click to include in OPR"}
+                          className={styles.editButton}
+                          onClick={() => startEdit(entry)}
                         >
-                          {enabled ? "✓" : "✗"}
+                          Edit
                         </button>
-                        <span className={styles.oprMatchLabel}>{key}</span>
-                        <span className={styles.oprMatchScoreRed}>{m.redScore}</span>
-                        <span className={styles.oprMatchScoreBlue}>{m.blueScore}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {oprHasCalculated && oprResults === null && (
-                <p className={styles.sidebarNote}>
-                  Not enough match data to compute OPR yet.
-                  Try including more matches or wait for more to be played.
-                </p>
-              )}
-
-              {oprResults && oprResults.length > 0 && (
-                <ol className={styles.teamRankList}>
-                  {oprResults.map((r, idx) => (
-                    <li key={r.team} className={styles.teamRankItem}>
-                      <div className={styles.teamRankRow}>
-                        <span className={styles.teamRankNum}>{idx + 1}</span>
-                        <span className={styles.teamRankTeam}>{r.team}</span>
-                        <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-
-              {!oprHasCalculated && (
-                <p className={styles.sidebarNote}>
-                  {oprMatches.length} match{oprMatches.length === 1 ? "" : "es"} loaded.
-                  Click Recalculate to compute OPR.
-                </p>
-              )}
-            </>
+                      )}
+                      {isEditing && (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.saveEntryButton}
+                            onClick={() => saveEntry(entry.id)}
+                            disabled={savingEntry}
+                          >
+                            {savingEntry ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.cancelButton}
+                            onClick={cancelEdit}
+                            disabled={savingEntry}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
           )}
-        </aside>
-      )}
+
+          {timerSummary.length === 0 && allScoutingRows.length === 0 && !loadingData && loadedRecordMeta && (
+            <div className={styles.info}>No scouting entries found for this team/match.</div>
+          )}
+        </div>
+
+        {/* ── PPR Rankings Sidebar ──────────────────────────────── */}
+        {config?.usePPR && (
+          <aside className={styles.oprSidebar}>
+            <h2 className={styles.sidebarTitle}>PPR Rankings</h2>
+
+            {oprLoading && (
+              <p className={styles.sidebarNote}>Loading TBA match data...</p>
+            )}
+            {oprError && <div className={styles.error}>{oprError}</div>}
+
+            {!oprLoading && !oprError && oprMatches.length === 0 && (
+              <p className={styles.sidebarNote}>No played matches found at this event yet.</p>
+            )}
+
+            {oprMatches.length > 0 && !oprLoading && (
+              <>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={handleOprRecalculate}
+                >
+                  Recalculate
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setOprShowMatches((prev) => !prev)}
+                >
+                  {oprShowMatches
+                    ? `▲ Hide Matches (${oprMatches.length})`
+                    : `▼ Show Matches (${oprMatches.length})`}
+                </button>
+
+                {oprShowMatches && (
+                  <div className={styles.oprMatchList}>
+                    {oprMatches.map((m) => {
+                      const key = `${m.type}${m.number}`;
+                      const enabled = oprEnabled[key] !== false;
+                      return (
+                        <div
+                          key={key}
+                          className={`${styles.oprMatchRow} ${!enabled ? styles.oprMatchRowDisabled : ""}`}
+                        >
+                          <button
+                            type="button"
+                            className={`${styles.oprToggleBtn} ${enabled ? styles.oprToggleBtnOn : styles.oprToggleBtnOff}`}
+                            onClick={() =>
+                              setOprEnabled((prev) => ({ ...prev, [key]: !enabled }))
+                            }
+                            title={enabled ? "Click to exclude from OPR" : "Click to include in OPR"}
+                          >
+                            {enabled ? "✓" : "✗"}
+                          </button>
+                          <span className={styles.oprMatchLabel}>{key}</span>
+                          <span className={styles.oprMatchScoreRed}>{m.redScore}</span>
+                          <span className={styles.oprMatchScoreBlue}>{m.blueScore}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {oprHasCalculated && oprResults === null && (
+                  <p className={styles.sidebarNote}>
+                    Not enough match data to compute OPR yet.
+                    Try including more matches or wait for more to be played.
+                  </p>
+                )}
+
+                {oprResults && oprResults.length > 0 && (
+                  <ol className={styles.teamRankList}>
+                    {oprResults.map((r, idx) => (
+                      <li key={r.team} className={styles.teamRankItem}>
+                        <div className={styles.teamRankRow}>
+                          <span className={styles.teamRankNum}>{idx + 1}</span>
+                          <span className={styles.teamRankTeam}>{r.team}</span>
+                          <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {!oprHasCalculated && (
+                  <p className={styles.sidebarNote}>
+                    {oprMatches.length} match{oprMatches.length === 1 ? "" : "es"} loaded.
+                    Click Recalculate to compute OPR.
+                  </p>
+                )}
+              </>
+            )}
+          </aside>
+        )}
 
       </div>
     </div>

@@ -185,6 +185,7 @@ function Compare() {
           console.log('Processed team data:', teamsDataObj);
           setTeamsData(teamsDataObj);
           setLoading(false);
+          fetchTbaRanksForTeams(teams);
         }
       } catch (error) {
         if (isMounted) {
@@ -203,11 +204,11 @@ function Compare() {
     };
   }, [teams, gameId]);
 
-  async function fetchTbaRanks() {
+  async function fetchTbaRanksForTeams(teamList) {
     setFetchingTbaRanks(true);
     try {
       const results = await Promise.all(
-        teams.map(team =>
+        teamList.map(team =>
           fetch(`/api/get-tba-rank?team=${team}`)
             .then(r => r.json())
             .then(d => ({ team, rank: d.rank, total: d.totalTeams, error: d.message }))
@@ -222,6 +223,10 @@ function Compare() {
     } finally {
       setFetchingTbaRanks(false);
     }
+  }
+
+  function fetchTbaRanks() {
+    fetchTbaRanksForTeams(teams);
   }
 
   if (loading || configLoading) {
