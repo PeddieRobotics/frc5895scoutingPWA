@@ -798,12 +798,12 @@
       "weights": [
         {
           "key": "epa",
-          "label": "EPA",
+          "label": "PPR",
           "default": 1.2
         },
         {
           "key": "epa3",
-          "label": "3 EPA",
+          "label": "3 PPR",
           "default": 1.0
         },
         {
@@ -841,13 +841,13 @@
       "tableColumns": [
         {
           "key": "realEpa",
-          "label": "EPA",
+          "label": "PPR",
           "colorScale": "epa",
           "format": "one"
         },
         {
           "key": "realEpa3",
-          "label": "3 EPA",
+          "label": "3 PPR",
           "colorScale": "epa3",
           "format": "one"
         },
@@ -920,7 +920,7 @@
       "metricsChart": [
         {
           "key": "avgEpa",
-          "label": "EPA"
+          "label": "PPR"
         },
         {
           "key": "avgAuto",

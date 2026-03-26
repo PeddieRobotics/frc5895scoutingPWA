@@ -857,7 +857,7 @@ function TeamView() {
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
-                                    <div style={{ background: Colors[0][1] }} className={styles.epaBox}>{Math.round(10 * safeData.avgEpa) / 10}</div>
+                                    <div style={{ background: Colors[0][1], '--epa-box-label': config?.usePPR ? '"Avg PPR"' : '"Avg EPA"' }} className={styles.epaBox}>{Math.round(10 * safeData.avgEpa) / 10}</div>
                                     <div className={styles.epaBreakdown}>
                                         {epaBreakdown.map(key => (
                                             <div key={key} style={{ background: Colors[0][0] }}>
@@ -869,7 +869,7 @@ function TeamView() {
                             </div>
                             <div className={styles.Last3EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
-                                    <div style={{ background: overallLast3 }} className={styles.Last3EpaBox}>{Math.round(10 * safeData.last3Epa) / 10}</div>
+                                    <div style={{ background: overallLast3, '--last3-epa-label': config?.usePPR ? '"Last 3 PPR"' : '"Last 3 Epa"' }} className={styles.Last3EpaBox}>{Math.round(10 * safeData.last3Epa) / 10}</div>
                                     <div className={styles.epaBreakdown}>
                                         <div style={{ background: autoLast3 }}>A: {Math.round(10 * safeData.last3Auto) / 10}</div>
                                         <div style={{ background: teleLast3 }}>T: {Math.round(10 * safeData.last3Tele) / 10}</div>
@@ -913,7 +913,7 @@ function TeamView() {
                             </div>
                         </div>
                         <div className={styles.graphContainer}>
-                            <h4 className={styles.graphTitle}>EPA Over Time</h4>
+                            <h4 className={styles.graphTitle}>{config?.usePPR ? "PPR Over Time" : "EPA Over Time"}</h4>
                             <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"} />
                         </div>
                         <div className={styles.barGraphContainer}>

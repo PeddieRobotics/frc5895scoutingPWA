@@ -144,8 +144,8 @@ export async function GET(request) {
           returnObject.epaOverTime = pprOverTime.length > 0
             ? pprOverTime
             : (returnObject.epaOverTime || []).map(p => ({ ...p, epa: opr }));
-          returnObject.autoOverTime = [];
-          returnObject.teleOverTime = [];
+          // autoOverTime / teleOverTime: keep scouting-derived values — they still show
+          // the team's per-period trend even though the overall scale uses PPR.
         }
       }
     } catch (oprError) {

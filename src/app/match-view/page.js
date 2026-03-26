@@ -548,9 +548,9 @@ function MatchView() {
       return { label: rpConfig.label, color };
     });
 
-    return <div className={styles.lightBorderBox}>
+    return <div className={styles.lightBorderBox} style={{ paddingTop: '20px' }}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
+        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
         {!usePPR && <div className={styles.EPABreakdown}>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
@@ -585,7 +585,7 @@ function MatchView() {
       <h1 style={{ color: colors[3], marginTop: "10px", marginBottom: "0px" }}>{teamData.team}</h1>
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center" }} className={styles.EPABox}>
+        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"PPR"' : '"EPA"' }} className={styles.EPABox}>
           {config?.usePPR ? (teamData.avgEpa != null ? (teamData.avgEpa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
         {!config?.usePPR && <div className={styles.EPABreakdown}>

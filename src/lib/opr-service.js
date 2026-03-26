@@ -181,9 +181,12 @@ async function getTeamOPRMap(activeGame) {
 /**
  * Compute a team → last-3-matches PPR map for the active game.
  *
- * For each team, their contribution to the match matrix is temporarily limited
- * to their 3 most recent enabled matches; all other teams keep all their matches
- * (preserving matrix conditioning). PPR is then solved once per team.
+ * Uses the adjusted-contribution method: compute full-event OPR once, then for
+ * each team's 3 most recent matches estimate their contribution as:
+ *   allianceScore - sum(full-event OPR of the team's two teammates)
+ * The average of those 3 contributions is the last-3 PPR.
+ *
+ * This avoids re-solving OPR per team and handles early/playoff matches cleanly.
  *
  * Returns null if usePPR is not set, tbaEventCode is missing, or data is insufficient.
  *
@@ -194,11 +197,16 @@ async function getLast3OPRMap(activeGame) {
   const enabledMatches = await getEnabledMatches(activeGame);
   if (!enabledMatches) return null;
 
-  // Match sort order: Q < SF < F, ascending by number
+  // One full-event OPR solve
+  const fullOPR = computeOPR(enabledMatches);
+  if (!fullOPR) return null;
+  const oprMap = new Map(fullOPR.map(r => [r.team, r.opr]));
+
+  // Sort order: Q < SF < F, ascending by number
   const levelOrder = { Q: 0, SF: 1, F: 2 };
   const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
 
-  // Build per-team sorted match list
+  // Build per-team sorted match list (all types)
   const teamMatchList = {};
   enabledMatches.forEach(m => {
     [...m.redTeams, ...m.blueTeams].forEach(team => {
@@ -214,33 +222,35 @@ async function getLast3OPRMap(activeGame) {
 
   for (const [teamStr, matchList] of Object.entries(teamMatchList)) {
     const team = Number(teamStr);
+    const last3 = matchList.slice(-3);
+    if (last3.length === 0) continue;
 
-    // The 3 most recent match keys for this team
-    const last3Keys = new Set(matchList.slice(-3).map(m => `${m.type}${m.number}`));
-
-    // Temporarily exclude this team's older matches; all others stay
-    const filteredMatches = enabledMatches.filter(m => {
-      const hasTeam = m.redTeams.includes(team) || m.blueTeams.includes(team);
-      return hasTeam ? last3Keys.has(`${m.type}${m.number}`) : true;
+    // Adjusted contribution per match: allianceScore − teammates' full-event OPR
+    const contributions = last3.map(m => {
+      const isRed = m.redTeams.includes(team);
+      const allianceScore = isRed ? m.redScore : m.blueScore;
+      const teammates = (isRed ? m.redTeams : m.blueTeams).filter(t => t !== team);
+      const teammatesOPR = teammates.reduce((sum, t) => sum + (oprMap.get(t) ?? 0), 0);
+      return allianceScore - teammatesOPR;
     });
 
-    const results = computeOPR(filteredMatches);
-    if (results) {
-      const entry = results.find(r => r.team === team);
-      if (entry) last3Map.set(team, entry.opr);
-    }
+    const avg = contributions.reduce((s, v) => s + v, 0) / contributions.length;
+    last3Map.set(team, avg);
   }
 
   return last3Map.size > 0 ? last3Map : null;
 }
 
 /**
- * Compute running PPR (OPR) for a team across qualification matches.
- * At each Q match the team played, OPR is computed using only matches
- * played up to and including that match — showing how their PPR evolved
- * over the course of the event.
+ * Compute per-match adjusted PPR contributions for a team across qualification matches.
  *
- * Returns [{match: number, epa: ppr}, ...] in ascending match order,
+ * For each Q match the team played, their contribution is estimated as:
+ *   allianceScore − sum(full-event OPR of the two teammates)
+ *
+ * This directly answers "how much did this team score beyond what their partners
+ * were expected to contribute?" and works from Q1 with no singularity issues.
+ *
+ * Returns [{match: number, epa: contribution}, ...] in ascending match order,
  * or [] if usePPR is not enabled / insufficient data.
  *
  * @param {Object} activeGame
@@ -251,32 +261,26 @@ async function getPPROverTime(activeGame, teamNumber) {
   const enabledMatches = await getEnabledMatches(activeGame);
   if (!enabledMatches) return [];
 
-  const levelOrder = { Q: 0, SF: 1, F: 2 };
-  const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
+  // One full-event OPR solve
+  const fullOPR = computeOPR(enabledMatches);
+  if (!fullOPR) return [];
+  const oprMap = new Map(fullOPR.map(r => [r.team, r.opr]));
 
-  // Qualification matches the target team participated in, sorted ascending
+  // Q matches the target team played, sorted ascending
   const teamQualMatches = enabledMatches
     .filter(m => m.type === 'Q' && (m.redTeams.includes(teamNumber) || m.blueTeams.includes(teamNumber)))
     .sort((a, b) => a.number - b.number);
 
   if (teamQualMatches.length === 0) return [];
 
-  const result = [];
-
-  for (const m of teamQualMatches) {
-    const cutoff = matchOrder(m);
-    // All enabled matches played up to and including this match
-    const subset = enabledMatches.filter(x => matchOrder(x) <= cutoff);
-    // λ=1.0 regularisation stabilises early matches where MTM is singular
-    const oprResults = computeOPR(subset, 1.0);
-    if (!oprResults) continue;
-    const entry = oprResults.find(r => r.team === teamNumber);
-    if (entry) {
-      result.push({ match: m.number, epa: Math.round(entry.opr * 100) / 100 });
-    }
-  }
-
-  return result;
+  return teamQualMatches.map(m => {
+    const isRed = m.redTeams.includes(teamNumber);
+    const allianceScore = isRed ? m.redScore : m.blueScore;
+    const teammates = (isRed ? m.redTeams : m.blueTeams).filter(t => t !== teamNumber);
+    const teammatesOPR = teammates.reduce((sum, t) => sum + (oprMap.get(t) ?? 0), 0);
+    const contribution = allianceScore - teammatesOPR;
+    return { match: m.number, epa: Math.round(contribution * 100) / 100 };
+  });
 }
 
 export { getTBAMatches, getOprBlacklist, saveOprBlacklist, getTeamOPRMap, getLast3OPRMap, getPPROverTime };

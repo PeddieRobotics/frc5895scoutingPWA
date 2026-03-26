@@ -75,7 +75,7 @@ export async function POST(request) {
     ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, weightInputs)
     : [];
 
-  // If usePPR, override each team's score and EPA fields with PPR (Peddie Power Rating)
+  // If usePPR, replace EPA fields with PPR (Peddie Power Rating) then recompute weighted score
   if (gameConfig?.usePPR === true) {
     try {
       const [oprMap, last3OprMap] = await Promise.all([
@@ -83,13 +83,35 @@ export async function POST(request) {
         getLast3OPRMap(activeGame),
       ]);
       if (oprMap) {
+        // Step 1: inject raw PPR into real* and display fields
         teamTable = teamTable.map((entry) => {
           const opr = oprMap.get(Number(entry.team));
           const last3Opr = last3OprMap?.get(Number(entry.team));
           if (opr == null) return entry;
-          return { ...entry, score: opr, avgEpa: opr, epa: opr, last3Epa: last3Opr ?? opr, realEpa: opr, realEpa3: last3Opr ?? opr };
+          return { ...entry, realEpa: opr, realEpa3: last3Opr ?? opr, avgEpa: opr, last3Epa: last3Opr ?? opr };
         });
-        // Re-sort by PPR descending
+
+        // Step 2: re-normalize epa / epa3 relative to new PPR max so weights still scale 0–1
+        const maxEpa  = Math.max(...teamTable.map(e => e.realEpa  ?? 0), 0);
+        const maxEpa3 = Math.max(...teamTable.map(e => e.realEpa3 ?? 0), 0);
+        teamTable = teamTable.map(entry => ({
+          ...entry,
+          epa:  maxEpa  ? (entry.realEpa  ?? 0) / maxEpa  : 0,
+          epa3: maxEpa3 ? (entry.realEpa3 ?? 0) / maxEpa3 : 0,
+        }));
+
+        // Step 3: recompute score using the same weight formula as computePicklistMetrics
+        // Other normalized metrics (consistency, defense, breakdown, etc.) are unchanged.
+        teamTable = teamTable.map(entry => ({
+          ...entry,
+          score: weightInputs.reduce((sum, [key, weight]) => {
+            const value = entry[key] ?? 0;
+            if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+            return sum + (value * parseFloat(weight));
+          }, 0),
+        }));
+
+        // Step 4: sort by weighted score
         teamTable.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
       }
     } catch (oprError) {

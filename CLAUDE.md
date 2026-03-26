@@ -113,6 +113,36 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 
 `src/lib/display-config-validation.js` validates at runtime that display config keys are internally consistent (e.g., `matchView.piecePlacement.bars[*].key` must exist in `apiAggregation.alliancePiecePlacement[*].key`). Failures show a config error panel instead of broken UI.
 
+### PPR (Peddie Power Rating) — `usePPR` Config Flag
+
+Setting `usePPR: true` in the top-level game config JSON activates OPR-based scoring (TBA data) instead of scouting EPA across all display pages.
+
+**How it works:**
+- OPR is computed server-side via `src/lib/opr-service.js`, which fetches played matches from TBA and solves the least-squares system in `src/lib/opr-calculator.js`.
+- A short in-memory cache (60 s) in `opr-service.js` prevents redundant TBA HTTP requests per request cycle.
+- `opr-service.js` also reads/writes an OPR blacklist (excluded match keys) from `opr_settings_<gameName>` DB table via `getOprBlacklist` / `saveOprBlacklist`.
+
+**Exported functions from `opr-service.js`:**
+- `getTeamOPRMap(activeGame)` — full-event OPR: `Map<teamNumber, opr>`
+- `getLast3OPRMap(activeGame)` — adjusted-contribution last-3: for each team, estimates their per-match contribution as `allianceScore − sum(teammates' full-event OPR)`, averages the 3 most recent.
+- `getPPROverTime(activeGame, teamNumber)` — per-match adjusted contributions for Q matches only: `[{match, epa}]` used for the "PPR Over Time" chart in team-view.
+- `getTBAMatches(tbaEventCode)` — cached TBA fetch (internal helper, also exported).
+
+**API injection points:**
+- `GET /api/get-team-data` — overrides `avgEpa`, `last3Epa`, and `epaOverTime`; preserves scouting `autoOverTime`/`teleOverTime`.
+- `GET /api/get-alliance-data` — overrides `avgEpa` and `last3Epa` per team.
+- `POST /api/compute-picklist` — injects PPR into `realEpa`/`realEpa3`, re-normalizes `epa`/`epa3` to 0–1 against new PPR max, then recomputes the weighted score using the same formula as `computePicklistMetrics`. Weights remain fully functional.
+
+**Front-end label behavior:**
+- All pages check `config?.usePPR` to rename "EPA" → "PPR" in user-visible labels (chart titles, column headers, stat labels, sudo table).
+- Config JSON labels for games with `usePPR: true` should use "PPR" / "3 PPR" directly (see `rebuilt_2026.json`).
+
+**`computeOPR` in `opr-calculator.js`:**
+- Accepts optional `lambda` (Tikhonov regularization) parameter (default 0 — no change to existing callers).
+- PPR uses the adjusted-contribution method for last-3 and over-time charts, so regularization is not needed in normal operation.
+
+**TBA event code:** read from `activeGame.tba_event_code` or `config.tbaEventCode`. `TBA_AUTH_KEY` env var required.
+
 ### webpack Config Note
 
 `next.config.js` aliases `bcrypt` and `@neondatabase/serverless` to mock modules on the client side to prevent bundling server-only packages into the browser bundle. API routes are excluded from this via `null-loader`.

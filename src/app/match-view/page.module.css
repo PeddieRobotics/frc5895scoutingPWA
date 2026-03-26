@@ -257,7 +257,7 @@
 }
 
 .EPABox::before {
-    content: "Last 3 EPA";
+    content: var(--epa-box-label, "Last 3 EPA");
     display: block;
     position: relative;
     top: 0;
