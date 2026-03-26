@@ -604,6 +604,22 @@ function validateStarRatingField(field, path, fieldNames, result) {
       result.addWarning('starRating minWhenVisible should be a number', `${path}.minWhenVisible`);
     }
   }
+
+  // Validate zeroLabel
+  if (field.zeroLabel !== undefined && typeof field.zeroLabel !== 'string') {
+    result.addWarning('starRating zeroLabel should be a string', `${path}.zeroLabel`);
+  }
+
+  // Validate ratingLabels
+  if (field.ratingLabels !== undefined) {
+    if (!Array.isArray(field.ratingLabels)) {
+      result.addWarning('starRating ratingLabels should be an array of 6 strings', `${path}.ratingLabels`);
+    } else if (field.ratingLabels.length !== 6) {
+      result.addWarning(`starRating ratingLabels must have exactly 6 entries (found ${field.ratingLabels.length})`, `${path}.ratingLabels`);
+    } else if (field.ratingLabels.some(l => typeof l !== 'string')) {
+      result.addWarning('starRating ratingLabels entries must all be strings', `${path}.ratingLabels`);
+    }
+  }
 }
 
 /**

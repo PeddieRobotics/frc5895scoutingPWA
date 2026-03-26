@@ -1,265 +1,185 @@
-.SuccessButtonRight, .FailButtonRight, .CounterButtonRight {
-    border: 1px solid black; 
-    padding: 0;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-    cursor: pointer;
-    width: 40px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    border-left: none; /* Remove left border to prevent double border */
-}
-
-.SuccessButtonLeft, .FailButtonLeft, .CounterButtonLeft {
-    border: 1px solid black; 
-    padding: 0;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-    cursor: pointer;
-    width: 40px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    border-right: none; /* Remove right border to prevent double border */
-}
-
-.SuccessButtonRight {
-    background-color: #CBFFD4;
-}
-
-.SuccessButtonLeft {
-    background-color: #CBFFD4;
-}
-
-.FailButtonRight {
-    background-color: #FFABAB;
-}
-
-.FailButtonLeft {
-    background-color: #FFABAB;
-}
-
-.CounterButtonRight {
-    background-color: #CBFFF5;
-}
-
-.CounterButtonLeft {
-    background-color: #CBFFF5;
-}
-
-.Success, .Fail, .Counter {
-    border: 1px solid black;
-    text-align: center;
-    font-size: 25px;
-    height: 45px;
-    width: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-}
-
-.Success {
-    background-color: #87E47E;
-}
-
-.Fail {
-    background-color: #FF7272;
-}
-
-.Counter {
-    background-color: #66FFD4;
-}
-
-.Container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    font-size: 0; /* Remove any text spacing */
-    max-width: 110px;
-}
-
-/* Apply stronger negative margins to make buttons appear closer together */
-.Container input,
-.Container button {
-    margin: 0 -1px; /* Reduce from -3px to -1px for better spacing */
-}
-
-/* Remove any padding that might create space */
-.Success, .Fail, .Counter,
-.SuccessButtonLeft, .SuccessButtonRight,
-.FailButtonLeft, .FailButtonRight,
-.CounterButtonLeft, .CounterButtonRight {
-    padding: 0;
-}
-
-/* Keep consistent width for all components */
-.NumericInput {
-    padding: 0;
-    margin: 0;
-    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
-    margin-bottom: 2px !important; /* Also add a small margin for spacing */
-}
-
-/* When numeric inputs are in tables, reduce their spacing further */
-.Table .NumericInput .Container {
-    margin: 0 -2px; /* Reduce from -4px to -2px for better spacing */
-}
-
-/* Completely remove any hover effects that might cause button enlargement */
-.Container button:hover {
-    position: static; 
-    z-index: auto;
-    transform: none;
-    box-shadow: none;
-    outline: none;
-}
-
-/* Make sure buttons don't change size on any interaction */
-.Container button:active, 
-.Container button:focus {
-    outline: none;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Ensure table cells with NumericInput have minimal padding */
-td .NumericInput {
-    padding: 0;
-    margin: 0;
-    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
-    margin-bottom: 2px !important; /* Also add a small margin for spacing */
-}
-
-/* Make the success/fail column cells tighter on mobile */
-@media (max-width: 600px) {
-    .Table td:not(:first-child) {
-        padding: 0;
-        width: 38%; /* Make columns slightly narrower */
-    }
-    
-    /* Increase space for level labels */
-    .Table td:first-child {
-        padding-left: 8px;
-        padding-right: 0;
-    }
-}
+/* NumericInput — dark glass counter */
 
 .NumericInput {
     display: flex;
     flex-direction: column;
-    text-align: center;
     align-items: center;
-    padding-bottom: 2px !important; /* Add 2px padding at the bottom */
-    margin-bottom: 2px !important; /* Also add a small margin for spacing */
+    text-align: center;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
 }
 
-.NumericInput .label{
-    margin-bottom: 5px;
-    font-size: 18px;
+.NumericInput .label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #e8d5a3;
+    margin-bottom: 8px;
 }
 
-/* Fix button content centering */
-.NumericInput button h1 {
-    margin: 0;
+/* Core +/value/- group */
+.Container {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+}
+
+/* Shared base */
+.SuccessButtonLeft, .FailButtonLeft, .CounterButtonLeft,
+.SuccessButtonRight, .FailButtonRight, .CounterButtonRight,
+.Success, .Fail, .Counter {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    width: 100%;
-    height: 100%;
+    margin: 0;
+    border: 1.5px solid;
+    box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
 }
 
-/* Ensure button text is always black, especially on mobile */
-.NumericInput button h1 strong {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    color: black !important;
-    -webkit-text-fill-color: black;
+/* Left decrement */
+.SuccessButtonLeft, .FailButtonLeft, .CounterButtonLeft {
+    width: 44px;
+    border-right: none;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s ease;
 }
 
-/* Fix input display for all types */
-.NumericInput input {
+/* Right increment */
+.SuccessButtonRight, .FailButtonRight, .CounterButtonRight {
+    width: 44px;
+    border-left: none;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+/* Center value display */
+.Success, .Fail, .Counter {
+    width: 54px;
+    color: #e8d5a3;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
     appearance: textfield;
     -moz-appearance: textfield;
     user-select: none;
     cursor: default;
+    text-align: center;
 }
 
-.NumericInput input::-webkit-inner-spin-button,
-.NumericInput input::-webkit-outer-spin-button {
+.Success::-webkit-inner-spin-button, .Success::-webkit-outer-spin-button,
+.Fail::-webkit-inner-spin-button,    .Fail::-webkit-outer-spin-button,
+.Counter::-webkit-inner-spin-button, .Counter::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-/* Prevent text selection in inputs */
-.NumericInput input::selection {
-    background: transparent;
+/* ── Success (green) ── */
+.SuccessButtonLeft, .SuccessButtonRight {
+    background: rgba(60, 180, 90, 0.15);
+    border-color: rgba(60, 180, 90, 0.4);
+    color: #7ee89a;
+}
+.SuccessButtonLeft:hover, .SuccessButtonRight:hover { background: rgba(60, 180, 90, 0.27); }
+.SuccessButtonLeft:active, .SuccessButtonRight:active { background: rgba(60, 180, 90, 0.42); }
+.Success { background: rgba(60, 180, 90, 0.08); border-color: rgba(60, 180, 90, 0.4); }
+
+/* ── Fail (red) ── */
+.FailButtonLeft, .FailButtonRight {
+    background: rgba(220, 60, 60, 0.15);
+    border-color: rgba(220, 60, 60, 0.4);
+    color: #ff9a9a;
+}
+.FailButtonLeft:hover, .FailButtonRight:hover { background: rgba(220, 60, 60, 0.27); }
+.FailButtonLeft:active, .FailButtonRight:active { background: rgba(220, 60, 60, 0.42); }
+.Fail { background: rgba(220, 60, 60, 0.08); border-color: rgba(220, 60, 60, 0.4); }
+
+/* ── Counter (blue) ── */
+.CounterButtonLeft, .CounterButtonRight {
+    background: rgba(80, 160, 220, 0.15);
+    border-color: rgba(80, 160, 220, 0.4);
+    color: #a0d4f5;
+}
+.CounterButtonLeft:hover, .CounterButtonRight:hover { background: rgba(80, 160, 220, 0.27); }
+.CounterButtonLeft:active, .CounterButtonRight:active { background: rgba(80, 160, 220, 0.42); }
+.Counter { background: rgba(80, 160, 220, 0.08); border-color: rgba(80, 160, 220, 0.4); }
+
+.Container button:focus { outline: none; }
+
+/* h1 inside buttons inherits color */
+.NumericInput button h1 {
+    margin: 0; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    font-size: inherit;
+    color: inherit;
+    font-family: 'Montserrat', sans-serif;
+}
+.NumericInput button h1 strong {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    color: inherit;
+    -webkit-text-fill-color: inherit;
+    font-weight: 700;
 }
 
-/* Quick buttons wrapper - holds left quick buttons, core counter, and right quick buttons */
+.NumericInput input::selection { background: transparent; }
+
+/* Quick buttons wrapper */
 .QuickButtonsWrapper {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
-/* Quick action buttons */
 .QuickButton {
-    border: 1px solid black;
-    border-radius: 4px;
+    border: 1.5px solid;
+    border-radius: 7px;
     cursor: pointer;
     min-width: 44px;
     height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Montserrat', sans-serif;
     font-size: 14px;
-    font-weight: bold;
-    padding: 0 8px;
-    color: black !important;
-    -webkit-text-fill-color: black;
-    transition: opacity 0.1s ease;
-}
-
-.QuickButton:active {
-    opacity: 0.7;
+    font-weight: 700;
+    padding: 0 10px;
+    transition: background 0.12s ease;
 }
 
 .QuickButtonPositive {
-    background-color: #CBFFD4;
+    background: rgba(60, 180, 90, 0.15);
+    border-color: rgba(60, 180, 90, 0.4);
+    color: #7ee89a;
 }
+.QuickButtonPositive:hover  { background: rgba(60, 180, 90, 0.27); }
+.QuickButtonPositive:active { background: rgba(60, 180, 90, 0.42); }
 
 .QuickButtonNegative {
-    background-color: #FFABAB;
+    background: rgba(220, 60, 60, 0.15);
+    border-color: rgba(220, 60, 60, 0.4);
+    color: #ff9a9a;
 }
+.QuickButtonNegative:hover  { background: rgba(220, 60, 60, 0.27); }
+.QuickButtonNegative:active { background: rgba(220, 60, 60, 0.42); }
 
-/* Stack quick buttons below core controls on very small screens */
+/* In-table: no extra margin */
+td .NumericInput { padding: 0; margin: 0; }
+
 @media (max-width: 360px) {
-    .QuickButtonsWrapper {
-        gap: 4px;
-    }
-    .QuickButton {
-        min-width: 38px;
-        height: 38px;
-        font-size: 12px;
-        padding: 0 4px;
-    }
+    .QuickButtonsWrapper { gap: 4px; }
+    .QuickButton { min-width: 38px; height: 38px; font-size: 12px; padding: 0 4px; }
 }

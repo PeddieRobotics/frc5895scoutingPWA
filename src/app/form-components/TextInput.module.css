@@ -1,30 +1,49 @@
-.TextInput input {
-    text-align: center;
-    font-size: 25px;
-    height: 40px;
-    min-height: 40px;
-    width: 165px;
-    background-color: #cdf3ff;
-    border-radius: 5px;
-    caret-color: black;
-    border: 2px solid #888484;
-    box-sizing: border-box;
-    padding: 0 10px;
-    -webkit-appearance: none;
-    appearance: none;
-    margin-top: 5px;
-}
+/* TextInput — dark glass input field */
 
 .TextInput {
     text-align: center;
-    width: 165px;
-    margin: 0 auto;
+    width: 180px;
+    margin: 0 auto 10px;
     display: flex;
     flex-direction: column;
-    margin-bottom: 10px;
+    align-items: center;
 }
 
 .TextInput label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #e8d5a3;
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 6px;
+}
+
+.TextInput input {
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8d5a3;
+    height: 44px;
+    min-height: 44px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    caret-color: #e8d5a3;
+    border: 1.5px solid rgba(189, 151, 72, 0.25);
+    box-sizing: border-box;
+    padding: 0 12px;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.TextInput input:focus {
+    border-color: rgba(189, 151, 72, 0.6);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.TextInput input::placeholder {
+    color: rgba(232, 213, 163, 0.3);
 }

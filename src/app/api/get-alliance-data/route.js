@@ -4,7 +4,7 @@ import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-con
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateAllianceData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
-import { getTeamOPRMap, getLast3OPRMap } from "../../../lib/opr-service";
+import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps } from "../../../lib/opr-service";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -85,23 +85,40 @@ export async function GET(request) {
 
     // If usePPR, override EPA fields with PPR (Peddie Power Rating) for each team
     if (gameConfig?.usePPR === true) {
+      // Fetch main OPR and period OPR independently so a period OPR failure
+      // doesn't block avgEpa/last3Epa injection.
+      let oprMap = null, last3OprMap = null, periodMaps = null;
       try {
-        const [oprMap, last3OprMap] = await Promise.all([
+        [oprMap, last3OprMap] = await Promise.all([
           getTeamOPRMap(activeGame),
           getLast3OPRMap(activeGame),
         ]);
-        if (oprMap) {
-          Object.keys(responseObject).forEach((teamNum) => {
-            const opr = oprMap.get(Number(teamNum));
-            const last3Opr = last3OprMap?.get(Number(teamNum));
-            if (opr != null) {
-              responseObject[teamNum].avgEpa   = opr;
-              responseObject[teamNum].last3Epa = last3Opr ?? opr;
-            }
-          });
-        }
       } catch (oprError) {
         console.error("[get-alliance-data] PPR injection error:", oprError);
+      }
+      try {
+        periodMaps = await getPerPeriodOPRMaps(activeGame);
+      } catch (periodError) {
+        console.error("[get-alliance-data] Period OPR error:", periodError);
+      }
+      if (oprMap) {
+        Object.keys(responseObject).forEach((teamNum) => {
+          const num = Number(teamNum);
+          const opr = oprMap.get(num);
+          const last3Opr = last3OprMap?.get(num);
+          if (opr != null) {
+            responseObject[teamNum].avgEpa   = opr;
+            responseObject[teamNum].last3Epa = last3Opr ?? opr;
+          }
+          if (periodMaps) {
+            const autoOpr = periodMaps.auto?.get(num);
+            const teleOpr = periodMaps.tele?.get(num);
+            const endOpr  = periodMaps.end?.get(num);
+            if (autoOpr != null) responseObject[teamNum].autoEpa = autoOpr;
+            if (teleOpr != null) responseObject[teamNum].teleEpa = teleOpr;
+            if (endOpr  != null) responseObject[teamNum].endEpa  = endOpr;
+          }
+        });
       }
     }
 

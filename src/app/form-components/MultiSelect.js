@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import styles from './EndPlacement.module.css';
+import styles from './MultiSelect.module.css';
 
 export default function MultiSelect({ options, subHeaderName, className }) {
     const lsKey = subHeaderName ? `form_multiselect_${subHeaderName}` : null;
@@ -55,10 +55,7 @@ export default function MultiSelect({ options, subHeaderName, className }) {
     };
 
     return (
-        <div
-            className={`${styles.endPossibilities} ${className || ""}`}
-            style={{ backgroundColor: '#bd9748' }}
-        >
+        <div className={`${styles.multiSelect} ${className || ""}`}>
             {options.map((opt) => (
                 <div
                     key={opt.name}

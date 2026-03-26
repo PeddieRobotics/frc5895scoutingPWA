@@ -1,8 +1,17 @@
 "use client";
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './Qualitative.module.css'
 
-export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0, max = 6 }) {
+const DEFAULT_RATING_LABELS = [
+    "Low",
+    "Relatively Low",
+    "Just Below Average",
+    "Just Above Average",
+    "Relatively High",
+    "High",
+];
+
+export default function Qualitative ({ visibleName, internalName, description, symbol="★", forcedMinRating = 0, max = 6, zeroLabel, ratingLabels }) {
     const lsKey = `form_field_${internalName}`;
     const [rating, setRating] = useState(() => {
         if (typeof window === 'undefined') return forcedMinRating;
@@ -10,12 +19,15 @@ export default function Qualitative ({ visibleName, internalName, description, s
         if (stored !== null) return parseInt(stored, 10) || 0;
         return forcedMinRating;
     });
+    const [confirmClear, setConfirmClear] = useState(false);
+    const confirmTimerRef = useRef(null);
 
     // Listen for form reset events
     useEffect(() => {
         const handleReset = () => {
             localStorage.removeItem(lsKey);
             setRating(0);
+            setConfirmClear(false);
         };
         window.addEventListener('reset_form_components', handleReset);
         return () => window.removeEventListener('reset_form_components', handleReset);
@@ -30,15 +42,31 @@ export default function Qualitative ({ visibleName, internalName, description, s
         }
     }, [forcedMinRating]);
 
-    const ratingDescriptions = [
-        "",
-        "Low ",
-        "Relatively Low ",
-        "Just Below Average ",
-        "Just Above Average ",
-        "Relatively High ",
-        "High "
-    ];
+    // Cancel confirm state when rating is cleared externally
+    useEffect(() => {
+        if (rating === 0) {
+            setConfirmClear(false);
+            clearTimeout(confirmTimerRef.current);
+        }
+    }, [rating]);
+
+    const handleClearClick = () => {
+        if (!confirmClear) {
+            setConfirmClear(true);
+            confirmTimerRef.current = setTimeout(() => setConfirmClear(false), 3000);
+        } else {
+            clearTimeout(confirmTimerRef.current);
+            setConfirmClear(false);
+            setRating(0);
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(lsKey);
+            }
+        }
+    };
+
+    const effectiveLabels = (ratingLabels && ratingLabels.length === 6)
+        ? ratingLabels
+        : DEFAULT_RATING_LABELS;
 
     return (
         <div className={styles.qual}>
@@ -48,71 +76,46 @@ export default function Qualitative ({ visibleName, internalName, description, s
             {description && <div className={styles.description}>{description}</div>}
             <div className={styles.ratings}>
                 {Array.from({ length: max }, (_, i) => i + 1).map(ratingValue => {
-                    return <div className={styles.symbol + (ratingValue <= rating ? " " + styles.selected : "")} key={ratingValue} onClick={() => {
-                        setRating(ratingValue);
-                        if (typeof window !== 'undefined') {
-                            localStorage.setItem(lsKey, String(ratingValue));
-                        }
-                    }}>{symbol}</div>
+                    const isActive = ratingValue <= rating;
+                    return (
+                        <div
+                            className={styles.starCell}
+                            key={ratingValue}
+                            onClick={() => {
+                                setRating(ratingValue);
+                                setConfirmClear(false);
+                                clearTimeout(confirmTimerRef.current);
+                                if (typeof window !== 'undefined') {
+                                    localStorage.setItem(lsKey, String(ratingValue));
+                                }
+                            }}
+                        >
+                            <div className={styles.symbol + (isActive ? " " + styles.selected : "")}>{symbol}</div>
+                            <div className={`${styles.starNum} ${isActive ? styles.starNumActive : ''}`}>{ratingValue}</div>
+                        </div>
+                    );
                 })}
             </div>
-            
-            {rating === 0 && (description === "Coral Speed" || description === "Processor Speed" || description === "Net Speed") && (
-                <div>
-                    Not Applicable
-                </div>
-            )}
 
-            {rating === 0 && description === "Algae Removal Speed" && (
-                <div>
-                    Did Not Try to Remove Algae
-                </div>
-            )}
-
-            {rating === 0 && description === "Climb Speed" && (
-                <div>
-                    Did Not Try to Climb
-                </div>
-            )}
-
-            {rating === 0 && description === "Maneuverability" && (
-                <div>
-                    Did Not Move
-                </div>
-            )}
-
-            {rating === 0 && description === "Ability to Play Defense" && (
-                <div>
-                    Did Not Defend
-                </div>
-            )}
-
-            {rating === 0 && description === "Defense Evasion Ability" && (
-                <div>
-                    Was Not Defended Against
-                </div>
-            )}
-
-            {rating === 0 && description === "Aggression" && (
-                <div>
-                    Did Not Move
-                </div>
-            )}
-
-            {rating === 0 && description === "Cage Hazard" && (
-                <div>
-                    Did Not Interact With Teammates in the Barge
-                </div>
+            {rating === 0 && zeroLabel && (
+                <div className={styles.ratingLabel}>{zeroLabel}</div>
             )}
 
             {rating > 0 && (
                 <div className={styles.ratingLabel}>
-                    {ratingDescriptions[rating].trim()}
+                    {effectiveLabels[rating - 1]}
                 </div>
+            )}
+
+            {rating > 0 && (
+                <button
+                    type="button"
+                    className={`${styles.clearButton} ${confirmClear ? styles.clearConfirm : ''}`}
+                    onClick={handleClearClick}
+                >
+                    {confirmClear ? '⚠ Tap again to clear' : 'Clear Rating'}
+                </button>
             )}
         </div>
     )
 }
-
-
-

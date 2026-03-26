@@ -1,8 +1,13 @@
 {
   "gameName": "rebuilt_2026",
   "displayName": "REBUILT 2026",
-  "tbaEventCode": "2026rebu",
+  "tbaEventCode": "2026njwas",
   "usePPR": true,
+  "pprBreakdownFields": {
+    "auto": "totalAutoPoints",
+    "tele": "totalTeleopPoints",
+    "end": "endGameTowerPoints"
+  },
   "formTitle": "KUNPENSCOUTER",
   "version": "1.0",
   "basics": {
@@ -30,43 +35,6 @@
       },
       "fields": [
         {
-          "type": "holdTimer",
-          "name": "autofuelsuccess",
-          "label": "Auto Fuel (s)",
-          "buttonLabel": "Hold While Shooting Auto Fuel",
-          "inline": true,
-          "buttonColor": "#2da44e",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Balls / Second",
-            "placeholder": "e.g. 2.40",
-            "defaultRate": 0,
-            "group": "Fuel",
-            "groupLabel": "Fuel Scoring",
-            "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
-            }
-          }
-        },
-        {
-          "type": "holdTimer",
-          "name": "autopasssuccess",
-          "label": "Auto Pass (s)",
-          "buttonLabel": "Hold While Passing Auto",
-          "inline": true,
-          "buttonColor": "#ff7c61",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          }
-        },
-        {
           "type": "multiSelect",
           "subHeader": "Intake",
           "name": "autoIntakeOptions",
@@ -88,6 +56,44 @@
               }
             }
           ]
+        },
+        {
+          "type": "collapsible",
+          "id": "autoShootOnTheMoveSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "autoshootonthemove",
+            "label": "Shooting on the Move?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "autoshootonthemoverating",
+              "label": "Auto Shot Quality While Moving",
+              "description": "How well did the robot shoot while driving during auto?",
+              "ratingLabels": ["Very Shaky / Missed Most", "Poor", "Below Average", "Above Average", "Good", "Smooth & Consistent"],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "starRating",
+          "name": "autoefficiency",
+          "label": "Auto Shooting Efficiency",
+          "description": "How efficiently did the robot score in auto?",
+          "ratingLabels": ["Poor Routing / Many Misses", "Below Average", "Moderate", "Above Average", "Good", "Clean Fast Cycles"],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
         },
         {
           "type": "singleSelect",
@@ -125,40 +131,61 @@
       },
       "fields": [
         {
-          "type": "holdTimer",
-          "name": "telefuelsuccess",
-          "label": "Tele Fuel (s)",
-          "buttonLabel": "Hold While Shooting Tele Fuel",
-          "inline": true,
-          "buttonColor": "#2da44e",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Balls / Second",
-            "placeholder": "e.g. 2.70",
-            "defaultRate": 0,
-            "group": "Fuel",
-            "groupLabel": "Fuel Scoring",
+          "type": "collapsible",
+          "id": "teleShootOnTheMoveSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "teleshootonthemove",
+            "label": "Shooting on the Move?",
             "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
+              "type": "BOOLEAN",
+              "default": false
             }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "teleshootonthemoverating",
+              "label": "Tele Shot Quality While Moving",
+              "description": "How well did the robot shoot while driving during teleop?",
+              "ratingLabels": ["Very Shaky / Missed Most", "Poor", "Below Average", "Above Average", "Good", "Smooth & Consistent"],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "starRating",
+          "name": "teleefficiency",
+          "label": "Tele Shooting Efficiency",
+          "description": "How efficiently did the robot score in teleop?",
+          "ratingLabels": ["Poor Routing / Many Misses", "Below Average", "Moderate", "Above Average", "Good", "Clean Fast Cycles"],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
           }
         },
         {
-          "type": "holdTimer",
-          "name": "telepasssuccess",
-          "label": "Tele Pass (s)",
-          "buttonLabel": "Hold While Passing Tele",
-          "inline": true,
-          "buttonColor": "#ff7c61",
-          "precision": 2,
+          "type": "starRating",
+          "name": "driving",
+          "label": "Driving / Spatial Awareness",
+          "description": "How aware was the driver of the field around them?",
+          "ratingLabels": ["Frequent Collisions / Stuck", "Poor Awareness", "Below Average", "Above Average", "Good Awareness", "Precise Positioning"],
           "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "comment",
+          "name": "drivingcomments",
+          "label": "Driving Notes",
+          "dbColumn": {
+            "type": "TEXT",
+            "default": null
           }
         },
         {
@@ -188,6 +215,7 @@
               "name": "defenseplayed",
               "label": "Defense Played",
               "description": "Ability to Play Defense",
+              "zeroLabel": "Did Not Defend",
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -287,6 +315,75 @@
           ]
         },
         {
+          "type": "starRating",
+          "name": "shootingcapacity",
+          "label": "Shooting Capacity",
+          "description": "How many balls can the robot hold and rapidly cycle?",
+          "ratingLabels": ["1 at a Time / Very Slow", "Low Capacity", "Below Average", "Above Average", "High Capacity", "Large & Near-Instant Reload"],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "shootingaccuracy",
+          "label": "Shooting Accuracy",
+          "description": "How accurate were the robot's shots overall this match?",
+          "ratingLabels": ["Missed Almost All", "Below Average", "Moderate", "Above Average", "Very Accurate", "Near-Perfect Accuracy"],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "shootingrange",
+          "label": "Shooting Range",
+          "description": "How far from the target can this robot reliably shoot?",
+          "ratingLabels": ["Point-Blank Only", "Very Short Range", "Short Range", "Medium Range", "Long Range", "Full-Field Accuracy"],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "collapsible",
+          "id": "passingSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "passing",
+            "label": "Did the Robot Pass?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "passingrating",
+              "label": "Passing Quality",
+              "description": "How accurate and reliable were the robot's passes?",
+              "ratingLabels": ["Frequent Misses / Lost Balls", "Unreliable", "Below Average", "Above Average", "Reliable", "Precise & Always Caught"],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            },
+            {
+              "type": "comment",
+              "name": "passingcomments",
+              "label": "Passing Notes",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
           "type": "collapsible",
           "id": "breakdownSection",
           "trigger": {
@@ -370,15 +467,6 @@
         },
         {
           "type": "starRating",
-          "name": "shootingaccuracy",
-          "label": "Shooting Accuracy",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
           "name": "intakespeed",
           "label": "Intake Speed",
           "dbColumn": {
@@ -428,17 +516,14 @@
   ],
   "calculations": {
     "auto": {
-      "formula": "autofuelsuccess + (autoclimb==1?15:0)",
+      "formula": "(autoclimb==1?15:0)",
       "fields": [
-        "autofuelsuccess",
         "autoclimb"
       ]
     },
     "tele": {
-      "formula": "telefuelsuccess",
-      "fields": [
-        "telefuelsuccess"
-      ]
+      "formula": "0",
+      "fields": []
     },
     "end": {
       "type": "mapping",
@@ -480,12 +565,24 @@
           "field": "defensecomments",
           "dataKey": "defenseComments",
           "title": "Defense Comments"
+        },
+        {
+          "field": "drivingcomments",
+          "dataKey": "drivingComments",
+          "title": "Driving Notes"
+        },
+        {
+          "field": "passingcomments",
+          "dataKey": "passingComments",
+          "title": "Passing Notes"
         }
       ],
       "comments": [
         "generalcomments",
         "breakdowncomments",
-        "defensecomments"
+        "defensecomments",
+        "drivingcomments",
+        "passingcomments"
       ],
       "autoPie": {
         "field": "autoclimb",
@@ -531,18 +628,7 @@
         ]
       },
       "piecePlacement": {
-        "bars": [
-          {
-            "label": "Auto Fuel",
-            "autoField": "auto.avgFuel",
-            "teleField": null
-          },
-          {
-            "label": "Tele Fuel",
-            "autoField": null,
-            "teleField": "tele.avgFuel"
-          }
-        ]
+        "bars": []
       },
       "overallStats": [
         {
@@ -573,31 +659,9 @@
               "type": "epaLine",
               "label": "Auto Over Time",
               "dataKey": "autoOverTime"
-            },
-            {
-              "type": "passLine",
-              "label": "Auto Passes Over Time",
-              "dataKey": "autoPassOverTime",
-              "valueKey": "autopasssuccess"
             }
           ],
-          "statTables": [
-            {
-              "title": "Fuel",
-              "columns": [
-                "Success",
-                "Avg"
-              ],
-              "rows": [
-                {
-                  "values": [
-                    "auto.successFuel",
-                    "auto.avgFuel"
-                  ]
-                }
-              ]
-            }
-          ]
+          "statTables": []
         },
         "tele": {
           "charts": [
@@ -605,31 +669,9 @@
               "type": "epaLine",
               "label": "Tele Over Time",
               "dataKey": "teleOverTime"
-            },
-            {
-              "type": "passLine",
-              "label": "Tele Passes Over Time",
-              "dataKey": "telePassOverTime",
-              "valueKey": "telepasssuccess"
             }
           ],
-          "statTables": [
-            {
-              "title": "Fuel",
-              "columns": [
-                "Success",
-                "Avg"
-              ],
-              "rows": [
-                {
-                  "values": [
-                    "tele.successFuel",
-                    "tele.avgFuel"
-                  ]
-                }
-              ]
-            }
-          ]
+          "statTables": []
         }
       },
       "intakeDisplay": [
@@ -660,12 +702,44 @@
       ],
       "qualitativeDisplay": [
         {
-          "name": "shootingspeed",
-          "label": "Shooting Speed"
+          "name": "autoefficiency",
+          "label": "Auto Efficiency"
+        },
+        {
+          "name": "teleefficiency",
+          "label": "Tele Efficiency"
+        },
+        {
+          "name": "autoshootonthemoverating",
+          "label": "Auto Shot on Move"
+        },
+        {
+          "name": "teleshootonthemoverating",
+          "label": "Tele Shot on Move"
+        },
+        {
+          "name": "driving",
+          "label": "Driving"
+        },
+        {
+          "name": "shootingcapacity",
+          "label": "Shooting Capacity"
         },
         {
           "name": "shootingaccuracy",
           "label": "Shooting Accuracy"
+        },
+        {
+          "name": "shootingrange",
+          "label": "Shooting Range"
+        },
+        {
+          "name": "passingrating",
+          "label": "Passing Quality"
+        },
+        {
+          "name": "shootingspeed",
+          "label": "Shooting Speed"
         },
         {
           "name": "intakespeed",
@@ -707,16 +781,7 @@
         "end"
       ],
       "piecePlacement": {
-        "bars": [
-          {
-            "label": "Auto Fuel",
-            "key": "autoFuel"
-          },
-          {
-            "label": "Tele Fuel",
-            "key": "teleFuel"
-          }
-        ]
+        "bars": []
       },
       "endgamePie": {
         "field": "endlocation",
@@ -736,8 +801,16 @@
         ]
       },
       "qualitativeFields": [
-        "shootingspeed",
+        "autoefficiency",
+        "teleefficiency",
+        "autoshootonthemoverating",
+        "teleshootonthemoverating",
+        "driving",
+        "shootingcapacity",
         "shootingaccuracy",
+        "shootingrange",
+        "passingrating",
+        "shootingspeed",
         "intakespeed",
         "climbspeed",
         "maneuverability",
@@ -747,22 +820,6 @@
       ],
       "defenseBarField": "defenseplayed",
       "rankingPoints": [
-        {
-          "label": "Fuel",
-          "type": "levelThreshold",
-          "levels": [
-            {
-              "key": "autoFuel",
-              "threshold": 6
-            },
-            {
-              "key": "teleFuel",
-              "threshold": 18
-            }
-          ],
-          "greenCount": 2,
-          "yellowCount": 1
-        },
         {
           "label": "Climb",
           "type": "endgameThreshold",
@@ -778,14 +835,6 @@
           "condition": {
             "greaterThan": 0
           }
-        },
-        {
-          "label": "Avg Fuel",
-          "type": "sum",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
         },
         {
           "label": "Breakdown %",
@@ -888,29 +937,19 @@
           "format": "breakdownPercent"
         }
       ],
-      "computedMetrics": [
-        {
-          "key": "fuelTotal",
-          "type": "sumFields",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
-        }
-      ],
+      "computedMetrics": [],
       "scatterPlot": {
         "xAxis": {
-          "label": "Total Fuel",
+          "label": "Shooting Efficiency",
           "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
+            "autoefficiency",
+            "teleefficiency"
           ]
         },
         "yAxis": {
-          "label": "Fuel Attempts",
+          "label": "Driving Quality",
           "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
+            "driving"
           ]
         }
       },
@@ -935,13 +974,7 @@
           "label": "End"
         }
       ],
-      "scoringChart": [
-        {
-          "key": "fuel",
-          "label": "Fuel Avg",
-          "compute": "auto.avgFuel + tele.avgFuel"
-        }
-      ],
+      "scoringChart": [],
       "endgameChart": {
         "metrics": [
           "None",
@@ -971,43 +1004,23 @@
         "fueldepotintake",
         "fueloutpostintake",
         "usesbump",
-        "usestrench"
+        "usestrench",
+        "autoshootonthemove",
+        "teleshootonthemove",
+        "passing"
       ],
       "textFields": [
         "scoutname",
         "generalcomments",
         "defensecomments",
-        "breakdowncomments"
+        "breakdowncomments",
+        "drivingcomments",
+        "passingcomments"
       ],
       "breakdownField": "breakdown",
       "defenseField": "defense",
       "leaveField": "leave",
-      "successFailPairs": [
-        {
-          "key": "Fuel",
-          "phase": "auto",
-          "successField": "autofuelsuccess",
-          "failField": null
-        },
-        {
-          "key": "Fuel",
-          "phase": "tele",
-          "successField": "telefuelsuccess",
-          "failField": null
-        },
-        {
-          "key": "Pass",
-          "phase": "auto",
-          "successField": "autopasssuccess",
-          "failField": null
-        },
-        {
-          "key": "Pass",
-          "phase": "tele",
-          "successField": "telepasssuccess",
-          "failField": null
-        }
-      ],
+      "successFailPairs": [],
       "autoclimbConfig": {
         "field": "autoclimb",
         "valueMapping": {
@@ -1027,8 +1040,16 @@
         }
       },
       "qualitativeFields": [
-        "shootingspeed",
+        "autoefficiency",
+        "teleefficiency",
+        "autoshootonthemoverating",
+        "teleshootonthemoverating",
+        "driving",
+        "shootingcapacity",
         "shootingaccuracy",
+        "shootingrange",
+        "passingrating",
+        "shootingspeed",
         "intakespeed",
         "climbspeed",
         "maneuverability",
@@ -1043,36 +1064,8 @@
         "usesbump",
         "usestrench"
       ],
-      "alliancePiecePlacement": [
-        {
-          "key": "autoFuel",
-          "fields": [
-            "autofuelsuccess"
-          ]
-        },
-        {
-          "key": "teleFuel",
-          "fields": [
-            "telefuelsuccess"
-          ]
-        }
-      ],
-      "customSumFields": [
-        {
-          "key": "totalFuel",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
-        },
-        {
-          "key": "totalPass",
-          "fields": [
-            "autopasssuccess",
-            "telepasssuccess"
-          ]
-        }
-      ]
+      "alliancePiecePlacement": [],
+      "customSumFields": []
     }
   }
 }

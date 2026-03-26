@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
-export default function EPALineChart({ 
+export default function EPALineChart({
   label,
-  data, 
-  color = "#116677", 
-  width = 350, 
-  height = 175 
+  data,
+  color = "#116677",
+  width = 350,
+  height = 175,
 }) {
   const [isClient, setIsClient] = useState(false);
 

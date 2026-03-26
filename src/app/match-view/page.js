@@ -449,13 +449,21 @@ function MatchView() {
   function AllianceDisplay({ teams, opponents, colors }) {
     //calc alliance score breakdown
     const usePPR = config?.usePPR === true;
-    const validTeams = usePPR
-      ? teams.filter(team => team && team.avgEpa != null)
-      : teams.filter(team => team && team.auto !== null);
-    const auto = validTeams.reduce((sum, team) => sum + (team.auto || 0), 0);
-    const tele = validTeams.reduce((sum, team) => sum + (team.tele || 0), 0);
-    const end = validTeams.reduce((sum, team) => sum + (team.end || 0), 0);
-    const alliancePPR = usePPR ? validTeams.reduce((sum, team) => sum + (team.avgEpa || 0), 0) : null;
+    // For PPR box: only teams with OPR computed; for A/T/E: period OPR if available, else scouting
+    const pprTeams = teams.filter(team => team && team.avgEpa != null);
+    const hasPeriodOPR = usePPR && teams.some(team => team?.autoEpa != null);
+    const periodTeams = hasPeriodOPR ? teams.filter(team => team && team.autoEpa != null) : null;
+    const scoutingTeams = teams.filter(team => team && team.auto !== null);
+    const auto = hasPeriodOPR
+      ? periodTeams.reduce((sum, team) => sum + (team.autoEpa || 0), 0)
+      : scoutingTeams.reduce((sum, team) => sum + (team.auto || 0), 0);
+    const tele = hasPeriodOPR
+      ? periodTeams.reduce((sum, team) => sum + (team.teleEpa || 0), 0)
+      : scoutingTeams.reduce((sum, team) => sum + (team.tele || 0), 0);
+    const end = hasPeriodOPR
+      ? periodTeams.reduce((sum, team) => sum + (team.endEpa || 0), 0)
+      : scoutingTeams.reduce((sum, team) => sum + (team.end || 0), 0);
+    const alliancePPR = usePPR ? pprTeams.reduce((sum, team) => sum + (team.avgEpa || 0), 0) : null;
 
     //calc ranking points
     const RGBColors = {
@@ -469,9 +477,7 @@ function MatchView() {
       if (usePPR) return team.avgEpa || 0;
       return team.auto !== null ? team.auto + team.tele + team.end : 0;
     };
-    const validOpponents = usePPR
-      ? opponents.filter(opponent => opponent && opponent.avgEpa != null)
-      : opponents.filter(opponent => opponent && opponent.auto !== null);
+    const validOpponents = opponents.filter(opponent => opponent && (usePPR ? opponent.avgEpa != null : opponent.auto !== null));
     const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
     const currentAllianceEPA = usePPR ? (alliancePPR || 0) : auto + tele + end;
     let RP_WIN = RGBColors.red;
@@ -551,11 +557,11 @@ function MatchView() {
     return <div className={styles.lightBorderBox} style={{ paddingTop: '20px' }}>
       <div className={styles.scoreBreakdownContainer}>
         <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
-        {!usePPR && <div className={styles.EPABreakdown}>
+        <div className={styles.EPABreakdown}>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {(end || 0).toFixed(1)}</div>
-        </div>}
+        </div>
       </div>
       <div className={styles.RPs}>
         <div style={{ background: colors[1] }}>RPs:</div>
@@ -645,28 +651,22 @@ function MatchView() {
     data?.team6?.team,
   ].filter((value) => value !== undefined && value !== null).map((value) => String(value)));
   const visibleUnscoredMatches = unscoredMatches.filter((issue) => visibleTeamNumbers.has(String(issue.team)));
-  let epaData;
-  if (config?.usePPR) {
-    const blueTotal = blueAlliance.reduce((s, t) => s + (t?.avgEpa || 0), 0);
-    const redTotal = redAlliance.reduce((s, t) => s + (t?.avgEpa || 0), 0);
-    epaData = [
-      { name: "Start", blue: 0, red: 0 },
-      { name: "PPR", blue: blueTotal, red: redTotal },
-    ];
-  } else {
-    let blueScores = [0, get(blueAlliance, "auto")];
-    blueScores.push(blueScores[1] + get(blueAlliance, "tele"));
-    blueScores.push(blueScores[2] + get(blueAlliance, "end"));
-    let redScores = [0, get(redAlliance, "auto")];
-    redScores.push(redScores[1] + get(redAlliance, "tele"));
-    redScores.push(redScores[2] + get(redAlliance, "end"));
-    epaData = [
-      { name: "Start", blue: 0, red: 0 },
-      { name: "Auto", blue: blueScores[1], red: redScores[1] },
-      { name: "Tele", blue: blueScores[2], red: redScores[2] },
-      { name: "End", blue: blueScores[3], red: redScores[3] },
-    ];
-  }
+  const hasPeriodOPRGraph = config?.usePPR && blueAlliance.concat(redAlliance).some(t => t?.autoEpa != null);
+  const getField = (alliance, pprField, scoutField) => hasPeriodOPRGraph
+    ? alliance.reduce((s, t) => s + (t?.[pprField] ?? 0), 0)
+    : get(alliance, scoutField);
+  const blueAuto = getField(blueAlliance, "autoEpa", "auto");
+  const blueTele = getField(blueAlliance, "teleEpa", "tele");
+  const blueEnd  = getField(blueAlliance, "endEpa",  "end");
+  const redAuto  = getField(redAlliance,  "autoEpa", "auto");
+  const redTele  = getField(redAlliance,  "teleEpa", "tele");
+  const redEnd   = getField(redAlliance,  "endEpa",  "end");
+  const epaData = [
+    { name: "Start", blue: 0, red: 0 },
+    { name: "Auto", blue: blueAuto, red: redAuto },
+    { name: "Tele", blue: blueAuto + blueTele, red: redAuto + redTele },
+    { name: "End",  blue: blueAuto + blueTele + blueEnd, red: redAuto + redTele + redEnd },
+  ];
 
   //getting radar data from config
   let radarData = [];
@@ -759,7 +759,7 @@ function MatchView() {
           />
         </div>
         <div className={styles.lineGraphContainer}>
-          <h2>{config?.usePPR ? "PPR" : "EPA / time"}</h2>
+          <h2>{config?.usePPR ? "PPR / time" : "EPA / time"}</h2>
           <br></br>
           <EPALineChart data={epaData} />
         </div>

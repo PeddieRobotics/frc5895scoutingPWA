@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import styles from './EndPlacement.module.css';
+import styles from './SingleSelect.module.css';
 
 export default function SingleSelect({ options, internalName, className }) {
     const defaultOption = options?.find(o => o.default) || options?.[0];
@@ -36,7 +36,7 @@ export default function SingleSelect({ options, internalName, className }) {
     if (!options || options.length === 0) return null;
 
     return (
-        <div className={`${styles.endPossibilities} ${className || ""}`}>
+        <div className={`${styles.singleSelect} ${className || ""}`}>
             {options.map((opt) => (
                 <div
                     key={opt.value}

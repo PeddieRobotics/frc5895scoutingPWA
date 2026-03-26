@@ -799,7 +799,9 @@ A star-based rating system (1-N stars).
 | `type` | string | Yes | Must be `"starRating"` |
 | `name` | string | Yes | Database column name |
 | `label` | string | Yes | Display label |
-| `description` | string | No | Tooltip or helper text |
+| `description` | string | No | Italic helper text shown below the label |
+| `zeroLabel` | string | No | Text shown when no stars are selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero. |
+| `ratingLabels` | string[] | No | Array of exactly 6 strings to override the default Low→High scale labels. Shown below the stars when a rating is selected. |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
 | `isConfidenceRating` | boolean | No | Marks this field as the primary color controller for the `/scout-leads` entries section background. Supported on `starRating`/`qualitative` (red→green gradient) and `checkbox` (boolean ratio, see `invertColor`). At most one field per config. |
@@ -809,6 +811,8 @@ A star-based rating system (1-N stars).
 
 **Database Type:** `INTEGER`
 
+**Default rating labels (1→6):** `"Low"`, `"Relatively Low"`, `"Just Below Average"`, `"Just Above Average"`, `"Relatively High"`, `"High"`
+
 **Example:**
 
 ```json
@@ -817,7 +821,21 @@ A star-based rating system (1-N stars).
   "name": "driverskill",
   "label": "Driver Skill",
   "description": "How well the driver controlled the robot",
-  "max": 6,
+  "dbColumn": { "type": "INTEGER", "default": null }
+}
+```
+
+**Example with custom labels:**
+
+```json
+{
+  "type": "starRating",
+  "name": "defenseplayed",
+  "label": "Defense Played",
+  "description": "Ability to Play Defense",
+  "zeroLabel": "Did Not Defend",
+  "ratingLabels": ["Very Poor", "Poor", "Below Average", "Above Average", "Good", "Elite"],
+  "minWhenVisible": 1,
   "dbColumn": { "type": "INTEGER", "default": null }
 }
 ```
@@ -830,22 +848,20 @@ A star-based rating system (1-N stars).
   "name": "aggression",
   "label": "Aggression",
   "description": "How aggressive/dangerous the robot is (lower is safer)",
-  "max": 6,
   "inverted": true,
   "dbColumn": { "type": "INTEGER", "default": null }
 }
 ```
 
-**Renders as:** Clickable stars. User clicks to select rating (1 to max).
+**Renders as:** Clickable stars. User clicks to select rating (1 to 6). The label below updates to reflect the selected value (or `zeroLabel` when nothing is selected).
 
 **About `minWhenVisible`:** Use this inside collapsible sections to require a rating when the section is expanded. Example: If defense is checked, require a defense rating.
-
 
 ---
 
 ### qualitative
 
-Identical to `starRating` - an alias for the same component. Use whichever name is more descriptive for your use case.
+Identical to `starRating` - an alias for the same component. Supports all the same properties including `zeroLabel` and `ratingLabels`. Use whichever name is more descriptive for your use case.
 
 ---
 
@@ -2108,6 +2124,8 @@ Both requirement types operate independently. A scouting row must satisfy **all*
 - `invertColor` is only meaningful on `checkbox` fields with `isConfidenceRating: true`. Using it on any other field type produces a **warning** and is ignored.
 - `scoringRequirement` is only supported on `checkbox` fields. Using it on any other type is a **warning** and is ignored.
 - `scoringRequirement.requiredValue` must be a boolean. Any other type is a validation **error**.
+- `starRating`/`qualitative` `zeroLabel` must be a string when present. Any other type is a **warning** and is ignored.
+- `starRating`/`qualitative` `ratingLabels` must be an array of exactly 6 strings when present. Wrong length or non-string entries produce a **warning** and the default Low→High scale is used instead.
 
 ---
 

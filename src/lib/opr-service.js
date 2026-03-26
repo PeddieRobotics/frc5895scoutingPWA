@@ -66,7 +66,10 @@ async function getTBAMatches(tbaEventCode) {
     const blueTeams = (alliances?.blue?.team_keys || []).map(k => parseInt(k.replace('frc', ''), 10));
     if (redTeams.some(isNaN) || blueTeams.some(isNaN)) continue;
 
-    matches.push({ type, number, redTeams, blueTeams, redScore, blueScore });
+    const redBreakdown  = m.score_breakdown?.red  || null;
+    const blueBreakdown = m.score_breakdown?.blue || null;
+
+    matches.push({ type, number, redTeams, blueTeams, redScore, blueScore, redBreakdown, blueBreakdown });
   }
 
   matches.sort((a, b) => {
@@ -283,4 +286,116 @@ async function getPPROverTime(activeGame, teamNumber) {
   });
 }
 
-export { getTBAMatches, getOprBlacklist, saveOprBlacklist, getTeamOPRMap, getLast3OPRMap, getPPROverTime };
+/**
+ * Compute per-period PPR data for a single team: avgAuto/Tele/End, last3 per period,
+ * and autoOverTime / teleOverTime using the adjusted-contribution method.
+ *
+ * Requires `config.pprBreakdownFields` in the game config.
+ * Returns null if usePPR is off, breakdown fields aren't configured, or TBA data is missing.
+ *
+ * @param {Object} activeGame
+ * @param {number} teamNumber
+ * @returns {Promise<{avgAuto, avgTele, avgEnd, last3Auto, last3Tele, last3End, autoOverTime, teleOverTime}|null>}
+ */
+async function getPerPeriodTeamData(activeGame, teamNumber) {
+  const config = activeGame?.config_json || {};
+  const breakdownFields = config.pprBreakdownFields;
+  if (!breakdownFields) return null;
+
+  const enabledMatches = await getEnabledMatches(activeGame);
+  if (!enabledMatches) return null;
+
+  const buildPeriodMatches = (field) =>
+    enabledMatches
+      .filter(m => m.redBreakdown?.[field] != null && m.blueBreakdown?.[field] != null)
+      .map(m => ({ ...m, redScore: m.redBreakdown[field], blueScore: m.blueBreakdown[field] }));
+
+  const autoMatches = buildPeriodMatches(breakdownFields.auto);
+  const teleMatches = buildPeriodMatches(breakdownFields.tele);
+  const endMatches  = buildPeriodMatches(breakdownFields.end);
+
+  if (autoMatches.length === 0 && teleMatches.length === 0 && endMatches.length === 0) return null;
+
+  const toMap = (results) => results ? new Map(results.map(r => [r.team, r.opr])) : new Map();
+  const autoOPRMap = toMap(autoMatches.length > 0 ? computeOPR(autoMatches) : null);
+  const teleOPRMap = toMap(teleMatches.length > 0 ? computeOPR(teleMatches) : null);
+  const endOPRMap  = toMap(endMatches.length  > 0 ? computeOPR(endMatches)  : null);
+
+  const levelOrder = { Q: 0, SF: 1, F: 2 };
+  const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
+
+  const adjustedContribution = (m, oprMap) => {
+    const isRed = m.redTeams.includes(teamNumber);
+    const score = isRed ? m.redScore : m.blueScore;
+    const teammates = (isRed ? m.redTeams : m.blueTeams).filter(t => t !== teamNumber);
+    return score - teammates.reduce((sum, t) => sum + (oprMap.get(t) ?? 0), 0);
+  };
+
+  const computeLast3Avg = (periodMatches, oprMap) => {
+    const teamMatches = periodMatches
+      .filter(m => m.redTeams.includes(teamNumber) || m.blueTeams.includes(teamNumber))
+      .sort((a, b) => matchOrder(a) - matchOrder(b))
+      .slice(-3);
+    if (teamMatches.length === 0) return null;
+    const sum = teamMatches.reduce((s, m) => s + adjustedContribution(m, oprMap), 0);
+    return Math.round((sum / teamMatches.length) * 10) / 10;
+  };
+
+  const computeOverTime = (periodMatches, oprMap, valueKey) =>
+    periodMatches
+      .filter(m => m.type === 'Q' && (m.redTeams.includes(teamNumber) || m.blueTeams.includes(teamNumber)))
+      .sort((a, b) => a.number - b.number)
+      .map(m => ({ match: m.number, [valueKey]: Math.round(adjustedContribution(m, oprMap) * 100) / 100 }));
+
+  return {
+    avgAuto:  autoOPRMap.size > 0 ? (autoOPRMap.get(teamNumber) ?? null) : null,
+    avgTele:  teleOPRMap.size > 0 ? (teleOPRMap.get(teamNumber) ?? null) : null,
+    avgEnd:   endOPRMap.size  > 0 ? (endOPRMap.get(teamNumber)  ?? null) : null,
+    last3Auto: computeLast3Avg(autoMatches, autoOPRMap),
+    last3Tele: computeLast3Avg(teleMatches, teleOPRMap),
+    last3End:  computeLast3Avg(endMatches,  endOPRMap),
+    autoOverTime: computeOverTime(autoMatches, autoOPRMap, 'auto'),
+    teleOverTime: computeOverTime(teleMatches, teleOPRMap, 'tele'),
+  };
+}
+
+/**
+ * Compute per-period (auto / tele / end) OPR maps using TBA score_breakdown data.
+ *
+ * Requires `config.pprBreakdownFields` to map period names to TBA score_breakdown keys:
+ *   { auto: "autoPoints", tele: "teleopPoints", end: "endgamePoints" }
+ *
+ * Returns { auto: Map<team, opr>, tele: Map<team, opr>, end: Map<team, opr> },
+ * or null if usePPR is off, breakdown fields aren't configured, or TBA data is missing.
+ *
+ * @param {Object} activeGame
+ * @returns {Promise<{auto: Map, tele: Map, end: Map}|null>}
+ */
+async function getPerPeriodOPRMaps(activeGame) {
+  const config = activeGame?.config_json || {};
+  const breakdownFields = config.pprBreakdownFields;
+  if (!breakdownFields) return null;
+
+  const enabledMatches = await getEnabledMatches(activeGame);
+  if (!enabledMatches) return null;
+
+  const toMap = (results) => results ? new Map(results.map(r => [r.team, r.opr])) : null;
+
+  const buildPeriodMatches = (field) =>
+    enabledMatches
+      .filter(m => m.redBreakdown?.[field] != null && m.blueBreakdown?.[field] != null)
+      .map(m => ({ ...m, redScore: m.redBreakdown[field], blueScore: m.blueBreakdown[field] }));
+
+  const autoMatches = buildPeriodMatches(breakdownFields.auto);
+  const teleMatches = buildPeriodMatches(breakdownFields.tele);
+  const endMatches  = buildPeriodMatches(breakdownFields.end);
+
+  const auto = toMap(autoMatches.length > 0 ? computeOPR(autoMatches) : null);
+  const tele = toMap(teleMatches.length > 0 ? computeOPR(teleMatches) : null);
+  const end  = toMap(endMatches.length  > 0 ? computeOPR(endMatches)  : null);
+
+  if (!auto && !tele && !end) return null;
+  return { auto, tele, end };
+}
+
+export { getTBAMatches, getOprBlacklist, saveOprBlacklist, getTeamOPRMap, getLast3OPRMap, getPPROverTime, getPerPeriodOPRMaps, getPerPeriodTeamData };

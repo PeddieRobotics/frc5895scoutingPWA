@@ -492,6 +492,7 @@
               "name": "defenseplayed",
               "label": "Defense Played",
               "description": "Ability to Play Defense",
+              "zeroLabel": "Did Not Defend",
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",

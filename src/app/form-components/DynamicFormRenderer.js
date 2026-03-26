@@ -195,6 +195,8 @@ export default function DynamicFormRenderer({
             description={field.description}
             minWhenVisible={field.minWhenVisible}
             max={6}
+            zeroLabel={field.zeroLabel}
+            ratingLabels={field.ratingLabels}
           />
         );
 
@@ -285,13 +287,9 @@ export default function DynamicFormRenderer({
       : trigger;
 
     return (
-      <div key={key}>
+      <div key={key} className={styles.collapsibleBox}>
         {taggedTrigger && renderField(taggedTrigger, `${key}-trigger`)}
-        {isExpanded && (
-          <div className={styles.collapsibleContent}>
-            {content.map((field, i) => renderField(field, `${key}-content-${i}`))}
-          </div>
-        )}
+        {isExpanded && content.map((field, i) => renderField(field, `${key}-content-${i}`))}
       </div>
     );
   };

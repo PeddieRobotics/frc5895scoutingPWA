@@ -50,9 +50,8 @@ export function getTeamViewConfigIssues(config) {
   }
 
   const bars = teamView.piecePlacement?.bars;
-  if (!Array.isArray(bars) || bars.length === 0) {
-    addIssue(issues, "display.teamView.piecePlacement.bars", "must be a non-empty array");
-  } else {
+  // piecePlacement is optional — only validate contents when bars are present
+  if (Array.isArray(bars) && bars.length > 0) {
     bars.forEach((bar, index) => {
       const base = `display.teamView.piecePlacement.bars[${index}]`;
       if (!bar || typeof bar !== "object") {
@@ -169,18 +168,24 @@ export function getMatchViewConfigIssues(config) {
   }
 
   const bars = matchView.piecePlacement?.bars;
-  if (!Array.isArray(bars) || bars.length === 0) {
-    addIssue(issues, "display.matchView.piecePlacement.bars", "must be a non-empty array");
-  }
+  const hasPiecePlacement = Array.isArray(bars) && bars.length > 0;
 
   const alliancePiecePlacement = display?.apiAggregation?.alliancePiecePlacement;
-  if (!Array.isArray(alliancePiecePlacement) || alliancePiecePlacement.length === 0) {
+  const hasAlliancePiecePlacement = Array.isArray(alliancePiecePlacement) && alliancePiecePlacement.length > 0;
+
+  // piecePlacement is optional — only validate if either side is non-empty
+  if (hasPiecePlacement && !hasAlliancePiecePlacement) {
     addIssue(
       issues,
       "display.apiAggregation.alliancePiecePlacement",
-      "must be a non-empty array for match-view piece placement"
+      "must be a non-empty array when display.matchView.piecePlacement.bars is defined"
     );
-  } else {
+  }
+  if (!hasPiecePlacement && hasAlliancePiecePlacement) {
+    addIssue(issues, "display.matchView.piecePlacement.bars", "must be a non-empty array when display.apiAggregation.alliancePiecePlacement is defined");
+  }
+
+  if (hasAlliancePiecePlacement) {
     alliancePiecePlacement.forEach((entry, index) => {
       const base = `display.apiAggregation.alliancePiecePlacement[${index}]`;
       if (!entry?.key) {

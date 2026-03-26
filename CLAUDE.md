@@ -108,6 +108,8 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 - The GET `/api/scout-leads` now returns `allScoutingRows` (all rows including noshow) and `currentUserTeam` in addition to existing timer data.
 - Edits are saved via `PATCH /api/edit-match-entry` which validates auth, checks allowed fields against config, and uses parameterized SQL.
 - **`starRating`/`qualitative` fields always render 6 stars.** The `Qualitative` component hardcodes `[1,2,3,4,5,6]`. Do not add `max` to these fields — it is stripped from all configs and ignored everywhere in the codebase.
+- **`zeroLabel`** (string, optional): text shown below the stars when no rating is selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero.
+- **`ratingLabels`** (array of exactly 6 strings, optional): overrides the default Low→High scale labels shown below the stars when a rating is selected. Defaults to `["Low", "Relatively Low", "Just Below Average", "Just Above Average", "Relatively High", "High"]`. Validated by `config-validator.js` — wrong length or non-strings produce a warning.
 
 ### Display Config Validation
 
