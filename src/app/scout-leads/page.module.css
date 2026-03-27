@@ -1,795 +1,942 @@
+/* Scout Leads — light mode design system */
+
 .page {
-  min-height: 100vh;
-  padding: 20px 20px 40px;
+    min-height: 100vh;
+    background: #f4f1eb;
+    padding: 20px 20px 40px;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
 }
 
-/* ── Two-column layout ───────────────────────────────────────── */
+/* ── Two-column layout ────────────────────────── */
 .pageLayout {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  align-items: flex-start;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: flex-start;
 }
 
 .container {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-/* ── Rankings Sidebar ────────────────────────────────────────── */
+/* ── Rankings sidebar ─────────────────────────── */
 .sidebar {
-  order: -1;
-  /* left on desktop */
-  width: 280px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 20px;
-  align-self: flex-start;
+    order: -1;
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
 }
 
 .sidebarTitle {
-  margin: 0;
-  font-size: 1.2rem;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0d1f35;
 }
 
 .sidebarNote {
-  margin: 0;
-  font-size: 0.87rem;
-  color: #57606a;
+    margin: 0;
+    font-size: 0.87rem;
+    color: rgba(13, 31, 53, 0.55);
 }
 
 .weightSelect {
-  border: 1px solid #d0d7de;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 0.93rem;
-  width: 100%;
-  background: #fff;
-  margin-bottom: 5px;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.93rem;
+    font-family: 'Montserrat', sans-serif;
+    width: 100%;
+    background: #ffffff;
+    color: #0d1f35;
+    margin-bottom: 5px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.weightSelect:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .teamRankList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .teamRankItem {
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: border-color 0.15s;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .teamRankItem:hover {
-  border-color: #0969da;
+    border-color: rgba(160, 124, 48, 0.55);
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.08);
 }
 
 .teamRankItemExpanded {
-  border-color: #0969da;
-  background: #f0f6ff;
+    border-color: rgba(160, 124, 48, 0.6);
+    background: rgba(160, 124, 48, 0.05);
 }
 
 .teamRankItemHasComments {
-  background: #fffbe6;
-  border-color: #d4a72c;
+    background: rgba(192, 112, 0, 0.05);
+    border-color: rgba(192, 112, 0, 0.4);
 }
 
 .teamRankItemHasComments:hover {
-  border-color: #b08800;
+    border-color: rgba(192, 112, 0, 0.65);
 }
 
 .teamRankItemExpanded.teamRankItemHasComments {
-  background: #fff3c4;
-  border-color: #0969da;
+    background: rgba(192, 112, 0, 0.08);
+    border-color: rgba(160, 124, 48, 0.65);
 }
 
 .teamRankRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 0.9rem;
 }
 
 .teamRankNum {
-  width: 22px;
-  text-align: right;
-  color: #57606a;
-  font-size: 0.82rem;
-  flex-shrink: 0;
+    width: 22px;
+    text-align: right;
+    color: rgba(13, 31, 53, 0.45);
+    font-size: 0.82rem;
+    flex-shrink: 0;
 }
 
 .teamRankTeam {
-  flex: 1;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+    flex: 1;
+    font-weight: 700;
+    color: #0d1f35;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .teamCommentBadge {
-  background: #0969da;
-  color: #fff;
-  border-radius: 10px;
-  padding: 0px 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.4;
+    background: #a07c30;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 0px 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.5;
 }
 
 .teamRankScore {
-  color: #57606a;
-  font-size: 0.82rem;
-  flex-shrink: 0;
+    color: rgba(13, 31, 53, 0.55);
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
 }
 
 .teamExpandIcon {
-  color: #0969da;
-  font-size: 0.7rem;
-  flex-shrink: 0;
+    color: #a07c30;
+    font-size: 0.7rem;
+    flex-shrink: 0;
 }
 
 .teamCommentExpanded {
-  border-top: 1px solid #d0d7de;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.7);
+    border-top: 1px solid rgba(160, 124, 48, 0.15);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(160, 124, 48, 0.03);
 }
 
 .teamCommentEntry {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .teamCommentMeta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #57606a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: rgba(13, 31, 53, 0.55);
 }
 
 .teamCommentMeta strong {
-  color: #24292f;
+    color: #0d1f35;
 }
 
 .teamCommentText {
-  margin: 0;
-  font-size: 0.88rem;
-  white-space: pre-wrap;
+    margin: 0;
+    font-size: 0.88rem;
+    color: #0d1f35;
+    white-space: pre-wrap;
 }
 
 .teamCommentEmpty {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #57606a;
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(13, 31, 53, 0.45);
 }
 
-/* ── PPR Rankings Sidebar ────────────────────────────────────── */
+/* ── OPR sidebar ──────────────────────────────── */
 .oprSidebar {
-  width: 260px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: sticky;
-  top: 20px;
-  align-self: flex-start;
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
 }
 
 .oprMatchList {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .oprMatchRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  padding: 3px 4px;
-  border-radius: 6px;
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid rgba(160, 124, 48, 0.18);
+    color: #0d1f35;
 }
 
 .oprMatchRowDisabled {
-  opacity: 0.45;
+    opacity: 0.45;
 }
 
 .oprMatchLabel {
-  flex: 1;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+    flex: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #0d1f35;
 }
 
 .oprMatchScoreRed {
-  color: #cf222e;
-  min-width: 28px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+    color: #c0392b;
+    min-width: 28px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .oprMatchScoreBlue {
-  color: #0969da;
-  min-width: 28px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+    color: #2563eb;
+    min-width: 28px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .oprToggleBtn {
-  border: 1px solid #d0d7de;
-  border-radius: 5px;
-  padding: 1px 5px;
-  font-size: 0.78rem;
-  cursor: pointer;
-  background: transparent;
-  flex-shrink: 0;
-  line-height: 1.4;
+    border: 1px solid rgba(160, 124, 48, 0.3);
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-size: 0.78rem;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    background: transparent;
+    flex-shrink: 0;
+    line-height: 1.4;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .oprToggleBtnOn {
-  border-color: #4ac26b;
-  color: #1a7f37;
-  background: #dafbe1;
+    border-color: rgba(26, 127, 60, 0.6);
+    color: #1a7f3c;
+    background: rgba(26, 127, 60, 0.08);
 }
 
 .oprToggleBtnOff {
-  border-color: #ff8182;
-  color: #d1242f;
-  background: #ffebe9;
+    border-color: rgba(192, 57, 43, 0.55);
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.07);
 }
 
-@media (max-width: 768px) {
-  .pageLayout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    order: 1;
-    /* below main content on mobile */
-    width: 100%;
-    position: static;
-  }
-
-  .oprSidebar {
-    width: 100%;
-    position: static;
-  }
-}
-
+/* ── Page header ──────────────────────────────── */
 .title {
-  margin: 0;
-  font-size: 2rem;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0d1f35;
 }
 
 .subtitle {
-  margin: 0;
-  color: #57606a;
+    margin: 0;
+    color: rgba(13, 31, 53, 0.55);
 }
 
+/* ── Status banners ───────────────────────────── */
 .info,
 .warning,
 .error,
 .success {
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.95rem;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.93rem;
 }
 
 .info {
-  background: #ddf4ff;
-  border: 1px solid #54aeff;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    color: #1d4ed8;
 }
 
 .warning {
-  background: #fff8c5;
-  border: 1px solid #d4a72c;
+    background: rgba(192, 112, 0, 0.08);
+    border: 1px solid rgba(192, 112, 0, 0.4);
+    color: #92400e;
 }
 
 .error {
-  background: #ffebe9;
-  border: 1px solid #ff8182;
+    background: rgba(192, 57, 43, 0.08);
+    border: 1px solid rgba(192, 57, 43, 0.4);
+    color: #c0392b;
 }
 
 .success {
-  background: #dafbe1;
-  border: 1px solid #4ac26b;
+    background: rgba(26, 127, 60, 0.08);
+    border: 1px solid rgba(26, 127, 60, 0.4);
+    color: #1a7f3c;
 }
 
+/* ── Lookup form ──────────────────────────────── */
 .lookupForm {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border: 1px solid #d0d7de;
-  border-radius: 12px;
-  padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: rgba(13, 31, 53, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .field input,
 .field select {
-  border: 1px solid #d0d7de;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.95rem;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.93rem;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.field input:focus,
+.field select:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .primaryButton {
-  width: fit-content;
-  border: none;
-  background: #1f6feb;
-  color: #fff;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 0.95rem;
-  font-weight: 700;
+    width: fit-content;
+    border: none;
+    background: #a07c30;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 0.93rem;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.primaryButton:hover {
+    background: #8a6a28;
+}
+
+.primaryButton:active {
+    transform: scale(0.97);
 }
 
 .primaryButton:disabled {
-  opacity: 0.55;
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
 }
 
 .meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  color: #57606a;
-  font-size: 0.92rem;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: rgba(13, 31, 53, 0.55);
+    font-size: 0.9rem;
 }
 
+/* ── Timer cards ──────────────────────────────── */
 .timerList {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
 }
 
 .timerCard {
-  border: 1px solid #d0d7de;
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.07);
 }
 
 .timerCard h2,
 .timerCard p {
-  margin: 0;
+    margin: 0;
+    color: #0d1f35;
+}
+
+.timerCard h2 {
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 .timerCardGroup {
-  border-color: #0969da;
-  background: #f0f6ff;
+    border-color: rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.04);
 }
 
 .groupFieldList {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  background: rgba(9, 105, 218, 0.06);
-  border-radius: 8px;
-  padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(160, 124, 48, 0.06);
+    border-radius: 8px;
+    padding: 6px 10px;
 }
 
 .groupFieldItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.87rem;
-  color: #57606a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.87rem;
+    color: rgba(13, 31, 53, 0.6);
 }
 
-/* ── f/s rate calculator inputs ──────────────────────────────── */
+/* ── Rate calculator ──────────────────────────── */
 .fsRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 10px;
-  padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: rgba(160, 124, 48, 0.06);
+    border-radius: 10px;
+    padding: 8px 10px;
 }
 
 .fsPart {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #57606a;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: rgba(13, 31, 53, 0.65);
 }
 
 .fsPart input {
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 0.95rem;
-  width: 70px;
-  background: #fff;
-  -moz-appearance: textfield;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 0.93rem;
+    font-family: 'Montserrat', sans-serif;
+    width: 70px;
+    background: #ffffff;
+    color: #0d1f35;
+    outline: none;
+    -moz-appearance: textfield;
+    transition: border-color 0.15s ease;
+}
+
+.fsPart input:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .fsPart input::-webkit-outer-spin-button,
 .fsPart input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .fsDivider {
-  font-size: 1.1rem;
-  color: #57606a;
-  font-weight: 400;
-  user-select: none;
+    font-size: 1.1rem;
+    color: rgba(13, 31, 53, 0.4);
+    font-weight: 400;
+    user-select: none;
 }
 
 .fsComputed {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0969da;
-  white-space: nowrap;
-  margin-left: 2px;
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: #a07c30;
+    white-space: nowrap;
+    margin-left: 2px;
 }
 
 .myRate {
-  margin: 0;
-  font-size: 0.88rem;
-  color: #1a7f37;
-  font-weight: 600;
+    margin: 0;
+    font-size: 0.88rem;
+    color: #1a7f3c;
+    font-weight: 600;
 }
 
-/* ── Admin unlock row ─────────────────────────────────────────── */
+/* ── Admin unlock ─────────────────────────────── */
 .adminUnlock {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .adminPasswordInput {
-  border: 1px solid #d0d7de;
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 0.9rem;
-  min-width: 180px;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    min-width: 180px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.adminPasswordInput:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .secondaryButton {
-  border: 1px solid #d0d7de;
-  background: #f6f8fa;
-  color: #24292f;
-  border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    background: #ffffff;
+    color: rgba(13, 31, 53, 0.75);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.secondaryButton:hover {
+    background: rgba(160, 124, 48, 0.07);
+    border-color: rgba(160, 124, 48, 0.6);
 }
 
 .secondaryButton:disabled {
-  opacity: 0.55;
-  cursor: default;
+    opacity: 0.5;
+    cursor: default;
 }
 
 .adminUnlockError {
-  color: #d1242f;
-  font-size: 0.9rem;
+    color: #c0392b;
+    font-size: 0.9rem;
 }
 
 .adminUnlockedBadge {
-  display: inline-block;
-  background: #dafbe1;
-  border: 1px solid #4ac26b;
-  border-radius: 10px;
-  padding: 6px 12px;
-  font-size: 0.87rem;
-  color: #1a7f37;
-  font-weight: 600;
+    display: inline-block;
+    background: rgba(26, 127, 60, 0.08);
+    border: 1px solid rgba(26, 127, 60, 0.4);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 0.87rem;
+    color: #1a7f3c;
+    font-weight: 600;
 }
 
-/* ── Scouting entries section ────────────────────────────────── */
+/* ── Scouting entries ─────────────────────────── */
 .entriesSection {
-  border: 1px solid #d0d7de;
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .entriesHeader {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .entriesTitle {
-  margin: 0;
-  font-size: 1.15rem;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .confidenceLabel {
-  font-size: 0.85rem;
-  color: #57606a;
+    font-size: 0.85rem;
+    color: rgba(13, 31, 53, 0.55);
 }
 
 .entryCard {
-  border: 1px solid #d0d7de;
-  border-radius: 10px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    background: #faf8f4;
+    border: 1.5px solid rgba(160, 124, 48, 0.18);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .entryCardHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
 }
 
 .entryMeta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .entryTeamTag {
-  background: #ddf4ff;
-  border: 1px solid #54aeff;
-  border-radius: 6px;
-  padding: 1px 6px;
-  font-size: 0.82rem;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 0.82rem;
+    color: #1d4ed8;
+    font-weight: 600;
 }
 
 .entryTimestamp {
-  margin-left: auto;
-  color: #57606a;
-  font-size: 0.82rem;
+    margin-left: auto;
+    color: rgba(13, 31, 53, 0.45);
+    font-size: 0.82rem;
 }
 
 .noshowBadge {
-  background: #fff3cd;
-  border: 1px solid #d4a72c;
-  border-radius: 6px;
-  padding: 1px 6px;
-  font-size: 0.82rem;
-  color: #856404;
-  font-weight: 600;
+    background: rgba(192, 112, 0, 0.08);
+    border: 1px solid rgba(192, 112, 0, 0.4);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 0.82rem;
+    color: #92400e;
+    font-weight: 600;
 }
 
 .excludedBadge {
-  background: #ffebe9;
-  border: 1px solid #ff8182;
-  border-radius: 6px;
-  padding: 1px 6px;
-  font-size: 0.82rem;
-  color: #7d1f1f;
-  font-weight: 600;
-  cursor: help;
+    background: rgba(192, 57, 43, 0.08);
+    border: 1px solid rgba(192, 57, 43, 0.4);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 0.82rem;
+    color: #c0392b;
+    font-weight: 600;
+    cursor: help;
 }
 
 .editNoshowRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .editNoshowLabel {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.9rem;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: #0d1f35;
 }
 
 .entryFieldGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 6px 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 6px 12px;
 }
 
 .entryFieldRow {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .entryFieldLabel {
-  font-size: 0.78rem;
-  color: #57606a;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+    font-size: 0.78rem;
+    color: #a07c30;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .entryFieldValue {
-  font-size: 0.92rem;
+    font-size: 0.92rem;
+    color: #0d1f35;
 }
 
 .entryInput {
-  border: 1px solid #d0d7de;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.9rem;
-  width: 100%;
-  box-sizing: border-box;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    font-family: 'Montserrat', sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.entryInput:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .nestedFieldGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 6px;
-  padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(160, 124, 48, 0.04);
+    border-radius: 6px;
+    padding: 6px 8px;
 }
 
 .multiSelectEdit {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .multiSelectOption {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.88rem;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    color: #0d1f35;
 }
 
 .entryActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .editButton {
-  border: 1px solid #0969da;
-  background: #ddf4ff;
-  color: #0969da;
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 0.87rem;
-  font-weight: 600;
-  cursor: pointer;
+    border: 1.5px solid rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.08);
+    color: #a07c30;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.87rem;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.editButton:hover {
+    background: rgba(160, 124, 48, 0.16);
+    border-color: rgba(160, 124, 48, 0.8);
 }
 
 .saveEntryButton {
-  border: none;
-  background: #2da44e;
-  color: #fff;
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 0.87rem;
-  font-weight: 600;
-  cursor: pointer;
+    border: none;
+    background: #1a7f3c;
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.87rem;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.saveEntryButton:hover {
+    background: #166534;
 }
 
 .saveEntryButton:disabled {
-  opacity: 0.55;
-  cursor: default;
+    opacity: 0.5;
+    cursor: default;
 }
 
 .cancelButton {
-  border: 1px solid #d0d7de;
-  background: #f6f8fa;
-  color: #24292f;
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 0.87rem;
-  font-weight: 600;
-  cursor: pointer;
+    border: 1px solid rgba(160, 124, 48, 0.25);
+    background: #ffffff;
+    color: rgba(13, 31, 53, 0.65);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.87rem;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.cancelButton:hover {
+    background: rgba(160, 124, 48, 0.06);
 }
 
 .cancelButton:disabled {
-  opacity: 0.55;
-  cursor: default;
+    opacity: 0.5;
+    cursor: default;
 }
 
-/* ── Scout Lead Comments section ─────────────────────────────── */
+/* ── Comments section ─────────────────────────── */
 .commentsSection {
-  border: 1px solid #d0d7de;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .commentsSectionTitle {
-  margin: 0;
-  font-size: 1.1rem;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .commentsList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .commentCard {
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    background: #faf8f4;
+    border: 1px solid rgba(160, 124, 48, 0.18);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .commentAuthor {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #57606a;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: rgba(13, 31, 53, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .commentText {
-  margin: 0;
-  font-size: 0.93rem;
-  white-space: pre-wrap;
+    margin: 0;
+    font-size: 0.93rem;
+    color: #0d1f35;
+    white-space: pre-wrap;
 }
 
 .commentEntry {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .commentEntryLabel {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #0969da;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #a07c30;
 }
 
 .commentTextarea {
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.93rem;
-  font-family: inherit;
-  resize: vertical;
-  width: 100%;
-  box-sizing: border-box;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.93rem;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.commentTextarea:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .commentTextarea:disabled {
-  background: #f6f8fa;
-  color: #57606a;
-  cursor: not-allowed;
+    background: #faf8f4;
+    color: rgba(13, 31, 53, 0.45);
+    cursor: not-allowed;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+    .pageLayout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        order: 1;
+        width: 100%;
+        position: static;
+    }
+
+    .oprSidebar {
+        width: 100%;
+        position: static;
+    }
 }

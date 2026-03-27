@@ -4,7 +4,7 @@
   padding: 2rem;
   width: 100%;
   min-height: 100vh;
-  background-color: #0b233b;
+  background-color: #0b1929;
   color: #ffffff;
   font-family: "Montserrat", sans-serif;
 }
@@ -166,9 +166,9 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.85rem;
-  background-color: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.5);
-  color: #a5b4fc;
+  background-color: rgba(189, 151, 72, 0.15);
+  border: 1px solid rgba(189, 151, 72, 0.4);
+  color: #bd9748;
   border-radius: 5px;
   cursor: pointer;
   font-size: 0.85rem;
@@ -176,7 +176,7 @@
 }
 
 .uploadButton:hover {
-  background-color: rgba(99, 102, 241, 0.35);
+  background-color: rgba(189, 151, 72, 0.28);
 }
 
 .formatButton {
@@ -237,7 +237,7 @@
   padding: 0.75rem 2rem;
   background-color: #bd9748;
   border: none;
-  color: #0b233b;
+  color: #0b1929;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.95rem;
@@ -274,10 +274,11 @@
 
 /* Schema Diff */
 .schemaDiff {
-  background-color: #152a42;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(189, 151, 72, 0.18);
   border-radius: 10px;
   padding: 1.25rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .schemaDiff h3 {
@@ -379,10 +380,11 @@
 
 /* Validation Panel */
 .validationPanel {
-  background-color: #152a42;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(189, 151, 72, 0.18);
   border-radius: 10px;
   padding: 1.25rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .validationPanel h3 {

@@ -1,14 +1,34 @@
-.HBox, .HBox td {
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-
 .HBox {
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 10px;
+    border-collapse: separate;
+    border-spacing: 0;
     width: 350px;
     align-self: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+    background: #ffffff;
+}
+
+.HBox td {
+    border-bottom: 1px solid rgba(160, 124, 48, 0.12);
+    color: #0d1f35;
+    font-size: 13px;
+    padding: 5px 8px;
+}
+
+.HBox tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .HBox tbody tr :first-child {
     width: 50px;
     text-align: center;
+    background: rgba(160, 124, 48, 0.06);
+    font-weight: 700;
+    font-size: 11px;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-right: 1px solid rgba(160, 124, 48, 0.12);
 }

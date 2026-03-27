@@ -1,19 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+/* Team View — light mode design system */
 
 .container {
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 1rem;
+    background: #f4f1eb;
+    min-height: calc(100vh - 45px);
 }
 
 .MainDiv {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    margin: 5px 10px; 
-    text-align: center; 
-    font-family: "Montserrat", sans-serif;
+    margin: 12px 10px;
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+    background: #f4f1eb;
 }
 
 .allianceBoard {
@@ -23,29 +26,36 @@
     flex-wrap: wrap;
 }
 
+/* ── Match navigation ─────────────────────────── */
 .matchNav {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-evenly;
     padding: 10px;
-    gap: 5px;
+    gap: 6px;
 }
 
 .matchNav button {
-    border: 1px solid black;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    background: #ffffff;
+    color: #0d1f35;
     padding: 3px 15px;
     padding-bottom: 0px;
-    border-radius: 5px;
+    border-radius: 8px;
     font-size: 24px;
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .matchNav button:hover {
-    background: black !important;
-    color: yellow !important;
+    background: #0d1f35 !important;
+    color: #e8d5a3 !important;
+    border-color: #0d1f35 !important;
 }
 
+/* ── Two-column layout ────────────────────────── */
 .rightColumn {
     display: flex;
     width: 66%;
@@ -65,15 +75,116 @@
     justify-content: right;
     margin-bottom: 20px;
     padding-right: 20px;
-    width: px;
 }
 
+.twoByTwoContainer {
+    margin-left: 5px;
+}
+
+.fourByTwoContainer {
+    margin-left: 4px;
+}
+
+/* ── EPA stat boxes ───────────────────────────── */
 .EPAS {
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
 }
 
+.epaBox, .Last3EpaBox {
+    padding: 10px;
+    margin-top: 5px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 10px 10px 0 0;
+    font-size: 24px;
+    font-weight: 800;
+    width: 160px;
+    color: #0d1f35;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+}
+
+.epaBox::before {
+    content: var(--epa-box-label, "Avg EPA");
+    display: block;
+    position: relative;
+    top: 0;
+    width: 80px;
+    left: 50%;
+    transform: translate(-50%, calc(-50% - 10px));
+    background: #a07c30;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 4px 6px;
+    margin-bottom: -20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.Last3EpaBox::before {
+    content: var(--last3-epa-label, "Last 3 EPA");
+    display: block;
+    position: relative;
+    top: 0;
+    width: 80px;
+    left: 50%;
+    transform: translate(-50%, calc(-50% - 10px));
+    background: #a07c30;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 4px 6px;
+    margin-bottom: -20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.EPA, .Last3EPA {
+    border-radius: 10px;
+}
+
+.EPA h1, .EPA h2, .Last3EPA h1, .Last3EPA h2 {
+    text-align: center;
+    color: #0d1f35;
+}
+
+.EPA h1, .Last3EPA h1 {
+    font-size: 28px;
+}
+
+/* ── EPA breakdown row ────────────────────────── */
+.epaBreakdown {
+    display: flex;
+    flex-direction: row;
+    font-size: 1;
+    width: 160px;
+}
+
+.epaBreakdown div {
+    text-align: center;
+    flex-grow: 1;
+    background: #ffffff;
+    border: 1px solid rgba(160, 124, 48, 0.2);
+    border-top: none;
+    padding: 5px;
+    font-size: 13px;
+    color: rgba(13, 31, 53, 0.75);
+}
+
+.epaBreakdown div:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.epaBreakdown div:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+/* ── Match list ───────────────────────────────── */
 .matchesRow {
     display: flex;
     justify-content: center;
@@ -87,15 +198,20 @@
     flex-direction: column;
     border-radius: 10px;
     overflow: hidden;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
 .matchesHeader {
-    padding: 5px 10px;
-    border: 1px solid black;
-    border-radius: 10px 10px 0 0;
-    font-size: 18px;
-    font-weight: bold;
+    padding: 8px 10px;
+    background: rgba(160, 124, 48, 0.08);
+    font-size: 14px;
+    font-weight: 700;
     text-align: center;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid rgba(160, 124, 48, 0.15);
 }
 
 .matchesList {
@@ -104,48 +220,7 @@
     justify-content: center;
     gap: 5px;
     padding: 10px;
-    border: 1px solid black;
-    border-top: none;
-    border-radius: 0;
-    background-color: #f8f8f8;
-}
-
-.tbaRankRow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border: 1px solid black;
-    border-top: none;
-    border-radius: 0 0 10px 10px;
-    background-color: #eef4ff;
-}
-
-.tbaRankBadge {
-    font-size: 13px;
-    font-weight: bold;
-    color: #1a4fa0;
-}
-
-.tbaRankError {
-    font-size: 12px;
-    color: #c0392b;
-}
-
-.tbaRankButton {
-    font-size: 12px;
-    padding: 2px 10px;
-    border-radius: 6px;
-    border: 1px solid #1a4fa0;
-    background: #1a4fa0;
-    color: #fff;
-    cursor: pointer;
-}
-
-.tbaRankButton:disabled {
-    opacity: 0.6;
-    cursor: default;
+    background: #ffffff;
 }
 
 .matchLink {
@@ -164,18 +239,135 @@
     display: inline-block;
     min-width: 40px;
     padding: 5px 10px;
-    border: 1px solid black;
-    border-radius: 5px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    border-radius: 6px;
     text-align: center;
-    transition: transform 0.2s, background-color 0.2s;
+    color: #0d1f35;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .matchLink:hover span {
-    background: black !important;
-    color: yellow !important;
-    transform: scale(1.1);
+    background: #0d1f35 !important;
+    color: #e8d5a3 !important;
+    border-color: #0d1f35 !important;
+    transform: scale(1.05);
 }
 
+/* ── TBA rank row ─────────────────────────────── */
+.tbaRankRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(160, 124, 48, 0.06);
+    border-top: 1px solid rgba(160, 124, 48, 0.15);
+}
+
+.tbaRankBadge {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a07c30;
+}
+
+.tbaRankError {
+    font-size: 12px;
+    color: #c0392b;
+}
+
+.tbaRankButton {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1.5px solid rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.1);
+    color: #a07c30;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tbaRankButton:hover {
+    background: rgba(160, 124, 48, 0.18);
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.tbaRankButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* ── Team input form ──────────────────────────── */
+.teamInputForm {
+    padding: 24px 20px;
+    margin: 20px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+}
+
+.teamInputForm label {
+    display: inline-block;
+    font-size: 32px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    color: #0d1f35;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.teamInputForm input {
+    padding: 8px 12px;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0d1f35;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    outline: none;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.06);
+    transition: border-color 0.15s ease;
+}
+
+.teamInputForm input:focus {
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.goButton {
+    padding: 10px 24px;
+    min-width: 30%;
+    background: #a07c30;
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 800;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.15);
+    margin: 12px;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.goButton:hover {
+    background: #8a6a28;
+}
+
+.goButton:active {
+    transform: scale(0.97);
+}
+
+/* ── Layout boxes ─────────────────────────────── */
 .valueBoxes {
     display: flex;
     flex-direction: column;
@@ -192,18 +384,6 @@
     justify-content: center;
     gap: 5px;
     width: 100%;
-}
-
-.leftColumn .VBox {
-    width: 200px !important;
-}
-
-.leftColumn .VBox .boxes {
-    min-width: 200px !important;
-}
-
-#box {
-    min-width: 200px;
 }
 
 .rightColumnBoxes {
@@ -229,89 +409,7 @@
     align-content: center;
 }
 
-.epaBreakdown {
-    display: flex;
-    flex-direction: row;
-    font-size: 1;
-    width: 160px;
-}
-
-
-.epaBreakdown div {
-    text-align: center;
-    flex-grow: 1;
-    border: 1px solid black;
-    padding: 5px;
-    font-size: medium;
-
-}
-
-.epaBreakdown div:first-child {
-    border-bottom-left-radius: 10px;
-}
-
-.epaBreakdown div:last-child {
-    border-bottom-right-radius: 10px;
-}
-
-.epaBox, .Last3EpaBox {
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid black;
-    border-radius: 10px 10px 0 0;
-    font-size: 24px;
-    font-weight: 800;
-    width: 160px;
-}
-
-.epaBox::before {
-    content: var(--epa-box-label, "Avg EPA");
-    display: block;
-    position: relative;
-    top: 0;
-    width:80px;
-    left: 50%;
-    transform: translate(-50%, calc(-50% - 10px));
-    border: 1px solid black;
-    background: white;
-    padding: auto;
-    border-radius: 5px;
-    padding: 5px;
-    margin-bottom: -20px;
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.Last3EpaBox::before {
-    content: var(--last3-epa-label, "Last 3 Epa");
-    display: block;
-    position: relative;
-    top: 0;
-    width: 80px;
-    left: 50%;
-    transform: translate(-50%, calc(-50% - 10px));
-    border: 1px solid black;
-    background: white;
-    padding: auto;
-    border-radius: 5px;
-    padding: 5px;
-    margin-bottom: -20px;
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.EPA, .Last3EPA {
-    border-radius: 10px;
-}
-
-.EPA h1, .EPA h2, .Last3EPA h1, .Last3EPA h2 {
-    text-align: center;
-}
-
-.EPA h1, .Last3EPA h1 {
-    font-size: 28px;
-}
-
+/* ── Score breakdown / chart sections ────────── */
 .scoreBreakdownContainer {
     display: flex;
     flex-direction: column;
@@ -323,7 +421,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     margin-bottom: 10px;
 }
 
@@ -334,7 +432,7 @@
     align-items: center;
     align-self: center;
     width: 350px;
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .graphContainer :nth-child(2) {
@@ -343,7 +441,7 @@
 
 .barGraphContainer {
     margin-bottom: 20px;
-    border-bottom: 4px solid lightgray;
+    border-bottom: 2px solid rgba(160, 124, 48, 0.15);
     padding: 10px;
     margin-top: -10px;
 }
@@ -353,7 +451,7 @@
     flex-direction: row;
 }
 
-.bottomRow { 
+.bottomRow {
     display: flex;
     flex-direction: row;
 }
@@ -363,29 +461,21 @@
     position: relative;
     top: 0;
     width: fit-content;
-    border: 1px solid black;
-    background: white;
-    border-radius: 5px;
-    padding: 2px;
+    background: #a07c30;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 3px 8px;
     margin: auto;
-    font-weight: 800;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-top: 10px;
-    background-color: #eef5ff;
-    
 }
 
 .header {
     justify-content: right;
     margin-top: 15px;
-}
-
-.chartContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 350px;
-    font-family: "Montserrat", sans-serif; 
 }
 
 .auto {
@@ -394,8 +484,8 @@
     align-items: center;
     padding: 10px;
     width: 100%;
-    border-left: 4px solid lightgray;
-    border-bottom: 4px solid lightgray;
+    border-left: 3px solid rgba(160, 124, 48, 0.2);
+    border-bottom: 3px solid rgba(160, 124, 48, 0.2);
 }
 
 .tele {
@@ -404,15 +494,15 @@
     align-items: center;
     padding: 10px;
     width: 100%;
-    border-bottom: 4px solid lightgray;
-    border-left: 4px solid lightgray;
+    border-bottom: 3px solid rgba(160, 124, 48, 0.2);
+    border-left: 3px solid rgba(160, 124, 48, 0.2);
 }
 
 .endgame {
     display: flex;
     flex-direction: column;
     width: 100%;
-    border-left: 4px solid lightgray;
+    border-left: 3px solid rgba(160, 124, 48, 0.2);
     align-items: center;
 }
 
@@ -420,7 +510,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    border-left: 4px solid lightgray;
+    border-left: 3px solid rgba(160, 124, 48, 0.2);
     align-items: center;
 }
 
@@ -462,9 +552,9 @@
 }
 
 .differentTable, .differentTable td {
-    border: black 1px solid;
+    border: 1px solid rgba(160, 124, 48, 0.2);
     border-collapse: collapse;
-    padding: 4px;
+    padding: 4px 8px;
     width: fit-content;
     height: fit-content;
     text-align: center;
@@ -473,20 +563,22 @@
     justify-content: left;
     margin-bottom: 15px;
     margin-top: 10px;
-    
+    color: #0d1f35;
+    font-size: 13px;
 }
 
 .coralTable, .coralTable td {
-    border: black 1px solid;
+    border: 1px solid rgba(160, 124, 48, 0.2);
     border-collapse: collapse;
-    padding: 4px;
+    padding: 4px 8px;
     width: fit-content;
     height: fit-content;
     text-align: center;
     flex-direction: row;
     align-items: left;
     justify-content: left;
-    
+    color: #0d1f35;
+    font-size: 13px;
 }
 
 .alignElements {
@@ -495,7 +587,6 @@
     justify-content: space-between;
     width: 360px;
     align-self: center;
-
 }
 
 .coralAndHP {
@@ -506,137 +597,29 @@
     flex-direction: column;
 }
 
-.twoByTwoContainer {
-    margin-left: 5px;
-}
-
-.fourByTwoContainer {
-    margin-left: 4px;
-}
-
 .autoRightAlignment, .teleRightAlignment {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-.teamInputForm {
-    padding: 25px;
-    margin: 20px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #eee;
-}
-
-.teamInputForm label {
-    display: inline-block;
-    font-size: 40px;
-    font-family: "Montserrat", sans-serif;
-    width: 100%;
-    text-align: center;
-    margin-bottom: -5px;
-}
-
-.teamInputForm input {
-    padding: 5px;
-    border: 1px solid #0b233b;
-    background: white;
-    box-shadow: 0px 0px 3px rgba(189, 151, 72, 0.4);
-}
-
-/* Updated button styling with blue and gold theme */
-.goButton {
-    padding: 10px;
-    min-width: 30%;
-    background: #0b233b;
-    color: #bd9748;
-    font-size: 40px;
-    border: 2px solid #bd9748;
-    border-radius: 20px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    margin: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.goButton:hover {
-    background: #bd9748;
-    color: #0b233b;
-    border-color: #0b233b;
-}
-
-/* Old button style - keeping for reference
-.teamInputForm button {
-    padding: 10px;
-    min-width: 30%;
-    background: linear-gradient(70deg, rgb(255, 242, 142), rgb(129, 216, 136));
-    font-size: 40px;
-    border: none;
-    border-radius: 20px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    margin: 10px;
-}
-*/
-
-@media screen and (max-width: 1150px) {
-    .MainDiv {
-        flex: wrap;
-        flex-direction: column;
-        margin: 0px;
-    }
-
-    .topRow, .bottomRow {
-        flex: wrap;
-        flex-direction: column;
-    }
-    .scoreBreakdownContainer {
-        margin-bottom: 0px;
-    }
-    .leftColumn, .rightColumn {
-        width: 100%;
-        padding: 0;
-    }
-    .leftColumn {
-        margin-bottom: 10px;
-        padding-bottom: 10px;
-        border-bottom: 4px solid lightgray;
-    }
-    .auto, .tele {
-        border: 0px solid white;
-        padding: 0;
-        margin-bottom: 10px;
-        padding-bottom: 20px;
-        border-bottom: 4px solid lightgray;
-    }
-
-    .endgame {
-        margin-bottom: 10px;
-        padding-bottom: 20px;
-        border-bottom: 4px solid lightgray;
-    }
-
-    .graphContainer {
-        width: 325px;
-        margin: 10px auto;
-    }
-}
-
-/* ── Scout Lead Comments section ─────────────────────────────── */
+/* ── Scout lead comments ──────────────────────── */
 .slCommentsSection {
     margin: 24px 0 8px;
     padding: 16px 20px;
-    border: 1px solid #d0d7de;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 12px;
-    background: #fffbe6;
-    border-color: #d4a72c;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
 .slCommentsSectionTitle {
     margin: 0 0 14px;
-    font-size: 1.15rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     font-family: 'Montserrat', sans-serif;
 }
 
@@ -657,13 +640,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #856404;
+    color: #a07c30;
     font-family: 'Montserrat', sans-serif;
 }
 
 .slCommentEntry {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid #e6cc7a;
+    background: #faf8f4;
+    border: 1px solid rgba(160, 124, 48, 0.2);
     border-radius: 8px;
     padding: 8px 12px;
     display: flex;
@@ -674,13 +657,60 @@
 .slCommentAuthor {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #57606a;
+    color: rgba(13, 31, 53, 0.55);
     font-family: 'Montserrat', sans-serif;
 }
 
 .slCommentText {
     margin: 0;
     font-size: 0.93rem;
+    color: #0d1f35;
     white-space: pre-wrap;
     font-family: 'Montserrat', sans-serif;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media screen and (max-width: 1150px) {
+    .MainDiv {
+        flex-direction: column;
+        margin: 0px;
+    }
+
+    .topRow, .bottomRow {
+        flex-direction: column;
+    }
+
+    .scoreBreakdownContainer {
+        margin-bottom: 0px;
+    }
+
+    .leftColumn, .rightColumn {
+        width: 100%;
+        padding: 0;
+    }
+
+    .leftColumn {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(160, 124, 48, 0.15);
+    }
+
+    .auto, .tele {
+        border: none;
+        padding: 0;
+        margin-bottom: 10px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid rgba(160, 124, 48, 0.15);
+    }
+
+    .endgame {
+        margin-bottom: 10px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid rgba(160, 124, 48, 0.15);
+    }
+
+    .graphContainer {
+        width: 325px;
+        margin: 10px auto;
+    }
 }

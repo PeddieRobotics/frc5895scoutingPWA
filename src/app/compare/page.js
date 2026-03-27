@@ -24,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className={styles.customTooltip}>
         <p className={styles.label}>{`${label}`}</p>
         {payload.map((entry, index) => (
-          <p key={`item-${index}`} style={{ color: entry.color }}>
+          <p key={`item-${index}`} style={{ color: '#e8d5a3' }}>
             {`${entry.name}: ${parseFloat(entry.value).toFixed(1)}`}
           </p>
         ))}
@@ -78,12 +78,12 @@ function Compare() {
     );
   }
 
-  // Colors for each team (same as match-view)
+  // Colors for each team — design system palette
   const COLORS = [
-    "#A4E5DF", // green
-    "#B7D1F7", // blue
-    "#DDB7F7", // purple
-    "#F6C1D8", // pink
+    "#a07c30", // gold (primary)
+    "#2563eb", // blue
+    "#1a7f3c", // green
+    "#c0392b", // red
   ];
 
   useEffect(() => {
@@ -358,9 +358,9 @@ function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
       <h2>Overall Metrics</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+          <XAxis dataKey="name" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+          <YAxis tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {teams.map((team, index) => (
@@ -391,9 +391,9 @@ function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
       <h2>Scoring Comparison</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+          <XAxis dataKey="name" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+          <YAxis tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {teams.map((team, index) => (
@@ -441,9 +441,9 @@ function LevelComparison({ teamsData, teams, colors, compareConfig }) {
       <h2>Coral Level Comparison</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+          <XAxis dataKey="name" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+          <YAxis tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {teams.map((team, index) => (
@@ -479,9 +479,9 @@ function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
       <h2>Endgame Comparison</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+          <XAxis dataKey="name" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+          <YAxis tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {teams.map((team, index) => (
@@ -604,26 +604,30 @@ function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
 
           return (
             <div key={team} className={styles.defenseChart}>
-              <h3 style={{ color: colors[index] }}>Team {team}</h3>
+              <h3 style={{ color: '#0d1f35' }}>Team {team}</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart
                   data={chartData}
                   margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
                   <XAxis
                     dataKey="name"
                     angle={-45}
                     textAnchor="end"
                     height={70}
-                    tick={{ dy: 10, fontSize: 12 }}
+                    tick={{ dy: 10, fontSize: 11, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat' }}
                   />
                   <YAxis
                     domain={[0, 6]}
                     ticks={[0, 1, 2, 3, 4, 5, 6]}
                     interval={0}
+                    tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
                   />
-                  <Tooltip formatter={(value) => parseFloat(value).toFixed(1)} />
+                  <Tooltip
+                    formatter={(value) => parseFloat(value).toFixed(1)}
+                    contentStyle={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', borderRadius: '8px', color: '#e8d5a3', fontFamily: 'Montserrat', fontSize: '13px' }}
+                  />
                   <Bar dataKey="value" fill={colors[index]} />
                 </BarChart>
               </ResponsiveContainer>

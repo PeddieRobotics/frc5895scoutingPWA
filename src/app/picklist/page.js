@@ -107,18 +107,20 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
         <ScatterChart
           margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
         >
-          <CartesianGrid />
+          <CartesianGrid stroke="rgba(160,124,48,0.15)" strokeDasharray="3 3" />
           <XAxis
             type="number"
             dataKey="x"
             name={xLabel}
-            label={{ value: xLabel, position: 'bottom', offset: 0 }}
+            label={{ value: xLabel, position: 'bottom', offset: 0, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 12 }}
+            tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
           />
           <YAxis
             type="number"
             dataKey="y"
             name={yLabel}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft' }}
+            label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 12 }}
+            tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
           />
           <ZAxis
             type="number"
@@ -131,7 +133,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
           <Scatter
             name="Teams"
             data={teamData}
-            fill="#8884d8"
+            fill="rgba(160,124,48,0.5)"
             onClick={handleTeamClick}
           />
           {/* Render highlighted teams if any */}
@@ -141,7 +143,7 @@ const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticate
               data={teamData.filter(team =>
                 highlightedTeams.some(t => team.team.toString() === t) // Exact match, not includes
               )}
-              fill="#FF5733"
+              fill="#c0392b"
               onClick={handleTeamClick}
             />
           )}

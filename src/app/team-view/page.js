@@ -514,12 +514,12 @@ function TeamView() {
     const teleMetricGroupData = hasMetricGroups ? prepareMetricGroupData(safeData.rows, 'tele') : [];
 
     const Colors = [
-        //light to dark
-        ["#CCFBF7", "#76E3D3", "#18a9a2", "#117772"], //green
-        ["#D7F2FF", "#7dd4ff", "#38b6f4", "#0A6D9F"], //blue
-        ["#D7D8FF", "#a0a3fb", "#8488FF", "#2022AA"], //blue-purple
-        ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C"], //pink-purple
-        ["#FFDDF3", "#EDA2DB", "#DD64C0", "#9C6392"], //pink
+        // design system palette — index[2] is the primary shade
+        ["#d4edda", "#6cbf84", "#1a7f3c", "#145c2c"], //green
+        ["#dbeafe", "#7eb3f5", "#2563eb", "#1e40af"], //blue
+        ["#ede9fe", "#a78bfa", "#7c3aed", "#5b21b6"], //purple
+        ["#fce7f3", "#f9a8d4", "#c0392b", "#991b1b"], //red/pink
+        ["#fef3c7", "#d4a97a", "#a07c30", "#7c5c22"], //gold
     ];
 
     const epaColors = {
@@ -601,10 +601,9 @@ function TeamView() {
         })
         : null;
 
-    // Custom color array for endgame pie chart with 5 distinct colors
-    const endgameColors = ["#F3D8FB", "#DBA2ED", "#C37DDB", "#8E639C", "#6A4372"];
-    // Custom color array for auto climb pie chart (3 values: None, L1, Failed)
-    const autoPieColors = ["#D7F2FF", "#38b6f4", "#0A6D9F"];
+    // Design system chart palettes
+    const endgameColors = ["#a07c30", "#2563eb", "#1a7f3c", "#c0392b", "#7c3aed"];
+    const autoPieColors = ["#a07c30", "#2563eb", "#1a7f3c"];
 
     // Build overall stat VBoxes from config
     const renderOverallStats = () => {
@@ -1237,20 +1236,24 @@ function TeamView() {
                                             data={buildDefenseChartData()}
                                             margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
                                         >
-                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
                                             <XAxis
                                                 dataKey="name"
                                                 angle={-90}
                                                 textAnchor="end"
                                                 height={70}
-                                                tick={{ dy: 10 }}
+                                                tick={{ dy: 10, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
                                             />
                                             <YAxis
                                                 domain={[0, 6]}
                                                 ticks={[0, 1, 2, 3, 4, 5, 6]}
                                                 interval={0}
+                                                tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
                                             />
-                                            <Tooltip formatter={(value) => value.toFixed(1)} />
+                                            <Tooltip
+                                                formatter={(value) => value.toFixed(1)}
+                                                contentStyle={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', borderRadius: '8px', color: '#e8d5a3', fontFamily: 'Montserrat', fontSize: '13px' }}
+                                            />
                                             <Bar dataKey="value" fill={Colors[4][2]} />
                                         </BarChart>
                                     </div>
@@ -1265,22 +1268,26 @@ function TeamView() {
                                                 data={safeData.scouterConfidenceOverTime}
                                                 margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
                                             >
-                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
                                                 <XAxis
                                                     dataKey="match"
                                                     angle={-90}
                                                     textAnchor="end"
                                                     height={70}
-                                                    tick={{ dy: 10 }}
+                                                    tick={{ dy: 10, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
                                                     label={{ value: "Match", position: "insideBottom", offset: -5 }}
                                                 />
                                                 <YAxis
                                                     domain={[0, 5]}
                                                     ticks={[0, 1, 2, 3, 4, 5]}
                                                     interval={0}
+                                                    tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
                                                 />
-                                                <Tooltip formatter={(value) => value.toFixed(1)} />
-                                                <Bar dataKey="confidence" fill={Colors[4][1]} />
+                                                <Tooltip
+                                                    formatter={(value) => value.toFixed(1)}
+                                                    contentStyle={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', borderRadius: '8px', color: '#e8d5a3', fontFamily: 'Montserrat', fontSize: '13px' }}
+                                                />
+                                                <Bar dataKey="confidence" fill={Colors[4][2]} />
                                             </BarChart>
                                         </div>
                                     </div>

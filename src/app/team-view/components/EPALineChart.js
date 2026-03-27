@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 export default function EPALineChart({
   label,
   data,
-  color = "#116677",
+  color = "#a07c30",
   width = 350,
   height = 175,
 }) {
@@ -22,16 +22,19 @@ export default function EPALineChart({
     if (active && payload && payload.length) {
       const matchNumber = payload[0]?.payload?.match || label;
       return (
-        <div style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid #ccc',
+        <div style={{
+          background: '#0d1f35',
+          border: '1px solid rgba(189,151,72,0.6)',
           padding: '10px',
-          borderRadius: '5px',
-          minWidth: '150px'
+          borderRadius: '8px',
+          minWidth: '120px',
+          fontFamily: 'Montserrat',
+          fontSize: '13px',
+          color: '#e8d5a3',
         }}>
-          <p style={{ margin: '0', fontWeight: 'bold' }}>{`Match: ${matchNumber}`}</p>
+          <p style={{ margin: '0', fontWeight: '700' }}>{`Match: ${matchNumber}`}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ margin: '0', color: entry.color }}>
+            <p key={index} style={{ margin: '0', color: '#e8d5a3' }}>
               {`${entry.name}: ${Math.round(entry.value * 10) / 10}`}
             </p>
           ))}
@@ -43,9 +46,9 @@ export default function EPALineChart({
 
   return (
     <LineChart width={width} height={height} data={data}>
-      <XAxis type="number" dataKey="match"/>
-      <YAxis dataKey={label}/>
-      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis type="number" dataKey="match" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+      <YAxis dataKey={label} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+      <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
       <Tooltip content={<CustomTooltip />} />
       <Line type="monotone" dataKey={label} stroke={color} strokeWidth="3"/>
     </LineChart>
