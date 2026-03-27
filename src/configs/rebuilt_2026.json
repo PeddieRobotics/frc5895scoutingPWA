@@ -627,9 +627,6 @@
           3
         ]
       },
-      "piecePlacement": {
-        "bars": []
-      },
       "overallStats": [
         {
           "key": "consistency",
@@ -784,6 +781,7 @@
         "bars": []
       },
       "endgamePie": {
+        "label": "Endgame %",
         "field": "endlocation",
         "labels": [
           "None",
@@ -841,7 +839,9 @@
           "field": "breakdown",
           "type": "percentage"
         }
-      ]
+      ],
+      "showEpaOverTime": true,
+      "teamStats": []
     },
     "picklist": {
       "weights": [
@@ -956,44 +956,37 @@
       "defenseField": "defenseplayed"
     },
     "compare": {
-      "metricsChart": [
+      "sections": [
         {
-          "key": "avgEpa",
-          "label": "PPR"
+          "label": "Overall",
+          "stats": [
+            { "key": "avgEpa", "label": "PPR" },
+            { "key": "avgAuto", "label": "Auto" },
+            { "key": "avgTele", "label": "Tele" },
+            { "key": "avgEnd", "label": "End" },
+            { "key": "last3Epa", "label": "Last 3 PPR" }
+          ]
         },
         {
-          "key": "avgAuto",
-          "label": "Auto"
-        },
-        {
-          "key": "avgTele",
-          "label": "Tele"
-        },
-        {
-          "key": "avgEnd",
-          "label": "End"
+          "label": "Endgame",
+          "stats": [
+            { "compute": "endPlacement.none", "label": "None", "format": "percent" },
+            { "compute": "endPlacement.l1", "label": "L1", "format": "percent" },
+            { "compute": "endPlacement.l2", "label": "L2", "format": "percent" },
+            { "compute": "endPlacement.l3", "label": "L3", "format": "percent" },
+            { "compute": "endPlacement.failed", "label": "Failed", "format": "percent" }
+          ]
         }
       ],
-      "scoringChart": [],
-      "endgameChart": {
-        "metrics": [
-          "None",
-          "L1",
-          "L2",
-          "L3",
-          "Failed"
-        ],
-        "keys": [
-          "none",
-          "l1",
-          "l2",
-          "l3",
-          "failed"
-        ],
-        "endgameSource": "endPlacement",
-        "fallbackSource": "endgame"
-      },
-      "defenseField": "defenseplayed"
+      "qualitativeSection": {
+        "label": "Qualitative",
+        "stats": [
+          {
+            "label": "Defense Played",
+            "defenseField": "defenseplayed"
+          }
+        ]
+      }
     },
     "apiAggregation": {
       "booleanFields": [

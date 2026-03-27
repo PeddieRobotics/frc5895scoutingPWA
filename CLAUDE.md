@@ -86,6 +86,13 @@ See `README.md` for full reference. Key top-level keys:
 - `sections` — form sections with fields; supports `showWhen` conditional visibility
 - `calculations` — EPA formulas (`auto`, `tele`, `end`) using formula or mapping types
 - `display` — config for all display pages: `teamView`, `matchView`, `picklist`, `compare`, `apiAggregation`
+  - `matchView.showEpaOverTime` (bool): when `true`, each team card in match-view shows a per-match EPA/PPR over-time line chart; PPR injection skipped when `false`
+  - `matchView.teamStats[]` — `{label, key, format}` for additional stat rows per team card; `key` uses dot-notation path traversal (e.g., `"qualitative.defenseplayed"`); `format`: `"number"` (1 decimal) or `"percent"` (×100 + %)
+  - `matchView.endgamePie.label` — section title for endgame pie in team cards (default: `"Endgame %"`); section hidden when `keys` is absent/empty
+  - `matchView.piecePlacement.bars` — piece placement bar section hidden in match-view team cards when empty/omitted
+  - `teamView.piecePlacement.<group>.avgLabel` — TwoByTwo avg column header override (default: `"Average"`)
+  - `compare.sections[]` — array of `{ label, stats[] }` groups rendered as pill-card sections on `/compare`; each stat is `{ label, key?, compute?, format? }` where `key` is a direct property on team data, `compute` is a dot-path or `"path1 + path2"` expression, and `format` is `"number"` (default, 1 decimal) or `"percent"` (1 decimal + `%`)
+  - `compare.qualitativeSection` — `{ label, stats[] }` section for qualitative data; each stat supports `defenseField` (scouting row field name) which renders a pill showing the avg rating with a hover tooltip listing `"{scout} #Q{match}: {rating}"` per entry; also supports `key`/`compute` for plain numeric stats
 
 Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`/`qualitative`, `table`, `collapsible`
 

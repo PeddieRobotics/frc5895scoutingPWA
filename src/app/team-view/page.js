@@ -11,12 +11,11 @@ import ThreeByThree from "./components/ThreeByThree";
 import FourByTwo from "./components/FourByTwo";
 import EPALineChart from './components/EPALineChart';
 import CoralLineChart from './components/CoralLineChart';
-import PiecePlacement from "./components/PiecePlacement";
 import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
 import useGameConfig from "../../lib/useGameConfig";
 import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
+import { LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar } from 'recharts';
 
 export default function TeamViewPage() {
     return <Suspense><TeamView /></Suspense>;
@@ -64,6 +63,7 @@ function TeamView() {
     const [fetchingTbaRank, setFetchingTbaRank] = useState(false);
     const [tbaRankError, setTbaRankError] = useState(null);
     const [loadingMatch, setLoadingMatch] = useState(null);
+    const [slCommentsOpen, setSlCommentsOpen] = useState(false);
     const router = useRouter();
 
     const searchParams = useSearchParams();
@@ -95,7 +95,6 @@ function TeamView() {
             type: m.type, // 'count' or 'successFail'
         })),
     } : { columns: [] };
-    const barsConfig = ppConfig.bars || [];
     const autoPieConfig = tvConfig.autoPie || null;
     const endgamePieConfig = tvConfig.endgamePie || { labels: [], values: [] };
     const endgameStatsConfig = tvConfig.endgameStats || {};
@@ -141,6 +140,14 @@ function TeamView() {
             .catch(() => {});
     }, [team, gameId]);
 
+    useEffect(() => {
+        if (team) {
+            setTbaRank(null);
+            setTbaRankError(null);
+            fetchTbaRank();
+        }
+    }, [team]);
+
     async function fetchTbaRank() {
         setFetchingTbaRank(true);
         setTbaRankError(null);
@@ -182,13 +189,13 @@ function TeamView() {
         const searchParamsString = new URLSearchParams(urlParams).toString();
         return <div className={styles.allianceBoard}>
             <Link href={`/team-view?team=${t1 || ""}&${searchParamsString}`}>
-                <button style={team == t1 ? { background: 'black', color: 'yellow' } : { background: colors[0][1] }}>{t1 || 404}</button>
+                <button className={team == t1 ? styles.activeTeamButton : undefined} style={team == t1 ? undefined : { background: colors[0][1] }}>{t1 || 404}</button>
             </Link>
             <Link href={`/team-view?team=${t2 || ""}&${searchParamsString}`}>
-                <button style={team == t2 ? { background: 'black', color: 'yellow' } : { background: colors[1][1] }}>{t2 || 404}</button>
+                <button className={team == t2 ? styles.activeTeamButton : undefined} style={team == t2 ? undefined : { background: colors[1][1] }}>{t2 || 404}</button>
             </Link>
             <Link href={`/team-view?team=${t3 || ""}&${searchParamsString}`}>
-                <button style={team == t3 ? { background: 'black', color: 'yellow' } : { background: colors[2][1] }}>{t3 || 404}</button>
+                <button className={team == t3 ? styles.activeTeamButton : undefined} style={team == t3 ? undefined : { background: colors[2][1] }}>{t3 || 404}</button>
             </Link>
         </div>
     }
@@ -218,14 +225,17 @@ function TeamView() {
                 <div className={styles.allianceBoard}>
                     {compareTeams.map((t, index) => (
                         <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
-                            <button style={team == t ? { background: 'black', color: 'yellow' } : { background: COLORS[index] }}>
+                            <button
+                                className={team == t ? styles.activeTeamButton : undefined}
+                                style={team == t ? undefined : { background: COLORS[index] }}
+                            >
                                 {t || 404}
                             </button>
                         </Link>
                     ))}
                 </div>
                 <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
-                    <button className={styles.goButton}>Compare</button>
+                    <button className={styles.navActionButton}>Compare</button>
                 </Link>
             </div>
         );
@@ -257,7 +267,7 @@ function TeamView() {
                 colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
             />
             <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
-                <button style={{ background: "#ffff88", color: "black" }}>Match</button>
+                <button className={styles.navActionButton}>Match</button>
             </Link>
             <AllianceButtons
                 t1={urlParams.team4}
@@ -547,31 +557,6 @@ function TeamView() {
     const autoSectionConfig = sectionsConfig.auto || {};
     const teleSectionConfig = sectionsConfig.tele || {};
 
-    // Build PiecePlacement bar values generically from config
-    const dynamicBars = barsConfig.map(bar => {
-        // Support both raw row fields ("autol4success") and computed paths ("auto.avgFuel")
-        const teamRows = (safeData.rows || []).filter(r => r.team == team);
-
-        const resolveBarField = (fieldName) => {
-            if (!fieldName) return 0;
-
-            if (fieldName.includes('.')) {
-                const computed = Number(resolvePath(safeData, fieldName));
-                return Number.isFinite(computed) ? computed : 0;
-            }
-
-            if (!teamRows.length) return 0;
-            const total = teamRows.reduce((sum, row) => sum + (Number(row[fieldName]) || 0), 0);
-            return total / teamRows.length;
-        };
-
-        const value = resolveBarField(bar.autoField) + resolveBarField(bar.teleField);
-        return {
-            label: bar.label,
-            value: Math.round(10 * value) / 10
-        };
-    });
-
     const hasAutoLevelTable = (autoSectionConfig.levelTable?.levels || []).length > 0;
     const hasAutoAlgaeStats = (autoSectionConfig.algaeStats?.levels || []).length > 0;
     const hasTeleLevelTable = (teleSectionConfig.levelTable?.levels || []).length > 0;
@@ -616,8 +601,6 @@ function TeamView() {
                     id="box"
                     className={styles.boxes}
                     style={{ width: "200px" }}
-                    color1={Colors[0][1]}
-                    color2={Colors[0][0]}
                     title={stat.title}
                     value={formatted}
                 />
@@ -744,7 +727,7 @@ function TeamView() {
         const levels = algaeStats?.levels || [];
         const successFields = algaeStats?.successFields || [];
         const avgFields = algaeStats?.avgFields || [];
-        const props = { HC1: "Success", HC2: "Avg Algae" };
+        const props = { HC1: "Success", HC2: metricGroupConfig?.avgLabel || "Average" };
 
         levels.forEach((level, i) => {
             const rowNum = i + 1;
@@ -834,6 +817,7 @@ function TeamView() {
 
     return (
         <div className={styles.container}>
+            <title>{team ? `${team} - Team View` : 'Team View'}</title>
             {unscoredMatches.length > 0 && (
                 <div style={{ margin: "12px 0", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
                     <strong>Unscored matches were skipped.</strong>
@@ -856,10 +840,10 @@ function TeamView() {
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
-                                    <div style={{ background: Colors[0][1], '--epa-box-label': config?.usePPR ? '"Avg PPR"' : '"Avg EPA"' }} className={styles.epaBox}>{Math.round(10 * safeData.avgEpa) / 10}</div>
+                                    <div style={{ '--epa-box-label': config?.usePPR ? '"Avg PPR"' : '"Avg EPA"' }} className={styles.epaBox}>{Math.round(10 * safeData.avgEpa) / 10}</div>
                                     <div className={styles.epaBreakdown}>
                                         {epaBreakdown.map(key => (
-                                            <div key={key} style={{ background: Colors[0][0] }}>
+                                            <div key={key}>
                                                 {key.charAt(0).toUpperCase()}: {Math.round(10 * (safeData[`avg${key.charAt(0).toUpperCase()}${key.slice(1)}`] || 0)) / 10}
                                             </div>
                                         ))}
@@ -879,7 +863,7 @@ function TeamView() {
                         </div>
                         <div className={styles.matchesRow}>
                             <div className={styles.matchesContainer}>
-                                <div style={{ background: Colors[0][1] }} className={styles.matchesHeader}>Matches</div>
+                                <div className={styles.matchesHeader}>Matches</div>
                                 <div className={styles.matchesList}>
                                     {safeData.rows && safeData.rows
                                         .filter(match => match.team == safeData.team)
@@ -891,7 +875,7 @@ function TeamView() {
                                                 onClick={() => handleMatchClick(match.match)}
                                                 disabled={loadingMatch === match.match}
                                             >
-                                                <span style={{ background: loadingMatch === match.match ? '#aaa' : Colors[0][0] }}>
+                                                <span style={{ background: loadingMatch === match.match ? '#aaa' : undefined }}>
                                                     {loadingMatch === match.match ? '…' : match.match}
                                                 </span>
                                             </button>
@@ -913,13 +897,7 @@ function TeamView() {
                         </div>
                         <div className={styles.graphContainer}>
                             <h4 className={styles.graphTitle}>{config?.usePPR ? "PPR Over Time" : "EPA Over Time"}</h4>
-                            <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"} />
-                        </div>
-                        <div className={styles.barGraphContainer}>
-                            <h4 className={styles.graphTitle}>Piece Placement</h4>
-                            <PiecePlacement
-                                bars={dynamicBars}
-                            />
+                            <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"} displayLabel={config?.usePPR ? "PPR" : "epa"} />
                         </div>
                         <div className={styles.valueBoxes}>
                             <div className={styles.leftColumnBoxes}>
@@ -937,25 +915,39 @@ function TeamView() {
                                         />
                                     );
                                 })}
+                                <Comments
+                                    color1={Colors[0][1]}
+                                    color2={Colors[0][0]}
+                                    title="Scouts"
+                                    value={safeData.scouts}
+                                />
                             </div>
-                            <HBox color1={Colors[0][1]} color2={Colors[0][0]} title={"Scouts"} value={safeData.scouts} />
                         </div>
                         {commentMatchGroups.length > 0 && (
                             <section className={styles.slCommentsSection}>
-                                <h2 className={styles.slCommentsSectionTitle}>Scout Lead Comments</h2>
-                                <div className={styles.slMatchList}>
-                                    {commentMatchGroups.map((group) => (
-                                        <div key={`${group.matchtype}_${group.match}`} className={styles.slMatchGroup}>
-                                            <div className={styles.slMatchLabel}>{group.label}</div>
-                                            {group.entries.map((c) => (
-                                                <div key={c.id} className={styles.slCommentEntry}>
-                                                    <span className={styles.slCommentAuthor}>{c.scoutname || "Unknown"}</span>
-                                                    <p className={styles.slCommentText}>{c.comment}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
+                                <button
+                                    className={styles.slCommentsSectionToggle}
+                                    onClick={() => setSlCommentsOpen(o => !o)}
+                                    aria-expanded={slCommentsOpen}
+                                >
+                                    <span className={styles.slCommentsSectionTitle}>Scout Lead Comments</span>
+                                    <span className={styles.slCommentsChevron} aria-hidden="true">{slCommentsOpen ? '▲' : '▼'}</span>
+                                </button>
+                                {slCommentsOpen && (
+                                    <div className={styles.slMatchList}>
+                                        {commentMatchGroups.map((group) => (
+                                            <div key={`${group.matchtype}_${group.match}`} className={styles.slMatchGroup}>
+                                                <div className={styles.slMatchLabel}>{group.label}</div>
+                                                {group.entries.map((c) => (
+                                                    <div key={c.id} className={styles.slCommentEntry}>
+                                                        <span className={styles.slCommentAuthor}>{c.scoutname || "Unknown"}</span>
+                                                        <p className={styles.slCommentText}>{c.comment}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </section>
                         )}
                     </div>
@@ -1229,67 +1221,38 @@ function TeamView() {
                                 <h1 className={styles.header} style={{ color: Colors[4][3] }}>Qualitative</h1>
                                 <div className={styles.radarContainer}>
                                     <h4 className={styles.graphTitle}>Defense Played Ratings</h4>
-                                    <div style={{ marginTop: "50px", display: "flex", justifyContent: "center", width: "100%" }}>
-                                        <BarChart
-                                            width={400}
-                                            height={300}
-                                            data={buildDefenseChartData()}
-                                            margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
-                                        >
-                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
-                                            <XAxis
-                                                dataKey="name"
-                                                angle={-90}
-                                                textAnchor="end"
-                                                height={70}
-                                                tick={{ dy: 10, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
-                                            />
-                                            <YAxis
-                                                domain={[0, 6]}
-                                                ticks={[0, 1, 2, 3, 4, 5, 6]}
-                                                interval={0}
-                                                tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
-                                            />
-                                            <Tooltip
-                                                formatter={(value) => value.toFixed(1)}
-                                                contentStyle={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', borderRadius: '8px', color: '#e8d5a3', fontFamily: 'Montserrat', fontSize: '13px' }}
-                                            />
-                                            <Bar dataKey="value" fill={Colors[4][2]} />
-                                        </BarChart>
-                                    </div>
+                                    <table className={styles.differentTable}>
+                                        <tbody>
+                                            <tr>
+                                                {buildDefenseChartData().map(entry => (
+                                                    <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1] }}>{entry.name}</td>
+                                                ))}
+                                            </tr>
+                                            <tr>
+                                                {buildDefenseChartData().map(entry => (
+                                                    <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0] }}>{entry.value.toFixed(1)}</td>
+                                                ))}
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                                 {scouterConfidenceField && safeData.scouterConfidenceOverTime.length > 0 && (
                                     <div className={styles.radarContainer}>
                                         <h4 className={styles.graphTitle}>Scouter Confidence Per Match</h4>
-                                        <div style={{ marginTop: "50px", display: "flex", justifyContent: "center", width: "100%" }}>
-                                            <BarChart
-                                                width={400}
-                                                height={300}
-                                                data={safeData.scouterConfidenceOverTime}
-                                                margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
-                                            >
-                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
-                                                <XAxis
-                                                    dataKey="match"
-                                                    angle={-90}
-                                                    textAnchor="end"
-                                                    height={70}
-                                                    tick={{ dy: 10, fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
-                                                    label={{ value: "Match", position: "insideBottom", offset: -5 }}
-                                                />
-                                                <YAxis
-                                                    domain={[0, 5]}
-                                                    ticks={[0, 1, 2, 3, 4, 5]}
-                                                    interval={0}
-                                                    tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
-                                                />
-                                                <Tooltip
-                                                    formatter={(value) => value.toFixed(1)}
-                                                    contentStyle={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', borderRadius: '8px', color: '#e8d5a3', fontFamily: 'Montserrat', fontSize: '13px' }}
-                                                />
-                                                <Bar dataKey="confidence" fill={Colors[4][2]} />
-                                            </BarChart>
-                                        </div>
+                                        <table className={styles.differentTable}>
+                                            <tbody>
+                                                <tr>
+                                                    {safeData.scouterConfidenceOverTime.map(e => (
+                                                        <td key={e.match} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1] }}>Q{e.match}</td>
+                                                    ))}
+                                                </tr>
+                                                <tr>
+                                                    {safeData.scouterConfidenceOverTime.map(e => (
+                                                        <td key={e.match} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0] }}>{e.confidence.toFixed(1)}</td>
+                                                    ))}
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 )}
                                 <table className={styles.differentTable}>

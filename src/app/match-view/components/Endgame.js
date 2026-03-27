@@ -14,7 +14,7 @@ export default function Endgame({ colors, endgameData }) {
   }
 
   return (
-    <div style={{ touchAction: 'pan-y', width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div style={{ touchAction: 'pan-y', width: '100%', height: '100%' }}>
       <VictoryPie
         padding={60}
         containerComponent={<VictoryContainer responsive={true} style={{ height: '100%' }} />}

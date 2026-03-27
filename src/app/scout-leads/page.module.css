@@ -210,6 +210,27 @@
     align-self: flex-start;
 }
 
+.oprSidebarExpanded {
+    width: 520px;
+}
+
+.oprExpandedRow {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.oprExpandedRankings {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.oprExpandedMatches {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
 .oprMatchList {
     display: flex;
     flex-direction: column;
@@ -935,8 +956,13 @@
         position: static;
     }
 
-    .oprSidebar {
+    .oprSidebar,
+    .oprSidebarExpanded {
         width: 100%;
         position: static;
+    }
+
+    .oprExpandedRow {
+        flex-direction: column;
     }
 }

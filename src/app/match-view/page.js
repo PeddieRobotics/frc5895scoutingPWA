@@ -8,6 +8,7 @@ import PiecePlacement from "./components/PiecePlacement";
 import Endgame from "./components/Endgame";
 import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
+import TeamEPALineChart from "../team-view/components/EPALineChart";
 import useGameConfig from "../../lib/useGameConfig";
 import { getMatchViewConfigIssues } from "../../lib/display-config-validation";
 
@@ -49,6 +50,8 @@ function MatchView() {
   const qualitativeFields = matchViewConfig?.qualitativeFields || [];
   const rankingPointsConfig = matchViewConfig?.rankingPoints || [];
   const epaBreakdownKeys = matchViewConfig?.epaBreakdown || [];
+  const showEpaOverTime = matchViewConfig?.showEpaOverTime === true;
+  const teamStatsConfig = matchViewConfig?.teamStats || [];
   const formatUnscoredMatch = (issue) => {
     const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
     const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
@@ -65,8 +68,8 @@ function MatchView() {
       }
       setUrlParams(paramsObj);
 
-      // If no parameters are provided, set data to empty object to show the form
-      if (Object.keys(paramsObj).length === 0) {
+      // If no parameters are provided, or in edit mode, show the form
+      if (Object.keys(paramsObj).length === 0 || paramsObj.edit) {
         setData({});
         setLoading(false);
       }
@@ -76,8 +79,8 @@ function MatchView() {
   useEffect(() => {
     if (configLoading || configIssues.length > 0) return;
 
-    // Only fetch data if we have URL parameters
-    if (Object.keys(urlParams).length === 0) return;
+    // Only fetch data if we have URL parameters (and not in edit mode)
+    if (Object.keys(urlParams).length === 0 || urlParams.edit) return;
 
     setLoading(true);
     setError(null);
@@ -322,8 +325,8 @@ function MatchView() {
     </div>
   }
 
-  //show form if no parameters or data not loaded yet
-  if (!data || Object.keys(urlParams).length === 0) {
+  //show form if no parameters, in edit mode, or data not loaded yet
+  if (!data || Object.keys(urlParams).length === 0 || urlParams.edit) {
     return (
       <div>
         <form className={styles.teamForm}>
@@ -402,6 +405,17 @@ function MatchView() {
     customSums: {},
     endgame: defaultEndgame,
     qualitative: defaultQualitative,
+  };
+
+  const resolveStatPath = (teamData, key) => {
+    if (!teamData || !key) return null;
+    return key.split('.').reduce((obj, part) => (obj != null ? obj[part] : null), teamData);
+  };
+
+  const formatStat = (value, format) => {
+    if (value == null) return 'N/A';
+    if (format === 'percent') return `${Math.round(value * 100)}%`;
+    return `${Math.round(value * 10) / 10}`;
   };
 
   const resolveTeamMetric = (teamObj, keyOrPath) => {
@@ -556,15 +570,14 @@ function MatchView() {
 
     return <div className={styles.lightBorderBox} style={{ paddingTop: '20px' }}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
+        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
         <div className={styles.EPABreakdown}>
-          <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
-          <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
-          <div style={{ background: colors[1], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {(end || 0).toFixed(1)}</div>
+          <div style={{ background: colors[1], minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
+          <div style={{ background: colors[1], minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
+          <div style={{ background: colors[1], minWidth: "50px", textAlign: "center" }}>E: {(end || 0).toFixed(1)}</div>
         </div>
       </div>
       <div className={styles.RPs}>
-        <div style={{ background: colors[1] }}>RPs:</div>
         <div style={{ background: RP_WIN }}>Victory</div>
         {rpResults.map((rp, i) => (
           <div key={i} style={{ background: rp.color }}>{rp.label}</div>
@@ -591,35 +604,71 @@ function MatchView() {
       <h1 style={{ color: colors[3], marginTop: "10px", marginBottom: "0px" }}>{teamData.team}</h1>
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
-        <div style={{ background: colors[0], padding: "0 5px", minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>
+        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>
           {config?.usePPR ? (teamData.last3Epa != null ? (teamData.last3Epa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
-        {!config?.usePPR && <div className={styles.EPABreakdown}>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>A: {teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A"}</div>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>T: {teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A"}</div>
-          <div style={{ background: colors[2], padding: "0 3px", minWidth: "50px", textAlign: "center" }}>E: {teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A"}</div>
-        </div>}
+        <div className={styles.EPABreakdown}>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>A: {config?.usePPR ? (teamData.autoLast3Epa != null ? (teamData.autoLast3Epa || 0).toFixed(1) : "N/A") : (teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A")}</div>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>T: {config?.usePPR ? (teamData.teleLast3Epa != null ? (teamData.teleLast3Epa || 0).toFixed(1) : "N/A") : (teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A")}</div>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>E: {config?.usePPR ? (teamData.endLast3Epa != null ? (teamData.endLast3Epa || 0).toFixed(1) : "N/A") : (teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A")}</div>
+        </div>
       </div>
-      <div className={styles.barchartContainer}>
-        <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>Average Piece Placement</h2>
-        <PiecePlacement
-          colors={colors}
-          matchMax={matchMax}
-          bars={barsConfig.map(bar => ({
-            label: bar.label,
-            value: teamData.avgPieces?.[bar.key] !== null && teamData.avgPieces?.[bar.key] !== undefined
-              ? Math.round(10 * teamData.avgPieces[bar.key]) / 10
-              : null,
-          }))}
-        />
-      </div>
-      <h2 style={{ textAlign: "center", marginTop: "20px", marginBottom: "0px" }}>Endgame %</h2>
-      <div className={styles.chartContainer}>
-        <Endgame
-          colors={colors}
-          endgameData={endgameData}
-        />
-      </div>
+      {barsConfig.length > 0 && (
+        <div className={styles.barchartContainer}>
+          <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>Average Piece Placement</h2>
+          <PiecePlacement
+            colors={colors}
+            matchMax={matchMax}
+            bars={barsConfig.map(bar => ({
+              label: bar.label,
+              value: teamData.avgPieces?.[bar.key] !== null && teamData.avgPieces?.[bar.key] !== undefined
+                ? Math.round(10 * teamData.avgPieces[bar.key]) / 10
+                : null,
+            }))}
+          />
+        </div>
+      )}
+      {showEpaOverTime && teamData.epaOverTime?.length > 0 && (
+        <div style={{ width: '100%', marginTop: "16px", marginBottom: "8px", padding: "0 12px", boxSizing: "border-box" }}>
+          <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>
+            {config?.usePPR ? "PPR Over Time" : "EPA Over Time"}
+          </h2>
+          <TeamEPALineChart
+            data={teamData.epaOverTime}
+            color={colors[3]}
+            label="epa"
+            displayLabel={config?.usePPR ? "PPR" : "EPA"}
+            height={175}
+            responsive={true}
+          />
+        </div>
+      )}
+      {endgamePieConfig?.keys?.length > 0 && (
+        <>
+          <h2 style={{ textAlign: "center", marginTop: "20px", marginBottom: "0px" }}>
+            {endgamePieConfig.label || "Endgame %"}
+          </h2>
+          <div className={styles.chartContainer}>
+            <Endgame
+              colors={colors}
+              endgameData={endgameData}
+            />
+          </div>
+        </>
+      )}
+      {teamStatsConfig.length > 0 && (
+        <div style={{ padding: "0 12px 12px" }}>
+          {teamStatsConfig.map((statDef, i) => {
+            const rawValue = resolveStatPath(teamData, statDef.key);
+            return (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '4px 0', borderTop: '1px solid rgba(160,124,48,0.15)', color: '#0d1f35' }}>
+                <span style={{ fontWeight: 600 }}>{statDef.label}</span>
+                <span>{formatStat(rawValue, statDef.format)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   }
   let get = (alliance, thing) => {
@@ -717,18 +766,18 @@ function MatchView() {
           </ul>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', margin: '14px 0' }}>
-        <span style={{ fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '16px' }}>Data Range:</span>
-        <div style={{ display: 'flex', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
+      <div className={styles.dataRangeContainer}>
+        <span className={styles.dataRangeLabel}>Data Range:</span>
+        <div className={styles.dataRangeToggle}>
           <button
             onClick={() => setUseRecent(false)}
-            style={{ padding: '8px 22px', background: !useRecent ? '#333' : 'white', color: !useRecent ? 'white' : '#555', border: 'none', cursor: !useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}
+            className={`${styles.dataRangeBtn}${!useRecent ? ` ${styles.dataRangeBtnActive}` : ''}`}
           >
             All Time
           </button>
           <button
             onClick={() => setUseRecent(true)}
-            style={{ padding: '8px 22px', background: useRecent ? '#4a90d9' : 'white', color: useRecent ? 'white' : '#555', border: 'none', borderLeft: '2px solid #333', cursor: useRecent ? 'default' : 'pointer', fontWeight: 'bold', fontFamily: 'Montserrat, sans-serif', fontSize: '15px' }}
+            className={`${styles.dataRangeBtn}${useRecent ? ` ${styles.dataRangeBtnActive}` : ''}`}
           >
             Last 3 Matches
           </button>
@@ -736,7 +785,7 @@ function MatchView() {
       </div>
       <div className={styles.matchNav}>
         <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
-        <Link href={`/match-view?team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`}><button style={{ background: "#ffff88", color: "black" }}>Edit</button></Link>
+        <button className={styles.navActionButton} onClick={() => { window.location.href = `/match-view?edit=true&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`; }}>Edit</button>
         <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} colors={[COLORS[0], COLORS[1], COLORS[2]]}></AllianceButtons>
       </div>
       <div className={styles.allianceEPAs}>

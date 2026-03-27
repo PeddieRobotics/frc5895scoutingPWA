@@ -101,15 +101,99 @@
     padding-bottom: 0px;
     border-radius: 8px;
     font-size: 45px;
+    font-weight: 700;
     font-family: 'Montserrat', sans-serif;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
 }
 
 .matchNav button:hover {
-    background: #0d1f35 !important;
-    color: #e8d5a3 !important;
-    border-color: #0d1f35 !important;
+    background: rgba(189, 151, 72, 0.07) !important;
+    border-color: rgba(160, 124, 48, 0.55) !important;
+    color: #0d1f35 !important;
+}
+
+.navActionButton {
+    padding: 4px 18px !important;
+    background: #a07c30 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.12);
+    align-self: center;
+}
+
+.navActionButton:hover {
+    background: #8a6a28 !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+.navActionButton:active {
+    transform: scale(0.97);
+}
+
+/* ── Data range toggle ────────────────────────── */
+.dataRangeContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.dataRangeLabel {
+    font-weight: 700;
+    font-size: 14px;
+    color: #a07c30;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dataRangeToggle {
+    display: flex;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.dataRangeBtn {
+    padding: 8px 18px;
+    background: #ffffff;
+    color: rgba(13, 31, 53, 0.65);
+    border: none;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dataRangeBtn + .dataRangeBtn {
+    border-left: 1.5px solid rgba(160, 124, 48, 0.4);
+}
+
+.dataRangeBtn:hover {
+    background: rgba(189, 151, 72, 0.07);
+    color: #0d1f35;
+}
+
+.dataRangeBtnActive {
+    background: rgba(189, 151, 72, 0.15);
+    color: #a07c30;
+    font-weight: 700;
+    cursor: default;
+}
+
+.dataRangeBtnActive:hover {
+    background: rgba(189, 151, 72, 0.15);
+    color: #a07c30;
 }
 
 /* ── Alliance layout ──────────────────────────── */
@@ -263,6 +347,10 @@
 }
 
 .EPABreakdown div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
     text-align: center;
     flex-grow: 1;
     background: #ffffff;
@@ -282,8 +370,13 @@
 }
 
 .EPABox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
     padding: 10px;
-    margin-top: 5px;
+    margin-top: 16px;
     background: #ffffff;
     border: 1.5px solid rgba(160, 124, 48, 0.3);
     border-radius: 10px 10px 0 0;
@@ -297,20 +390,20 @@
 .EPABox::before {
     content: var(--epa-box-label, "Last 3 EPA");
     display: block;
-    position: relative;
-    top: 0;
-    width: 125px;
+    position: absolute;
+    top: -13px;
     left: 50%;
-    transform: translate(-50%, calc(-50% - 10px));
+    transform: translateX(-50%);
+    width: 125px;
     background: #a07c30;
     color: #ffffff;
     border-radius: 5px;
     padding: 4px 6px;
-    margin-bottom: -25px;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    text-align: center;
 }
 
 /* ── Chart containers ─────────────────────────── */
@@ -319,7 +412,6 @@
     max-width: 320px;
     height: 300px;
     margin: auto;
-    overflow: hidden;
 }
 
 .barchartContainer {

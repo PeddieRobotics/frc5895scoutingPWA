@@ -307,13 +307,13 @@ button.recalculateIsMad:hover {
 }
 
 .picklistTable td:nth-child(2) {
-    background: #a07c30;
-    color: #ffffff;
+    background: rgba(160, 124, 48, 0.12);
+    color: #a07c30;
     font-weight: 800;
     border-radius: 6px;
     width: 30px;
     height: 30px;
-    border: none;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
 }
 
 .picklistTable td:nth-child(3) {

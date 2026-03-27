@@ -1,28 +1,63 @@
 .commentsBox {
     display: flex;
     flex-direction: column;
-    align-self: center;
-    justify-self: center;
-    padding-bottom: 1px;
+    width: 100%;
+    padding-bottom: 4px;
 }
 
-.commentsBox table {
+.commentsToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 7px 12px;
     border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 10px;
-    border-collapse: separate;
-    border-spacing: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1f35;
+    text-align: left;
+    transition: border-radius 0.15s;
+}
+
+.commentsToggle[aria-expanded="true"] {
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+}
+
+.chevron {
+    font-size: 10px;
+    opacity: 0.6;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.commentsList {
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
-    background: #ffffff;
 }
 
-.commentsBox td {
-    border-bottom: 1px solid rgba(160, 124, 48, 0.1);
+.commentEntry {
+    padding: 8px 12px;
+    font-size: 12.5px;
     color: #0d1f35;
-    font-size: 13px;
-    padding: 5px 8px;
+    border-bottom: 1px solid rgba(160, 124, 48, 0.12);
+    line-height: 1.45;
+    text-align: left;
 }
 
-.commentsBox tr:last-child td {
+.commentEntryEmpty {
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: #0d1f35;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.commentEntry:last-child {
     border-bottom: none;
 }

@@ -1253,6 +1253,7 @@ Key responsibilities:
     "epaBreakdown": ["auto", "tele", "end"],
     "epaThresholds": { "overall": 12, "auto": 6, "tele": 10, "end": 6 },
     "piecePlacement": {
+      "label": "Piece Placement",
       "bars": [
         { "label": "L4", "autoField": "autol4success", "teleField": "telel4success" },
         { "label": "Fuel", "autoField": "auto.avgFuel", "teleField": "tele.avgFuel" }
@@ -1276,6 +1277,8 @@ Key responsibilities:
 ```
 
 Notes:
+- `piecePlacement.label` (string, optional): Title shown above the Piece Placement section in team-view. Defaults to `"Piece Placement"`.
+- `piecePlacement.<groupName>.avgLabel` (string, optional): Column header for the average column in the metric group TwoByTwo table (e.g., the algae stats table). Defaults to `"Average"`. Example: `"avgLabel": "Avg Algae"` on the `algae` group in a Reefscape config.
 - `piecePlacement.bars[*].autoField` and `teleField` can be:
   - raw form fields (for example `autol4success`)
   - computed dotted paths from aggregated output (for example `auto.avgFuel`)
@@ -1337,11 +1340,17 @@ Key responsibilities:
       ]
     },
     "endgamePie": {
+      "label": "Endgame %",
       "labels": ["None", "Fail", "Park", "Shallow", "Deep"],
       "keys": ["none", "fail", "park", "shallow", "deep"]
     },
     "qualitativeFields": ["defenseplayed", "maneuverability"],
     "defenseBarField": "defenseplayed",
+    "showEpaOverTime": true,
+    "teamStats": [
+      { "label": "Defense", "key": "qualitative.defenseplayed", "format": "number" },
+      { "label": "Leave %", "key": "leave", "format": "percent" }
+    ],
     "rankingPoints": [
       {
         "label": "Auto",
@@ -1364,6 +1373,15 @@ Key responsibilities:
   }
 }
 ```
+
+Per-team card config-driven sections (all optional):
+- `endgamePie.label` (string, optional): Title shown above the endgame pie chart in each team card. Defaults to `"Endgame %"`. The entire endgame section is hidden when `endgamePie.keys` is absent or empty.
+- `piecePlacement.bars` — piece placement section is hidden when `bars` is empty or omitted.
+- `showEpaOverTime` (bool, default `false`): When `true`, each team card in match-view displays a per-match EPA/PPR line chart. When `usePPR: true`, uses TBA-derived adjusted-contribution data; otherwise uses scouted EPA. PPR over-time injection is skipped (avoiding TBA calls) when this flag is `false`.
+- `teamStats` (array, default `[]`): Additional stat rows rendered at the bottom of each team card. Each entry:
+  - `label` (string): Display label shown on the left.
+  - `key` (string): Dot-notation path into the per-team data object. Examples: `"qualitative.defenseplayed"` for a qualitative rating average, `"leave"` for a top-level field. Field names are lowercase per DB convention.
+  - `format` (`"number"` | `"percent"`): `"percent"` multiplies by 100 then appends `%` — use this for 0–1 fraction fields like `leave`. `"number"` rounds to one decimal place — use this for qualitative averages and other numeric values.
 
 Supported ranking point `type` values:
 - `allLeaveAndCoral`

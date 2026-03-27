@@ -606,6 +606,11 @@ export function aggregateAllianceData(rows, config, calcFns) {
     responseObject[team].last3Tele = avg(last3, "tele");
     responseObject[team].last3End = avg(last3, "end");
     responseObject[team].last3EPA = avg(last3, "epa");
+
+    responseObject[team].epaOverTime = teamRows.map(r => ({
+      match: r.match,
+      epa: Math.round(r.epa * 10) / 10,
+    }));
   });
 
   return responseObject;
@@ -742,13 +747,17 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   const maxes = tidy(teamTable, summarizeAll(max))[0];
 
   teamTable = tidy(teamTable, mutate({
+    realAuto: d => d.auto,
     auto: d => maxes.auto ? d.auto / maxes.auto : 0,
+    realTele: d => d.tele,
     tele: d => maxes.tele ? d.tele / maxes.tele : 0,
+    realEnd: d => d.end,
     end: d => maxes.end ? d.end / maxes.end : 0,
     realEpa: d => d.epa,
     epa: d => maxes.epa ? d.epa / maxes.epa : 0,
     realEpa3: d => d.epa3,
     epa3: d => maxes.epa3 ? d.epa3 / maxes.epa3 : 0,
+    realConsistency: d => d.consistency,
     consistency: d => maxes.consistency ? d.consistency / maxes.consistency : 0,
     realDefense: d => d.defense,
     defense: d => maxes.defense ? d.defense / maxes.defense : 0,
@@ -764,6 +773,25 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
       }).flat()),
     score: d => weightEntries.reduce((sum, [key, weight]) => {
       const value = d[key] ?? 0;
+      if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+      return sum + (value * parseFloat(weight));
+    }, 0),
+  }));
+
+  // Compute absolute score using real (un-normalized) values
+  const realKeyMap = {
+    auto: 'realAuto', tele: 'realTele', end: 'realEnd',
+    epa: 'realEpa', epa3: 'realEpa3',
+    consistency: 'realConsistency', defense: 'realDefense',
+    breakdown: 'breakdown',
+    ...Object.fromEntries(computedMetrics
+      .filter(m => !['consistency', 'defense', 'breakdown'].includes(m.key))
+      .map(m => [m.key, `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`])),
+  };
+  teamTable = tidy(teamTable, mutate({
+    absoluteScore: d => weightEntries.reduce((sum, [key, weight]) => {
+      const realKey = realKeyMap[key] ?? key;
+      const value = d[realKey] ?? d[key] ?? 0;
       if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
       return sum + (value * parseFloat(weight));
     }, 0),

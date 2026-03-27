@@ -100,12 +100,22 @@ export async function POST(request) {
           epa3: maxEpa3 ? (entry.realEpa3 ?? 0) / maxEpa3 : 0,
         }));
 
-        // Step 3: recompute score using the same weight formula as computePicklistMetrics
+        // Step 3: recompute score (normalized) and absoluteScore (real values) using the same weight formula
         // Other normalized metrics (consistency, defense, breakdown, etc.) are unchanged.
+        const realKeyMap = {
+          epa: 'realEpa', epa3: 'realEpa3', defense: 'realDefense',
+          auto: 'realAuto', tele: 'realTele', end: 'realEnd', consistency: 'realConsistency',
+        };
         teamTable = teamTable.map(entry => ({
           ...entry,
           score: weightInputs.reduce((sum, [key, weight]) => {
             const value = entry[key] ?? 0;
+            if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+            return sum + (value * parseFloat(weight));
+          }, 0),
+          absoluteScore: weightInputs.reduce((sum, [key, weight]) => {
+            const realKey = realKeyMap[key] ?? `real${key.charAt(0).toUpperCase() + key.slice(1)}`;
+            const value = entry[realKey] ?? entry[key] ?? 0;
             if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
             return sum + (value * parseFloat(weight));
           }, 0),

@@ -948,7 +948,7 @@ export default function ScoutLeadsPage() {
                           <span className={styles.teamCommentBadge}>{teamComments.length}</span>
                         )}
                       </span>
-                      <span className={styles.teamRankScore}>{Number(t.score ?? 0).toFixed(1)}</span>
+                      <span className={styles.teamRankScore}>{Number(t.absoluteScore ?? t.score ?? 0).toFixed(1)}</span>
                       {teamComments.length > 0 && (
                         <span className={styles.teamExpandIcon}>{isExpanded ? "▲" : "▼"}</span>
                       )}
@@ -1491,7 +1491,7 @@ export default function ScoutLeadsPage() {
 
         {/* ── PPR Rankings Sidebar ──────────────────────────────── */}
         {config?.usePPR && (
-          <aside className={styles.oprSidebar}>
+          <aside className={`${styles.oprSidebar} ${oprShowMatches && oprResults?.length > 0 ? styles.oprSidebarExpanded : ""}`}>
             <h2 className={styles.sidebarTitle}>PPR Rankings</h2>
 
             {oprLoading && (
@@ -1513,6 +1513,13 @@ export default function ScoutLeadsPage() {
                   Recalculate
                 </button>
 
+                {!oprHasCalculated && (
+                  <p className={styles.sidebarNote}>
+                    {oprMatches.length} match{oprMatches.length === 1 ? "" : "es"} loaded.
+                    Click Recalculate to compute OPR.
+                  </p>
+                )}
+
                 <button
                   type="button"
                   className={styles.secondaryButton}
@@ -1523,7 +1530,49 @@ export default function ScoutLeadsPage() {
                     : `▼ Show Matches (${oprMatches.length})`}
                 </button>
 
-                {oprShowMatches && (
+                {oprShowMatches && oprResults?.length > 0 ? (
+                  <div className={styles.oprExpandedRow}>
+                    <div className={styles.oprExpandedRankings}>
+                      <ol className={styles.teamRankList}>
+                        {oprResults.map((r, idx) => (
+                          <li key={r.team} className={styles.teamRankItem}>
+                            <div className={styles.teamRankRow}>
+                              <span className={styles.teamRankNum}>{idx + 1}</span>
+                              <span className={styles.teamRankTeam}>{r.team}</span>
+                              <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div className={`${styles.oprMatchList} ${styles.oprExpandedMatches}`}>
+                      {oprMatches.map((m) => {
+                        const key = `${m.type}${m.number}`;
+                        const enabled = oprEnabled[key] !== false;
+                        return (
+                          <div
+                            key={key}
+                            className={`${styles.oprMatchRow} ${!enabled ? styles.oprMatchRowDisabled : ""}`}
+                          >
+                            <button
+                              type="button"
+                              className={`${styles.oprToggleBtn} ${enabled ? styles.oprToggleBtnOn : styles.oprToggleBtnOff}`}
+                              onClick={() =>
+                                setOprEnabled((prev) => ({ ...prev, [key]: !enabled }))
+                              }
+                              title={enabled ? "Click to exclude from OPR" : "Click to include in OPR"}
+                            >
+                              {enabled ? "✓" : "✗"}
+                            </button>
+                            <span className={styles.oprMatchLabel}>{key}</span>
+                            <span className={styles.oprMatchScoreRed}>{m.redScore}</span>
+                            <span className={styles.oprMatchScoreBlue}>{m.blueScore}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : oprShowMatches ? (
                   <div className={styles.oprMatchList}>
                     {oprMatches.map((m) => {
                       const key = `${m.type}${m.number}`;
@@ -1550,34 +1599,28 @@ export default function ScoutLeadsPage() {
                       );
                     })}
                   </div>
-                )}
-
-                {oprHasCalculated && oprResults === null && (
-                  <p className={styles.sidebarNote}>
-                    Not enough match data to compute OPR yet.
-                    Try including more matches or wait for more to be played.
-                  </p>
-                )}
-
-                {oprResults && oprResults.length > 0 && (
-                  <ol className={styles.teamRankList}>
-                    {oprResults.map((r, idx) => (
-                      <li key={r.team} className={styles.teamRankItem}>
-                        <div className={styles.teamRankRow}>
-                          <span className={styles.teamRankNum}>{idx + 1}</span>
-                          <span className={styles.teamRankTeam}>{r.team}</span>
-                          <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-
-                {!oprHasCalculated && (
-                  <p className={styles.sidebarNote}>
-                    {oprMatches.length} match{oprMatches.length === 1 ? "" : "es"} loaded.
-                    Click Recalculate to compute OPR.
-                  </p>
+                ) : (
+                  <>
+                    {oprHasCalculated && oprResults === null && (
+                      <p className={styles.sidebarNote}>
+                        Not enough match data to compute OPR yet.
+                        Try including more matches or wait for more to be played.
+                      </p>
+                    )}
+                    {oprResults && oprResults.length > 0 && (
+                      <ol className={styles.teamRankList}>
+                        {oprResults.map((r, idx) => (
+                          <li key={r.team} className={styles.teamRankItem}>
+                            <div className={styles.teamRankRow}>
+                              <span className={styles.teamRankNum}>{idx + 1}</span>
+                              <span className={styles.teamRankTeam}>{r.team}</span>
+                              <span className={styles.teamRankScore}>{r.opr.toFixed(1)}</span>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </>
                 )}
               </>
             )}

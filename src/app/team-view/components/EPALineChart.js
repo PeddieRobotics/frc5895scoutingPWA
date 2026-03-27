@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function EPALineChart({
   label,
+  displayLabel,
   data,
   color = "#a07c30",
   width = 350,
   height = 175,
+  responsive = false,
 }) {
   const [isClient, setIsClient] = useState(false);
 
@@ -44,13 +46,23 @@ export default function EPALineChart({
     return null;
   };
 
-  return (
-    <LineChart width={width} height={height} data={data}>
+  const chart = (
+    <LineChart width={responsive ? undefined : width} height={height} data={data}>
       <XAxis type="number" dataKey="match" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
       <YAxis dataKey={label} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
       <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
       <Tooltip content={<CustomTooltip />} />
-      <Line type="monotone" dataKey={label} stroke={color} strokeWidth="3"/>
+      <Line type="monotone" dataKey={label} name={displayLabel || label} stroke={color} strokeWidth="3"/>
     </LineChart>
   );
+
+  if (responsive) {
+    return (
+      <div style={{ touchAction: 'pan-y', width: '100%' }}>
+        <ResponsiveContainer width="100%" height={height}>{chart}</ResponsiveContainer>
+      </div>
+    );
+  }
+
+  return <div style={{ touchAction: 'pan-y' }}>{chart}</div>;
 }

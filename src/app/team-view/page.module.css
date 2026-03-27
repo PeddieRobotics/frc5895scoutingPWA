@@ -44,15 +44,53 @@
     padding-bottom: 0px;
     border-radius: 8px;
     font-size: 24px;
+    font-weight: 700;
     font-family: 'Montserrat', sans-serif;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .matchNav button:hover {
-    background: #0d1f35 !important;
-    color: #e8d5a3 !important;
-    border-color: #0d1f35 !important;
+    background: rgba(189, 151, 72, 0.07) !important;
+    border-color: rgba(160, 124, 48, 0.55) !important;
+    color: #0d1f35 !important;
+}
+
+.activeTeamButton {
+    background: rgba(189, 151, 72, 0.15) !important;
+    border-color: rgba(160, 124, 48, 0.7) !important;
+    color: #a07c30 !important;
+    font-weight: 700 !important;
+}
+
+.activeTeamButton:hover {
+    background: rgba(189, 151, 72, 0.22) !important;
+    border-color: rgba(160, 124, 48, 0.85) !important;
+}
+
+.navActionButton {
+    padding: 4px 18px !important;
+    background: #a07c30 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.12);
+    align-self: center;
+}
+
+.navActionButton:hover {
+    background: #8a6a28 !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+.navActionButton:active {
+    transform: scale(0.97);
 }
 
 /* ── Two-column layout ────────────────────────── */
@@ -404,9 +442,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    justify-content: center;
-    text-align: center;
-    align-content: center;
+    width: 100%;
 }
 
 /* ── Score breakdown / chart sections ────────── */
@@ -605,7 +641,7 @@
 
 /* ── Scout lead comments ──────────────────────── */
 .slCommentsSection {
-    margin: 24px 0 8px;
+    margin: 24px 0 48px;
     padding: 16px 20px;
     background: #ffffff;
     border: 1.5px solid rgba(160, 124, 48, 0.25);
@@ -613,14 +649,39 @@
     box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
+.slCommentsSectionToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.slCommentsSectionToggle[aria-expanded="true"] {
+    margin-bottom: 14px;
+}
+
 .slCommentsSectionTitle {
-    margin: 0 0 14px;
+    margin: 0;
     font-size: 1rem;
     font-weight: 700;
     color: #a07c30;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-family: 'Montserrat', sans-serif;
+}
+
+.slCommentsChevron {
+    font-size: 10px;
+    opacity: 0.6;
+    color: #a07c30;
+    flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .slMatchList {
