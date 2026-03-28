@@ -471,7 +471,7 @@
     font-family: 'Montserrat', sans-serif;
 }
 
-.graphContainer :nth-child(2) {
+.graphContainer > :last-child {
     margin-left: -50px;
 }
 
@@ -623,37 +623,27 @@
 }
 
 /* ── Overlay selector ─────────────────────────── */
-.overlaySelector {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 6px;
-    justify-content: center;
-}
-
-.overlaySelector button {
-    font-size: 11px;
+.overlaySelect {
+    font-size: 12px;
     font-weight: 600;
     font-family: 'Montserrat', sans-serif;
-    padding: 3px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(160, 124, 48, 0.35);
-    background: transparent;
-    color: rgba(13, 31, 53, 0.6);
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.06);
+    color: rgba(13, 31, 53, 0.75);
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.overlaySelector button:hover {
-    background: rgba(160, 124, 48, 0.07);
-    border-color: rgba(160, 124, 48, 0.55);
-    color: rgba(13, 31, 53, 0.8);
-}
-
-.overlayActive {
-    background: rgba(160, 124, 48, 0.12) !important;
-    border-color: rgba(160, 124, 48, 0.7) !important;
-    color: #a07c30 !important;
+.overlaySelect:focus {
+    outline: none;
+    border-color: rgba(160, 124, 48, 0.8);
+    background: rgba(160, 124, 48, 0.1);
 }
 
 /* ── Qualitative ratings grid ─────────────────── */

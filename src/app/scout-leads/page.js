@@ -50,9 +50,9 @@ function buildDisplayItems(timerSummary) {
  * Compute a soft hsl background color from a confidence average.
  * value=1 → red (hue 0), value=6 → green (hue 120).
  */
-function getConfidenceColor(value) {
+function getConfidenceColor(value, max = 6) {
   if (!value || value <= 1) return "#ffffff";
-  const ratio = Math.min(1, Math.max(0, (value - 1) / 5)); // 1–6 scale → 0–1
+  const ratio = Math.min(1, Math.max(0, (value - 1) / (max - 1)));
   const hue = Math.round(ratio * 120);
   return `hsl(${hue}, 65%, 93%)`;
 }
@@ -194,15 +194,18 @@ function renderEntryField(fieldDef, entry, editing, editValues, onChange) {
   if (type === "starRating" || type === "qualitative") {
     if (!editing) {
       if (value == null) return <span>—</span>;
-      return <span>{value} / 6 ★</span>;
+      return <span>{value} / {fieldDef.max || 6} ★</span>;
     }
     return (
       <input
         type="number"
         min={0}
-        max={6}
+        max={fieldDef.max || 6}
         value={editValues[name] ?? ""}
-        onChange={(e) => onChange(name, e.target.value === "" ? null : Math.max(0, Math.min(6, Number(e.target.value))))}
+        onChange={(e) => {
+          const fieldMax = fieldDef.max || 6;
+          onChange(name, e.target.value === "" ? null : Math.max(0, Math.min(fieldMax, Number(e.target.value))));
+        }}
         onWheel={(e) => e.target.blur()}
         className={styles.entryInput}
       />
@@ -840,7 +843,7 @@ export default function ScoutLeadsPage() {
       .filter((v) => Number.isFinite(v) && v > 0);
     if (!values.length) return "#ffffff";
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    return getConfidenceColor(avg);
+    return getConfidenceColor(avg, confidenceRatingField.max || 6);
   }, [confidenceRatingField, allScoutingRows]);
 
   const formatTimestamp = (ts) => {

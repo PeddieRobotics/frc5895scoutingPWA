@@ -801,13 +801,14 @@ A star-based rating system (1-N stars).
 | `label` | string | Yes | Display label |
 | `description` | string | No | Italic helper text shown below the label |
 | `zeroLabel` | string | No | Text shown when no stars are selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero. |
-| `ratingLabels` | string[] | No | Array of exactly 6 strings to override the default Low→High scale labels. Shown below the stars when a rating is selected. |
+| `max` | integer | No | Maximum star count. Defaults to `6`. Must be ≥ 2. |
+| `ratingLabels` | string[] | No | Array of exactly `max` strings (default 6) to override the default Low→High scale labels. Shown below the stars when a rating is selected. |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
 | `isConfidenceRating` | boolean | No | Marks this field as the primary color controller for the `/scout-leads` entries section background. Supported on `starRating`/`qualitative` (red→green gradient) and `checkbox` (boolean ratio, see `invertColor`). At most one field per config. |
 | `dbColumn` | object | Yes | Database column configuration |
 
-> **Star ratings are always out of 6.** The `Qualitative` component renders exactly 6 stars for both `starRating` and `qualitative` field types. Do not add a `max` property — it is not used by the component, the form, or any display/calculation logic.
+> **Star count is configurable.** Use the optional `max` property to set the number of stars (default: `6`). All rendering, editing, and inversion logic uses the actual `max` value. If `ratingLabels` is provided, it must have exactly `max` entries.
 
 **Database Type:** `INTEGER`
 
@@ -2164,7 +2165,8 @@ Both requirement types operate independently. A scouting row must satisfy **all*
 - `scoringRequirement` is only supported on `checkbox` fields. Using it on any other type is a **warning** and is ignored.
 - `scoringRequirement.requiredValue` must be a boolean. Any other type is a validation **error**.
 - `starRating`/`qualitative` `zeroLabel` must be a string when present. Any other type is a **warning** and is ignored.
-- `starRating`/`qualitative` `ratingLabels` must be an array of exactly 6 strings when present. Wrong length or non-string entries produce a **warning** and the default Low→High scale is used instead.
+- `starRating`/`qualitative` `max` must be an integer ≥ 2 when present. Invalid values produce a **warning** and the default of 6 is used.
+- `starRating`/`qualitative` `ratingLabels` must be an array of exactly `max` strings (default 6) when present. Wrong length or non-string entries produce a **warning** and the default Low→High scale is used instead.
 
 ---
 

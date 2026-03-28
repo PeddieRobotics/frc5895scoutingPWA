@@ -329,14 +329,27 @@ function QualitativeSection({ config, teamsData, teams, colors }) {
 
 function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [] }) {
   const [isClient, setIsClient] = useState(false);
-  const [selectedOverlay, setSelectedOverlay] = useState(null);
+  const [selectedVar, setSelectedVar] = useState(null);
   useEffect(() => { setIsClient(true); }, []);
   if (!isClient) return null;
 
+  function getTeamArr(team, sel) {
+    const d = teamsData[team];
+    if (!d) return [];
+    if (!sel) return d.epaOverTime || [];
+    if (sel === 'auto') return d.autoOverTime || [];
+    if (sel === 'tele') return d.teleOverTime || [];
+    if (sel === 'end')  return d.endOverTime  || [];
+    return d.overlayOverTime?.[sel] || [];
+  }
+  function getVarKey(sel) {
+    if (!sel) return 'epa';
+    if (['auto', 'tele', 'end'].includes(sel)) return sel;
+    return 'value';
+  }
+
   const allMatches = new Set();
-  teams.forEach(team => {
-    (teamsData[team]?.epaOverTime || []).forEach(p => allMatches.add(p.match));
-  });
+  teams.forEach(team => getTeamArr(team, selectedVar).forEach(p => allMatches.add(p.match)));
   if (allMatches.size === 0) return null;
 
   const sortedMatches = Array.from(allMatches).sort((a, b) => a - b);
@@ -345,40 +358,17 @@ function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [
   const xDomainEnd = (Math.floor(maxMatch / xTickInterval) + 1) * xTickInterval;
   const xTicks = Array.from({ length: Math.floor(xDomainEnd / xTickInterval) + 1 }, (_, i) => i * xTickInterval);
 
-  function getOverlayPoints(team, field) {
-    if (!field) return {};
-    const d = teamsData[team];
-    if (!d) return {};
-    let arr;
-    if (field === 'auto') arr = d.autoOverTime;
-    else if (field === 'tele') arr = d.teleOverTime;
-    else if (field === 'end') arr = d.endOverTime;
-    else arr = d.overlayOverTime?.[field];
-    if (!arr) return {};
-    const map = {};
-    arr.forEach(p => { map[p.match] = p[field] ?? p.value ?? null; });
-    return map;
-  }
-
-  const overlayMaps = selectedOverlay
-    ? teams.map(team => getOverlayPoints(team, selectedOverlay))
-    : null;
-
+  const varKey = getVarKey(selectedVar);
   const chartData = sortedMatches.map(match => {
     const point = { match };
     teams.forEach((team, i) => {
-      const entry = (teamsData[team]?.epaOverTime || []).find(p => p.match === match);
-      point[`team${i}`] = entry != null ? Math.round(entry.epa * 10) / 10 : null;
-      if (overlayMaps) {
-        const ov = overlayMaps[i][match];
-        point[`team${i}_overlay`] = ov != null ? Math.round(ov * 10) / 10 : null;
-      }
+      const entry = getTeamArr(team, selectedVar).find(p => p.match === match);
+      point[`team${i}`] = entry != null ? Math.round((entry[varKey] ?? 0) * 10) / 10 : null;
     });
     return point;
   });
 
-  const label = usePPR ? "PPR" : "EPA";
-  const overlayLabel = overlayOptions.find(o => o.field === selectedOverlay)?.label || selectedOverlay;
+  const chartLabel = selectedVar ? (overlayOptions.find(o => o.field === selectedVar)?.label || selectedVar) : (usePPR ? 'PPR' : 'EPA');
 
   const CustomTooltip = ({ active, payload, label: matchLabel }) => {
     if (!active || !payload?.length) return null;
@@ -394,30 +384,28 @@ function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [
 
   return (
     <div className={styles.section}>
-      <h2>{label} Over Time</h2>
+      <h2>{chartLabel} Over Time</h2>
       {overlayOptions.length > 0 && (
-        <div className={styles.overlaySelector}>
-          <button className={selectedOverlay === null ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(null)}>None</button>
+        <select
+          className={styles.overlaySelect}
+          value={selectedVar || ''}
+          onChange={e => setSelectedVar(e.target.value || null)}
+        >
+          <option value="">{usePPR ? 'PPR' : 'EPA'}</option>
           {overlayOptions.map(opt => (
-            <button key={opt.field} className={selectedOverlay === opt.field ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
+            <option key={opt.field} value={opt.field}>{opt.label}</option>
           ))}
-        </div>
+        </select>
       )}
       <div style={{ touchAction: 'pan-y', width: '100%' }}>
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chartData} margin={{ top: 5, right: selectedOverlay ? 30 : 16, left: 0, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
             <XAxis type="number" dataKey="match" domain={[0, xDomainEnd]} ticks={xTicks} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
             <YAxis yAxisId="left" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
-            {selectedOverlay && (
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
-            )}
             <Tooltip content={<CustomTooltip />} />
             {teams.map((team, i) => (
               <Line key={team} yAxisId="left" type="monotone" dataKey={`team${i}`} name={`Team ${team}`} stroke={colors[i]} strokeWidth={3} dot={{ r: 3, fill: colors[i] }} connectNulls={true} />
-            ))}
-            {selectedOverlay && teams.map((team, i) => (
-              <Line key={`${team}_overlay`} yAxisId="right" type="monotone" dataKey={`team${i}_overlay`} name={`${overlayLabel} (${team})`} stroke={colors[i]} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2, fill: colors[i] }} connectNulls={true} strokeOpacity={0.6} />
             ))}
           </LineChart>
         </ResponsiveContainer>

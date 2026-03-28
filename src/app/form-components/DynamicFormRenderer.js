@@ -194,7 +194,7 @@ export default function DynamicFormRenderer({
             internalName={field.name}
             description={field.description}
             minWhenVisible={field.minWhenVisible}
-            max={6}
+            max={field.max || 6}
             zeroLabel={field.zeroLabel}
             ratingLabels={field.ratingLabels}
           />

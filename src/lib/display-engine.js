@@ -4,6 +4,7 @@
  */
 
 import { tidy, mutate, mean, select, summarizeAll, groupBy, summarize, first, arrange, asc, desc, max } from '@tidyjs/tidy';
+import { getAllFields } from './form-renderer.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -429,13 +430,15 @@ export function aggregateTeamData(rows, config, calcFns) {
   }
 
   // Qualitative
+  const formFieldByName = Object.fromEntries(getAllFields(config).map(f => [f.name, f]));
   const qualitative = (teamViewConfig.qualitativeDisplay || []).map(q => {
     const validRows = rows.filter(r => r[q.name] != null && r[q.name] != -1);
     const vals = validRows.map(r => Number(r[q.name]));
     let rating = 0;
     if (vals.length) {
       const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
-      rating = q.inverted ? 6 - avg : avg;
+      const fieldMax = formFieldByName[q.name]?.max || 6;
+      rating = q.inverted ? fieldMax - avg : avg;
     }
     const entries = validRows.map(r => ({
       scout: r.scoutname || 'Unknown',

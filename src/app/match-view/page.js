@@ -52,7 +52,6 @@ function MatchView() {
   const epaBreakdownKeys = matchViewConfig?.epaBreakdown || [];
   const showEpaOverTime = matchViewConfig?.showEpaOverTime === true;
   const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
-  const [selectedOverlay, setSelectedOverlay] = useState(null);
   const teamStatsConfig = matchViewConfig?.teamStats || [];
   const formatUnscoredMatch = (issue) => {
     const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
@@ -590,6 +589,15 @@ function MatchView() {
   }
 
   function TeamDisplay({ teamData, colors, matchMax }) {
+    const [selectedVar, setSelectedVar] = useState(null);
+    function resolveVar(sel, td) {
+      if (!sel) return { data: td.epaOverTime || [], label: 'epa', displayLabel: config?.usePPR ? 'PPR' : 'EPA' };
+      if (sel === 'auto') return { data: td.autoOverTime || [], label: 'auto', displayLabel: 'Auto' };
+      if (sel === 'tele') return { data: td.teleOverTime || [], label: 'tele', displayLabel: 'Tele' };
+      if (sel === 'end')  return { data: td.endOverTime  || [], label: 'end',  displayLabel: 'End'  };
+      const optLabel = overlayOptions.find(o => o.field === sel)?.label || sel;
+      return { data: td.overlayOverTime?.[sel] || [], label: 'value', displayLabel: optLabel };
+    }
     // Check if endgame data is valid
     const hasEndgameData = teamData.endgame &&
       Object.values(teamData.endgame).some(value => value !== null && value > 0);
@@ -630,33 +638,34 @@ function MatchView() {
           />
         </div>
       )}
-      {showEpaOverTime && teamData.epaOverTime?.length > 0 && (
-        <div style={{ width: '100%', marginTop: "16px", marginBottom: "8px", padding: "0 12px", boxSizing: "border-box" }}>
-          <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>
-            {config?.usePPR ? "PPR Over Time" : "EPA Over Time"}
-          </h2>
-          {overlayOptions.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '6px', justifyContent: 'center' }}>
-              <button style={{ fontSize: '11px', fontWeight: 600, fontFamily: 'Montserrat', padding: '3px 10px', borderRadius: '6px', border: `1px solid rgba(160,124,48,${selectedOverlay === null ? 0.7 : 0.35})`, background: selectedOverlay === null ? 'rgba(160,124,48,0.12)' : 'transparent', color: selectedOverlay === null ? '#a07c30' : 'rgba(13,31,53,0.6)', cursor: 'pointer' }} onClick={() => setSelectedOverlay(null)}>None</button>
-              {overlayOptions.map(opt => (
-                <button key={opt.field} style={{ fontSize: '11px', fontWeight: 600, fontFamily: 'Montserrat', padding: '3px 10px', borderRadius: '6px', border: `1px solid rgba(160,124,48,${selectedOverlay === opt.field ? 0.7 : 0.35})`, background: selectedOverlay === opt.field ? 'rgba(160,124,48,0.12)' : 'transparent', color: selectedOverlay === opt.field ? '#a07c30' : 'rgba(13,31,53,0.6)', cursor: 'pointer' }} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
-              ))}
-            </div>
-          )}
-          <TeamEPALineChart
-            data={teamData.epaOverTime}
-            color={colors[3]}
-            label="epa"
-            displayLabel={config?.usePPR ? "PPR" : "EPA"}
-            height={175}
-            responsive={true}
-            overlayData={selectedOverlay === 'auto' ? teamData.autoOverTime : selectedOverlay === 'tele' ? teamData.teleOverTime : selectedOverlay === 'end' ? teamData.endOverTime : selectedOverlay ? (teamData.overlayOverTime?.[selectedOverlay] || []) : null}
-            overlayField={selectedOverlay === 'auto' ? 'auto' : selectedOverlay === 'tele' ? 'tele' : selectedOverlay === 'end' ? 'end' : selectedOverlay ? 'value' : null}
-            overlayLabel={overlayOptions.find(o => o.field === selectedOverlay)?.label || ''}
-            overlayColor="#1a7f3c"
-          />
-        </div>
-      )}
+      {showEpaOverTime && teamData.epaOverTime?.length > 0 && (() => {
+        const varChart = resolveVar(selectedVar, teamData);
+        return (
+          <div style={{ width: '100%', marginTop: "16px", marginBottom: "8px", padding: "0 12px", boxSizing: "border-box" }}>
+            <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>{varChart.displayLabel} Over Time</h2>
+            {overlayOptions.length > 0 && (
+              <select
+                className={styles.overlaySelect}
+                value={selectedVar || ''}
+                onChange={e => setSelectedVar(e.target.value || null)}
+              >
+                <option value="">{config?.usePPR ? 'PPR' : 'EPA'}</option>
+                {overlayOptions.map(opt => (
+                  <option key={opt.field} value={opt.field}>{opt.label}</option>
+                ))}
+              </select>
+            )}
+            <TeamEPALineChart
+              data={varChart.data}
+              color="#a07c30"
+              label={varChart.label}
+              displayLabel={varChart.displayLabel}
+              height={175}
+              responsive={true}
+            />
+          </div>
+        );
+      })()}
       {endgamePieConfig?.keys?.length > 0 && (
         <>
           <h2 style={{ textAlign: "center", marginTop: "20px", marginBottom: "0px" }}>

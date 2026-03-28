@@ -76,7 +76,15 @@ function TeamView() {
     // Extract teamView config with defaults
     const tvConfig = config?.display?.teamView || {};
     const overlayOptions = tvConfig.epaChartOverlayOptions || [];
-    const [selectedOverlay, setSelectedOverlay] = useState(null);
+    const [selectedVar, setSelectedVar] = useState(null);
+    function resolveVar(sel, teamData) {
+        if (!sel) return { data: teamData.epaOverTime || [], label: 'epa', displayLabel: config?.usePPR ? 'PPR' : 'EPA' };
+        if (sel === 'auto') return { data: teamData.autoOverTime || [], label: 'auto', displayLabel: 'Auto' };
+        if (sel === 'tele') return { data: teamData.teleOverTime || [], label: 'tele', displayLabel: 'Tele' };
+        if (sel === 'end')  return { data: teamData.endOverTime  || [], label: 'end',  displayLabel: 'End'  };
+        const optLabel = overlayOptions.find(o => o.field === sel)?.label || sel;
+        return { data: teamData.overlayOverTime?.[sel] || [], label: 'value', displayLabel: optLabel };
+    }
     const epaThresholds = tvConfig.epaThresholds || { overall: 12, auto: 6, tele: 10, end: 6 };
     const epaBreakdown = tvConfig.epaBreakdown || ["auto", "tele", "end"];
     // Dynamic piecePlacement group discovery
@@ -898,25 +906,30 @@ function TeamView() {
                             </div>
                         </div>
                         <div className={styles.graphContainer}>
-                            <h4 className={styles.graphTitle}>{config?.usePPR ? "PPR Over Time" : "EPA Over Time"}</h4>
-                            {overlayOptions.length > 0 && (
-                                <div className={styles.overlaySelector}>
-                                    <button className={selectedOverlay === null ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(null)}>None</button>
-                                    {overlayOptions.map(opt => (
-                                        <button key={opt.field} className={selectedOverlay === opt.field ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
-                                    ))}
-                                </div>
-                            )}
-                            <EPALineChart
-                                data={safeData.epaOverTime}
-                                color={Colors[0][3]}
-                                label={"epa"}
-                                displayLabel={config?.usePPR ? "PPR" : "epa"}
-                                overlayData={selectedOverlay === 'auto' ? safeData.autoOverTime : selectedOverlay === 'tele' ? safeData.teleOverTime : selectedOverlay === 'end' ? safeData.endOverTime : selectedOverlay ? (safeData.overlayOverTime?.[selectedOverlay] || []) : null}
-                                overlayField={selectedOverlay === 'auto' ? 'auto' : selectedOverlay === 'tele' ? 'tele' : selectedOverlay === 'end' ? 'end' : selectedOverlay ? 'value' : null}
-                                overlayLabel={overlayOptions.find(o => o.field === selectedOverlay)?.label || ''}
-                                overlayColor={Colors[4][2]}
-                            />
+                            {(() => {
+                                const varChart = resolveVar(selectedVar, safeData);
+                                return (<>
+                                    <h4 className={styles.graphTitle}>{varChart.displayLabel} Over Time</h4>
+                                    {overlayOptions.length > 0 && (
+                                        <select
+                                            className={styles.overlaySelect}
+                                            value={selectedVar || ''}
+                                            onChange={e => setSelectedVar(e.target.value || null)}
+                                        >
+                                            <option value="">{config?.usePPR ? 'PPR' : 'EPA'}</option>
+                                            {overlayOptions.map(opt => (
+                                                <option key={opt.field} value={opt.field}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <EPALineChart
+                                        data={varChart.data}
+                                        color={Colors[4][2]}
+                                        label={varChart.label}
+                                        displayLabel={varChart.displayLabel}
+                                    />
+                                </>);
+                            })()}
                         </div>
                         <div className={styles.valueBoxes}>
                             <div className={styles.leftColumnBoxes}>

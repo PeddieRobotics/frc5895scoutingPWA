@@ -52,7 +52,7 @@ export default function EPALineChart({
           <p style={{ margin: '0', fontWeight: '700' }}>{`Match: ${matchNumber}`}</p>
           {payload.map((entry, index) => (
             entry.value != null && (
-              <p key={index} style={{ margin: '0', color: entry.stroke || '#e8d5a3' }}>
+              <p key={index} style={{ margin: '0' }}>
                 {`${entry.name}: ${Math.round(entry.value * 10) / 10}`}
               </p>
             )

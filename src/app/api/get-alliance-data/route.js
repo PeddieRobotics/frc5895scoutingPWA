@@ -4,7 +4,7 @@ import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-con
 import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { aggregateAllianceData } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
-import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps, getLast3PerPeriodOPRMaps, getPPROverTime } from "../../../lib/opr-service";
+import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps, getLast3PerPeriodOPRMaps, getPPROverTime, getPerPeriodTeamData } from "../../../lib/opr-service";
 
 export const revalidate = 0; // Disable cache to ensure fresh data
 
@@ -106,13 +106,21 @@ export async function GET(request) {
       }
       if (gameConfig?.display?.matchView?.showEpaOverTime === true) {
         const teamNumbers = Object.keys(responseObject).map(Number);
-        const pprOverTimeResults = await Promise.allSettled(
-          teamNumbers.map(num => getPPROverTime(activeGame, num))
-        );
+        const [pprOverTimeResults, periodOverTimeResults] = await Promise.all([
+          Promise.allSettled(teamNumbers.map(num => getPPROverTime(activeGame, num))),
+          Promise.allSettled(teamNumbers.map(num => getPerPeriodTeamData(activeGame, num))),
+        ]);
         teamNumbers.forEach((num, i) => {
-          const result = pprOverTimeResults[i];
-          if (result.status === 'fulfilled' && Array.isArray(result.value) && result.value.length > 0) {
-            responseObject[String(num)].epaOverTime = result.value;
+          const key = String(num);
+          const epaResult = pprOverTimeResults[i];
+          if (epaResult.status === 'fulfilled' && Array.isArray(epaResult.value) && epaResult.value.length > 0) {
+            responseObject[key].epaOverTime = epaResult.value;
+          }
+          const periodResult = periodOverTimeResults[i];
+          if (periodResult.status === 'fulfilled' && periodResult.value) {
+            const pd = periodResult.value;
+            if (pd.autoOverTime?.length > 0) responseObject[key].autoOverTime = pd.autoOverTime;
+            if (pd.teleOverTime?.length > 0) responseObject[key].teleOverTime = pd.teleOverTime;
           }
         });
       }

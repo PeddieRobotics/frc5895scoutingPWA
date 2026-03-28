@@ -64,7 +64,7 @@ export default function Qualitative ({ visibleName, internalName, description, s
         }
     };
 
-    const effectiveLabels = (ratingLabels && ratingLabels.length === 6)
+    const effectiveLabels = (ratingLabels && ratingLabels.length === max)
         ? ratingLabels
         : DEFAULT_RATING_LABELS;
 

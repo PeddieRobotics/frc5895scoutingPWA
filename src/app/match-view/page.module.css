@@ -472,3 +472,27 @@
         font-size: 32px;
     }
 }
+
+/* ── Overlay selector ─────────────────────────────── */
+.overlaySelect {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.06);
+    color: rgba(13, 31, 53, 0.75);
+    cursor: pointer;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.overlaySelect:focus {
+    outline: none;
+    border-color: rgba(160, 124, 48, 0.8);
+    background: rgba(160, 124, 48, 0.1);
+}

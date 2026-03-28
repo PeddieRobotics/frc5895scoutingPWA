@@ -610,12 +610,20 @@ function validateStarRatingField(field, path, fieldNames, result) {
     result.addWarning('starRating zeroLabel should be a string', `${path}.zeroLabel`);
   }
 
+  // Validate max (optional)
+  if (field.max !== undefined) {
+    if (!Number.isInteger(field.max) || field.max < 2) {
+      result.addWarning('starRating max should be an integer >= 2', `${path}.max`);
+    }
+  }
+
   // Validate ratingLabels
+  const effectiveMax = (Number.isInteger(field.max) && field.max >= 2) ? field.max : 6;
   if (field.ratingLabels !== undefined) {
     if (!Array.isArray(field.ratingLabels)) {
-      result.addWarning('starRating ratingLabels should be an array of 6 strings', `${path}.ratingLabels`);
-    } else if (field.ratingLabels.length !== 6) {
-      result.addWarning(`starRating ratingLabels must have exactly 6 entries (found ${field.ratingLabels.length})`, `${path}.ratingLabels`);
+      result.addWarning(`starRating ratingLabels should be an array of ${effectiveMax} strings`, `${path}.ratingLabels`);
+    } else if (field.ratingLabels.length !== effectiveMax) {
+      result.addWarning(`starRating ratingLabels must have exactly ${effectiveMax} entries (found ${field.ratingLabels.length})`, `${path}.ratingLabels`);
     } else if (field.ratingLabels.some(l => typeof l !== 'string')) {
       result.addWarning('starRating ratingLabels entries must all be strings', `${path}.ratingLabels`);
     }

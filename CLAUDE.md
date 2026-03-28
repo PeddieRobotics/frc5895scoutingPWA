@@ -115,9 +115,9 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 - `isConfidenceRating: true` on a single `starRating`/`qualitative` field drives a red→green section background based on average confidence. `extractConfidenceRatingField()` in `schema-generator.js` extracts this field client-side.
 - The GET `/api/scout-leads` now returns `allScoutingRows` (all rows including noshow) and `currentUserTeam` in addition to existing timer data.
 - Edits are saved via `PATCH /api/edit-match-entry` which validates auth, checks allowed fields against config, and uses parameterized SQL.
-- **`starRating`/`qualitative` fields always render 6 stars.** The `Qualitative` component hardcodes `[1,2,3,4,5,6]`. Do not add `max` to these fields — it is stripped from all configs and ignored everywhere in the codebase.
+- **`starRating`/`qualitative` fields render `max` stars (default: 6).** Add `"max": N` (integer ≥ 2) to configure the star count. All rendering, editing, display, and inversion logic uses the actual `max` value.
 - **`zeroLabel`** (string, optional): text shown below the stars when no rating is selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero.
-- **`ratingLabels`** (array of exactly 6 strings, optional): overrides the default Low→High scale labels shown below the stars when a rating is selected. Defaults to `["Low", "Relatively Low", "Just Below Average", "Just Above Average", "Relatively High", "High"]`. Validated by `config-validator.js` — wrong length or non-strings produce a warning.
+- **`ratingLabels`** (array of exactly `max` strings, optional, default 6): overrides the default Low→High scale labels shown below the stars when a rating is selected. Defaults to `["Low", "Relatively Low", "Just Below Average", "Just Above Average", "Relatively High", "High"]`. Validated by `config-validator.js` — wrong length or non-strings produce a warning.
 
 ### Display Config Validation
 
