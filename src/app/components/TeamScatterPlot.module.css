@@ -1,0 +1,65 @@
+.container {
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 20px 16px 12px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 800;
+    text-align: center;
+    color: #0d1f35;
+    margin: 0 0 12px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.filterRow {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.filterInput {
+    width: 100%;
+    max-width: 340px;
+    padding: 6px 10px;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    color: #0d1f35;
+    background: #faf8f3;
+    outline: none;
+}
+
+.filterInput:focus {
+    border-color: rgba(160, 124, 48, 0.7);
+}
+
+.authWarning,
+.emptyState {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(13, 31, 53, 0.5);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+}
+
+.customTooltip {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    color: #0d1f35;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.tooltipTeam {
+    font-weight: 700;
+    margin-bottom: 4px;
+}

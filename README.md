@@ -1449,31 +1449,43 @@ Key responsibilities:
 
 ### Compare Configuration
 
-Key responsibilities:
-- Multi-team bar comparisons
-- Scoring expression chart
-- Endgame comparison chart
+The `compare` key drives the `/compare` page, which shows side-by-side pill cards with deltas for two teams.
 
 ```json
 {
   "compare": {
-    "metricsChart": [
-      { "key": "avgEpa", "label": "EPA" },
-      { "key": "avgAuto", "label": "Auto" }
+    "sections": [
+      {
+        "label": "Overall",
+        "stats": [
+          { "key": "avgEpa", "label": "PPR" },
+          { "key": "avgAuto", "label": "Auto" },
+          { "compute": "endPlacement.none", "label": "None %", "format": "percent", "invertDelta": true }
+        ]
+      }
     ],
-    "scoringChart": [
-      { "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" }
-    ],
-    "endgameChart": {
-      "metrics": ["None", "Park", "Deep"],
-      "keys": ["none", "park", "deep"],
-      "endgameSource": "endPlacement",
-      "fallbackSource": "endgame"
-    },
-    "defenseField": "defenseplayed"
+    "qualitativeSection": {
+      "label": "Qualitative",
+      "stats": [
+        { "label": "Defense Played", "defenseField": "defenseplayed" }
+      ]
+    }
   }
 }
 ```
+
+**`sections[]`** — array of `{ label, stats[] }` groups rendered as pill-card sections.
+
+Each stat in `stats[]` supports:
+- `label` (string, required): Display label.
+- `key` (string): Direct property on the per-team data object (e.g. `"avgEpa"`).
+- `compute` (string): Dot-path or `"path1 + path2"` expression into the team data object (e.g. `"endPlacement.none"`).
+- `format` (`"number"` | `"percent"`): `"percent"` appends `%`; `"number"` (default) shows one decimal.
+- `invertDelta` (boolean, default `false`): When `true`, the delta color is inverted — a positive delta is shown in red and a negative delta in green. Use this for stats where higher is worse (e.g. "None %" or "Failed %" in endgame).
+
+**`qualitativeSection`** — `{ label, stats[] }` for qualitative data.
+
+Each stat supports `defenseField` (renders avg star rating pill + per-entry hover tooltip), as well as `key`/`compute`/`format`/`invertDelta` for plain numeric stats.
 
 ### API Aggregation Configuration
 

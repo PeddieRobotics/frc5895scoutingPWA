@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
@@ -31,10 +31,23 @@ const COLORS = [
   "#c0392b", // red
 ];
 
+// Lighter tooltip-safe versions of each team color (readable on dark #0d1f35 background)
+const TOOLTIP_COLORS = {
+  "#a07c30": "#f0c94a",
+  "#2563eb": "#93c5fd",
+  "#1a7f3c": "#6ee7b7",
+  "#c0392b": "#fca5a5",
+};
+
+// Win/loss colors for relative comparison
+const WIN_COLOR  = '#1a7f3c';
+const LOSS_COLOR = '#c0392b';
+
 // Transparent tints for pill backgrounds
 function pillBg(hex) {
   return `${hex}18`;
 }
+
 
 export default function ComparePage() {
   return <Compare />;
@@ -226,6 +239,19 @@ function Compare() {
 
 function TeamInputForm({ initialTeams = ["", ""] }) {
   const [teamInputs, setTeamInputs] = useState(initialTeams.concat(Array(2 - initialTeams.length).fill("")).slice(0, 2));
+  const [isStuck, setIsStuck] = useState(false);
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsStuck(!entry.isIntersecting),
+      { threshold: 1, rootMargin: '-45px 0px 0px 0px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -237,7 +263,9 @@ function TeamInputForm({ initialTeams = ["", ""] }) {
   };
 
   return (
-    <form className={styles.teamInputForm} onSubmit={handleSubmit}>
+    <>
+      <div ref={sentinelRef} style={{ height: 1, marginTop: -1 }} />
+      <form className={`${styles.teamInputForm} ${isStuck ? styles.teamInputFormStuck : ''}`} onSubmit={handleSubmit}>
       <div className={styles.formFields}>
         {teamInputs.map((team, index) => (
           <div key={index} className={styles.inputGroup}>
@@ -259,6 +287,7 @@ function TeamInputForm({ initialTeams = ["", ""] }) {
       </div>
       <button type="submit" className={styles.compareButton}>Compare Teams</button>
     </form>
+    </>
   );
 }
 
@@ -284,16 +313,20 @@ function StatCard({ stat, teamsData, teams, colors }) {
     return 0;
   };
 
+  const v1 = getValue(teamsData[teams[0]] || {});
+  const v2 = teams.length >= 2 ? getValue(teamsData[teams[1]] || {}) : null;
+  const delta = v2 !== null ? v2 - v1 : null;
+
   return (
     <div className={styles.statCard}>
       <div className={styles.statCardLabel}>{stat.label}</div>
       <div className={styles.pillList}>
         {teams.map((team, i) => {
-          const v = getValue(teamsData[team] || {});
+          const v = i === 0 ? v1 : (v2 ?? 0);
           return (
             <span
               key={team}
-              className={styles.pill}
+              className={`${styles.pill} ${i === 0 ? styles.pillPrimary : styles.pillSecondary}`}
               style={{ borderColor: colors[i], color: colors[i], background: pillBg(colors[i]) }}
             >
               {formatStatVal(v, stat.format)}
@@ -301,6 +334,16 @@ function StatCard({ stat, teamsData, teams, colors }) {
           );
         })}
       </div>
+      {delta !== null && delta !== 0 && (
+        <div className={styles.deltaRow}>
+          <span
+            className={styles.deltaBadge}
+            style={{ color: (delta > 0) !== (stat.invertDelta === true) ? WIN_COLOR : LOSS_COLOR }}
+          >
+            {delta > 0 ? '+' : ''}{formatStatVal(delta, stat.format)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -348,11 +391,16 @@ function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [
     return 'value';
   }
 
+  // Only hide the whole section if there's no base PPR/EPA data at all
+  const baseMatches = new Set();
+  teams.forEach(team => getTeamArr(team, null).forEach(p => baseMatches.add(p.match)));
+  if (baseMatches.size === 0) return null;
+
   const allMatches = new Set();
   teams.forEach(team => getTeamArr(team, selectedVar).forEach(p => allMatches.add(p.match)));
-  if (allMatches.size === 0) return null;
+  const hasData = allMatches.size > 0;
 
-  const sortedMatches = Array.from(allMatches).sort((a, b) => a - b);
+  const sortedMatches = hasData ? Array.from(allMatches).sort((a, b) => a - b) : [];
   const maxMatch = sortedMatches[sortedMatches.length - 1] ?? 0;
   const xTickInterval = Math.ceil(maxMatch / 9) || 1;
   const xDomainEnd = (Math.floor(maxMatch / xTickInterval) + 1) * xTickInterval;
@@ -376,7 +424,7 @@ function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [
       <div style={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', padding: '10px', borderRadius: '8px', fontFamily: 'Montserrat', fontSize: '13px', color: '#e8d5a3' }}>
         <p style={{ margin: '0 0 4px', fontWeight: '700' }}>Match {matchLabel}</p>
         {payload.map((entry, i) => (
-          <p key={i} style={{ margin: '0', color: entry.stroke }}>{entry.name}: {entry.value ?? '—'}</p>
+          <p key={i} style={{ margin: '0', color: TOOLTIP_COLORS[entry.stroke] || '#e8d5a3' }}>{entry.name}: {entry.value ?? '—'}</p>
         ))}
       </div>
     );
@@ -397,19 +445,25 @@ function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [
           ))}
         </select>
       )}
-      <div style={{ touchAction: 'pan-y', width: '100%' }}>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
-            <XAxis type="number" dataKey="match" domain={[0, xDomainEnd]} ticks={xTicks} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
-            <YAxis yAxisId="left" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
-            <Tooltip content={<CustomTooltip />} />
-            {teams.map((team, i) => (
-              <Line key={team} yAxisId="left" type="monotone" dataKey={`team${i}`} name={`Team ${team}`} stroke={colors[i]} strokeWidth={3} dot={{ r: 3, fill: colors[i] }} connectNulls={true} />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {hasData ? (
+        <div style={{ touchAction: 'pan-y', width: '100%' }}>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+              <XAxis type="number" dataKey="match" domain={[0, xDomainEnd]} ticks={xTicks} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+              <Tooltip content={<CustomTooltip />} />
+              {teams.map((team, i) => (
+                <Line key={team} yAxisId="left" type="monotone" dataKey={`team${i}`} name={`Team ${team}`} stroke={colors[i]} strokeWidth={3} dot={{ r: 3, fill: colors[i] }} connectNulls={true} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p style={{ textAlign: 'center', color: 'rgba(13,31,53,0.4)', fontFamily: 'Montserrat', fontSize: '13px', margin: '20px 0 8px' }}>
+          No data available for this selection.
+        </p>
+      )}
     </div>
   );
 }
@@ -458,27 +512,45 @@ function QualStatCard({ stat, teamsData, teams, colors }) {
     return { team, color: colors[i], avg: v, tooltipLines: [] };
   });
 
+  const e1 = teamEntries[0];
+  const e2 = teamEntries.length >= 2 ? teamEntries[1] : null;
+  const qualDelta = (e1?.avg !== null && e2?.avg !== null && e2 !== null)
+    ? e2.avg - e1.avg
+    : null;
+
   return (
     <div className={styles.statCard}>
       <div className={styles.statCardLabel}>{stat.label}</div>
       <div className={styles.pillList}>
-        {teamEntries.map(entry => (
-          <span
-            key={entry.team}
-            className={`${styles.pill} ${entry.tooltipLines.length > 0 ? styles.pillHoverable : ''}`}
-            style={{ borderColor: entry.color, color: entry.color, background: pillBg(entry.color) }}
-          >
-            {entry.avg !== null ? formatStatVal(entry.avg, stat.format) : '—'}
-            {entry.tooltipLines.length > 0 && (
-              <span className={styles.qualTooltip}>
-                {entry.tooltipLines.map((line, i) => (
-                  <span key={i} className={styles.qualTooltipLine}>{line}</span>
-                ))}
-              </span>
-            )}
-          </span>
-        ))}
+        {teamEntries.map((entry, i) => {
+          return (
+            <span
+              key={entry.team}
+              className={`${styles.pill} ${i === 0 ? styles.pillPrimary : styles.pillSecondary} ${entry.tooltipLines.length > 0 ? styles.pillHoverable : ''}`}
+              style={{ borderColor: entry.color, color: entry.color, background: pillBg(entry.color) }}
+            >
+              {entry.avg !== null ? formatStatVal(entry.avg, stat.format) : '—'}
+              {entry.tooltipLines.length > 0 && (
+                <span className={styles.qualTooltip}>
+                  {entry.tooltipLines.map((line, i) => (
+                    <span key={i} className={styles.qualTooltipLine}>{line}</span>
+                  ))}
+                </span>
+              )}
+            </span>
+          );
+        })}
       </div>
+      {qualDelta !== null && qualDelta !== 0 && (
+        <div className={styles.deltaRow}>
+          <span
+            className={styles.deltaBadge}
+            style={{ color: qualDelta > 0 ? WIN_COLOR : LOSS_COLOR }}
+          >
+            {qualDelta > 0 ? '+' : ''}{formatStatVal(qualDelta, stat.format)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

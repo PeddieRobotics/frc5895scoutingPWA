@@ -508,6 +508,44 @@ button.recalculateIsMad:hover {
     outline: none;
 }
 
+/* ── Scatter axis dropdowns ───────────────────── */
+.scatterAxisSelectors {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 0 4px;
+}
+
+.scatterAxisLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(13, 31, 53, 0.65);
+    flex: 1;
+    min-width: 140px;
+}
+
+.scatterAxisSelect {
+    padding: 5px 8px;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
+    background: #faf8f3;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    color: #0d1f35;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+}
+
+.scatterAxisSelect:focus {
+    border-color: rgba(160, 124, 48, 0.7);
+}
+
 .configSection {
     display: flex;
     flex-direction: column;

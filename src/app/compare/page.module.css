@@ -31,12 +31,15 @@
 
 /* ── Team input form ──────────────────────────── */
 .teamInputForm {
+    position: sticky;
+    top: 45px;
+    z-index: 100;
     margin-bottom: 20px;
-    padding: 20px;
+    padding: 14px 20px;
     background: #ffffff;
     border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+    box-shadow: 0 4px 16px rgba(13, 31, 53, 0.12);
 }
 
 .formFields {
@@ -44,13 +47,16 @@
     flex-wrap: wrap;
     gap: 15px;
     justify-content: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .inputGroup {
     display: flex;
     flex-direction: column;
-    width: 120px;
+    flex: 1;
+    min-width: 120px;
+    max-width: 240px;
+    width: 240px;
 }
 
 .inputGroup label {
@@ -77,6 +83,11 @@
 
 .inputGroup input:focus {
     border-color: rgba(160, 124, 48, 0.8);
+}
+
+.teamInputFormStuck {
+    border-radius: 0 0 12px 12px;
+    border-top-color: transparent;
 }
 
 .compareButton {
@@ -172,7 +183,7 @@
 /* ── Stat grid (cards within a section) ──────── */
 .statGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px;
 }
 
@@ -207,7 +218,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 10px;
+    flex: 1;
+    min-width: 60px;
+    padding: 5px 10px;
     border-radius: 7px;
     border: 1.5px solid;
     font-weight: 700;
@@ -215,6 +228,30 @@
     font-family: 'Montserrat', sans-serif;
     user-select: none;
     white-space: nowrap;
+}
+
+/* Team 1 — equal size, left position */
+.pillPrimary {
+    flex: 1;
+}
+
+/* Team 2 — equal size, right position */
+.pillSecondary {
+    flex: 1;
+}
+
+/* ── Delta row (relative comparison beneath absolute values) ── */
+.deltaRow {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.deltaBadge {
+    font-size: 15px;
+    font-weight: 800;
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: 0.02em;
 }
 
 /* ── Qualitative pill with hover tooltip ──────── */

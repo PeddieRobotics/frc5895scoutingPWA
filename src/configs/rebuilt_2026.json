@@ -966,7 +966,8 @@
             {
               "compute": "endPlacement.none",
               "label": "None",
-              "format": "percent"
+              "format": "percent",
+              "invertDelta": true
             },
             {
               "compute": "endPlacement.l1",
@@ -986,7 +987,8 @@
             {
               "compute": "endPlacement.failed",
               "label": "Failed",
-              "format": "percent"
+              "format": "percent",
+              "invertDelta": true
             }
           ]
         }

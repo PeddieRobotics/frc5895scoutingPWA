@@ -1322,29 +1322,6 @@ function TeamView() {
                                         ))}
                                     </div>
                                 )}
-                                {(() => {
-                                    const scoutEntries = buildDefenseChartData().filter(e => e.name !== 'TOTAL' && e.value > 0);
-                                    if (scoutEntries.length === 0) return null;
-                                    return (
-                                        <div className={styles.radarContainer}>
-                                            <h4 className={styles.graphTitle}>Defense — By Scout</h4>
-                                            <table className={styles.differentTable}>
-                                                <tbody>
-                                                    <tr>
-                                                        {scoutEntries.map(entry => (
-                                                            <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1] }}>{entry.name}</td>
-                                                        ))}
-                                                    </tr>
-                                                    <tr>
-                                                        {scoutEntries.map(entry => (
-                                                            <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0] }}>{entry.value.toFixed(1)}</td>
-                                                        ))}
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    );
-                                })()}
                                 {scouterConfidenceField && safeData.scouterConfidenceOverTime.length > 0 && (
                                     <div className={styles.radarContainer}>
                                         <h4 className={styles.graphTitle}>Scouter Confidence Per Match</h4>

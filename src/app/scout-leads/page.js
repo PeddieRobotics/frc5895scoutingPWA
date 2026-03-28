@@ -5,6 +5,7 @@ import useGameConfig from "../../lib/useGameConfig";
 import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScoringRequirementFields } from "../../lib/schema-generator";
 import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
+import TeamScatterPlot from "../components/TeamScatterPlot";
 
 function getAuthHeaders() {
   if (typeof window === "undefined") return {};
@@ -390,6 +391,9 @@ export default function ScoutLeadsPage() {
   // Sidebar rankings state
   const [sidebarWeights, setSidebarWeights] = useState({});
   const [sidebarTeams, setSidebarTeams] = useState([]);
+  const [scatterX, setScatterX] = useState('');
+  const [scatterY, setScatterY] = useState('');
+  const [scatterTeams, setScatterTeams] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarError, setSidebarError] = useState("");
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -496,7 +500,7 @@ export default function ScoutLeadsPage() {
     fetchOprMatches();
   }, [config, gameId, configLoading]);
 
-  // Initialize sidebar weights (all zero) when config loads
+  // Initialize sidebar weights and scatter axes when config loads
   useEffect(() => {
     const weightsConfig = config?.display?.picklist?.weights || [];
     if (weightsConfig.length === 0) return;
@@ -506,7 +510,28 @@ export default function ScoutLeadsPage() {
       weightsConfig.forEach((w) => { initial[w.key] = "0"; });
       return initial;
     });
+    setScatterX(prev => prev || weightsConfig[0]?.key || '');
+    setScatterY(prev => prev || weightsConfig[1]?.key || weightsConfig[0]?.key || '');
   }, [config]);
+
+  // Auto-fetch scatter data on load (independent of manual Generate Rankings)
+  const picklistFirstKey = (config?.display?.picklist?.weights ?? [])[0]?.key ?? null;
+  useEffect(() => {
+    if (!picklistFirstKey) return;
+    const weightsConfig = config?.display?.picklist?.weights || [];
+    const equalWeights = weightsConfig.map(w => [w.key, '1']);
+    const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+    if (gameId) headers['X-Game-Id'] = String(gameId);
+    fetch('/api/compute-picklist', {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(equalWeights),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.teamTable) setScatterTeams(data.teamTable); })
+      .catch(() => {});
+  }, [gameId, picklistFirstKey]);
 
   const handleOprRecalculate = async () => {
     const enabledMatches = oprMatches.filter(
@@ -858,6 +883,19 @@ export default function ScoutLeadsPage() {
   const picklistWeightsConfig = config?.display?.picklist?.weights || [];
   const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"];
 
+  const resolveAxisValue = (t, key) => key === 'team' ? Number(t.team) : (t[key] ?? 0);
+  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (picklistWeightsConfig.find(w => w.key === key)?.label ?? key);
+
+  const scatterData = useMemo(() =>
+    scatterTeams.map(t => ({
+      team: t.team,
+      x: resolveAxisValue(t, scatterX),
+      y: resolveAxisValue(t, scatterY),
+      z: 1,
+    })),
+    [scatterTeams, scatterX, scatterY]
+  );
+
   // Group all comments by team for the sidebar
   const commentsByTeam = useMemo(() => {
     const map = {};
@@ -882,6 +920,46 @@ export default function ScoutLeadsPage() {
           </ul>
         </div>
       )}
+      {/* ── Full-width scatter chart ──────────────────────── */}
+      {picklistWeightsConfig.length > 0 && (
+        <div className={styles.scatterSection}>
+          <div className={styles.scatterAxisSelectors}>
+            <label className={styles.scatterAxisLabel}>
+              X Axis
+              <select
+                className={styles.scatterAxisSelect}
+                value={scatterX}
+                onChange={e => setScatterX(e.target.value)}
+              >
+                <option value="team">Team Number</option>
+                {picklistWeightsConfig.map(w => (
+                  <option key={w.key} value={w.key}>{w.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className={styles.scatterAxisLabel}>
+              Y Axis
+              <select
+                className={styles.scatterAxisSelect}
+                value={scatterY}
+                onChange={e => setScatterY(e.target.value)}
+              >
+                <option value="team">Team Number</option>
+                {picklistWeightsConfig.map(w => (
+                  <option key={w.key} value={w.key}>{w.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <TeamScatterPlot
+            teamData={scatterData}
+            isAuthenticated={true}
+            xLabel={resolveAxisLabel(scatterX)}
+            yLabel={resolveAxisLabel(scatterY)}
+          />
+        </div>
+      )}
+
       <div className={styles.pageLayout}>
 
         {/* ── Rankings Sidebar ──────────────────────────────── */}
