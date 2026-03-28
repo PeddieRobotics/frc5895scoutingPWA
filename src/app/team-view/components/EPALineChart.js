@@ -10,6 +10,10 @@ export default function EPALineChart({
   width = 350,
   height = 175,
   responsive = false,
+  overlayData = null,   // [{match, value}] or [{match, [overlayField]}]
+  overlayField = null,  // key to read from overlayData points ("value", "auto", "tele", "end")
+  overlayLabel = "",
+  overlayColor = "#1a7f3c",
 }) {
   const [isClient, setIsClient] = useState(false);
 
@@ -19,10 +23,21 @@ export default function EPALineChart({
 
   if (!isClient) return null;
 
-  // Custom tooltip component to prevent text overflow
-  const CustomTooltip = ({ active, payload, label }) => {
+  const hasOverlay = overlayData && overlayData.length > 0 && overlayField;
+
+  // Merge overlay data into main data by match number
+  const mergedData = hasOverlay ? (() => {
+    const overlayMap = {};
+    overlayData.forEach(p => { overlayMap[p.match] = p[overlayField] ?? null; });
+    return data.map(point => ({
+      ...point,
+      _overlay: overlayMap[point.match] ?? null,
+    }));
+  })() : data;
+
+  const CustomTooltip = ({ active, payload, label: matchLabel }) => {
     if (active && payload && payload.length) {
-      const matchNumber = payload[0]?.payload?.match || label;
+      const matchNumber = payload[0]?.payload?.match || matchLabel;
       return (
         <div style={{
           background: '#0d1f35',
@@ -36,9 +51,11 @@ export default function EPALineChart({
         }}>
           <p style={{ margin: '0', fontWeight: '700' }}>{`Match: ${matchNumber}`}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ margin: '0', color: '#e8d5a3' }}>
-              {`${entry.name}: ${Math.round(entry.value * 10) / 10}`}
-            </p>
+            entry.value != null && (
+              <p key={index} style={{ margin: '0', color: entry.stroke || '#e8d5a3' }}>
+                {`${entry.name}: ${Math.round(entry.value * 10) / 10}`}
+              </p>
+            )
           ))}
         </div>
       );
@@ -47,12 +64,18 @@ export default function EPALineChart({
   };
 
   const chart = (
-    <LineChart width={responsive ? undefined : width} height={height} data={data}>
+    <LineChart width={responsive ? undefined : width} height={height} data={mergedData}>
       <XAxis type="number" dataKey="match" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
-      <YAxis dataKey={label} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+      <YAxis yAxisId="left" dataKey={label} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+      {hasOverlay && (
+        <YAxis yAxisId="right" orientation="right" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+      )}
       <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
       <Tooltip content={<CustomTooltip />} />
-      <Line type="monotone" dataKey={label} name={displayLabel || label} stroke={color} strokeWidth="3"/>
+      <Line yAxisId="left" type="monotone" dataKey={label} name={displayLabel || label} stroke={color} strokeWidth="3" />
+      {hasOverlay && (
+        <Line yAxisId="right" type="monotone" dataKey="_overlay" name={overlayLabel} stroke={overlayColor} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2, fill: overlayColor }} connectNulls />
+      )}
     </LineChart>
   );
 

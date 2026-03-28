@@ -93,6 +93,7 @@ See `README.md` for full reference. Key top-level keys:
   - `teamView.piecePlacement.<group>.avgLabel` — TwoByTwo avg column header override (default: `"Average"`)
   - `compare.sections[]` — array of `{ label, stats[] }` groups rendered as pill-card sections on `/compare`; each stat is `{ label, key?, compute?, format? }` where `key` is a direct property on team data, `compute` is a dot-path or `"path1 + path2"` expression, and `format` is `"number"` (default, 1 decimal) or `"percent"` (1 decimal + `%`)
   - `compare.qualitativeSection` — `{ label, stats[] }` section for qualitative data; each stat supports `defenseField` (scouting row field name) which renders a pill showing the avg rating with a hover tooltip listing `"{scout} #Q{match}: {rating}"` per entry; also supports `key`/`compute` for plain numeric stats
+  - `teamView.epaChartOverlayOptions[]` — `{field, label}` array. Adds a pill-style selector above the main PPR/EPA Over Time chart on `/team-view`, `/match-view`, and `/compare`. Selecting an option renders a dashed second line on a right-side Y-axis. `field` is either `"auto"/"tele"/"end"` (reuses existing per-period over-time arrays) or a `qualitativeDisplay` field name (plots per-match star-rating averages from `overlayOverTime`). Omit or set to `[]` to hide selector. Auto/Tele sub-charts in team-view do **not** get an overlay selector.
 
 Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`/`qualitative`, `table`, `collapsible`
 

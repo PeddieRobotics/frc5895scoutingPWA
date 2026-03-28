@@ -104,6 +104,8 @@ export async function GET(request) {
       epaOverTime: [],
       autoOverTime: [],
       teleOverTime: [],
+      endOverTime: [],
+      overlayOverTime: {},
       consistency: 0,
       defense: 0,
       breakdown: 0,

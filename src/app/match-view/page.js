@@ -51,6 +51,8 @@ function MatchView() {
   const rankingPointsConfig = matchViewConfig?.rankingPoints || [];
   const epaBreakdownKeys = matchViewConfig?.epaBreakdown || [];
   const showEpaOverTime = matchViewConfig?.showEpaOverTime === true;
+  const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
+  const [selectedOverlay, setSelectedOverlay] = useState(null);
   const teamStatsConfig = matchViewConfig?.teamStats || [];
   const formatUnscoredMatch = (issue) => {
     const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
@@ -633,6 +635,14 @@ function MatchView() {
           <h2 style={{ marginBottom: "0px", marginTop: "0px" }}>
             {config?.usePPR ? "PPR Over Time" : "EPA Over Time"}
           </h2>
+          {overlayOptions.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '6px', justifyContent: 'center' }}>
+              <button style={{ fontSize: '11px', fontWeight: 600, fontFamily: 'Montserrat', padding: '3px 10px', borderRadius: '6px', border: `1px solid rgba(160,124,48,${selectedOverlay === null ? 0.7 : 0.35})`, background: selectedOverlay === null ? 'rgba(160,124,48,0.12)' : 'transparent', color: selectedOverlay === null ? '#a07c30' : 'rgba(13,31,53,0.6)', cursor: 'pointer' }} onClick={() => setSelectedOverlay(null)}>None</button>
+              {overlayOptions.map(opt => (
+                <button key={opt.field} style={{ fontSize: '11px', fontWeight: 600, fontFamily: 'Montserrat', padding: '3px 10px', borderRadius: '6px', border: `1px solid rgba(160,124,48,${selectedOverlay === opt.field ? 0.7 : 0.35})`, background: selectedOverlay === opt.field ? 'rgba(160,124,48,0.12)' : 'transparent', color: selectedOverlay === opt.field ? '#a07c30' : 'rgba(13,31,53,0.6)', cursor: 'pointer' }} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
+              ))}
+            </div>
+          )}
           <TeamEPALineChart
             data={teamData.epaOverTime}
             color={colors[3]}
@@ -640,6 +650,10 @@ function MatchView() {
             displayLabel={config?.usePPR ? "PPR" : "EPA"}
             height={175}
             responsive={true}
+            overlayData={selectedOverlay === 'auto' ? teamData.autoOverTime : selectedOverlay === 'tele' ? teamData.teleOverTime : selectedOverlay === 'end' ? teamData.endOverTime : selectedOverlay ? (teamData.overlayOverTime?.[selectedOverlay] || []) : null}
+            overlayField={selectedOverlay === 'auto' ? 'auto' : selectedOverlay === 'tele' ? 'tele' : selectedOverlay === 'end' ? 'end' : selectedOverlay ? 'value' : null}
+            overlayLabel={overlayOptions.find(o => o.field === selectedOverlay)?.label || ''}
+            overlayColor="#1a7f3c"
           />
         </div>
       )}

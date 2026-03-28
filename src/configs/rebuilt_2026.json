@@ -75,7 +75,14 @@
               "name": "autoshootonthemoverating",
               "label": "Auto Shot Quality While Moving",
               "description": "How well did the robot shoot while driving during auto?",
-              "ratingLabels": ["Very Shaky / Missed Most", "Poor", "Below Average", "Above Average", "Good", "Smooth & Consistent"],
+              "ratingLabels": [
+                "Very Shaky / Missed Most",
+                "Poor",
+                "Below Average",
+                "Above Average",
+                "Good",
+                "Smooth & Consistent"
+              ],
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -89,7 +96,14 @@
           "name": "autoefficiency",
           "label": "Auto Shooting Efficiency",
           "description": "How efficiently did the robot score in auto?",
-          "ratingLabels": ["Poor Routing / Many Misses", "Below Average", "Moderate", "Above Average", "Good", "Clean Fast Cycles"],
+          "ratingLabels": [
+            "Poor Routing / Many Misses",
+            "Below Average",
+            "Moderate",
+            "Above Average",
+            "Good",
+            "Clean Fast Cycles"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -148,7 +162,14 @@
               "name": "teleshootonthemoverating",
               "label": "Tele Shot Quality While Moving",
               "description": "How well did the robot shoot while driving during teleop?",
-              "ratingLabels": ["Very Shaky / Missed Most", "Poor", "Below Average", "Above Average", "Good", "Smooth & Consistent"],
+              "ratingLabels": [
+                "Very Shaky / Missed Most",
+                "Poor",
+                "Below Average",
+                "Above Average",
+                "Good",
+                "Smooth & Consistent"
+              ],
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -162,7 +183,14 @@
           "name": "teleefficiency",
           "label": "Tele Shooting Efficiency",
           "description": "How efficiently did the robot score in teleop?",
-          "ratingLabels": ["Poor Routing / Many Misses", "Below Average", "Moderate", "Above Average", "Good", "Clean Fast Cycles"],
+          "ratingLabels": [
+            "Poor Routing / Many Misses",
+            "Below Average",
+            "Moderate",
+            "Above Average",
+            "Good",
+            "Clean Fast Cycles"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -173,7 +201,14 @@
           "name": "driving",
           "label": "Driving / Spatial Awareness",
           "description": "How aware was the driver of the field around them?",
-          "ratingLabels": ["Frequent Collisions / Stuck", "Poor Awareness", "Below Average", "Above Average", "Good Awareness", "Precise Positioning"],
+          "ratingLabels": [
+            "Frequent Collisions / Stuck",
+            "Poor Awareness",
+            "Below Average",
+            "Above Average",
+            "Good Awareness",
+            "Precise Positioning"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -319,7 +354,14 @@
           "name": "shootingcapacity",
           "label": "Shooting Capacity",
           "description": "How many balls can the robot hold and rapidly cycle?",
-          "ratingLabels": ["1 at a Time / Very Slow", "Low Capacity", "Below Average", "Above Average", "High Capacity", "Large & Near-Instant Reload"],
+          "ratingLabels": [
+            "1 at a Time / Very Slow",
+            "Low Capacity",
+            "Below Average",
+            "Above Average",
+            "High Capacity",
+            "Large & Near-Instant Reload"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -330,7 +372,14 @@
           "name": "shootingaccuracy",
           "label": "Shooting Accuracy",
           "description": "How accurate were the robot's shots overall this match?",
-          "ratingLabels": ["Missed Almost All", "Below Average", "Moderate", "Above Average", "Very Accurate", "Near-Perfect Accuracy"],
+          "ratingLabels": [
+            "Missed Almost All",
+            "Below Average",
+            "Moderate",
+            "Above Average",
+            "Very Accurate",
+            "Near-Perfect Accuracy"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -341,7 +390,14 @@
           "name": "shootingrange",
           "label": "Shooting Range",
           "description": "How far from the target can this robot reliably shoot?",
-          "ratingLabels": ["Point-Blank Only", "Very Short Range", "Short Range", "Medium Range", "Long Range", "Full-Field Accuracy"],
+          "ratingLabels": [
+            "Point-Blank Only",
+            "Very Short Range",
+            "Short Range",
+            "Medium Range",
+            "Long Range",
+            "Full-Field Accuracy"
+          ],
           "dbColumn": {
             "type": "INTEGER",
             "default": null
@@ -365,7 +421,14 @@
               "name": "passingrating",
               "label": "Passing Quality",
               "description": "How accurate and reliable were the robot's passes?",
-              "ratingLabels": ["Frequent Misses / Lost Balls", "Unreliable", "Below Average", "Above Average", "Reliable", "Precise & Always Caught"],
+              "ratingLabels": [
+                "Frequent Misses / Lost Balls",
+                "Unreliable",
+                "Below Average",
+                "Above Average",
+                "Reliable",
+                "Precise & Always Caught"
+              ],
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -445,73 +508,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "qualitative",
-      "header": "Qualitative Ratings",
-      "showWhen": {
-        "field": "noshow",
-        "equals": false
-      },
-      "hidden": true,
-      "description": "These fields are for internal tracking and not shown on the main form",
-      "fields": [
-        {
-          "type": "starRating",
-          "name": "shootingspeed",
-          "label": "Shooting Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "intakespeed",
-          "label": "Intake Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "climbspeed",
-          "label": "Climb Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "maneuverability",
-          "label": "Maneuverability",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "defenseevasion",
-          "label": "Defense Evasion",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "aggression",
-          "label": "Aggression",
-          "inverted": true,
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        }
-      ]
     }
   ],
   "calculations": {
@@ -539,6 +535,14 @@
   },
   "display": {
     "teamView": {
+      "epaChartOverlayOptions": [
+        { "field": "auto", "label": "Auto" },
+        { "field": "tele", "label": "Tele" },
+        { "field": "defenseplayed", "label": "Defense Rating" },
+        { "field": "driving", "label": "Driving" },
+        { "field": "autoefficiency", "label": "Auto Efficiency" },
+        { "field": "teleefficiency", "label": "Tele Efficiency" }
+      ],
       "epaBreakdown": [
         "auto",
         "tele",
@@ -700,23 +704,28 @@
       "qualitativeDisplay": [
         {
           "name": "autoefficiency",
-          "label": "Auto Efficiency"
+          "label": "Auto Efficiency",
+          "section": "auto"
         },
         {
           "name": "teleefficiency",
-          "label": "Tele Efficiency"
+          "label": "Tele Efficiency",
+          "section": "tele"
         },
         {
           "name": "autoshootonthemoverating",
-          "label": "Auto Shot on Move"
+          "label": "Auto Shot on Move",
+          "section": "auto"
         },
         {
           "name": "teleshootonthemoverating",
-          "label": "Tele Shot on Move"
+          "label": "Tele Shot on Move",
+          "section": "tele"
         },
         {
           "name": "driving",
-          "label": "Driving"
+          "label": "Driving",
+          "section": "tele"
         },
         {
           "name": "shootingcapacity",
@@ -735,33 +744,8 @@
           "label": "Passing Quality"
         },
         {
-          "name": "shootingspeed",
-          "label": "Shooting Speed"
-        },
-        {
-          "name": "intakespeed",
-          "label": "Intake Speed"
-        },
-        {
-          "name": "climbspeed",
-          "label": "Climb Speed"
-        },
-        {
-          "name": "maneuverability",
-          "label": "Maneuverability"
-        },
-        {
           "name": "defenseplayed",
-          "label": "Defense Played"
-        },
-        {
-          "name": "defenseevasion",
-          "label": "Defense Evasion"
-        },
-        {
-          "name": "aggression",
-          "label": "Aggression",
-          "inverted": true
+          "label": "Defense Rating"
         }
       ],
       "defenseBarField": "defenseplayed"
@@ -808,13 +792,7 @@
         "shootingaccuracy",
         "shootingrange",
         "passingrating",
-        "shootingspeed",
-        "intakespeed",
-        "climbspeed",
-        "maneuverability",
-        "defenseplayed",
-        "defenseevasion",
-        "aggression"
+        "defenseplayed"
       ],
       "defenseBarField": "defenseplayed",
       "rankingPoints": [
@@ -960,21 +938,56 @@
         {
           "label": "Overall",
           "stats": [
-            { "key": "avgEpa", "label": "PPR" },
-            { "key": "avgAuto", "label": "Auto" },
-            { "key": "avgTele", "label": "Tele" },
-            { "key": "avgEnd", "label": "End" },
-            { "key": "last3Epa", "label": "Last 3 PPR" }
+            {
+              "key": "avgEpa",
+              "label": "PPR"
+            },
+            {
+              "key": "avgAuto",
+              "label": "Auto"
+            },
+            {
+              "key": "avgTele",
+              "label": "Tele"
+            },
+            {
+              "key": "avgEnd",
+              "label": "End"
+            },
+            {
+              "key": "last3Epa",
+              "label": "Last 3 PPR"
+            }
           ]
         },
         {
           "label": "Endgame",
           "stats": [
-            { "compute": "endPlacement.none", "label": "None", "format": "percent" },
-            { "compute": "endPlacement.l1", "label": "L1", "format": "percent" },
-            { "compute": "endPlacement.l2", "label": "L2", "format": "percent" },
-            { "compute": "endPlacement.l3", "label": "L3", "format": "percent" },
-            { "compute": "endPlacement.failed", "label": "Failed", "format": "percent" }
+            {
+              "compute": "endPlacement.none",
+              "label": "None",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.l1",
+              "label": "L1",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.l2",
+              "label": "L2",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.l3",
+              "label": "L3",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.failed",
+              "label": "Failed",
+              "format": "percent"
+            }
           ]
         }
       ],
@@ -1042,13 +1055,7 @@
         "shootingaccuracy",
         "shootingrange",
         "passingrating",
-        "shootingspeed",
-        "intakespeed",
-        "climbspeed",
-        "maneuverability",
-        "defenseplayed",
-        "defenseevasion",
-        "aggression"
+        "defenseplayed"
       ],
       "booleanIntakeFields": [
         "fuelgrndintake",

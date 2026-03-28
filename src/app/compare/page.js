@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Resolve a dotted path like "endPlacement.l3" on an object
 function resolvePath(obj, path) {
@@ -56,8 +57,6 @@ function Compare() {
       const parsedTeams = [
         urlParams.get('team1'),
         urlParams.get('team2'),
-        urlParams.get('team3'),
-        urlParams.get('team4'),
       ].filter(t => t !== null && t !== "");
       setTeams(parsedTeams);
     }
@@ -167,7 +166,7 @@ function Compare() {
     return (
       <div className={styles.container}>
         <h1>Team Comparison</h1>
-        <p>Enter up to 4 teams to compare</p>
+        <p>Enter 2 teams to compare</p>
         <TeamInputForm />
       </div>
     );
@@ -186,7 +185,7 @@ function Compare() {
       {/* Team legend + links */}
       <div className={styles.linkContainer} style={{ margin: "20px 0" }}>
         {teams.map((team, index) => (
-          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
+          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&source=compare`}>
             <button style={{ backgroundColor: COLORS[index], color: '#FFFFFF' }}>
               {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
               View Team {team}
@@ -198,15 +197,8 @@ function Compare() {
         </button>
       </div>
 
-      {/* Color legend */}
-      <div className={styles.teamLegend}>
-        {teams.map((team, i) => (
-          <span key={team} className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: COLORS[i] }} />
-            Team {team}
-          </span>
-        ))}
-      </div>
+      {/* PPR/EPA over time — both teams on one chart */}
+      <EpaOverTimeChart teams={teams} teamsData={teamsData} colors={COLORS} usePPR={config?.usePPR} overlayOptions={config?.display?.teamView?.epaChartOverlayOptions || []} />
 
       {/* Config-driven sections */}
       {sections.map(section => (
@@ -232,8 +224,8 @@ function Compare() {
   );
 }
 
-function TeamInputForm({ initialTeams = ["", "", "", ""] }) {
-  const [teamInputs, setTeamInputs] = useState(initialTeams.concat(Array(4 - initialTeams.length).fill("")));
+function TeamInputForm({ initialTeams = ["", ""] }) {
+  const [teamInputs, setTeamInputs] = useState(initialTeams.concat(Array(2 - initialTeams.length).fill("")).slice(0, 2));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -330,6 +322,105 @@ function QualitativeSection({ config, teamsData, teams, colors }) {
             colors={colors}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [] }) {
+  const [isClient, setIsClient] = useState(false);
+  const [selectedOverlay, setSelectedOverlay] = useState(null);
+  useEffect(() => { setIsClient(true); }, []);
+  if (!isClient) return null;
+
+  const allMatches = new Set();
+  teams.forEach(team => {
+    (teamsData[team]?.epaOverTime || []).forEach(p => allMatches.add(p.match));
+  });
+  if (allMatches.size === 0) return null;
+
+  const sortedMatches = Array.from(allMatches).sort((a, b) => a - b);
+  const maxMatch = sortedMatches[sortedMatches.length - 1] ?? 0;
+  const xTickInterval = Math.ceil(maxMatch / 9) || 1;
+  const xDomainEnd = (Math.floor(maxMatch / xTickInterval) + 1) * xTickInterval;
+  const xTicks = Array.from({ length: Math.floor(xDomainEnd / xTickInterval) + 1 }, (_, i) => i * xTickInterval);
+
+  function getOverlayPoints(team, field) {
+    if (!field) return {};
+    const d = teamsData[team];
+    if (!d) return {};
+    let arr;
+    if (field === 'auto') arr = d.autoOverTime;
+    else if (field === 'tele') arr = d.teleOverTime;
+    else if (field === 'end') arr = d.endOverTime;
+    else arr = d.overlayOverTime?.[field];
+    if (!arr) return {};
+    const map = {};
+    arr.forEach(p => { map[p.match] = p[field] ?? p.value ?? null; });
+    return map;
+  }
+
+  const overlayMaps = selectedOverlay
+    ? teams.map(team => getOverlayPoints(team, selectedOverlay))
+    : null;
+
+  const chartData = sortedMatches.map(match => {
+    const point = { match };
+    teams.forEach((team, i) => {
+      const entry = (teamsData[team]?.epaOverTime || []).find(p => p.match === match);
+      point[`team${i}`] = entry != null ? Math.round(entry.epa * 10) / 10 : null;
+      if (overlayMaps) {
+        const ov = overlayMaps[i][match];
+        point[`team${i}_overlay`] = ov != null ? Math.round(ov * 10) / 10 : null;
+      }
+    });
+    return point;
+  });
+
+  const label = usePPR ? "PPR" : "EPA";
+  const overlayLabel = overlayOptions.find(o => o.field === selectedOverlay)?.label || selectedOverlay;
+
+  const CustomTooltip = ({ active, payload, label: matchLabel }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div style={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', padding: '10px', borderRadius: '8px', fontFamily: 'Montserrat', fontSize: '13px', color: '#e8d5a3' }}>
+        <p style={{ margin: '0 0 4px', fontWeight: '700' }}>Match {matchLabel}</p>
+        {payload.map((entry, i) => (
+          <p key={i} style={{ margin: '0', color: entry.stroke }}>{entry.name}: {entry.value ?? '—'}</p>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className={styles.section}>
+      <h2>{label} Over Time</h2>
+      {overlayOptions.length > 0 && (
+        <div className={styles.overlaySelector}>
+          <button className={selectedOverlay === null ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(null)}>None</button>
+          {overlayOptions.map(opt => (
+            <button key={opt.field} className={selectedOverlay === opt.field ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
+          ))}
+        </div>
+      )}
+      <div style={{ touchAction: 'pan-y', width: '100%' }}>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 5, right: selectedOverlay ? 30 : 16, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+            <XAxis type="number" dataKey="match" domain={[0, xDomainEnd]} ticks={xTicks} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+            <YAxis yAxisId="left" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+            {selectedOverlay && (
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+            )}
+            <Tooltip content={<CustomTooltip />} />
+            {teams.map((team, i) => (
+              <Line key={team} yAxisId="left" type="monotone" dataKey={`team${i}`} name={`Team ${team}`} stroke={colors[i]} strokeWidth={3} dot={{ r: 3, fill: colors[i] }} connectNulls={true} />
+            ))}
+            {selectedOverlay && teams.map((team, i) => (
+              <Line key={`${team}_overlay`} yAxisId="right" type="monotone" dataKey={`team${i}_overlay`} name={`${overlayLabel} (${team})`} stroke={colors[i]} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2, fill: colors[i] }} connectNulls={true} strokeOpacity={0.6} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

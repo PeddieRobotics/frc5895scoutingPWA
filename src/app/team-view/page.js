@@ -75,6 +75,8 @@ function TeamView() {
 
     // Extract teamView config with defaults
     const tvConfig = config?.display?.teamView || {};
+    const overlayOptions = tvConfig.epaChartOverlayOptions || [];
+    const [selectedOverlay, setSelectedOverlay] = useState(null);
     const epaThresholds = tvConfig.epaThresholds || { overall: 12, auto: 6, tele: 10, end: 6 };
     const epaBreakdown = tvConfig.epaBreakdown || ["auto", "tele", "end"];
     // Dynamic piecePlacement group discovery
@@ -897,7 +899,24 @@ function TeamView() {
                         </div>
                         <div className={styles.graphContainer}>
                             <h4 className={styles.graphTitle}>{config?.usePPR ? "PPR Over Time" : "EPA Over Time"}</h4>
-                            <EPALineChart data={safeData.epaOverTime} color={Colors[0][3]} label={"epa"} displayLabel={config?.usePPR ? "PPR" : "epa"} />
+                            {overlayOptions.length > 0 && (
+                                <div className={styles.overlaySelector}>
+                                    <button className={selectedOverlay === null ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(null)}>None</button>
+                                    {overlayOptions.map(opt => (
+                                        <button key={opt.field} className={selectedOverlay === opt.field ? styles.overlayActive : ''} onClick={() => setSelectedOverlay(opt.field)}>{opt.label}</button>
+                                    ))}
+                                </div>
+                            )}
+                            <EPALineChart
+                                data={safeData.epaOverTime}
+                                color={Colors[0][3]}
+                                label={"epa"}
+                                displayLabel={config?.usePPR ? "PPR" : "epa"}
+                                overlayData={selectedOverlay === 'auto' ? safeData.autoOverTime : selectedOverlay === 'tele' ? safeData.teleOverTime : selectedOverlay === 'end' ? safeData.endOverTime : selectedOverlay ? (safeData.overlayOverTime?.[selectedOverlay] || []) : null}
+                                overlayField={selectedOverlay === 'auto' ? 'auto' : selectedOverlay === 'tele' ? 'tele' : selectedOverlay === 'end' ? 'end' : selectedOverlay ? 'value' : null}
+                                overlayLabel={overlayOptions.find(o => o.field === selectedOverlay)?.label || ''}
+                                overlayColor={Colors[4][2]}
+                            />
                         </div>
                         <div className={styles.valueBoxes}>
                             <div className={styles.leftColumnBoxes}>
@@ -1076,6 +1095,32 @@ function TeamView() {
                                         )}
                                     </div>
                                 </div>
+                                {(() => {
+                                    const autoQuals = safeData.qualitative.filter(q => q.section === 'auto');
+                                    if (autoQuals.length === 0) return null;
+                                    return (
+                                        <div className={styles.radarContainer}>
+                                            <h4 className={styles.graphTitle}>Auto Qualitative Ratings</h4>
+                                            <div className={styles.qualRatingsGrid}>
+                                                {autoQuals.map(q => (
+                                                    <div key={q.name} className={styles.qualRatingCard}>
+                                                        <div className={styles.qualRatingLabel}>{q.name}</div>
+                                                        <div className={styles.qualRatingValue} style={{ color: q.rating > 0 ? Colors[1][2] : 'rgba(13,31,53,0.3)' }}>
+                                                            {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}
+                                                        </div>
+                                                        <div className={styles.qualTooltip}>
+                                                            <div className={styles.qualTooltipAvg}>Avg: {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}</div>
+                                                            {q.entries.length > 0
+                                                                ? q.entries.map((e, i) => <div key={i} className={styles.qualTooltipEntry}>{e.scout} #Q{e.match}: {e.rating}</div>)
+                                                                : <div className={styles.qualTooltipEntry}>No data</div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                             <div className={styles.tele}>
                                 <h1 style={{ color: Colors[2][3] }}>Tele</h1>
@@ -1204,6 +1249,32 @@ function TeamView() {
                                         )}
                                     </div>
                                 </div>
+                                {(() => {
+                                    const teleQuals = safeData.qualitative.filter(q => q.section === 'tele');
+                                    if (teleQuals.length === 0) return null;
+                                    return (
+                                        <div className={styles.radarContainer}>
+                                            <h4 className={styles.graphTitle}>Tele Qualitative Ratings</h4>
+                                            <div className={styles.qualRatingsGrid}>
+                                                {teleQuals.map(q => (
+                                                    <div key={q.name} className={styles.qualRatingCard}>
+                                                        <div className={styles.qualRatingLabel}>{q.name}</div>
+                                                        <div className={styles.qualRatingValue} style={{ color: q.rating > 0 ? Colors[2][2] : 'rgba(13,31,53,0.3)' }}>
+                                                            {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}
+                                                        </div>
+                                                        <div className={styles.qualTooltip}>
+                                                            <div className={styles.qualTooltipAvg}>Avg: {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}</div>
+                                                            {q.entries.length > 0
+                                                                ? q.entries.map((e, i) => <div key={i} className={styles.qualTooltipEntry}>{e.scout} #Q{e.match}: {e.rating}</div>)
+                                                                : <div className={styles.qualTooltipEntry}>No data</div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                         <div className={styles.bottomRow}>
@@ -1219,23 +1290,48 @@ function TeamView() {
                             </div>
                             <div className={styles.qualitative}>
                                 <h1 className={styles.header} style={{ color: Colors[4][3] }}>Qualitative</h1>
-                                <div className={styles.radarContainer}>
-                                    <h4 className={styles.graphTitle}>Defense Played Ratings</h4>
-                                    <table className={styles.differentTable}>
-                                        <tbody>
-                                            <tr>
-                                                {buildDefenseChartData().map(entry => (
-                                                    <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1] }}>{entry.name}</td>
-                                                ))}
-                                            </tr>
-                                            <tr>
-                                                {buildDefenseChartData().map(entry => (
-                                                    <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0] }}>{entry.value.toFixed(1)}</td>
-                                                ))}
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {safeData.qualitative.filter(q => !q.section).length > 0 && (
+                                    <div className={styles.qualRatingsGrid}>
+                                        {safeData.qualitative.filter(q => !q.section).map(q => (
+                                            <div key={q.name} className={styles.qualRatingCard}>
+                                                <div className={styles.qualRatingLabel}>{q.name}</div>
+                                                <div className={styles.qualRatingValue} style={{ color: q.rating > 0 ? Colors[4][2] : 'rgba(13,31,53,0.3)' }}>
+                                                    {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}
+                                                </div>
+                                                <div className={styles.qualTooltip}>
+                                                    <div className={styles.qualTooltipAvg}>Avg: {q.rating > 0 ? (Math.round(10 * q.rating) / 10).toFixed(1) : '—'}</div>
+                                                    {q.entries.length > 0
+                                                        ? q.entries.map((e, i) => <div key={i} className={styles.qualTooltipEntry}>{e.scout} #Q{e.match}: {e.rating}</div>)
+                                                        : <div className={styles.qualTooltipEntry}>No data</div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {(() => {
+                                    const scoutEntries = buildDefenseChartData().filter(e => e.name !== 'TOTAL' && e.value > 0);
+                                    if (scoutEntries.length === 0) return null;
+                                    return (
+                                        <div className={styles.radarContainer}>
+                                            <h4 className={styles.graphTitle}>Defense — By Scout</h4>
+                                            <table className={styles.differentTable}>
+                                                <tbody>
+                                                    <tr>
+                                                        {scoutEntries.map(entry => (
+                                                            <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1] }}>{entry.name}</td>
+                                                        ))}
+                                                    </tr>
+                                                    <tr>
+                                                        {scoutEntries.map(entry => (
+                                                            <td key={entry.name} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0] }}>{entry.value.toFixed(1)}</td>
+                                                        ))}
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    );
+                                })()}
                                 {scouterConfidenceField && safeData.scouterConfidenceOverTime.length > 0 && (
                                     <div className={styles.radarContainer}>
                                         <h4 className={styles.graphTitle}>Scouter Confidence Per Match</h4>
@@ -1255,27 +1351,25 @@ function TeamView() {
                                         </table>
                                     </div>
                                 )}
-                                <table className={styles.differentTable}>
-                                    <tbody>
+                                {intakeDisplayConfig.length > 0 && (
+                                    <div className={styles.intakeGrid}>
                                         {intakeDisplayConfig.map((intake, idx) => (
-                                            <React.Fragment key={idx}>
-                                                <tr>
-                                                    <td className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][2], width: "40px" }} rowSpan="2">{intake.category}</td>
-                                                    {intake.labels.map((label, li) => (
-                                                        <td key={li} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][1], width: "50px", height: li === 0 ? "10px" : undefined }}>{label}</td>
-                                                    ))}
-                                                </tr>
-                                                <tr>
-                                                    {intake.fields.map((field, fi) => (
-                                                        <td key={fi} className={styles.coloredBoxes} style={{ backgroundColor: Colors[4][0], width: "50px", height: "30px" }}>
-                                                            <input type="checkbox" readOnly checked={!!safeData[field]} />
-                                                        </td>
-                                                    ))}
-                                                </tr>
-                                            </React.Fragment>
+                                            <div key={idx} className={styles.intakeCard}>
+                                                <div className={styles.intakeCategory}>{intake.category}</div>
+                                                <div className={styles.intakeFields}>
+                                                    {intake.labels.map((label, li) => {
+                                                        const checked = !!safeData[intake.fields[li]];
+                                                        return (
+                                                            <div key={li} className={`${styles.intakeTile} ${checked ? styles.intakeTileChecked : ''}`}>
+                                                                {label}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

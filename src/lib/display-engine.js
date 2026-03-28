@@ -189,6 +189,22 @@ export function aggregateTeamData(rows, config, calcFns) {
   const teleOverTime = computeMatchAverages(teamTable, 'tele').map(d => ({
     ...d, tele: Math.round(d.tele * 100) / 100
   }));
+  const endOverTime = computeMatchAverages(teamTable, 'end').map(d => ({
+    ...d, end: Math.round(d.end * 100) / 100
+  }));
+
+  // Overlay over time — per-match averages for each epaChartOverlayOptions field
+  const overlayOverTime = {};
+  (teamViewConfig.epaChartOverlayOptions || []).forEach(opt => {
+    if (['auto', 'tele', 'end'].includes(opt.field)) return; // already have dedicated arrays
+    const validRows = teamTable.filter(r => r[opt.field] != null && r[opt.field] != -1 && Number(r[opt.field]) > 0);
+    if (validRows.length > 0) {
+      overlayOverTime[opt.field] = computeMatchAverages(validRows, opt.field).map(d => ({
+        match: d.match,
+        value: Math.round(d[opt.field] * 100) / 100,
+      }));
+    }
+  });
 
   // Pass-line data — config-driven from passLine chart entries in teamView sections
   const passLineData = {};
@@ -414,10 +430,19 @@ export function aggregateTeamData(rows, config, calcFns) {
 
   // Qualitative
   const qualitative = (teamViewConfig.qualitativeDisplay || []).map(q => {
-    const vals = rows.filter(r => r[q.name] != null && r[q.name] != -1).map(r => Number(r[q.name]));
-    let rating = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-    if (q.inverted) rating = 6 - rating;
-    return { name: q.label, rating };
+    const validRows = rows.filter(r => r[q.name] != null && r[q.name] != -1);
+    const vals = validRows.map(r => Number(r[q.name]));
+    let rating = 0;
+    if (vals.length) {
+      const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+      rating = q.inverted ? 6 - avg : avg;
+    }
+    const entries = validRows.map(r => ({
+      scout: r.scoutname || 'Unknown',
+      match: r.match,
+      rating: Number(r[q.name]),
+    }));
+    return { name: q.label, rating, section: q.section || null, entries };
   });
 
   // Boolean intake fields
@@ -447,7 +472,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     team,
     avgEpa, avgAuto, avgTele, avgEnd,
     last3Epa, last3Auto, last3Tele, last3End,
-    epaOverTime, autoOverTime, teleOverTime,
+    epaOverTime, autoOverTime, teleOverTime, endOverTime, overlayOverTime,
     ...passLineData,
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
@@ -611,6 +636,43 @@ export function aggregateAllianceData(rows, config, calcFns) {
       match: r.match,
       epa: Math.round(r.epa * 10) / 10,
     }));
+
+    const computeOverTimeForField = (arr, field) => {
+      const groups = {};
+      arr.forEach(r => {
+        if (!groups[r.match]) groups[r.match] = { sum: 0, count: 0 };
+        groups[r.match].sum += r[field] || 0;
+        groups[r.match].count += 1;
+      });
+      return Object.entries(groups).map(([match, d]) => ({
+        match: parseInt(match),
+        [field]: Math.round((d.sum / d.count) * 100) / 100,
+      })).sort((a, b) => a.match - b.match);
+    };
+
+    responseObject[team].autoOverTime = computeOverTimeForField(teamRows, 'auto');
+    responseObject[team].teleOverTime = computeOverTimeForField(teamRows, 'tele');
+    responseObject[team].endOverTime = computeOverTimeForField(teamRows, 'end');
+
+    const overlayOverTime = {};
+    const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
+    overlayOptions.forEach(opt => {
+      if (['auto', 'tele', 'end'].includes(opt.field)) return;
+      const validRows = teamRows.filter(r => r[opt.field] != null && r[opt.field] != -1 && Number(r[opt.field]) > 0);
+      if (validRows.length > 0) {
+        const groups = {};
+        validRows.forEach(r => {
+          if (!groups[r.match]) groups[r.match] = { sum: 0, count: 0 };
+          groups[r.match].sum += Number(r[opt.field]) || 0;
+          groups[r.match].count += 1;
+        });
+        overlayOverTime[opt.field] = Object.entries(groups).map(([match, d]) => ({
+          match: parseInt(match),
+          value: Math.round((d.sum / d.count) * 100) / 100,
+        })).sort((a, b) => a.match - b.match);
+      }
+    });
+    responseObject[team].overlayOverTime = overlayOverTime;
   });
 
   return responseObject;

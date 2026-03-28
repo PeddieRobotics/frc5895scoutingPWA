@@ -550,12 +550,8 @@
     align-items: center;
 }
 
-.qualitative .graphTitle {
-    transform: translateY(40px);
-}
-
 .qualitative .header {
-    margin-bottom: -40px;
+    margin-bottom: 8px;
 }
 
 .endgame .graphTitle {
@@ -572,6 +568,183 @@
 
 .qualitative p {
     margin-top: -25px;
+}
+
+/* ── Intake card grid ─────────────────────────── */
+.intakeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 8px 4px;
+}
+
+.intakeCard {
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+    box-sizing: border-box;
+}
+
+.intakeCategory {
+    font-size: 11px;
+    font-weight: 700;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+}
+
+.intakeFields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.intakeTile {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(160, 124, 48, 0.22);
+    background: rgba(160, 124, 48, 0.05);
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(13, 31, 53, 0.55);
+    font-family: 'Montserrat', sans-serif;
+    user-select: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.intakeTileChecked {
+    background: rgba(26, 127, 60, 0.1);
+    border-color: rgba(26, 127, 60, 0.5);
+    color: #1a7f3c;
+}
+
+/* ── Overlay selector ─────────────────────────── */
+.overlaySelector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 6px;
+    justify-content: center;
+}
+
+.overlaySelector button {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(160, 124, 48, 0.35);
+    background: transparent;
+    color: rgba(13, 31, 53, 0.6);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.overlaySelector button:hover {
+    background: rgba(160, 124, 48, 0.07);
+    border-color: rgba(160, 124, 48, 0.55);
+    color: rgba(13, 31, 53, 0.8);
+}
+
+.overlayActive {
+    background: rgba(160, 124, 48, 0.12) !important;
+    border-color: rgba(160, 124, 48, 0.7) !important;
+    color: #a07c30 !important;
+}
+
+/* ── Qualitative ratings grid ─────────────────── */
+.qualRatingsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 8px 4px;
+    width: 100%;
+}
+
+.qualRatingCard {
+    background: #faf8f4;
+    border: 1px solid rgba(160, 124, 48, 0.2);
+    border-radius: 9px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 100px;
+    position: relative;
+    cursor: default;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.qualRatingCard:hover {
+    background: rgba(189, 151, 72, 0.07);
+    border-color: rgba(160, 124, 48, 0.55);
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.08);
+}
+
+.qualTooltip {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0d1f35;
+    border: 1px solid rgba(189, 151, 72, 0.4);
+    border-radius: 8px;
+    padding: 8px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 200;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    min-width: max-content;
+    box-shadow: 0 4px 12px rgba(13, 31, 53, 0.25);
+}
+
+.qualRatingCard:hover .qualTooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.qualTooltipAvg {
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    color: #e8d5a3;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(189, 151, 72, 0.25);
+    padding-bottom: 4px;
+    margin-bottom: 1px;
+}
+
+.qualTooltipEntry {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Montserrat', sans-serif;
+    color: rgba(232, 213, 163, 0.75);
+    white-space: nowrap;
+}
+
+.qualRatingLabel {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(13, 31, 53, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+
+.qualRatingValue {
+    font-size: 18px;
+    font-weight: 800;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .radarContainer {

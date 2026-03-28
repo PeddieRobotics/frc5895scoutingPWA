@@ -1284,6 +1284,27 @@ Notes:
   - computed dotted paths from aggregated output (for example `auto.avgFuel`)
 - Use `commentFields` instead of legacy `comments` when possible.
 
+#### `epaChartOverlayOptions` — PPR/EPA chart overlay selector
+
+An optional array of `{ field, label }` objects that adds a runtime overlay line to the PPR Over Time chart on `/team-view`, `/match-view`, and `/compare`. A pill-style selector appears above the chart; selecting an option renders a dashed second line on a right-side Y-axis.
+
+`field` can be:
+- `"auto"`, `"tele"`, or `"end"` — reuses the existing per-period EPA/PPR time series (left Y-axis scale, computed from existing over-time arrays)
+- Any field name from `qualitativeDisplay` (e.g. `"defenseplayed"`, `"driving"`) — plots per-match star-rating averages (1–6 scale) on a separate right Y-axis
+
+Omit or set to `[]` to hide the selector entirely.
+
+```json
+"epaChartOverlayOptions": [
+  { "field": "auto",          "label": "Auto" },
+  { "field": "tele",          "label": "Tele" },
+  { "field": "defenseplayed", "label": "Defense Rating" },
+  { "field": "driving",       "label": "Driving" }
+]
+```
+
+Note: The Auto Over Time and Tele Over Time sub-charts in team-view do **not** get an overlay selector — only the main PPR/EPA Over Time chart.
+
 #### `autoPie` — singleSelect outcome distribution chart
 
 You can display a pie chart for any `singleSelect` field in the auto section by adding an `autoPie` key to `teamView`. The engine supports **any number of such pie charts** for singleSelect fields using the same pattern.
