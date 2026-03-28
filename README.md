@@ -352,6 +352,7 @@ A simple true/false toggle.
 | `label` | string | Yes | Display label next to checkbox |
 | `dbColumn` | object | Yes | Database column configuration |
 | `hidesForm` | boolean | No | If true, hides form sections when checked |
+| `errorStyle` | boolean | No | If true, the checkbox always renders with red danger styling (fill `rgba(255,80,80,0.12)`, border `rgba(255,120,120,0.55)`, text `#ffaaaa`) matching the DESIGN.md destructive-action palette. When used as a collapsible trigger, the surrounding collapsible box also turns red while expanded. |
 | `scoringRequirement` | object | No | Excludes scouting rows from scoring when the field value doesn't match `requiredValue`. See [Scoring Requirements](#scoring-requirements). |
 
 **Database Type:** `BOOLEAN`
@@ -983,6 +984,8 @@ A section that expands/collapses based on a trigger field (usually a checkbox). 
 - When checked: The checkbox plus all content fields appear below it
 
 **Use `minWhenVisible`:** Add `"minWhenVisible": 1` to star ratings inside collapsibles to require a rating when the section is visible.
+
+**Use `errorStyle` on the trigger:** Add `"errorStyle": true` to the trigger checkbox to style it with red danger colors (instead of the default gold/green). While expanded, the surrounding collapsible box also adopts a red background and border. Use this for destructive or warning-level actions (e.g. "Made a Mistake?").
 
 ---
 

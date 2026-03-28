@@ -1359,3 +1359,9 @@ hr.subsubheading {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
 }
+
+/* errorStyle=true collapsible — red when trigger is checked/expanded */
+.collapsibleBoxError {
+  border-color: rgba(255, 120, 120, 0.55);
+  background: rgba(255, 80, 80, 0.12);
+}

@@ -111,6 +111,7 @@ export default function DynamicFormRenderer({
             visibleName={field.label}
             internalName={field.name}
             changeListener={changeListener}
+            errorStyle={field.errorStyle}
           />
         );
       }
@@ -286,8 +287,10 @@ export default function DynamicFormRenderer({
       ? { ...trigger, _isCollapsibleTrigger: true }
       : trigger;
 
+    const collapsibleClass = `${styles.collapsibleBox}${trigger?.errorStyle && isExpanded ? ` ${styles.collapsibleBoxError}` : ''}`;
+
     return (
-      <div key={key} className={styles.collapsibleBox}>
+      <div key={key} className={collapsibleClass}>
         {taggedTrigger && renderField(taggedTrigger, `${key}-trigger`)}
         {isExpanded && content.map((field, i) => renderField(field, `${key}-content-${i}`))}
       </div>

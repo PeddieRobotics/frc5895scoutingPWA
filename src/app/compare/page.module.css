@@ -211,6 +211,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
+    margin-top: auto;
 }
 
 /* ── Pill (non-clickable team value badge) ────── */

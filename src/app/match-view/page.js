@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { BarChart, Bar, Rectangle, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, ResponsiveContainer, Cell, LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar, Legend } from 'recharts';
 import { VictoryPie } from "victory";
 import Link from "next/link";
@@ -32,6 +32,8 @@ function MatchView() {
   const [loading, setLoading] = useState(true);
   const [unscoredMatches, setUnscoredMatches] = useState([]);
   const [useRecent, setUseRecent] = useState(false);
+  const [navStuck, setNavStuck] = useState(false);
+  const navSentinelRef = useRef(null);
 
   //light to dark
   const COLORS = [
@@ -53,11 +55,38 @@ function MatchView() {
   const showEpaOverTime = matchViewConfig?.showEpaOverTime === true;
   const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
   const teamStatsConfig = matchViewConfig?.teamStats || [];
+
+  // Build field name → label map by traversing the game config form fields
+  const qualLabelMap = useMemo(() => {
+    const map = {};
+    const traverse = (fields) => {
+      for (const f of (fields || [])) {
+        if (f.name && f.label) map[f.name] = f.label;
+        if (f.content) traverse(f.content);
+        if (f.trigger?.name && f.trigger?.label) map[f.trigger.name] = f.trigger.label;
+      }
+    };
+    for (const s of (config?.sections || [])) traverse(s.fields || []);
+    return map;
+  }, [config]);
+
   const formatUnscoredMatch = (issue) => {
     const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
     const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
     return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
   };
+
+  // Detect when the nav bar is pinned against the top navbar
+  useEffect(() => {
+    const el = navSentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setNavStuck(!entry.isIntersecting),
+      { rootMargin: '-45px 0px 0px 0px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   // Get URL parameters on client-side
   useEffect(() => {
@@ -445,18 +474,19 @@ function MatchView() {
     return 0;
   };
 
-  function AllianceButtons({ t1, t2, t3, colors }) {
+  function AllianceButtons({ t1, t2, t3, allianceClass }) {
     // Preserve original team order in the URL by getting team values from the current URL params
     // This maintains consistency when teams were swapped due to match number lookup
+    const cls = `${styles.teamChip} ${styles[allianceClass] || ''}`;
     return <div className={styles.allianceBoard}>
       <Link href={`/team-view?team=${t1.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[0][1], '--btn-color': colors[0][1] }}>{t1.team}</button>
+        <button className={cls}>{t1.team}</button>
       </Link>
       <Link href={`/team-view?team=${t2.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[1][1], '--btn-color': colors[1][1] }}>{t2.team}</button>
+        <button className={cls}>{t2.team}</button>
       </Link>
       <Link href={`/team-view?team=${t3.team}&team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&from_match=true`}>
-        <button style={{ background: colors[2][1], '--btn-color': colors[2][1] }}>{t3.team}</button>
+        <button className={cls}>{t3.team}</button>
       </Link>
     </div>
   }
@@ -692,6 +722,23 @@ function MatchView() {
           })}
         </div>
       )}
+      {qualitativeFields.length > 0 && (() => {
+        const quals = qualitativeFields
+          .map(f => ({ field: f, label: qualLabelMap[f] || f, value: teamData.qualitative?.[f] }))
+          .filter(q => q.value != null && q.value > 0);
+        if (!quals.length) return null;
+        return (
+          <div style={{ padding: "0 12px 12px" }}>
+            <h2 style={{ marginTop: "12px", marginBottom: "4px" }}>Qualitative</h2>
+            {quals.map(q => (
+              <div key={q.field} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '4px 0', borderTop: '1px solid rgba(160,124,48,0.15)', color: '#0d1f35' }}>
+                <span style={{ fontWeight: 600 }}>{q.label}</span>
+                <span>{q.value.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   }
   let get = (alliance, thing) => {
@@ -806,10 +853,11 @@ function MatchView() {
           </button>
         </div>
       </div>
-      <div className={styles.matchNav}>
-        <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} colors={[COLORS[3], COLORS[4], COLORS[5]]}></AllianceButtons>
+      <div ref={navSentinelRef} style={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
+      <div className={`${styles.matchNav}${navStuck ? ' ' + styles.matchNavStuck : ''}`}>
+        <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} allianceClass="teamChipRed"></AllianceButtons>
         <button className={styles.navActionButton} onClick={() => { window.location.href = `/match-view?edit=true&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`; }}>Edit</button>
-        <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} colors={[COLORS[0], COLORS[1], COLORS[2]]}></AllianceButtons>
+        <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} allianceClass="teamChipBlue"></AllianceButtons>
       </div>
       <div className={styles.allianceEPAs}>
         <AllianceDisplay teams={redAlliance} opponents={blueAlliance} colors={["#FFD5E1", "#F29FA6"]}></AllianceDisplay>

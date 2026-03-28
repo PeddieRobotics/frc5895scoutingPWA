@@ -73,15 +73,14 @@
             {
               "type": "starRating",
               "name": "autoshootonthemoverating",
-              "label": "Auto Shot Quality While Moving",
-              "description": "How well did the robot shoot while driving during auto?",
+              "label": "Shooting While Moving (Auto)",
+              "description": "How well did the robot maintain speed and accuracy while shooting on the move during auto?",
+              "max": 4,
               "ratingLabels": [
-                "Very Shaky / Missed Most",
-                "Poor",
-                "Below Average",
-                "Above Average",
-                "Good",
-                "Smooth & Consistent"
+                "Robot slows significantly AND most shots miss while moving",
+                "Robot maintains speed OR accuracy, but not both",
+                "Robot maintains moderate speed and lands most shots",
+                "Robot maintains full speed with consistent shot accuracy"
               ],
               "minWhenVisible": 1,
               "dbColumn": {
@@ -93,16 +92,16 @@
         },
         {
           "type": "starRating",
-          "name": "autoefficiency",
-          "label": "Auto Shooting Efficiency",
-          "description": "How efficiently did the robot score in auto?",
+          "name": "autoshootingrate",
+          "label": "Shooting Rate (Auto)",
+          "description": "Estimated average fuel pieces scored per second during autonomous period",
+          "max": 5,
           "ratingLabels": [
-            "Poor Routing / Many Misses",
-            "Below Average",
-            "Moderate",
-            "Above Average",
-            "Good",
-            "Clean Fast Cycles"
+            "Under 1 fuel/sec",
+            "1-4 fuel/sec",
+            "5-10 fuel/sec",
+            "11-20 fuel/sec",
+            "20+ fuel/sec"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -160,15 +159,14 @@
             {
               "type": "starRating",
               "name": "teleshootonthemoverating",
-              "label": "Tele Shot Quality While Moving",
-              "description": "How well did the robot shoot while driving during teleop?",
+              "label": "Shooting While Moving (Tele)",
+              "description": "How well did the robot maintain speed and accuracy while shooting on the move during teleop?",
+              "max": 4,
               "ratingLabels": [
-                "Very Shaky / Missed Most",
-                "Poor",
-                "Below Average",
-                "Above Average",
-                "Good",
-                "Smooth & Consistent"
+                "Robot slows significantly AND most shots miss while moving",
+                "Robot maintains speed OR accuracy, but not both",
+                "Robot maintains moderate speed and lands most shots",
+                "Robot maintains full speed with consistent shot accuracy"
               ],
               "minWhenVisible": 1,
               "dbColumn": {
@@ -180,16 +178,16 @@
         },
         {
           "type": "starRating",
-          "name": "teleefficiency",
-          "label": "Tele Shooting Efficiency",
-          "description": "How efficiently did the robot score in teleop?",
+          "name": "teleshootingrate",
+          "label": "Shooting Rate (Tele)",
+          "description": "Estimated fuel pieces scored per second during teleop",
+          "max": 5,
           "ratingLabels": [
-            "Poor Routing / Many Misses",
-            "Below Average",
-            "Moderate",
-            "Above Average",
-            "Good",
-            "Clean Fast Cycles"
+            "Under 1 fuel/sec",
+            "1-4 fuel/sec",
+            "5-10 fuel/sec",
+            "11-20 fuel/sec",
+            "20+ fuel/sec"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -199,15 +197,14 @@
         {
           "type": "starRating",
           "name": "driving",
-          "label": "Driving / Spatial Awareness",
-          "description": "How aware was the driver of the field around them?",
+          "label": "Driver Spatial Awareness",
+          "description": "Driver's field navigation without blocking teammates or taking inefficient paths",
+          "max": 4,
           "ratingLabels": [
-            "Frequent Collisions / Stuck",
-            "Poor Awareness",
-            "Below Average",
-            "Above Average",
-            "Good Awareness",
-            "Precise Positioning"
+            "Frequently blocks teammates and takes inefficient paths",
+            "Occasionally blocks teammates or takes suboptimal routes",
+            "Rarely blocks teammates and usually takes efficient paths",
+            "Never blocks teammates and consistently takes optimal paths"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -249,8 +246,15 @@
               "type": "starRating",
               "name": "defenseplayed",
               "label": "Defense Played",
-              "description": "Ability to Play Defense",
+              "description": "How effectively the robot disrupts opponent scoring OR movement when playing defense",
               "zeroLabel": "Did Not Defend",
+              "max": 4,
+              "ratingLabels": [
+                "Defended robot continues normal scoring/movement",
+                "Defended robot's scoring/movement is somewhat disrupted",
+                "Defended robot's scoring/movement is significantly disrupted",
+                "Defended robot is consistently unable to score/move freely"
+              ],
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -352,15 +356,15 @@
         {
           "type": "starRating",
           "name": "shootingcapacity",
-          "label": "Shooting Capacity",
-          "description": "How many balls can the robot hold and rapidly cycle?",
+          "label": "Fuel Capacity (Per Cycle)",
+          "description": "Maximum pieces of fuel the robot held and transported in a single scoring run",
+          "max": 5,
           "ratingLabels": [
-            "1 at a Time / Very Slow",
-            "Low Capacity",
-            "Below Average",
-            "Above Average",
-            "High Capacity",
-            "Large & Near-Instant Reload"
+            "0-5 pieces",
+            "6-15 pieces",
+            "16-30 pieces",
+            "31-50 pieces",
+            "50+ pieces"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -371,14 +375,13 @@
           "type": "starRating",
           "name": "shootingaccuracy",
           "label": "Shooting Accuracy",
-          "description": "How accurate were the robot's shots overall this match?",
+          "description": "% of attempted shots that successfully scored, observed across the full match",
+          "max": 4,
           "ratingLabels": [
-            "Missed Almost All",
-            "Below Average",
-            "Moderate",
-            "Above Average",
-            "Very Accurate",
-            "Near-Perfect Accuracy"
+            "Under 50% scored",
+            "50-75% scored",
+            "75-95% scored",
+            "95+% scored"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -388,15 +391,14 @@
         {
           "type": "starRating",
           "name": "shootingrange",
-          "label": "Shooting Range",
-          "description": "How far from the target can this robot reliably shoot?",
+          "label": "Effective Shooting Range",
+          "description": "Estimated distance from which the robot can consistently score into the hub",
+          "max": 4,
           "ratingLabels": [
-            "Point-Blank Only",
-            "Very Short Range",
-            "Short Range",
-            "Medium Range",
-            "Long Range",
-            "Full-Field Accuracy"
+            "Pressed against hub",
+            "Multiple specific positions within alliance zone",
+            "Most of the alliance zone excluding far corners",
+            "Anywhere within the alliance zone"
           ],
           "dbColumn": {
             "type": "INTEGER",
@@ -419,15 +421,14 @@
             {
               "type": "starRating",
               "name": "passingrating",
-              "label": "Passing Quality",
-              "description": "How accurate and reliable were the robot's passes?",
+              "label": "Passing",
+              "description": "Ability to pass fuel to consistent target zone across distance",
+              "max": 4,
               "ratingLabels": [
-                "Frequent Misses / Lost Balls",
-                "Unreliable",
-                "Below Average",
-                "Above Average",
-                "Reliable",
-                "Precise & Always Caught"
+                "ONLY pushes fuel through trench/over bump",
+                "Passes from Neutral Zone or farther, but hit inconsistent target",
+                "Passes consistently from Neutral Zone to target zone",
+                "Makes consistent cross-court passes with accurate placement"
               ],
               "minWhenVisible": 1,
               "dbColumn": {
@@ -478,6 +479,7 @@
             "label": "Made a Mistake?",
             "isConfidenceRating": true,
             "invertColor": true,
+            "errorStyle": true,
             "scoringRequirement": {
               "requiredValue": false
             },
@@ -540,8 +542,8 @@
         { "field": "tele", "label": "Tele" },
         { "field": "defenseplayed", "label": "Defense Rating" },
         { "field": "driving", "label": "Driving" },
-        { "field": "autoefficiency", "label": "Auto Efficiency" },
-        { "field": "teleefficiency", "label": "Tele Efficiency" }
+        { "field": "autoshootingrate", "label": "Auto Shooting Rate" },
+        { "field": "teleshootingrate", "label": "Tele Shooting Rate" }
       ],
       "epaBreakdown": [
         "auto",
@@ -703,33 +705,33 @@
       ],
       "qualitativeDisplay": [
         {
-          "name": "autoefficiency",
-          "label": "Auto Efficiency",
+          "name": "autoshootingrate",
+          "label": "Shooting Rate (Auto)",
           "section": "auto"
         },
         {
-          "name": "teleefficiency",
-          "label": "Tele Efficiency",
+          "name": "teleshootingrate",
+          "label": "Shooting Rate (Tele)",
           "section": "tele"
         },
         {
           "name": "autoshootonthemoverating",
-          "label": "Auto Shot on Move",
+          "label": "Shooting While Moving (Auto)",
           "section": "auto"
         },
         {
           "name": "teleshootonthemoverating",
-          "label": "Tele Shot on Move",
+          "label": "Shooting While Moving (Tele)",
           "section": "tele"
         },
         {
           "name": "driving",
-          "label": "Driving",
+          "label": "Driver Spatial Awareness",
           "section": "tele"
         },
         {
           "name": "shootingcapacity",
-          "label": "Shooting Capacity"
+          "label": "Fuel Capacity (Per Cycle)"
         },
         {
           "name": "shootingaccuracy",
@@ -737,15 +739,15 @@
         },
         {
           "name": "shootingrange",
-          "label": "Shooting Range"
+          "label": "Effective Shooting Range"
         },
         {
           "name": "passingrating",
-          "label": "Passing Quality"
+          "label": "Passing"
         },
         {
           "name": "defenseplayed",
-          "label": "Defense Rating"
+          "label": "Defense"
         }
       ],
       "defenseBarField": "defenseplayed"
@@ -783,8 +785,8 @@
         ]
       },
       "qualitativeFields": [
-        "autoefficiency",
-        "teleefficiency",
+        "autoshootingrate",
+        "teleshootingrate",
         "autoshootonthemoverating",
         "teleshootonthemoverating",
         "driving",
@@ -918,10 +920,10 @@
       "computedMetrics": [],
       "scatterPlot": {
         "xAxis": {
-          "label": "Shooting Efficiency",
+          "label": "Shooting Rate",
           "fields": [
-            "autoefficiency",
-            "teleefficiency"
+            "autoshootingrate",
+            "teleshootingrate"
           ]
         },
         "yAxis": {
@@ -996,10 +998,11 @@
       "qualitativeSection": {
         "label": "Qualitative",
         "stats": [
-          {
-            "label": "Defense Played",
-            "defenseField": "defenseplayed"
-          }
+          { "label": "Defense", "defenseField": "defenseplayed" },
+          { "label": "Driver Spatial Awareness", "defenseField": "driving" },
+          { "label": "Shooting Accuracy", "defenseField": "shootingaccuracy" },
+          { "label": "Effective Shooting Range", "defenseField": "shootingrange" },
+          { "label": "Passing", "defenseField": "passingrating" }
         ]
       }
     },
@@ -1048,8 +1051,8 @@
         }
       },
       "qualitativeFields": [
-        "autoefficiency",
-        "teleefficiency",
+        "autoshootingrate",
+        "teleshootingrate",
         "autoshootonthemoverating",
         "teleshootonthemoverating",
         "driving",

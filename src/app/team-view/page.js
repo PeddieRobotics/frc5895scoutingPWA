@@ -1,6 +1,6 @@
 "use client";
 import styles from "./page.module.css";
-import React, { useEffect, useMemo, useState, Suspense } from "react";
+import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import VBox from "./components/VBox";
@@ -64,6 +64,8 @@ function TeamView() {
     const [tbaRankError, setTbaRankError] = useState(null);
     const [loadingMatch, setLoadingMatch] = useState(null);
     const [slCommentsOpen, setSlCommentsOpen] = useState(false);
+    const [navStuck, setNavStuck] = useState(false);
+    const navSentinelRef = useRef(null);
     const router = useRouter();
 
     const searchParams = useSearchParams();
@@ -114,6 +116,18 @@ function TeamView() {
     const intakeDisplayConfig = tvConfig.intakeDisplay || [];
     const defenseBarField = tvConfig.defenseBarField || "";
     const scouterConfidenceField = tvConfig.scouterConfidenceField || null;
+
+    // Detect when the nav bar is pinned against the top navbar
+    useEffect(() => {
+        const el = navSentinelRef.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(
+            ([entry]) => setNavStuck(!entry.isIntersecting),
+            { rootMargin: '-45px 0px 0px 0px' }
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+    }, []);
 
     // Sync URL parameters reactively (re-runs on soft navigation)
     useEffect(() => {
@@ -195,30 +209,28 @@ function TeamView() {
         }
     }
 
-    function AllianceButtons({ t1, t2, t3, colors }) {
+    function AllianceButtons({ t1, t2, t3, colorClasses }) {
         const searchParamsString = new URLSearchParams(urlParams).toString();
+        const chipClass = (t, colorClass) =>
+            team == t
+                ? `${styles.teamChip} ${styles.teamChipActive}`
+                : `${styles.teamChip}${colorClass ? ' ' + (styles[colorClass] || '') : ''}`;
         return <div className={styles.allianceBoard}>
             <Link href={`/team-view?team=${t1 || ""}&${searchParamsString}`}>
-                <button className={team == t1 ? styles.activeTeamButton : undefined} style={team == t1 ? undefined : { background: colors[0][1] }}>{t1 || 404}</button>
+                <button className={chipClass(t1, colorClasses?.[0])}>{t1 || 404}</button>
             </Link>
             <Link href={`/team-view?team=${t2 || ""}&${searchParamsString}`}>
-                <button className={team == t2 ? styles.activeTeamButton : undefined} style={team == t2 ? undefined : { background: colors[1][1] }}>{t2 || 404}</button>
+                <button className={chipClass(t2, colorClasses?.[1])}>{t2 || 404}</button>
             </Link>
             <Link href={`/team-view?team=${t3 || ""}&${searchParamsString}`}>
-                <button className={team == t3 ? styles.activeTeamButton : undefined} style={team == t3 ? undefined : { background: colors[2][1] }}>{t3 || 404}</button>
+                <button className={chipClass(t3, colorClasses?.[2])}>{t3 || 404}</button>
             </Link>
         </div>
     }
 
-    function CompareTopBar() {
-        const COLORS = [
-            "#A4E5DF", // green
-            "#B7D1F7", // blue
-            "#DDB7F7", // purple
-            "#F6C1D8", // pink
-        ];
+    function CompareTopBar({ stuck }) {
+        const COMPARE_CLASSES = ['teamChipTeal', 'teamChipCobalt', 'teamChipPurple', 'teamChipPink'];
 
-        // Get teams from URL parameters
         const compareTeams = [
             urlParams.team1,
             urlParams.team2,
@@ -230,51 +242,46 @@ function TeamView() {
             return <></>;
         }
 
+        const navClass = `${styles.matchNav}${stuck ? ' ' + styles.matchNavStuck : ''}`;
         return (
-            <div className={styles.matchNav}>
-                <div className={styles.allianceBoard}>
-                    {compareTeams.map((t, index) => (
-                        <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
-                            <button
-                                className={team == t ? styles.activeTeamButton : undefined}
-                                style={team == t ? undefined : { background: COLORS[index] }}
-                            >
-                                {t || 404}
-                            </button>
-                        </Link>
-                    ))}
+            <div className={navClass}>
+                <div className={styles.compareNav}>
+                    {compareTeams.map((t, index) => {
+                        const colorClass = COMPARE_CLASSES[index];
+                        const cls = team == t
+                            ? `${styles.teamChip} ${styles.teamChipActive}`
+                            : `${styles.teamChip} ${styles[colorClass] || ''}`;
+                        return (
+                            <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
+                                <button className={cls}>{t || 404}</button>
+                            </Link>
+                        );
+                    })}
+                    <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
+                        <button className={styles.navActionButton}>Compare</button>
+                    </Link>
                 </div>
-                <Link href={`/compare?team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}`}>
-                    <button className={styles.navActionButton}>Compare</button>
-                </Link>
             </div>
         );
     }
 
-    function TopBar() {
-        const COLORS = [
-            ["#B7F7F2", "#A1E7E1", "#75C6BF", "#5EB5AE"],
-            ["#8AB8FD", "#7D99FF", "#6184DD", "#306BDD"],
-            ["#E1BFFA", "#E1A6FE", "#CA91F2", "#A546DF"],
-            ["#FFC6F6", "#ECA6E0", "#ED75D9", "#C342AE"],
-            ["#FABFC4", "#FEA6AD", "#F29199", "#E67983"],
-            ["#FFE3D3", "#EBB291", "#E19A70", "#D7814F"],
-        ];
-
+    function TopBar({ stuck }) {
         if (!hasTopBar || source === 'compare') {
-            return <></>
+            return <></>;
         }
 
-        // Teams 1-3 should use red colors (3-5) and teams 4-6 should use blue colors (0-2)
-        // when viewing a match by match number
+        // from_match=true: teams 1–3 are red alliance, 4–6 are blue (matches match-view convention)
         const fromMatch = urlParams.from_match === 'true';
+        const redClasses = ['teamChipRed', 'teamChipRed', 'teamChipRed'];
+        const blueClasses = ['teamChipBlue', 'teamChipBlue', 'teamChipBlue'];
+        const navClass = `${styles.matchNav}${stuck ? ' ' + styles.matchNavStuck : ''}`;
 
-        return <div className={styles.matchNav}>
+        return <div className={navClass}>
             <AllianceButtons
                 t1={urlParams.team1}
                 t2={urlParams.team2}
                 t3={urlParams.team3}
-                colors={fromMatch ? [COLORS[3], COLORS[4], COLORS[5]] : [COLORS[0], COLORS[1], COLORS[2]]}
+                colorClasses={fromMatch ? redClasses : blueClasses}
             />
             <Link href={`/match-view?team1=${urlParams.team1 || ""}&team2=${urlParams.team2 || ""}&team3=${urlParams.team3 || ""}&team4=${urlParams.team4 || ""}&team5=${urlParams.team5 || ""}&team6=${urlParams.team6 || ""}&go=go${fromMatch ? '&from_match=true' : ''}`}>
                 <button className={styles.navActionButton}>Match</button>
@@ -283,7 +290,7 @@ function TeamView() {
                 t1={urlParams.team4}
                 t2={urlParams.team5}
                 t3={urlParams.team6}
-                colors={fromMatch ? [COLORS[0], COLORS[1], COLORS[2]] : [COLORS[3], COLORS[4], COLORS[5]]}
+                colorClasses={fromMatch ? blueClasses : redClasses}
             />
         </div>
     }
@@ -840,8 +847,9 @@ function TeamView() {
                     </ul>
                 </div>
             )}
-            <TopBar />
-            <CompareTopBar />
+            <div ref={navSentinelRef} style={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
+            <TopBar stuck={navStuck} />
+            <CompareTopBar stuck={navStuck} />
             <div className={styles.header}>
                 <div className={styles.MainDiv}>
                     <div className={styles.leftColumn}>

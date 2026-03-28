@@ -109,6 +109,30 @@
     justify-content: flex-start;
 }
 
+/* errorStyle variant — checkbox is red by default (danger/destructive action) */
+.errorStyleContainer .box {
+    background: rgba(255, 80, 80, 0.12);
+    border-color: rgba(255, 120, 120, 0.55);
+}
+
+.errorStyleContainer .box label {
+    color: #ffaaaa;
+}
+
+.errorStyleContainer .box:hover {
+    background: rgba(255, 80, 80, 0.18);
+    border-color: rgba(255, 120, 120, 0.75);
+}
+
+.errorStyleContainer .box:has(input:checked) {
+    background: rgba(255, 80, 80, 0.22);
+    border-color: rgba(255, 120, 120, 0.8);
+}
+
+.errorStyleContainer .box:has(input:checked) label {
+    color: #ffaaaa;
+}
+
 @media (max-width: 768px) {
     .box {
         max-width: 270px;
