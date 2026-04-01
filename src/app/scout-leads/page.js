@@ -323,7 +323,7 @@ function flattenConfigFields(config) {
 }
 
 export default function ScoutLeadsPage() {
-  const { config, gameId, loading: configLoading } = useGameConfig();
+  const { config, gameId, gameName: dbGameName, loading: configLoading } = useGameConfig();
   const configuredTimerFields = useMemo(
     () => extractTimerFieldsFromConfig(config || {}),
     [config]
@@ -581,14 +581,23 @@ export default function ScoutLeadsPage() {
     }
   };
 
+  const photoOnlyMode = team && (!match || match === "0");
+
   const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
     setError("");
     if (showLoadedMessage) {
       setSuccess("");
     }
 
-    if (!team || !match) {
-      setError("Team and match are required.");
+    if (!team) {
+      setError("Team is required.");
+      return;
+    }
+    if (!match || match === "0") {
+      // Photo-only mode — clear any previous match data, photos load via useEffect
+      setTimerSummary([]);
+      setAllScoutingRows([]);
+      setLoadedRecordMeta(null);
       return;
     }
 
@@ -1129,18 +1138,18 @@ export default function ScoutLeadsPage() {
                 Match
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   value={match}
                   onChange={(event) => setMatch(event.target.value)}
                   onWheel={(e) => e.target.blur()}
-                  required
+                  placeholder="0 = photos only"
                 />
               </label>
 
             </div>
 
             <button type="submit" className={styles.primaryButton} disabled={loadingData}>
-              {loadingData ? "Loading..." : "Load Match Data"}
+              {loadingData ? "Loading..." : (!match || match === "0") ? "Load Photos" : "Load Match Data"}
             </button>
           </form>
 
@@ -1591,7 +1600,7 @@ export default function ScoutLeadsPage() {
           )}
 
           {/* ── Photos section (upload + gallery for this team) ──── */}
-          {team && loadedRecordMeta && config?.gameName && (
+          {team && (photoOnlyMode || loadedRecordMeta) && dbGameName && (
             <section className={styles.photosSection}>
               <div className={styles.photosSectionHeader}>
                 <h2 className={styles.photosSectionTitle}>
@@ -1601,16 +1610,17 @@ export default function ScoutLeadsPage() {
                   photos={teamPhotosSlead}
                   teamNumber={team}
                   readOnly={false}
-                  gameName={config.gameName}
+                  gameName={dbGameName}
                   onDelete={(id) => setTeamPhotosSlead(prev => prev.filter(p => p.id !== id))}
                   onUpload={async (file) => {
                     const fd = new FormData();
                     fd.append('file', file);
                     fd.append('team', String(team));
-                    fd.append('gameName', config.gameName);
+                    fd.append('gameName', dbGameName);
                     const res = await fetch('/api/prescout/photos', {
                       method: 'POST',
                       body: fd,
+                      credentials: 'include',
                       headers: getAuthHeaders(),
                     });
                     if (!res.ok) {

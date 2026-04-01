@@ -30,6 +30,70 @@
   width: fit-content;
 }
 
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.navCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(189, 151, 72, 0.22);
+  border-radius: 10px;
+  color: #e8d5a3;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.navCard:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(189, 151, 72, 0.5);
+}
+
+.navCard:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
+}
+
+.navCard:active {
+  transform: scale(0.96);
+}
+
+.navCardIcon {
+  color: #bd9748;
+  flex-shrink: 0;
+}
+
+.navCardLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navCardTitle {
+  color: #e8d5a3;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.navCardDesc {
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(232, 213, 163, 0.6);
+}
+
 .adminContent {
   display: flex;
   flex-direction: column;

@@ -1,25 +1,41 @@
-/* Trigger button */
+/* Trigger button — icon-only with optional count badge */
 .triggerBtn {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  min-height: 44px; /* V2 fix: 44px touch target */
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: 1.5px solid rgba(160, 124, 48, 0.4);
-  border-radius: 20px;
+  border-radius: 50%;
   background: transparent;
   color: #a07c30;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 12.5px;
-  font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .triggerBtn:hover {
   background: rgba(160, 124, 48, 0.08);
   border-color: rgba(160, 124, 48, 0.65);
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #a07c30;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 /* Modal overlay */

@@ -51,6 +51,7 @@ export async function GET(request) {
   try {
     await ensurePhotosTable(client);
     const gameName = await resolveGameName(client, gameId);
+    console.log(`[Photos GET] team=${team}, gameId=${gameId}, resolved gameName=${gameName}`);
     if (!gameName) {
       return NextResponse.json({ photos: [] });
     }
@@ -62,6 +63,7 @@ export async function GET(request) {
        ORDER BY uploaded_at ASC`,
       [gameName, team]
     );
+    console.log(`[Photos GET] Found ${res.rows.length} photos for game_name=${gameName}, team=${team}`);
 
     return NextResponse.json({ photos: res.rows });
   } finally {
@@ -105,6 +107,8 @@ export async function POST(request) {
     try {
       await ensurePhotosTable(client);
 
+      console.log(`[Photos POST] Inserting photo: game_name=${gameName}, team=${team}, filename=${file.name}, uploadedBy=${teamName}`);
+
       const res = await client.query(
         `INSERT INTO team_photos (game_name, team_number, filename, photo_data, mime_type, uploaded_by, uploaded_at)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -112,6 +116,7 @@ export async function POST(request) {
         [gameName, team, file.name, base64, file.type, teamName || null]
       );
 
+      console.log(`[Photos POST] Inserted photo id=${res.rows[0]?.id}`);
       return NextResponse.json({ photo: res.rows[0] }, { status: 201 });
     } finally {
       client.release();

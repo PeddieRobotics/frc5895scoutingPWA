@@ -94,6 +94,16 @@ prescout.module.css `.authInput` sets `outline: none` without a `:focus-visible`
 
 ---
 
+## Missing `:focus-visible` on `<Link>`-as-card elements (dark mode)
+
+admin.module.css `.navCard` (a `<Link>` element styled as an interactive card) has no `:focus-visible` rule. Dark mode gold ring: `outline: 2px solid rgba(189, 151, 72, 0.7); outline-offset: 2px`. Discovered 2026-04-01.
+
+**Why:** `<Link>` elements receive keyboard focus and will show the browser-default blue ring if not overridden. DESIGN.md Focus Rings section forbids all non-gold focus indicators.
+
+**How to apply:** Any `<Link>` or `<a>` styled as an interactive card, tile, or button must include an explicit `:focus-visible` rule. Check this whenever a `<Link>` is given a card-style CSS class.
+
+---
+
 ## Pure black (`rgba(0,0,0,...)`) in overlays and shadows
 
 PhotoGallery.module.css lightbox uses `rgba(0, 0, 0, 0.88)` backdrop and `rgba(0, 0, 0, 0.5)` box-shadow. DESIGN.md "What NOT to do" forbids `#000000` backgrounds on interactive elements; shadow token is `rgba(13, 31, 53, ...)`.

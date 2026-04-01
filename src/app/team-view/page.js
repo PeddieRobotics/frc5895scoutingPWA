@@ -896,12 +896,14 @@ function TeamView() {
                                 <h1 style={{ color: Colors[0][3] }}>Team {safeData.team} View</h1>
                                 <h3>{safeData.name}</h3>
                             </div>
-                            <PhotoGallery
-                                photos={photos}
-                                teamNumber={safeData.team}
-                                readOnly={true}
-                                onDelete={(id) => setPhotos(prev => prev.filter(p => p.id !== id))}
-                            />
+                            <span style={{ position: 'absolute', top: 0, right: 0 }}>
+                                <PhotoGallery
+                                    photos={photos}
+                                    teamNumber={safeData.team}
+                                    readOnly={true}
+                                    onDelete={(id) => setPhotos(prev => prev.filter(p => p.id !== id))}
+                                />
+                            </span>
                         </div>
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
