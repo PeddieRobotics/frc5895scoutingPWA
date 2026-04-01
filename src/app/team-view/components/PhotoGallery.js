@@ -11,6 +11,7 @@ import styles from "./PhotoGallery.module.css";
  *   teamNumber - the team number (used for display only)
  *   readOnly   - if true, hide delete button (default false)
  *   gameName   - (optional) passed from scout-leads for upload support; if provided + !readOnly, show upload UI
+ *   gameId     - (optional) game config DB id; passed to photos/[id] API calls for per-game table resolution
  *   onUpload   - async (file) => void — called after a photo is uploaded; triggers refetch in parent
  *   uploadRef  - (optional) ref forwarded so parent can trigger file picker
  */
@@ -20,6 +21,7 @@ export default function PhotoGallery({
   teamNumber,
   readOnly = false,
   gameName,
+  gameId,
   onUpload,
   uploadRef,
 }) {
@@ -38,7 +40,7 @@ export default function PhotoGallery({
     photos.forEach(p => {
       if (loadedPhotos[p.id]) return;
       setLoadedPhotos(prev => ({ ...prev, [p.id]: { src: null, loading: true, error: false } }));
-      fetch(`/api/prescout/photos/${p.id}`)
+      fetch(`/api/prescout/photos/${p.id}${gameId ? `?gameId=${gameId}` : ''}`)
         .then(r => r.json())
         .then(data => {
           if (data.photo_data) {
@@ -66,7 +68,7 @@ export default function PhotoGallery({
   const handleDelete = useCallback(async (id) => {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/prescout/photos/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/prescout/photos/${id}${gameId ? `?gameId=${gameId}` : ''}`, { method: 'DELETE' });
       if (res.ok) {
         setLoadedPhotos(prev => { const next = { ...prev }; delete next[id]; return next; });
         if (lightbox?.id === id) setLightbox(null);
@@ -76,7 +78,7 @@ export default function PhotoGallery({
     } finally {
       setDeleting(false);
     }
-  }, [lightbox, onDelete]);
+  }, [lightbox, onDelete, gameId]);
 
   const handleFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];

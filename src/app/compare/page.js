@@ -234,6 +234,7 @@ function Compare() {
               photos={teamPhotos[team] || []}
               teamNumber={team}
               readOnly={true}
+              gameId={gameId}
               onDelete={(id) => setTeamPhotos(prev => ({ ...prev, [team]: (prev[team] || []).filter(p => p.id !== id) }))}
             />
           </span>

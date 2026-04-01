@@ -12,6 +12,8 @@ import {
   sanitizeTableName,
   sanitizeScoutLeadsTableName,
   sanitizeOprSettingsTableName,
+  sanitizePrescoutTableName,
+  sanitizePhotosTableName,
 } from './schema-generator.js';
 
 function quoteIdentifier(identifier) {
@@ -262,6 +264,33 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     await client.query(createScoutLeadsTableSQL);
     console.log(`[GameConfig] Created scout leads table: ${scoutLeadsTableName}`);
 
+    // Create prescout and photos tables
+    const prescoutTableName = sanitizePrescoutTableName(gameName);
+    const photosTableName = sanitizePhotosTableName(gameName);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${prescoutTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL UNIQUE,
+        data JSONB NOT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created prescout table: ${prescoutTableName}`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${photosTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        photo_data TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        uploaded_by VARCHAR(100),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created photos table: ${photosTableName}`);
+
     // Insert into game_configs
     const tbaEventCode = configJson.tbaEventCode || null;
     const insertResult = await client.query(`
@@ -378,6 +407,13 @@ async function deleteGame(id, dropTable = false) {
       const scoutLeadsTableName = sanitizeScoutLeadsTableName(game.game_name);
       await client.query(`DROP TABLE IF EXISTS ${scoutLeadsTableName}`);
       console.log(`[GameConfig] Dropped table: ${scoutLeadsTableName}`);
+
+      const prescoutTableName = sanitizePrescoutTableName(game.game_name);
+      const photosTableName = sanitizePhotosTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${prescoutTableName}`);
+      console.log(`[GameConfig] Dropped table: ${prescoutTableName}`);
+      await client.query(`DROP TABLE IF EXISTS ${photosTableName}`);
+      console.log(`[GameConfig] Dropped table: ${photosTableName}`);
     }
 
     await client.query('COMMIT');

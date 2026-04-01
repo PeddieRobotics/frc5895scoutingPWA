@@ -901,6 +901,7 @@ function TeamView() {
                                     photos={photos}
                                     teamNumber={safeData.team}
                                     readOnly={true}
+                                    gameId={gameId}
                                     onDelete={(id) => setPhotos(prev => prev.filter(p => p.id !== id))}
                                 />
                             </span>

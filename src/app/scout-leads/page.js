@@ -1611,6 +1611,7 @@ export default function ScoutLeadsPage() {
                   teamNumber={team}
                   readOnly={false}
                   gameName={dbGameName}
+                  gameId={gameId}
                   onDelete={(id) => setTeamPhotosSlead(prev => prev.filter(p => p.id !== id))}
                   onUpload={async (file) => {
                     const fd = new FormData();

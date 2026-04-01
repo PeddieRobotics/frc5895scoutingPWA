@@ -1,24 +1,10 @@
 import { NextResponse } from 'next/server';
 import { pool, validateAuthToken } from '../../../../lib/auth';
+import { sanitizePhotosTableName } from '../../../../lib/schema-generator';
 
 export const revalidate = 0;
 
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024; // 3 MB
-
-async function ensurePhotosTable(client) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS team_photos (
-      id SERIAL PRIMARY KEY,
-      game_name VARCHAR(100) NOT NULL,
-      team_number INTEGER NOT NULL,
-      filename VARCHAR(255) NOT NULL,
-      photo_data TEXT NOT NULL,
-      mime_type VARCHAR(50) NOT NULL,
-      uploaded_by VARCHAR(100),
-      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-}
 
 async function resolveGameName(client, gameId) {
   if (gameId) {
@@ -27,6 +13,20 @@ async function resolveGameName(client, gameId) {
   }
   const res = await client.query('SELECT game_name FROM game_configs WHERE is_active = TRUE LIMIT 1');
   return res.rows[0]?.game_name || null;
+}
+
+async function ensurePhotosTable(client, tableName) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      id SERIAL PRIMARY KEY,
+      team_number INTEGER NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      photo_data TEXT NOT NULL,
+      mime_type VARCHAR(50) NOT NULL,
+      uploaded_by VARCHAR(100),
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 /**
@@ -49,21 +49,21 @@ export async function GET(request) {
 
   const client = await pool.connect();
   try {
-    await ensurePhotosTable(client);
     const gameName = await resolveGameName(client, gameId);
-    console.log(`[Photos GET] team=${team}, gameId=${gameId}, resolved gameName=${gameName}`);
     if (!gameName) {
       return NextResponse.json({ photos: [] });
     }
 
+    const tableName = sanitizePhotosTableName(gameName);
+    await ensurePhotosTable(client, tableName);
+
     const res = await client.query(
       `SELECT id, filename, mime_type, uploaded_by, uploaded_at
-       FROM team_photos
-       WHERE game_name = $1 AND team_number = $2
+       FROM ${tableName}
+       WHERE team_number = $1
        ORDER BY uploaded_at ASC`,
-      [gameName, team]
+      [team]
     );
-    console.log(`[Photos GET] Found ${res.rows.length} photos for game_name=${gameName}, team=${team}`);
 
     return NextResponse.json({ photos: res.rows });
   } finally {
@@ -103,20 +103,18 @@ export async function POST(request) {
 
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
+    const tableName = sanitizePhotosTableName(gameName);
     const client = await pool.connect();
     try {
-      await ensurePhotosTable(client);
-
-      console.log(`[Photos POST] Inserting photo: game_name=${gameName}, team=${team}, filename=${file.name}, uploadedBy=${teamName}`);
+      await ensurePhotosTable(client, tableName);
 
       const res = await client.query(
-        `INSERT INTO team_photos (game_name, team_number, filename, photo_data, mime_type, uploaded_by, uploaded_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        `INSERT INTO ${tableName} (team_number, filename, photo_data, mime_type, uploaded_by, uploaded_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
          RETURNING id, filename, mime_type, uploaded_by, uploaded_at`,
-        [gameName, team, file.name, base64, file.type, teamName || null]
+        [team, file.name, base64, file.type, teamName || null]
       );
 
-      console.log(`[Photos POST] Inserted photo id=${res.rows[0]?.id}`);
       return NextResponse.json({ photo: res.rows[0] }, { status: 201 });
     } finally {
       client.release();

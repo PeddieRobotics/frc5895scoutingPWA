@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool, validateAuthToken } from '../../../lib/auth';
+import { sanitizePrescoutTableName } from '../../../lib/schema-generator';
 import { cookies } from 'next/headers';
 
 export const revalidate = 0;
@@ -19,19 +20,6 @@ async function validateAdminAuth() {
   }
 }
 
-async function ensurePrescoutTable(client) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS prescout_data (
-      id SERIAL PRIMARY KEY,
-      game_name VARCHAR(100) NOT NULL,
-      team_number INTEGER NOT NULL,
-      data JSONB NOT NULL,
-      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(game_name, team_number)
-    )
-  `);
-}
-
 async function resolveGameName(client, gameId) {
   if (gameId) {
     const res = await client.query('SELECT game_name FROM game_configs WHERE id = $1', [gameId]);
@@ -39,6 +27,17 @@ async function resolveGameName(client, gameId) {
   }
   const res = await client.query('SELECT game_name FROM game_configs WHERE is_active = TRUE LIMIT 1');
   return res.rows[0]?.game_name || null;
+}
+
+async function ensurePrescoutTable(client, tableName) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      id SERIAL PRIMARY KEY,
+      team_number INTEGER NOT NULL UNIQUE,
+      data JSONB NOT NULL,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 /**
@@ -61,15 +60,17 @@ export async function GET(request) {
 
   const client = await pool.connect();
   try {
-    await ensurePrescoutTable(client);
     const gameName = await resolveGameName(client, gameId);
     if (!gameName) {
       return NextResponse.json({ data: null });
     }
 
+    const tableName = sanitizePrescoutTableName(gameName);
+    await ensurePrescoutTable(client, tableName);
+
     const res = await client.query(
-      'SELECT data, uploaded_at FROM prescout_data WHERE game_name = $1 AND team_number = $2',
-      [gameName, team]
+      `SELECT data, uploaded_at FROM ${tableName} WHERE team_number = $1`,
+      [team]
     );
 
     return NextResponse.json({
@@ -99,8 +100,9 @@ export async function DELETE(request) {
 
   const client = await pool.connect();
   try {
-    await ensurePrescoutTable(client);
-    const res = await client.query('DELETE FROM prescout_data WHERE game_name = $1', [gameName]);
+    const tableName = sanitizePrescoutTableName(gameName);
+    await ensurePrescoutTable(client, tableName);
+    const res = await client.query(`DELETE FROM ${tableName}`);
     return NextResponse.json({ deleted: res.rowCount });
   } finally {
     client.release();

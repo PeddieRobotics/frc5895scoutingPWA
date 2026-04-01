@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../lib/auth';
+import { sanitizePrescoutTableName } from '../../../../lib/schema-generator';
 import { cookies } from 'next/headers';
 import * as XLSX from 'xlsx';
 
@@ -20,15 +21,13 @@ async function validateAdminAuth() {
   }
 }
 
-async function ensurePrescoutTable(client) {
+async function ensurePrescoutTable(client, tableName) {
   await client.query(`
-    CREATE TABLE IF NOT EXISTS prescout_data (
+    CREATE TABLE IF NOT EXISTS ${tableName} (
       id SERIAL PRIMARY KEY,
-      game_name VARCHAR(100) NOT NULL,
-      team_number INTEGER NOT NULL,
+      team_number INTEGER NOT NULL UNIQUE,
       data JSONB NOT NULL,
-      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(game_name, team_number)
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 }
@@ -109,10 +108,11 @@ export async function POST(request) {
       }
     }
 
-    // Upsert into prescout_data
+    // Upsert into per-game prescout table
+    const tableName = sanitizePrescoutTableName(gameName);
     const client = await pool.connect();
     try {
-      await ensurePrescoutTable(client);
+      await ensurePrescoutTable(client, tableName);
 
       let imported = 0;
       for (const [teamKey, data] of Object.entries(teamDataMap)) {
@@ -120,11 +120,11 @@ export async function POST(request) {
         if (isNaN(teamNumber)) continue;
 
         await client.query(
-          `INSERT INTO prescout_data (game_name, team_number, data, uploaded_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (game_name, team_number)
+          `INSERT INTO ${tableName} (team_number, data, uploaded_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (team_number)
            DO UPDATE SET data = EXCLUDED.data, uploaded_at = EXCLUDED.uploaded_at`,
-          [gameName, teamNumber, JSON.stringify(data)]
+          [teamNumber, JSON.stringify(data)]
         );
         imported++;
       }

@@ -301,6 +301,14 @@ function sanitizeOprSettingsTableName(gameName) {
   return sanitizeTableName(gameName, 'opr_settings_');
 }
 
+function sanitizePrescoutTableName(gameName) {
+  return sanitizeTableName(gameName, 'prescout_');
+}
+
+function sanitizePhotosTableName(gameName) {
+  return sanitizeTableName(gameName, 'photos_');
+}
+
 function extractTimerFieldsFromConfig(config) {
   const timerFields = [];
   const seen = new Set();
@@ -591,6 +599,8 @@ export {
   sanitizeTableName,
   sanitizeScoutLeadsTableName,
   sanitizeOprSettingsTableName,
+  sanitizePrescoutTableName,
+  sanitizePhotosTableName,
   getFieldDefaults,
   getNumericFields,
   getBooleanFields,
