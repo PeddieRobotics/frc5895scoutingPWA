@@ -13,6 +13,8 @@ import EPALineChart from './components/EPALineChart';
 import CoralLineChart from './components/CoralLineChart';
 import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
+import PrescoutSection from "./components/PrescoutSection";
+import PhotoGallery from "./components/PhotoGallery";
 import useGameConfig from "../../lib/useGameConfig";
 import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
 import { LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar } from 'recharts';
@@ -65,7 +67,10 @@ function TeamView() {
     const [loadingMatch, setLoadingMatch] = useState(null);
     const [slCommentsOpen, setSlCommentsOpen] = useState(false);
     const [navStuck, setNavStuck] = useState(false);
-    const navSentinelRef = useRef(null);
+    const [prescoutData, setPrescoutData] = useState(null);
+    const [photos, setPhotos] = useState([]);
+    const matchNavRef = useRef(null);
+    const teamFormRef = useRef(null);
     const router = useRouter();
 
     const searchParams = useSearchParams();
@@ -117,17 +122,19 @@ function TeamView() {
     const defenseBarField = tvConfig.defenseBarField || "";
     const scouterConfidenceField = tvConfig.scouterConfidenceField || null;
 
-    // Detect when the nav bar is pinned against the top navbar
+    // Detect when the nav bar is pinned against the top navbar via scroll position.
+    // Depends on `data` so the ref is populated before the listener runs.
     useEffect(() => {
-        const el = navSentinelRef.current;
-        if (!el) return;
-        const obs = new IntersectionObserver(
-            ([entry]) => setNavStuck(!entry.isIntersecting),
-            { rootMargin: '-45px 0px 0px 0px' }
-        );
-        obs.observe(el);
-        return () => obs.disconnect();
-    }, []);
+        const check = () => {
+            const el = matchNavRef.current;
+            if (!el) return;
+            setNavStuck(Math.round(el.getBoundingClientRect().top) <= 45);
+        };
+        check();
+        window.addEventListener('scroll', check, { passive: true });
+        return () => window.removeEventListener('scroll', check);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data]);
 
     // Sync URL parameters reactively (re-runs on soft navigation)
     useEffect(() => {
@@ -161,6 +168,27 @@ function TeamView() {
         fetch(`/api/scout-lead-comments?${commentsParams.toString()}`, { headers })
             .then(r => r.ok ? r.json() : null)
             .then(d => { if (d?.comments) setScoutLeadComments(d.comments); })
+            .catch(() => {});
+    }, [team, gameId]);
+
+    // Fetch prescout data and photo metadata when team changes
+    useEffect(() => {
+        if (!team) return;
+        setPrescoutData(null);
+        setPhotos([]);
+        const creds = (() => {
+            try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
+        })();
+        const headers = creds ? { Authorization: `Basic ${creds}` } : {};
+        const params = new URLSearchParams({ team: String(team) });
+        if (gameId) params.set('gameId', String(gameId));
+        fetch(`/api/prescout?${params.toString()}`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => setPrescoutData(d?.data || null))
+            .catch(() => {});
+        fetch(`/api/prescout/photos?${params.toString()}`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => setPhotos(d?.photos || []))
             .catch(() => {});
     }, [team, gameId]);
 
@@ -228,9 +256,7 @@ function TeamView() {
         </div>
     }
 
-    function CompareTopBar({ stuck }) {
-        const COMPARE_CLASSES = ['teamChipTeal', 'teamChipCobalt', 'teamChipPurple', 'teamChipPink'];
-
+    function CompareTopBar({ stuck, navRef }) {
         const compareTeams = [
             urlParams.team1,
             urlParams.team2,
@@ -244,13 +270,12 @@ function TeamView() {
 
         const navClass = `${styles.matchNav}${stuck ? ' ' + styles.matchNavStuck : ''}`;
         return (
-            <div className={navClass}>
+            <div ref={navRef} className={navClass}>
                 <div className={styles.compareNav}>
                     {compareTeams.map((t, index) => {
-                        const colorClass = COMPARE_CLASSES[index];
                         const cls = team == t
                             ? `${styles.teamChip} ${styles.teamChipActive}`
-                            : `${styles.teamChip} ${styles[colorClass] || ''}`;
+                            : styles.teamChip;
                         return (
                             <Link key={index} href={`/team-view?team=${t}&team1=${compareTeams[0] || ""}&team2=${compareTeams[1] || ""}&team3=${compareTeams[2] || ""}&team4=${compareTeams[3] || ""}&source=compare`}>
                                 <button className={cls}>{t || 404}</button>
@@ -265,7 +290,7 @@ function TeamView() {
         );
     }
 
-    function TopBar({ stuck }) {
+    function TopBar({ stuck, navRef }) {
         if (!hasTopBar || source === 'compare') {
             return <></>;
         }
@@ -276,7 +301,7 @@ function TeamView() {
         const blueClasses = ['teamChipBlue', 'teamChipBlue', 'teamChipBlue'];
         const navClass = `${styles.matchNav}${stuck ? ' ' + styles.matchNavStuck : ''}`;
 
-        return <div className={navClass}>
+        return <div ref={navRef} className={navClass}>
             <AllianceButtons
                 t1={urlParams.team1}
                 t2={urlParams.team2}
@@ -391,14 +416,18 @@ function TeamView() {
     }
 
     if (!team) {
+        const handleClear = () => {
+            const el = teamFormRef.current?.elements?.team;
+            if (el) el.value = '';
+        };
         return (
             <div>
-                <form className={styles.teamInputForm}>
-                    <span>{error}</span>
+                <form ref={teamFormRef} className={styles.teamInputForm}>
+                    {error && <span className={styles.errorSpan}>{error}</span>}
                     <label htmlFor="team">Team: </label>
                     <input id="team" name="team" placeholder="Team #" type="number"></input>
-                    <br></br>
                     <button className={styles.goButton}>Go!</button>
+                    <button type="button" className={styles.clearButton} onClick={handleClear}>Clear</button>
                 </form>
             </div>
         );
@@ -433,9 +462,19 @@ function TeamView() {
     }
 
     if (!data) {
+        const handleClear = () => {
+            const el = teamFormRef.current?.elements?.team;
+            if (el) el.value = '';
+        };
         return (
             <div>
-                <h1>No data found for team {team}</h1>
+                <form ref={teamFormRef} className={styles.teamInputForm}>
+                    <span className={styles.errorSpan}>{error || `No scouting data found for team ${team}.`}</span>
+                    <label htmlFor="team">Team: </label>
+                    <input id="team" name="team" placeholder="Team #" type="number" defaultValue={team}></input>
+                    <button className={styles.goButton}>Go!</button>
+                    <button type="button" className={styles.clearButton} onClick={handleClear}>Clear</button>
+                </form>
             </div>
         );
     }
@@ -847,14 +886,23 @@ function TeamView() {
                     </ul>
                 </div>
             )}
-            <div ref={navSentinelRef} style={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
-            <TopBar stuck={navStuck} />
-            <CompareTopBar stuck={navStuck} />
+            <TopBar stuck={navStuck} navRef={matchNavRef} />
+            <CompareTopBar stuck={navStuck} navRef={matchNavRef} />
             <div className={styles.header}>
                 <div className={styles.MainDiv}>
                     <div className={styles.leftColumn}>
-                        <h1 style={{ color: Colors[0][3] }}>Team {safeData.team} View</h1>
-                        <h3>{safeData.name}</h3>
+                        <div className={styles.teamHeaderRow}>
+                            <div>
+                                <h1 style={{ color: Colors[0][3] }}>Team {safeData.team} View</h1>
+                                <h3>{safeData.name}</h3>
+                            </div>
+                            <PhotoGallery
+                                photos={photos}
+                                teamNumber={safeData.team}
+                                readOnly={true}
+                                onDelete={(id) => setPhotos(prev => prev.filter(p => p.id !== id))}
+                            />
+                        </div>
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
                                 <div className={styles.scoreBreakdownContainer}>
@@ -989,6 +1037,9 @@ function TeamView() {
                                     </div>
                                 )}
                             </section>
+                        )}
+                        {prescoutData && (Array.isArray(prescoutData) ? prescoutData.length > 0 : Object.keys(prescoutData).length > 0) && (
+                            <PrescoutSection prescoutData={prescoutData} />
                         )}
                     </div>
                     <div className={styles.rightColumn}>

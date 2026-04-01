@@ -1,0 +1,1 @@
+- [Prescout Data & Photo Gallery Feature](project_prescout_feature.md) — non-config-driven prescout/photo feature added March 2026; DB tables, API routes, SheetJS dependency

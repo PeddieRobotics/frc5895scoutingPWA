@@ -4,7 +4,7 @@ import { memo, useState, useMemo } from "react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from "./TeamScatterPlot.module.css";
 
-const DOT_RADIUS = 18;
+const DOT_RADIUS = 13;
 const BASE_COLOR = '#c48a0a';
 const HIGHLIGHT_COLOR = '#2563eb';
 

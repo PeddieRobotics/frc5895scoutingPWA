@@ -23,6 +23,16 @@ export default function EPALineChart({
 
   if (!isClient) return null;
 
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'rgba(13,31,53,0.4)', fontFamily: 'Montserrat', fontSize: '13px', margin: 0 }}>
+          No data available for this selection.
+        </p>
+      </div>
+    );
+  }
+
   const hasOverlay = overlayData && overlayData.length > 0 && overlayField;
 
   // Merge overlay data into main data by match number
@@ -57,6 +67,11 @@ export default function EPALineChart({
               </p>
             )
           ))}
+          {payload[0]?.payload?.scout && (
+            <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'rgba(232,213,163,0.6)' }}>
+              {payload[0].payload.scout}
+            </p>
+          )}
         </div>
       );
     }

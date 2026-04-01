@@ -5,6 +5,8 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import PhotoGallery from "../team-view/components/PhotoGallery";
+import PrescoutSection from "../team-view/components/PrescoutSection";
 
 // Resolve a dotted path like "endPlacement.l3" on an object
 function resolvePath(obj, path) {
@@ -60,6 +62,8 @@ function Compare() {
   const [teams, setTeams] = useState([]);
   const [tbaRanks, setTbaRanks] = useState({});
   const [fetchingTbaRanks, setFetchingTbaRanks] = useState(false);
+  const [teamPhotos, setTeamPhotos] = useState({});
+  const [teamPrescout, setTeamPrescout] = useState({});
   const { config, gameId, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(() => config?.display?.compare, [config]);
@@ -150,6 +154,27 @@ function Compare() {
     return () => { isMounted = false; };
   }, [teams, gameId]);
 
+  // Fetch prescout data and photos for each team
+  useEffect(() => {
+    if (teams.length === 0) return;
+    const creds = (() => {
+      try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
+    })();
+    const headers = creds ? { Authorization: `Basic ${creds}` } : {};
+    teams.forEach(team => {
+      const params = new URLSearchParams({ team: String(team) });
+      if (gameId) params.set('gameId', String(gameId));
+      fetch(`/api/prescout?${params.toString()}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.data) setTeamPrescout(prev => ({ ...prev, [team]: d.data })); })
+        .catch(() => {});
+      fetch(`/api/prescout/photos?${params.toString()}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setTeamPhotos(prev => ({ ...prev, [team]: d?.photos || [] })))
+        .catch(() => {});
+    });
+  }, [teams, gameId]);
+
   async function fetchTbaRanksForTeams(teamList) {
     setFetchingTbaRanks(true);
     try {
@@ -198,12 +223,20 @@ function Compare() {
       {/* Team legend + links */}
       <div className={styles.linkContainer} style={{ margin: "20px 0" }}>
         {teams.map((team, index) => (
-          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&source=compare`}>
-            <button style={{ backgroundColor: COLORS[index], color: '#FFFFFF' }}>
-              {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
-              View Team {team}
-            </button>
-          </Link>
+          <span key={index} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Link href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&source=compare`}>
+              <button style={{ backgroundColor: COLORS[index], color: '#FFFFFF' }}>
+                {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
+                View Team {team}
+              </button>
+            </Link>
+            <PhotoGallery
+              photos={teamPhotos[team] || []}
+              teamNumber={team}
+              readOnly={true}
+              onDelete={(id) => setTeamPhotos(prev => ({ ...prev, [team]: (prev[team] || []).filter(p => p.id !== id) }))}
+            />
+          </span>
         ))}
         <button onClick={() => fetchTbaRanksForTeams(teams)} disabled={fetchingTbaRanks} style={{ marginLeft: '0.5rem' }}>
           {fetchingTbaRanks ? 'Fetching...' : 'TBA Ranks'}
@@ -232,6 +265,24 @@ function Compare() {
           teams={teams}
           colors={COLORS}
         />
+      )}
+
+      {/* Prescout data — one card per team if data exists */}
+      {teams.some(t => { const d = teamPrescout[t]; return d && (Array.isArray(d) ? d.length > 0 : Object.keys(d).length > 0); }) && (
+        <div style={{ marginTop: '24px' }}>
+          <h2 style={{ fontFamily: 'Montserrat, sans-serif', color: '#0d1f35', fontSize: '16px', marginBottom: '12px' }}>Prescout Data</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${teams.length}, 1fr)`, gap: '12px' }}>
+            {teams.map((team, index) => (
+              <div key={team}>
+                <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: COLORS[index], fontSize: '13px', marginBottom: '6px' }}>Team {team}</div>
+                {teamPrescout[team] && (Array.isArray(teamPrescout[team]) ? teamPrescout[team].length > 0 : Object.keys(teamPrescout[team]).length > 0)
+                  ? <PrescoutSection prescoutData={teamPrescout[team]} />
+                  : <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '12px', color: '#8a9aaa', margin: 0 }}>No prescout data.</p>
+                }
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

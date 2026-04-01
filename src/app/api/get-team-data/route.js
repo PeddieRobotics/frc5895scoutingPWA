@@ -173,6 +173,23 @@ export async function GET(request) {
     }
   }
 
+  // Inject scout names into over-time arrays (PPR override strips them, so re-add from scoredRows)
+  const scoutsByMatch = {};
+  scoredRows.forEach(row => {
+    if (row.scoutname && row.scoutname.trim()) {
+      if (!scoutsByMatch[row.match]) scoutsByMatch[row.match] = [];
+      if (!scoutsByMatch[row.match].includes(row.scoutname)) scoutsByMatch[row.match].push(row.scoutname);
+    }
+  });
+  ['epaOverTime', 'autoOverTime', 'teleOverTime'].forEach(key => {
+    if (Array.isArray(returnObject[key])) {
+      returnObject[key] = returnObject[key].map(p => ({
+        ...p,
+        scout: (scoutsByMatch[p.match] || []).join(', ') || null,
+      }));
+    }
+  });
+
   // Fetch team name from TBA
   try {
     const teamName = await fetch(`https://www.thebluealliance.com/api/v3/team/frc${team}/simple`, {

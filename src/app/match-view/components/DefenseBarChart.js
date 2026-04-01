@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField, scope, gameId }) {
+export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField, scope, gameId, allianceColor }) {
   const [defenseRatings, setDefenseRatings] = useState({
     team1: 0,
     team2: 0,
@@ -197,7 +197,7 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
             <Bar dataKey="team1" name={`Team ${teamNumbers[0] || 'N/A'}`} fill={colors[0]} />
             <Bar dataKey="team2" name={`Team ${teamNumbers[1] || 'N/A'}`} fill={colors[1]} />
             <Bar dataKey="team3" name={`Team ${teamNumbers[2] || 'N/A'}`} fill={colors[2]} />
-            <Bar dataKey="alliance" name="Alliance Average" fill="#7c3aed" />
+            <Bar dataKey="alliance" name="Alliance Average" fill={allianceColor || "#7c3aed"} />
           </BarChart>
         </ResponsiveContainer>
       </div>

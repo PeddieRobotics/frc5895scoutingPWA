@@ -6,6 +6,7 @@ import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScor
 import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
 import TeamScatterPlot from "../components/TeamScatterPlot";
+import PhotoGallery from "../team-view/components/PhotoGallery";
 
 function getAuthHeaders() {
   if (typeof window === "undefined") return {};
@@ -379,6 +380,9 @@ export default function ScoutLeadsPage() {
   const [commentSuccess, setCommentSuccess] = useState("");
   const [scoutLeadsRows, setScoutLeadsRows] = useState([]);
 
+  // Photo gallery state (for the currently-viewed team)
+  const [teamPhotosSlead, setTeamPhotosSlead] = useState([]);
+
   // OPR sidebar state (active when config.usePPR === true)
   const [oprMatches, setOprMatches] = useState([]);
   const [oprEnabled, setOprEnabled] = useState({});  // { "Q1": true, "SF2": false, ... }
@@ -417,6 +421,17 @@ export default function ScoutLeadsPage() {
       // Ignore malformed localStorage profile.
     }
   }, []);
+
+  // Fetch photo metadata when team changes
+  useEffect(() => {
+    if (!team) { setTeamPhotosSlead([]); return; }
+    const params = new URLSearchParams({ team: String(team) });
+    if (gameId) params.set('gameId', String(gameId));
+    fetch(`/api/prescout/photos?${params.toString()}`, { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setTeamPhotosSlead(d?.photos || []))
+      .catch(() => {});
+  }, [team, gameId]);
 
   // Fetch all unscored matches on mount for the informational popup
   useEffect(() => {
@@ -510,8 +525,11 @@ export default function ScoutLeadsPage() {
       weightsConfig.forEach((w) => { initial[w.key] = "0"; });
       return initial;
     });
-    setScatterX(prev => prev || weightsConfig[0]?.key || '');
-    setScatterY(prev => prev || weightsConfig[1]?.key || weightsConfig[0]?.key || '');
+    const scatterOpts = (config?.display?.picklist?.scatterFields || []).length > 0
+      ? config.display.picklist.scatterFields
+      : weightsConfig;
+    setScatterX(prev => prev || scatterOpts[0]?.key || '');
+    setScatterY(prev => prev || scatterOpts[1]?.key || scatterOpts[0]?.key || '');
   }, [config]);
 
   // Auto-fetch scatter data on load (independent of manual Generate Rankings)
@@ -881,10 +899,13 @@ export default function ScoutLeadsPage() {
   };
 
   const picklistWeightsConfig = config?.display?.picklist?.weights || [];
+  const scatterAxisOptions = (config?.display?.picklist?.scatterFields || []).length > 0
+    ? config.display.picklist.scatterFields
+    : picklistWeightsConfig;
   const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"];
 
   const resolveAxisValue = (t, key) => key === 'team' ? Number(t.team) : (t[key] ?? 0);
-  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (picklistWeightsConfig.find(w => w.key === key)?.label ?? key);
+  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (scatterAxisOptions.find(w => w.key === key)?.label ?? key);
 
   const scatterData = useMemo(() =>
     scatterTeams.map(t => ({
@@ -932,7 +953,7 @@ export default function ScoutLeadsPage() {
                 onChange={e => setScatterX(e.target.value)}
               >
                 <option value="team">Team Number</option>
-                {picklistWeightsConfig.map(w => (
+                {scatterAxisOptions.map(w => (
                   <option key={w.key} value={w.key}>{w.label}</option>
                 ))}
               </select>
@@ -945,7 +966,7 @@ export default function ScoutLeadsPage() {
                 onChange={e => setScatterY(e.target.value)}
               >
                 <option value="team">Team Number</option>
-                {picklistWeightsConfig.map(w => (
+                {scatterAxisOptions.map(w => (
                   <option key={w.key} value={w.key}>{w.label}</option>
                 ))}
               </select>
@@ -1567,6 +1588,41 @@ export default function ScoutLeadsPage() {
 
           {timerSummary.length === 0 && allScoutingRows.length === 0 && !loadingData && loadedRecordMeta && (
             <div className={styles.info}>No scouting entries found for this team/match.</div>
+          )}
+
+          {/* ── Photos section (upload + gallery for this team) ──── */}
+          {team && loadedRecordMeta && config?.gameName && (
+            <section className={styles.photosSection}>
+              <div className={styles.photosSectionHeader}>
+                <h2 className={styles.photosSectionTitle}>
+                  Photos — Team {team}
+                </h2>
+                <PhotoGallery
+                  photos={teamPhotosSlead}
+                  teamNumber={team}
+                  readOnly={false}
+                  gameName={config.gameName}
+                  onDelete={(id) => setTeamPhotosSlead(prev => prev.filter(p => p.id !== id))}
+                  onUpload={async (file) => {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('team', String(team));
+                    fd.append('gameName', config.gameName);
+                    const res = await fetch('/api/prescout/photos', {
+                      method: 'POST',
+                      body: fd,
+                      headers: getAuthHeaders(),
+                    });
+                    if (!res.ok) {
+                      const d = await res.json();
+                      throw new Error(d.message || 'Upload failed');
+                    }
+                    const data = await res.json();
+                    setTeamPhotosSlead(prev => [...prev, data.photo]);
+                  }}
+                />
+              </div>
+            </section>
           )}
         </div>
 

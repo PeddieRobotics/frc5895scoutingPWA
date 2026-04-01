@@ -62,7 +62,8 @@ This guide documents how to build and validate JSON game configurations for form
 15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
 16. [Scoring Requirements](#scoring-requirements)
 17. [OPR Rankings Sidebar](#opr-rankings-sidebar)
-18. [Acknowledgements](#acknowledgements)
+18. [Prescout Data & Photo Gallery](#prescout-data--photo-gallery)
+19. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -2278,6 +2279,117 @@ The system is solved using Gaussian elimination with partial pivoting (no extern
   ...
 }
 ```
+
+---
+
+## Prescout Data & Photo Gallery
+
+The prescout feature lets admin users bulk-import pre-event scouting data from a spreadsheet and any authenticated user upload robot photos. This data is then surfaced alongside scouting data on `/team-view`, `/compare`, and `/scout-leads`.
+
+### Database Tables
+
+Both tables are created automatically on first API use — no migration is needed.
+
+| Table | Key columns | Notes |
+|-------|-------------|-------|
+| `prescout_data` | `game_name`, `team_number` (unique pair), `data` (JSONB) | One row per team per game; upsert on re-upload |
+| `team_photos` | `game_name`, `team_number`, `photo_data` (base64 TEXT), `mime_type`, `uploaded_by` | Multiple photos per team allowed |
+
+### Prescout Spreadsheet Format
+
+Upload a `.xlsx` file with a sheet named exactly **`Prescout`** (case-sensitive). The sheet uses a **transposed** layout:
+
+```
+         | B        | C        | D        | ...
+---------+----------+----------+----------+
+Row 1    | 1234     | 5678     | 9012     |   ← team numbers (integer or float OK)
+---------+----------+----------+----------+
+Row 2    | Value A  | Value B  | Value C  |   ← data for field named in A2
+Row 3    | Value A  | Value B  | Value C  |   ← data for field named in A3
+...      | ...      | ...      | ...      |
+```
+
+- **Column A**: field names (row 1 cell A1 is ignored).
+- **Row 1 from column B onward**: team numbers. Floats are rounded to integers (e.g. `1234.0` → `1234`).
+- All cell values are stored as strings. Empty cells are stored as `null` and are filtered out in the UI.
+- Re-uploading replaces (`ON CONFLICT DO UPDATE`) existing data for matching `(game_name, team_number)` pairs.
+- Requires the **Admin password** (`ADMIN_PASSWORD` env var).
+
+### Admin Page — `/admin/prescout`
+
+Accessible via the "Prescout" button in the `/admin/games` header. Requires admin authentication.
+
+Features:
+- **Upload .xlsx**: select file → the Prescout sheet is parsed and data is upserted for the active game.
+- **View imported teams**: displayed as a pill list; count shown in the card header.
+- **Clear all data**: two-tap confirmation button calls `DELETE /api/prescout?gameName=<name>`, removing all prescout rows for the active game (photos are unaffected).
+
+### API Routes
+
+#### Prescout Data
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/prescout?team=<num>&gameId=<id>` | Any authenticated user | Returns `{ data, uploadedAt }` for a team. `gameId` is optional; defaults to active game. |
+| `DELETE` | `/api/prescout?gameName=<name>` | Admin only | Deletes all prescout rows for a game. |
+| `POST` | `/api/prescout/upload` | Admin only | Accepts `multipart/form-data` with `file` (.xlsx) and `gameName`. Returns `{ imported, teams[] }`. |
+| `GET` | `/api/prescout/teams?gameName=<name>` | Admin only | Returns `{ teams[] }` — sorted list of team numbers with prescout data for the game. |
+
+#### Photos
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/prescout/photos?team=<num>&gameId=<id>` | Any authenticated user | Returns `{ photos[] }` — metadata only (no image data). Each item: `{ id, filename, mime_type, uploaded_by, uploaded_at }`. |
+| `POST` | `/api/prescout/photos` | Any authenticated user | Accepts `multipart/form-data` with `file` (image), `team`, and `gameName`. Returns `{ photo }` (metadata). Max 3 MB. |
+| `GET` | `/api/prescout/photos/[id]` | Any authenticated user | Returns full photo record including `photo_data` (base64). Used by the gallery for lazy loading. |
+| `DELETE` | `/api/prescout/photos/[id]` | Any authenticated user | Deletes the photo. Returns `{ deleted: true }`. |
+
+### Components
+
+#### `PrescoutSection` (`src/app/team-view/components/PrescoutSection.js`)
+
+A collapsible key-value table component. Displays all non-null fields from a team's prescout JSONB object.
+
+- Props: `prescoutData` (object or null)
+- Shown on `/team-view` (read-only) and `/compare` (one per team, at the bottom of each column).
+- Renders "No prescout data for this team." when `prescoutData` is null or all fields are empty.
+
+#### `PhotoGallery` (`src/app/team-view/components/PhotoGallery.js`)
+
+A modal photo gallery with lazy loading and a fullscreen lightbox.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `photos` | array | Metadata objects from `GET /api/prescout/photos` |
+| `teamNumber` | number | Displayed in modal header |
+| `readOnly` | boolean | When `true`, hides delete button and upload UI (default: `false`) |
+| `gameName` | string | Required to enable upload UI; omit or leave empty to hide it |
+| `onDelete` | async function | Called with `id` after successful delete; triggers parent refetch |
+| `onUpload` | async function | Called with `File` after user selects a file; triggers parent refetch |
+| `uploadRef` | ref | Optional — parent can call `uploadRef.current()` to open the file picker |
+
+**Behavior:**
+- A "Photos (N)" camera-icon button triggers the modal.
+- Photos are lazy-loaded from `/api/prescout/photos/[id]` when the modal opens.
+- Clicking a loaded thumbnail opens a fullscreen lightbox overlay.
+- Delete requires a two-step confirmation (delete icon → "Delete" / "Cancel").
+- Upload: only available when `readOnly=false`, `gameName` is set, and `onUpload` is provided. Image files only; client-side 3 MB check mirrors the server limit. Escape closes the lightbox or (if no lightbox) the modal.
+
+### Page Integration
+
+| Page | Prescout data | Photos |
+|------|--------------|--------|
+| `/team-view` | `PrescoutSection` shown below scouting stats | `PhotoGallery` button (`readOnly=true`) in team header |
+| `/compare` | `PrescoutSection` per team at bottom of each column | `PhotoGallery` button per team (`readOnly=true`) |
+| `/scout-leads` | Not shown | `PhotoGallery` with `readOnly=false` (upload + delete enabled) per team entry card |
+| `/admin/prescout` | Upload, view, clear via admin page | Not shown |
+
+### Notes
+
+- The `xlsx` (SheetJS) npm package is used for spreadsheet parsing server-side.
+- Photos are stored as base64 strings in PostgreSQL (`TEXT` column). The 3 MB limit applies per photo. No external object storage is used.
+- `uploaded_by` on photos is set to the authenticated team's name at upload time (`teamName` from `validateAuthToken`).
+- Prescout data is scoped to `game_name` — switching active games shows different prescout data.
 
 ---
 

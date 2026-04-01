@@ -60,9 +60,10 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
   - `compute-picklist/` — Picklist computation
   - `scout-leads/` — Scout-lead timer rate CRUD
   - `edit-match-entry/` — PATCH endpoint to update a single scouting row (config-driven field allowlist; auth: own entry or admin password)
+  - `prescout/` — Prescout data CRUD: `GET ?team&gameId` (any auth), `DELETE ?gameName` (admin); `upload/` POST xlsx (admin); `teams/` GET list (admin); `photos/` GET metadata + POST upload (any auth); `photos/[id]/` GET full data + DELETE (any auth)
   - `admin/` — Game management, auth, team management
 
-- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/sudo`
+- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/admin/prescout`, `/sudo`
 
 - `src/configs/` — Reference JSON game configs (`reefscape_2025.json`, `rebuilt_2026.json`)
 
@@ -118,6 +119,30 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 - **`starRating`/`qualitative` fields render `max` stars (default: 6).** Add `"max": N` (integer ≥ 2) to configure the star count. All rendering, editing, display, and inversion logic uses the actual `max` value.
 - **`zeroLabel`** (string, optional): text shown below the stars when no rating is selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero.
 - **`ratingLabels`** (array of exactly `max` strings, optional, default 6): overrides the default Low→High scale labels shown below the stars when a rating is selected. Defaults to `["Low", "Relatively Low", "Just Below Average", "Just Above Average", "Relatively High", "High"]`. Validated by `config-validator.js` — wrong length or non-strings produce a warning.
+
+### Prescout Data & Photo Gallery
+
+Two non-config-driven DB tables (auto-created on first API use):
+
+- **`prescout_data`** — `(game_name, team_number)` unique pair; `data` JSONB column holds arbitrary key-value prescout fields; upserted on re-upload.
+- **`team_photos`** — multiple photos per team; `photo_data TEXT` stores base64; `mime_type`, `uploaded_by`, `uploaded_at` metadata columns.
+
+**Spreadsheet ingestion (`POST /api/prescout/upload`):**
+- Admin-only. Accepts `.xlsx` via `multipart/form-data` (`file` + `gameName`).
+- Parses the sheet named `"Prescout"` (case-sensitive) using the `xlsx` (SheetJS) package.
+- Transposed layout: row 0 = team numbers (cols 1+), col 0 = field names (rows 1+). All values stored as strings; nulls filtered in UI.
+
+**Photos (`/api/prescout/photos`):**
+- Any authenticated user can upload (`POST`) or delete (`DELETE /api/prescout/photos/[id]`).
+- Max 3 MB enforced server-side; client-side check mirrors this.
+- `GET /api/prescout/photos?team&gameId` returns metadata only (no base64). `GET /api/prescout/photos/[id]` returns full record including `photo_data`.
+- Gallery lazy-loads images only when the modal is opened.
+
+**Components (both in `src/app/team-view/components/`):**
+- `PrescoutSection.js` — collapsible key-value table; shown on `/team-view` (read-only) and `/compare` (per-team).
+- `PhotoGallery.js` — modal gallery with lightbox; `readOnly` prop controls delete/upload UI visibility. Upload enabled only on `/scout-leads` (readOnly=false).
+
+See `README.md` — "Prescout Data & Photo Gallery" section for full API reference, spreadsheet layout, and page integration table.
 
 ### Display Config Validation
 

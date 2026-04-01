@@ -181,24 +181,36 @@ export function aggregateTeamData(rows, config, calcFns) {
   const last3Tele = computeLast3ByMatch(teamTable, 'tele');
   const last3End = computeLast3ByMatch(teamTable, 'end');
 
+  // Build match → scout names map for tooltip display
+  const scoutsByMatch = {};
+  teamTable.forEach(row => {
+    if (row.scoutname && row.scoutname.trim()) {
+      if (!scoutsByMatch[row.match]) scoutsByMatch[row.match] = [];
+      if (!scoutsByMatch[row.match].includes(row.scoutname)) scoutsByMatch[row.match].push(row.scoutname);
+    }
+  });
+
   const epaOverTime = computeMatchAverages(teamTable, 'epa').map(d => ({
-    ...d, epa: Math.round(d.epa * 100) / 100
+    ...d, epa: Math.round(d.epa * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
   const autoOverTime = computeMatchAverages(teamTable, 'auto').map(d => ({
-    ...d, auto: Math.round(d.auto * 100) / 100
+    ...d, auto: Math.round(d.auto * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
   const teleOverTime = computeMatchAverages(teamTable, 'tele').map(d => ({
-    ...d, tele: Math.round(d.tele * 100) / 100
+    ...d, tele: Math.round(d.tele * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
   const endOverTime = computeMatchAverages(teamTable, 'end').map(d => ({
-    ...d, end: Math.round(d.end * 100) / 100
+    ...d, end: Math.round(d.end * 100) / 100,
   }));
 
   // Overlay over time — per-match averages for each epaChartOverlayOptions field
   const overlayOverTime = {};
   (teamViewConfig.epaChartOverlayOptions || []).forEach(opt => {
     if (['auto', 'tele', 'end'].includes(opt.field)) return; // already have dedicated arrays
-    const validRows = teamTable.filter(r => r[opt.field] != null && r[opt.field] != -1 && Number(r[opt.field]) > 0);
+    const validRows = teamTable.filter(r => r[opt.field] != null && r[opt.field] != -1 && (opt.allowZero || Number(r[opt.field]) > 0));
     if (validRows.length > 0) {
       overlayOverTime[opt.field] = computeMatchAverages(validRows, opt.field).map(d => ({
         match: d.match,
@@ -661,7 +673,7 @@ export function aggregateAllianceData(rows, config, calcFns) {
     const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
     overlayOptions.forEach(opt => {
       if (['auto', 'tele', 'end'].includes(opt.field)) return;
-      const validRows = teamRows.filter(r => r[opt.field] != null && r[opt.field] != -1 && Number(r[opt.field]) > 0);
+      const validRows = teamRows.filter(r => r[opt.field] != null && r[opt.field] != -1 && (opt.allowZero || Number(r[opt.field]) > 0));
       if (validRows.length > 0) {
         const groups = {};
         validRows.forEach(r => {
@@ -711,6 +723,13 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   teamTable = teamTable.filter(dr => !dr.noshow);
 
   let teamMatchData = teamTable;
+  // Pre-compute per-team match lists once to avoid O(N×M) filtering in each mutator
+  const teamMatchesByTeam = new Map();
+  for (const row of teamMatchData) {
+    const list = teamMatchesByTeam.get(row.team);
+    if (list) list.push(row);
+    else teamMatchesByTeam.set(row.team, [row]);
+  }
   teamTable = tidy(teamTable, groupBy(['team'], [summarizeAll(averageField)]));
 
   // Compute calc-based metrics
@@ -737,12 +756,23 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
         const fail = metric.failFields.reduce((s, f) => s + (d[f] || 0), 0);
         return (success + fail) > 0 ? (success / (success + fail)) * 100 : 0;
       };
+    } else if (metric.type === 'averageFields') {
+      mutators[metric.key] = d => {
+        const vals = (metric.fields || []).map(f => d[f]).filter(v => v != null);
+        return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+      };
+    } else if (metric.type === 'booleanRate') {
+      mutators[metric.key] = d => {
+        const teamMatches = teamMatchesByTeam.get(d.team) || [];
+        const trueCount = teamMatches.filter(m => m[metric.field] === true).length;
+        return teamMatches.length > 0 ? trueCount / teamMatches.length : 0;
+      };
     }
   });
 
   // Consistency
   mutators.consistency = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     // Use configurable metric key for consistency, default to first successRate metric
     const consistencyKey = display.picklist?.consistencyMetricKey
       || (computedMetrics.find(m => m.type === 'successRate')?.key);
@@ -771,7 +801,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // Defense
   mutators.defense = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const validRatings = teamMatches.filter(r => {
       const val = r[defenseField];
       return val !== undefined && val !== null && val > 0;
@@ -784,7 +814,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // Breakdown
   mutators.breakdown = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const total = teamMatches.length;
     const breakdownFieldName = apiConfig.breakdownField || 'breakdown';
     const breakdowns = teamMatches.filter(m =>
@@ -795,7 +825,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // EPA last 3
   mutators.epa3 = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const latest3 = teamMatches.sort((a, b) => b.match - a.match).slice(0, 3);
     if (latest3.length === 0) return 0;
     return latest3.map(m => calcFns.calcEPA(m)).reduce((s, v) => s + v, 0) / latest3.length;
@@ -803,10 +833,26 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   teamTable = tidy(teamTable, mutate(mutators));
 
-  // Select fields for output
-  const selectFields = ['team', 'auto', 'tele', 'end', 'epa', 'epa3', 'consistency', 'defense', 'breakdown',
-    ...computedMetrics.map(m => m.key)];
+  // Select fields for output.
+  // NOTE: real* variants (realEpa, realTrenchRate, etc.) are created by the normalization
+  // mutate AFTER this select, so we must include only the base keys here.
+  // Map any real{Key} scatter field back to its base key so normalization can create it.
+  const scatterFieldDefs = picklistConfig.scatterFields || [];
+  const scatterBaseKeys = scatterFieldDefs
+    .map(sf => sf.key)
+    .filter(k => k !== 'team')
+    .map(k => (k.startsWith('real') && k.length > 4)
+      ? k.charAt(4).toLowerCase() + k.slice(5)
+      : k);
+  const selectFields = [...new Set([
+    'team', 'match', 'auto', 'tele', 'end', 'epa', 'epa3', 'consistency', 'defense', 'breakdown',
+    ...computedMetrics.map(m => m.key),
+    ...scatterBaseKeys,
+  ])];
   teamTable = tidy(teamTable, select(selectFields));
+
+  // Metrics that have custom normalization (or none) and must be excluded from the generic real* pass
+  const unnormalizedMetricKeys = ['consistency', 'defense', 'breakdown'];
 
   // Normalize and score
   const maxes = tidy(teamTable, summarizeAll(max))[0];
@@ -828,7 +874,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
     defense: d => maxes.defense ? d.defense / maxes.defense : 0,
     breakdown: d => d.breakdown,
     ...Object.fromEntries(computedMetrics
-      .filter(m => !['consistency', 'defense', 'breakdown'].includes(m.key))
+      .filter(m => !unnormalizedMetricKeys.includes(m.key))
       .map(m => {
         const realKey = `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`;
         return [
@@ -850,7 +896,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
     consistency: 'realConsistency', defense: 'realDefense',
     breakdown: 'breakdown',
     ...Object.fromEntries(computedMetrics
-      .filter(m => !['consistency', 'defense', 'breakdown'].includes(m.key))
+      .filter(m => !unnormalizedMetricKeys.includes(m.key))
       .map(m => [m.key, `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`])),
   };
   teamTable = tidy(teamTable, mutate({

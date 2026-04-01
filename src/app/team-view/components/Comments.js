@@ -27,7 +27,7 @@ export default function Comments({title, value, color1, color2}) {
                 onClick={() => setOpen(o => !o)}
                 aria-expanded={open}
             >
-                <span>{title}</span>
+                <span>{title}{entries ? ` (${entries.length})` : ''}</span>
                 <span className={styles.chevron} aria-hidden="true">{open ? '▲' : '▼'}</span>
             </button>
             {open && (

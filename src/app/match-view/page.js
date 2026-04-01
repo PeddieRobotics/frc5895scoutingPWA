@@ -33,7 +33,8 @@ function MatchView() {
   const [unscoredMatches, setUnscoredMatches] = useState([]);
   const [useRecent, setUseRecent] = useState(false);
   const [navStuck, setNavStuck] = useState(false);
-  const navSentinelRef = useRef(null);
+  const matchNavRef = useRef(null);
+  const teamFormRef = useRef(null);
 
   //light to dark
   const COLORS = [
@@ -76,17 +77,19 @@ function MatchView() {
     return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
   };
 
-  // Detect when the nav bar is pinned against the top navbar
+  // Detect when the nav bar is pinned against the top navbar via scroll position.
+  // Depends on `data` so the ref is populated before the listener runs.
   useEffect(() => {
-    const el = navSentinelRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setNavStuck(!entry.isIntersecting),
-      { rootMargin: '-45px 0px 0px 0px' }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+    const check = () => {
+      const el = matchNavRef.current;
+      if (!el) return;
+      setNavStuck(Math.round(el.getBoundingClientRect().top) <= 45);
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Get URL parameters on client-side
   useEffect(() => {
@@ -197,6 +200,13 @@ function MatchView() {
           urlParams.team5,
           urlParams.team6
         ];
+        const requestedTeams = [team1, team2, team3, team4, team5, team6].filter(Boolean);
+        const missingTeams = requestedTeams.filter(t => !allData[t]);
+        if (missingTeams.length > 0) {
+          setError(`No data found for team${missingTeams.length > 1 ? 's' : ''}: ${missingTeams.join(', ')}`);
+          setLoading(false);
+          return;
+        }
         setData({ team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6] });
         setLoading(false);
       } else {
@@ -349,17 +359,39 @@ function MatchView() {
 
   //show error state
   if (error) {
-    return <div>
-      <h1>Error: {error}</h1>
-      <p>Please try again or contact support if the problem persists.</p>
-    </div>
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorCard}>
+          <h2 className={styles.errorTitle}>Error</h2>
+          <p className={styles.errorMessage}>{error}</p>
+          <button className={styles.editButton} onClick={() => {
+            const p = new URLSearchParams({ edit: 'true' });
+            if (urlParams.team1) p.set('team1', urlParams.team1);
+            if (urlParams.team2) p.set('team2', urlParams.team2);
+            if (urlParams.team3) p.set('team3', urlParams.team3);
+            if (urlParams.team4) p.set('team4', urlParams.team4);
+            if (urlParams.team5) p.set('team5', urlParams.team5);
+            if (urlParams.team6) p.set('team6', urlParams.team6);
+            window.location.href = `/match-view?${p.toString()}`;
+          }}>Edit</button>
+        </div>
+      </div>
+    );
   }
 
   //show form if no parameters, in edit mode, or data not loaded yet
   if (!data || Object.keys(urlParams).length === 0 || urlParams.edit) {
+    const handleClearAll = () => {
+      const form = teamFormRef.current;
+      if (!form) return;
+      ['team1', 'team2', 'team3', 'team4', 'team5', 'team6', 'match'].forEach(name => {
+        const el = form.elements[name];
+        if (el) el.value = '';
+      });
+    };
     return (
       <div>
-        <form className={styles.teamForm}>
+        <form ref={teamFormRef} className={styles.teamForm}>
           <span>View by Teams...</span>
           <div className={styles.horizontalBox}>
             <div className={styles.RedInputs}>
@@ -402,6 +434,7 @@ function MatchView() {
           <label htmlFor="match">Match #</label>
           <input id="match" name="match" type="number"></input>
           <button className={styles.goButton}>Go!</button>
+          <button type="button" className={styles.clearButton} onClick={handleClearAll}>Clear All</button>
         </form>
       </div>
     );
@@ -495,20 +528,24 @@ function MatchView() {
     //calc alliance score breakdown
     const usePPR = config?.usePPR === true;
     // For PPR box: only teams with OPR computed; for A/T/E: period OPR if available, else scouting
-    const pprTeams = teams.filter(team => team && team.last3Epa != null);
+    const pprEpaField = useRecent ? 'last3Epa' : 'avgEpa';
+    const pprTeams = teams.filter(team => team && team[pprEpaField] != null);
     const hasPeriodOPR = usePPR && teams.some(team => team?.autoEpa != null);
     const periodTeams = hasPeriodOPR ? teams.filter(team => team && team.autoEpa != null) : null;
+    const periodAutoField = useRecent ? 'autoLast3Epa' : 'autoEpa';
+    const periodTeleField = useRecent ? 'teleLast3Epa' : 'teleEpa';
+    const periodEndField  = useRecent ? 'endLast3Epa'  : 'endEpa';
     const scoutingTeams = teams.filter(team => team && team.auto !== null);
     const auto = hasPeriodOPR
-      ? periodTeams.reduce((sum, team) => sum + (team.autoEpa || 0), 0)
+      ? periodTeams.reduce((sum, team) => sum + (team[periodAutoField] ?? team.autoEpa ?? 0), 0)
       : scoutingTeams.reduce((sum, team) => sum + (team.auto || 0), 0);
     const tele = hasPeriodOPR
-      ? periodTeams.reduce((sum, team) => sum + (team.teleEpa || 0), 0)
+      ? periodTeams.reduce((sum, team) => sum + (team[periodTeleField] ?? team.teleEpa ?? 0), 0)
       : scoutingTeams.reduce((sum, team) => sum + (team.tele || 0), 0);
     const end = hasPeriodOPR
-      ? periodTeams.reduce((sum, team) => sum + (team.endEpa || 0), 0)
+      ? periodTeams.reduce((sum, team) => sum + (team[periodEndField] ?? team.endEpa ?? 0), 0)
       : scoutingTeams.reduce((sum, team) => sum + (team.end || 0), 0);
-    const alliancePPR = usePPR ? pprTeams.reduce((sum, team) => sum + (team.last3Epa || 0), 0) : null;
+    const alliancePPR = usePPR ? pprTeams.reduce((sum, team) => sum + (team[pprEpaField] || 0), 0) : null;
 
     //calc ranking points
     const RGBColors = {
@@ -519,10 +556,10 @@ function MatchView() {
     //win = higher score than opponents
     const teamEPA = (team) => {
       if (!team) return 0;
-      if (usePPR) return team.last3Epa || 0;
+      if (usePPR) return team[pprEpaField] || 0;
       return team.auto !== null ? team.auto + team.tele + team.end : 0;
     };
-    const validOpponents = opponents.filter(opponent => opponent && (usePPR ? opponent.last3Epa != null : opponent.auto !== null));
+    const validOpponents = opponents.filter(opponent => opponent && (usePPR ? opponent[pprEpaField] != null : opponent.auto !== null));
     const opponentsEPA = validOpponents.reduce((sum, opponent) => sum + teamEPA(opponent), 0);
     const currentAllianceEPA = usePPR ? (alliancePPR || 0) : auto + tele + end;
     let RP_WIN = RGBColors.red;
@@ -601,7 +638,7 @@ function MatchView() {
 
     return <div className={styles.lightBorderBox} style={{ paddingTop: '20px' }}>
       <div className={styles.scoreBreakdownContainer}>
-        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
+        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': usePPR ? (useRecent ? '"3 PPR"' : '"PPR"') : '"EPA"' }} className={styles.EPABox}>{usePPR ? (alliancePPR || 0).toFixed(1) : ((auto + tele + end) || 0).toFixed(1)}</div>
         <div className={styles.EPABreakdown}>
           <div style={{ background: colors[1], minWidth: "50px", textAlign: "center" }}>A: {(auto || 0).toFixed(1)}</div>
           <div style={{ background: colors[1], minWidth: "50px", textAlign: "center" }}>T: {(tele || 0).toFixed(1)}</div>
@@ -624,7 +661,7 @@ function MatchView() {
       if (!sel) return { data: td.epaOverTime || [], label: 'epa', displayLabel: config?.usePPR ? 'PPR' : 'EPA' };
       if (sel === 'auto') return { data: td.autoOverTime || [], label: 'auto', displayLabel: 'Auto' };
       if (sel === 'tele') return { data: td.teleOverTime || [], label: 'tele', displayLabel: 'Tele' };
-      if (sel === 'end')  return { data: td.endOverTime  || [], label: 'end',  displayLabel: 'End'  };
+      if (sel === 'end') return { data: td.endOverTime || [], label: 'end', displayLabel: 'End' };
       const optLabel = overlayOptions.find(o => o.field === sel)?.label || sel;
       return { data: td.overlayOverTime?.[sel] || [], label: 'value', displayLabel: optLabel };
     }
@@ -644,13 +681,13 @@ function MatchView() {
       <h1 style={{ color: colors[3], marginTop: "10px", marginBottom: "0px" }}>{teamData.team}</h1>
       <h2 style={{ color: colors[3], marginTop: "0px", marginBottom: "0px" }}>{teamData.teamName}</h2>
       <div className={styles.scoreBreakdownContainer} style={{ marginTop: "30px" }}>
-        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? '"3 PPR"' : '"EPA"' }} className={styles.EPABox}>
-          {config?.usePPR ? (teamData.last3Epa != null ? (teamData.last3Epa || 0).toFixed(1) : "N/A") : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
+        <div style={{ background: colors[0], minWidth: "60px", textAlign: "center", '--epa-box-label': config?.usePPR ? (useRecent ? '"3 PPR"' : '"PPR"') : '"EPA"' }} className={styles.EPABox}>
+          {config?.usePPR ? (useRecent ? (teamData.last3Epa != null ? (teamData.last3Epa || 0).toFixed(1) : "N/A") : (teamData.avgEpa != null ? (teamData.avgEpa || 0).toFixed(1) : "N/A")) : teamData.auto !== null ? ((teamData.auto || 0) + (teamData.tele || 0) + (teamData.end || 0)).toFixed(1) : "N/A"}
         </div>
         <div className={styles.EPABreakdown}>
-          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>A: {config?.usePPR ? (teamData.autoLast3Epa != null ? (teamData.autoLast3Epa || 0).toFixed(1) : "N/A") : (teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A")}</div>
-          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>T: {config?.usePPR ? (teamData.teleLast3Epa != null ? (teamData.teleLast3Epa || 0).toFixed(1) : "N/A") : (teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A")}</div>
-          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>E: {config?.usePPR ? (teamData.endLast3Epa != null ? (teamData.endLast3Epa || 0).toFixed(1) : "N/A") : (teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A")}</div>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>A: {config?.usePPR ? (useRecent ? (teamData.autoLast3Epa != null ? (teamData.autoLast3Epa || 0).toFixed(1) : "N/A") : (teamData.autoEpa != null ? (teamData.autoEpa || 0).toFixed(1) : "N/A")) : (teamData.auto !== null ? (teamData.auto || 0).toFixed(1) : "N/A")}</div>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>T: {config?.usePPR ? (useRecent ? (teamData.teleLast3Epa != null ? (teamData.teleLast3Epa || 0).toFixed(1) : "N/A") : (teamData.teleEpa != null ? (teamData.teleEpa || 0).toFixed(1) : "N/A")) : (teamData.tele !== null ? (teamData.tele || 0).toFixed(1) : "N/A")}</div>
+          <div style={{ background: colors[2], minWidth: "50px", textAlign: "center" }}>E: {config?.usePPR ? (useRecent ? (teamData.endLast3Epa != null ? (teamData.endLast3Epa || 0).toFixed(1) : "N/A") : (teamData.endEpa != null ? (teamData.endEpa || 0).toFixed(1) : "N/A")) : (teamData.end !== null ? (teamData.end || 0).toFixed(1) : "N/A")}</div>
         </div>
       </div>
       {barsConfig.length > 0 && (
@@ -771,20 +808,23 @@ function MatchView() {
   ].filter((value) => value !== undefined && value !== null).map((value) => String(value)));
   const visibleUnscoredMatches = unscoredMatches.filter((issue) => visibleTeamNumbers.has(String(issue.team)));
   const hasPeriodOPRGraph = config?.usePPR && blueAlliance.concat(redAlliance).some(t => t?.autoEpa != null);
-  const getField = (alliance, pprField, scoutField) => hasPeriodOPRGraph
-    ? alliance.reduce((s, t) => s + (t?.[pprField] ?? 0), 0)
+  const periodAutoF = useRecent ? 'autoLast3Epa' : 'autoEpa';
+  const periodTeleF = useRecent ? 'teleLast3Epa' : 'teleEpa';
+  const periodEndF  = useRecent ? 'endLast3Epa'  : 'endEpa';
+  const getField = (alliance, pprField, fallbackPprField, scoutField) => hasPeriodOPRGraph
+    ? alliance.reduce((s, t) => s + (t?.[pprField] ?? t?.[fallbackPprField] ?? 0), 0)
     : get(alliance, scoutField);
-  const blueAuto = getField(blueAlliance, "autoEpa", "auto");
-  const blueTele = getField(blueAlliance, "teleEpa", "tele");
-  const blueEnd  = getField(blueAlliance, "endEpa",  "end");
-  const redAuto  = getField(redAlliance,  "autoEpa", "auto");
-  const redTele  = getField(redAlliance,  "teleEpa", "tele");
-  const redEnd   = getField(redAlliance,  "endEpa",  "end");
+  const blueAuto = getField(blueAlliance, periodAutoF, "autoEpa", "auto");
+  const blueTele = getField(blueAlliance, periodTeleF, "teleEpa", "tele");
+  const blueEnd = getField(blueAlliance, periodEndF, "endEpa", "end");
+  const redAuto = getField(redAlliance, periodAutoF, "autoEpa", "auto");
+  const redTele = getField(redAlliance, periodTeleF, "teleEpa", "tele");
+  const redEnd = getField(redAlliance, periodEndF, "endEpa", "end");
   const epaData = [
     { name: "Start", blue: 0, red: 0 },
     { name: "Auto", blue: blueAuto, red: redAuto },
     { name: "Tele", blue: blueAuto + blueTele, red: redAuto + redTele },
-    { name: "End",  blue: blueAuto + blueTele + blueEnd, red: redAuto + redTele + redEnd },
+    { name: "End", blue: blueAuto + blueTele + blueEnd, red: redAuto + redTele + redEnd },
   ];
 
   //getting radar data from config
@@ -853,8 +893,7 @@ function MatchView() {
           </button>
         </div>
       </div>
-      <div ref={navSentinelRef} style={{ height: 0, overflow: 'hidden' }} aria-hidden="true" />
-      <div className={`${styles.matchNav}${navStuck ? ' ' + styles.matchNavStuck : ''}`}>
+      <div ref={matchNavRef} className={`${styles.matchNav}${navStuck ? ' ' + styles.matchNavStuck : ''}`}>
         <AllianceButtons t1={data.team1 || defaultTeam} t2={data.team2 || defaultTeam} t3={data.team3 || defaultTeam} allianceClass="teamChipRed"></AllianceButtons>
         <button className={styles.navActionButton} onClick={() => { window.location.href = `/match-view?edit=true&team1=${data.team1?.team || ""}&team2=${data.team2?.team || ""}&team3=${data.team3?.team || ""}&team4=${data.team4?.team || ""}&team5=${data.team5?.team || ""}&team6=${data.team6?.team || ""}`; }}>Edit</button>
         <AllianceButtons t1={data.team4 || defaultTeam} t2={data.team5 || defaultTeam} t3={data.team6 || defaultTeam} allianceClass="teamChipBlue"></AllianceButtons>
@@ -868,6 +907,7 @@ function MatchView() {
           <DefenseBarChart
             allianceData={redAlliance}
             colors={[COLORS[3][2], COLORS[4][1], COLORS[5][2]]}
+            allianceColor={COLORS[4][3]}
             defenseField={matchViewConfig?.defenseBarField}
             scope={useRecent ? 'last3' : 'all'}
             gameId={gameId}
@@ -879,7 +919,7 @@ function MatchView() {
           />
         </div>
         <div className={styles.lineGraphContainer}>
-          <h2>{config?.usePPR ? "PPR / time" : "EPA / time"}</h2>
+          <h2>{config?.usePPR ? "PPR Progress Prediction" : "EPA Progress Prediction"}</h2>
           <br></br>
           <EPALineChart data={epaData} />
         </div>
@@ -887,6 +927,7 @@ function MatchView() {
           <DefenseBarChart
             allianceData={blueAlliance}
             colors={[COLORS[0][2], COLORS[1][1], COLORS[2][2]]}
+            allianceColor={COLORS[1][3]}
             defenseField={matchViewConfig?.defenseBarField}
             scope={useRecent ? 'last3' : 'all'}
             gameId={gameId}

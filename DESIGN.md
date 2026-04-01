@@ -390,6 +390,41 @@ background: rgba(192, 57, 43, 0.08);
 :active { transform: scale(0.97); }
 ```
 
+### Navigation Team Chips (match-view / compare sticky nav bar)
+
+Team number buttons in the sticky nav bar use an outlined style with alliance- or compare-specific accent colors. The **currently-viewed team** is shown in a solid-fill "inverted" state: background becomes the chip's accent color, text becomes white.
+
+```css
+/* Inactive chip — outlined */
+background: transparent;
+border: 1.5px solid <accent-color at 0.35 opacity for gold default, 0.45 for alliance/compare colors>;
+color: <accent-color>;
+border-radius: 8px;
+font-size: 15px;
+font-weight: 700;
+min-height: 44px;
+
+/* Active chip — inverted/filled */
+background: <accent-color>;
+border-color: <accent-color>;
+color: #ffffff;
+font-weight: 800;
+
+/* Hover on active */
+opacity: 0.88;
+```
+
+Accent colors by role:
+- Red alliance: `#c0392b`
+- Blue alliance: `#1e40af`
+- Compare team 1 (teal): `#0f766e`
+- Compare team 2 (cobalt): `#1d4ed8`
+- Compare team 3 (purple): `#6d28d9`
+- Compare team 4 (pink): `#be185d`
+- Gold fallback (no alliance): `#a07c30`
+
+The nav bar box itself is `position: sticky; top: 45px`. When pinned against the navbar, apply `border-radius: 0 0 12px 12px; border-top-color: transparent`. When floating (content above it), use `border-radius: 12px` with side margins for breathing room.
+
 ---
 
 ## Focus Rings

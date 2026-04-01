@@ -39,19 +39,21 @@ export default function Picklist() {
 
   const weightsConfig = picklistConfig.weights || [];
   const tableColumnsConfig = picklistConfig.tableColumns || [];
+  const scatterFieldsConfig = picklistConfig.scatterFields || [];
 
   const weightsFirstKey = weightsConfig[0]?.key ?? null;
+  const scatterFirstKey = scatterFieldsConfig[0]?.key ?? null;
 
   // Initialize scatter axis defaults when config loads
   useEffect(() => {
-    if (!weightsFirstKey) return;
-    setScatterX(prev => prev || weightsConfig[0]?.key || '');
-    setScatterY(prev => prev || weightsConfig[1]?.key || weightsConfig[0]?.key || '');
-  }, [weightsFirstKey]);
+    if (!scatterFirstKey && !weightsFirstKey) return;
+    setScatterX(prev => prev || scatterFieldsConfig[0]?.key || weightsConfig[0]?.key || '');
+    setScatterY(prev => prev || scatterFieldsConfig[1]?.key || weightsConfig[1]?.key || scatterFieldsConfig[0]?.key || '');
+  }, [scatterFirstKey, weightsFirstKey]);
 
   // Auto-fetch scatter data independently (no manual recalculation required)
   useEffect(() => {
-    if (!isAuthenticated || !weightsFirstKey) return;
+    if (!isAuthenticated || (!weightsFirstKey && !scatterFirstKey)) return;
     const equalWeights = weightsConfig.map(w => [w.key, '1']);
     const headers = { 'Content-Type': 'application/json' };
     if (gameId) headers['X-Game-Id'] = String(gameId);
@@ -64,10 +66,11 @@ export default function Picklist() {
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.teamTable) setScatterTeams(data.teamTable); })
       .catch(() => {});
-  }, [isAuthenticated, gameId, weightsFirstKey]);
+  }, [isAuthenticated, gameId, weightsFirstKey, scatterFirstKey]);
 
   const resolveAxisValue = (t, key) => key === 'team' ? Number(t.team) : (t[key] ?? 0);
-  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (weightsConfig.find(w => w.key === key)?.label ?? key);
+  const axisOptions = scatterFieldsConfig.length > 0 ? scatterFieldsConfig : weightsConfig;
+  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (axisOptions.find(w => w.key === key)?.label ?? key);
 
   // Scatter data derived from auto-fetched team metrics
   const scatterData = useMemo(() =>
@@ -726,7 +729,7 @@ export default function Picklist() {
           </form>
 
           {/* Scatter plot with configurable axes */}
-          {weightsConfig.length > 0 && (
+          {axisOptions.length > 0 && (
             <div className={styles.scatterAxisSelectors}>
               <label className={styles.scatterAxisLabel}>
                 X Axis
@@ -736,7 +739,7 @@ export default function Picklist() {
                   onChange={e => setScatterX(e.target.value)}
                 >
                   <option value="team">Team Number</option>
-                  {weightsConfig.map(w => (
+                  {axisOptions.map(w => (
                     <option key={w.key} value={w.key}>{w.label}</option>
                   ))}
                 </select>
@@ -749,7 +752,7 @@ export default function Picklist() {
                   onChange={e => setScatterY(e.target.value)}
                 >
                   <option value="team">Team Number</option>
-                  {weightsConfig.map(w => (
+                  {axisOptions.map(w => (
                     <option key={w.key} value={w.key}>{w.label}</option>
                   ))}
                 </select>

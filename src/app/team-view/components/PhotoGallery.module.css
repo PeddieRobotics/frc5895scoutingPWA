@@ -1,0 +1,325 @@
+/* Trigger button */
+.triggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  min-height: 44px; /* V2 fix: 44px touch target */
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 20px;
+  background: transparent;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.triggerBtn:hover {
+  background: rgba(160, 124, 48, 0.08);
+  border-color: rgba(160, 124, 48, 0.65);
+}
+
+/* Modal overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 31, 53, 0.65);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 8px 40px rgba(13, 31, 53, 0.2);
+  width: 100%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.15);
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.modalTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0d1f35;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uploadBtn {
+  padding: 0 16px;
+  min-height: 44px; /* V2 fix */
+  background: rgba(160, 124, 48, 0.1);
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  background: rgba(160, 124, 48, 0.18);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.closeBtn {
+  width: 44px;  /* V2 fix: 44px touch target */
+  height: 44px;
+  border: none;
+  background: transparent;
+  /* V1 fix: use palette token instead of off-brand #8a9aaa */
+  color: rgba(13, 31, 53, 0.4);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.closeBtn:hover {
+  background: #f4f1eb;
+  color: #0d1f35;
+}
+
+.uploadError {
+  margin: 0;
+  padding: 8px 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.06);
+  border-bottom: 1px solid rgba(192, 57, 43, 0.15);
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.emptyState p {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  /* V1 fix: palette token */
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+  text-align: center;
+}
+
+/* Photo grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.thumbWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.thumbBtn {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1.5px solid rgba(160, 124, 48, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f4f1eb;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.1s;
+  padding: 0;
+}
+
+.thumbBtn:hover:not(:disabled) {
+  border-color: rgba(160, 124, 48, 0.55);
+  transform: scale(1.02);
+}
+
+.thumbBtn:disabled {
+  cursor: default;
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbLoader {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(160, 124, 48, 0.3);
+  border-top-color: #a07c30;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.thumbError {
+  font-size: 20px;
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.thumbActions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.deleteBtn {
+  min-height: 44px; /* V2 fix */
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  border-radius: 5px;
+  color: #c0392b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.12s;
+}
+
+.deleteBtn:hover {
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.confirmDeleteBtn {
+  min-height: 44px; /* V2 fix */
+  padding: 0 12px;
+  background: #c0392b;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  min-height: 44px; /* V2 fix */
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid rgba(13, 31, 53, 0.2);
+  border-radius: 5px;
+  color: #0d1f35;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.thumbLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  /* V1 fix: palette token */
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lightbox */
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  /* V6 fix: navy family instead of pure black */
+  background: rgba(13, 31, 53, 0.93);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.lightboxImg {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 8px;
+  /* V6 fix: navy shadow token */
+  box-shadow: 0 8px 48px rgba(13, 31, 53, 0.55);
+  object-fit: contain;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px; /* V2 fix */
+  height: 44px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  /* V6 fix: navy-family background */
+  background: rgba(13, 31, 53, 0.4);
+  color: #fff;
+  font-size: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.lightboxClose:hover {
+  background: rgba(255, 255, 255, 0.15);
+}

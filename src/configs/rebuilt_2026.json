@@ -214,11 +214,53 @@
         {
           "type": "comment",
           "name": "drivingcomments",
-          "label": "Driving Notes",
+          "label": "Driving Comments",
           "dbColumn": {
             "type": "TEXT",
             "default": null
           }
+        },
+        {
+          "type": "collapsible",
+          "id": "passingSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "passing",
+            "label": "Did the Robot Pass?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "passingrating",
+              "label": "Passing",
+              "description": "Ability to pass fuel to consistent target zone across distance",
+              "max": 4,
+              "ratingLabels": [
+                "Rarely succeed passing attempts",
+                "Passes from Neutral Zone or farther, but hit inconsistent target",
+                "Passes consistently from Neutral Zone to target zone",
+                "Makes consistent cross-court passes with accurate placement"
+              ],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            },
+            {
+              "type": "comment",
+              "name": "passingcomments",
+              "label": "Passing Comments",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
         },
         {
           "type": "collapsible",
@@ -407,48 +449,6 @@
         },
         {
           "type": "collapsible",
-          "id": "passingSection",
-          "trigger": {
-            "type": "checkbox",
-            "name": "passing",
-            "label": "Did the Robot Pass?",
-            "dbColumn": {
-              "type": "BOOLEAN",
-              "default": false
-            }
-          },
-          "content": [
-            {
-              "type": "starRating",
-              "name": "passingrating",
-              "label": "Passing",
-              "description": "Ability to pass fuel to consistent target zone across distance",
-              "max": 4,
-              "ratingLabels": [
-                "ONLY pushes fuel through trench/over bump",
-                "Passes from Neutral Zone or farther, but hit inconsistent target",
-                "Passes consistently from Neutral Zone to target zone",
-                "Makes consistent cross-court passes with accurate placement"
-              ],
-              "minWhenVisible": 1,
-              "dbColumn": {
-                "type": "INTEGER",
-                "default": null
-              }
-            },
-            {
-              "type": "comment",
-              "name": "passingcomments",
-              "label": "Passing Notes",
-              "dbColumn": {
-                "type": "TEXT",
-                "default": null
-              }
-            }
-          ]
-        },
-        {
-          "type": "collapsible",
           "id": "breakdownSection",
           "trigger": {
             "type": "checkbox",
@@ -538,12 +538,36 @@
   "display": {
     "teamView": {
       "epaChartOverlayOptions": [
-        { "field": "auto", "label": "Auto" },
-        { "field": "tele", "label": "Tele" },
-        { "field": "defenseplayed", "label": "Defense Rating" },
-        { "field": "driving", "label": "Driving" },
-        { "field": "autoshootingrate", "label": "Auto Shooting Rate" },
-        { "field": "teleshootingrate", "label": "Tele Shooting Rate" }
+        {
+          "field": "auto",
+          "label": "Auto PPR"
+        },
+        {
+          "field": "tele",
+          "label": "Teleop PPR"
+        },
+        {
+          "field": "usestrench",
+          "label": "Trench Mobility",
+          "allowZero": true
+        },
+        {
+          "field": "usesbump",
+          "label": "Bump Mobility",
+          "allowZero": true
+        },
+        {
+          "field": "defenseplayed",
+          "label": "Defense Rating"
+        },
+        {
+          "field": "driving",
+          "label": "Driving"
+        },
+        {
+          "field": "passingrating",
+          "label": "Passing"
+        }
       ],
       "epaBreakdown": [
         "auto",
@@ -575,12 +599,12 @@
         {
           "field": "drivingcomments",
           "dataKey": "drivingComments",
-          "title": "Driving Notes"
+          "title": "Driving Comments"
         },
         {
           "field": "passingcomments",
           "dataKey": "passingComments",
-          "title": "Passing Notes"
+          "title": "Passing Comments"
         }
       ],
       "comments": [
@@ -634,11 +658,6 @@
         ]
       },
       "overallStats": [
-        {
-          "key": "consistency",
-          "title": "Consistency",
-          "format": "percent"
-        },
         {
           "key": "defense",
           "title": "Defense %",
@@ -917,22 +936,96 @@
           "format": "breakdownPercent"
         }
       ],
-      "computedMetrics": [],
-      "scatterPlot": {
-        "xAxis": {
-          "label": "Shooting Rate",
+      "computedMetrics": [
+        {
+          "key": "trenchRate",
+          "type": "booleanRate",
+          "field": "usestrench"
+        },
+        {
+          "key": "bumpRate",
+          "type": "booleanRate",
+          "field": "usesbump"
+        },
+        {
+          "key": "avgShootOnMove",
+          "type": "averageFields",
+          "fields": [
+            "autoshootonthemoverating",
+            "teleshootonthemoverating"
+          ]
+        },
+        {
+          "key": "avgShootingRate",
+          "type": "averageFields",
           "fields": [
             "autoshootingrate",
             "teleshootingrate"
           ]
-        },
-        "yAxis": {
-          "label": "Driving Quality",
-          "fields": [
-            "driving"
-          ]
         }
-      },
+      ],
+      "scatterFields": [
+        {
+          "key": "realEpa",
+          "label": "PPR"
+        },
+        {
+          "key": "realEpa3",
+          "label": "Last 3 PPR"
+        },
+        {
+          "key": "realAuto",
+          "label": "Auto PPR"
+        },
+        {
+          "key": "realTele",
+          "label": "Teleop PPR"
+        },
+        {
+          "key": "match",
+          "label": "Match (Time)"
+        },
+        {
+          "key": "realTrenchRate",
+          "label": "Trench Mobility"
+        },
+        {
+          "key": "realBumpRate",
+          "label": "Bump Mobility"
+        },
+        {
+          "key": "realDefense",
+          "label": "Defense"
+        },
+        {
+          "key": "driving",
+          "label": "Driving"
+        },
+        {
+          "key": "passingrating",
+          "label": "Passing"
+        },
+        {
+          "key": "shootingcapacity",
+          "label": "Fuel Capacity"
+        },
+        {
+          "key": "shootingrange",
+          "label": "Shooting Range"
+        },
+        {
+          "key": "shootingaccuracy",
+          "label": "Shooting Accuracy"
+        },
+        {
+          "key": "realAvgShootOnMove",
+          "label": "Shoot on the Move"
+        },
+        {
+          "key": "realAvgShootingRate",
+          "label": "Shooting Rate"
+        }
+      ],
       "defenseField": "defenseplayed"
     },
     "compare": {
@@ -998,11 +1091,26 @@
       "qualitativeSection": {
         "label": "Qualitative",
         "stats": [
-          { "label": "Defense", "defenseField": "defenseplayed" },
-          { "label": "Driver Spatial Awareness", "defenseField": "driving" },
-          { "label": "Shooting Accuracy", "defenseField": "shootingaccuracy" },
-          { "label": "Effective Shooting Range", "defenseField": "shootingrange" },
-          { "label": "Passing", "defenseField": "passingrating" }
+          {
+            "label": "Defense",
+            "defenseField": "defenseplayed"
+          },
+          {
+            "label": "Driver Spatial Awareness",
+            "defenseField": "driving"
+          },
+          {
+            "label": "Shooting Accuracy",
+            "defenseField": "shootingaccuracy"
+          },
+          {
+            "label": "Effective Shooting Range",
+            "defenseField": "shootingrange"
+          },
+          {
+            "label": "Passing",
+            "defenseField": "passingrating"
+          }
         ]
       }
     },

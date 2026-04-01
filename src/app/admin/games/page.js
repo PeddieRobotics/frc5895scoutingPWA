@@ -505,9 +505,14 @@ export default function GamesPage() {
         <h1 className={styles.title}>
           <GameIcon /> Game Management
         </h1>
-        <button onClick={fetchGames} className={styles.refreshButton} disabled={loading}>
-          <RefreshIcon /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => router.push('/admin/prescout')} className={styles.refreshButton} title="Manage prescout data">
+            Prescout
+          </button>
+          <button onClick={fetchGames} className={styles.refreshButton} disabled={loading}>
+            <RefreshIcon /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && <div className={styles.errorBanner}>{error}</div>}

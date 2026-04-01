@@ -59,6 +59,38 @@
     border-color: rgba(160, 124, 48, 0.8);
 }
 
+.formActions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.clearButton {
+    padding: 10px 24px;
+    min-width: 30%;
+    background: rgba(192, 57, 43, 0.08);
+    border: 1.5px solid rgba(192, 57, 43, 0.5);
+    color: #c0392b;
+    font-size: 28px;
+    font-weight: 800;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.15);
+    margin: 12px;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.clearButton:hover {
+    background: rgba(192, 57, 43, 0.15);
+    border-color: rgba(192, 57, 43, 0.8);
+}
+
+.clearButton:active {
+    transform: scale(0.97);
+}
+
 .goButton {
     padding: 10px 24px;
     min-width: 30%;
@@ -83,11 +115,74 @@
     transform: scale(0.97);
 }
 
+.errorContainer {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px;
+}
+
+.errorCard {
+    background: #ffffff;
+    border: 1.5px solid rgba(192, 57, 43, 0.35);
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+    max-width: 480px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.errorTitle {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #c0392b;
+    margin: 0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.errorMessage {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(13, 31, 53, 0.7);
+    margin: 0;
+}
+
+.editButton {
+    padding: 10px 28px;
+    background: #a07c30;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    min-height: 44px;
+    margin-top: 4px;
+}
+
+.editButton:hover {
+    background: #8a6a28;
+}
+
+.editButton:active {
+    transform: scale(0.97);
+}
+
 /* ── Match navigation ─────────────────────────── */
 .matchNav {
     position: sticky;
     top: 45px;
-    z-index: 50;
+    z-index: 9;
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
@@ -99,12 +194,24 @@
     border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(13, 31, 53, 0.12);
-    margin-bottom: 8px;
+    margin: 0 10px 8px;
 }
 
 .matchNavStuck {
     border-radius: 0 0 12px 12px;
     border-top-color: transparent;
+}
+
+/* Active chip — always gold fill */
+.teamChipActive {
+    background: #a07c30;
+    border-color: #a07c30;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.teamChipActive:hover {
+    opacity: 0.88;
 }
 
 /* ── Team chips ───────────────────────────────── */
