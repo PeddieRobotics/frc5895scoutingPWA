@@ -104,6 +104,36 @@ admin.module.css `.navCard` (a `<Link>` element styled as an interactive card) h
 
 ---
 
+## Touch targets in responsive breakpoints — min-height must not shrink below 44px
+
+Mobile breakpoint overrides (`@media (max-width: 480px)` and `@media (max-width: 320px)`) sometimes reduce `min-height` / `min-width` below 44px to shrink visually crowded UI. Discovered in ImageSelect.module.css (38px at 480px, 32px at 320px).
+
+**Why:** DESIGN.md Mobile-First Rules — 44px minimum touch target applies at ALL supported widths including 320px (the minimum supported width). Reducing touch targets at smaller viewports contradicts the rule.
+
+**How to apply:** In any responsive breakpoint, if a `min-height` or `min-width` on an interactive element is being lowered from 44px, flag it as a violation. Only padding and font-size can scale down.
+
+---
+
+## Non-Montserrat font-family in dark mode admin sections
+
+Admin page CSS occasionally uses `font-family: monospace` for code/tag display (e.g., imageTagName in games.module.css). DESIGN.md specifies Montserrat everywhere with "no exceptions."
+
+**Why:** The design system is single-font. Monospace fonts for tag names break the uniform typographic voice. Discovered 2026-04-01 in games.module.css `.imageTagName`.
+
+**How to apply:** Any `font-family` that is not `'Montserrat', sans-serif` (outside of a `<code>/<pre>` validation/config preview block) is a violation. Replace with Montserrat and adjust weight to distinguish code-like text visually.
+
+---
+
+## Solid border-top on section dividers — must use gradient
+
+New sections within dark-mode cards sometimes add `border-top: 1px solid rgba(...)` as a visual separator. DESIGN.md requires gradient `hr` rules. Discovered 2026-04-01 in `.imageAssetsSection` in games.module.css.
+
+**Why:** DESIGN.md Dividers section — "Use gradient hr rules rather than solid lines." This applies to any horizontal rule or section separator, not just literal `<hr>` elements. A CSS `::before` pseudo-element with the gradient background is the correct approach when an `<hr>` element is not used.
+
+**How to apply:** Replace any `border-top: 1px solid` used as a section divider with a gradient `::before` pseudo-element or an `<hr>` with the gradient rule.
+
+---
+
 ## Pure black (`rgba(0,0,0,...)`) in overlays and shadows
 
 PhotoGallery.module.css lightbox uses `rgba(0, 0, 0, 0.88)` backdrop and `rgba(0, 0, 0, 0.5)` box-shadow. DESIGN.md "What NOT to do" forbids `#000000` backgrounds on interactive elements; shadow token is `rgba(13, 31, 53, ...)`.

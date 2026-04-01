@@ -1,1 +1,2 @@
 - [Prescout Data & Photo Gallery Feature](project_prescout_feature.md) — non-config-driven prescout/photo feature added March 2026; DB tables, API routes, SheetJS dependency
+- [Admin API route auth pattern](feedback_admin_api_auth.md) — /api/admin/* routes use session auth only; admin password gate is page-level, not API-level
