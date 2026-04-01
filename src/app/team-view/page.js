@@ -1089,6 +1089,32 @@ function TeamView() {
                                     }
                                     return null;
                                 })}
+                                {/* imageSelect distributions (e.g., starting position) */}
+                                {(autoSectionConfig.imageSelectDisplay || []).map((isd, i) => {
+                                    const distribution = safeData.imageSelectResults?.[isd.field] || {};
+                                    const entries = Object.entries(distribution);
+                                    if (entries.length === 0) return null;
+                                    const total = entries.reduce((s, [, v]) => s + v, 0);
+                                    return (
+                                        <div key={i} className={styles.imageSelectDistribution}>
+                                            <h4 className={styles.graphTitle}>{isd.label}</h4>
+                                            <div className={styles.distributionBoxes}>
+                                                {entries.map(([label, count], j) => (
+                                                    <div
+                                                        key={label}
+                                                        className={styles.distributionBox}
+                                                        style={{ backgroundColor: j % 2 === 0 ? Colors[1][2] : Colors[1][1] }}
+                                                    >
+                                                        <div className={styles.distributionLabel}>{label}</div>
+                                                        <div className={styles.distributionValue}>
+                                                            {total > 0 ? `${Math.round((count / total) * 100)}%` : '0%'}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                                 {/* Auto climb pie chart (if autoPie config present) */}
                                 {autoPieData && (
                                     <div className={styles.chartContainer}>

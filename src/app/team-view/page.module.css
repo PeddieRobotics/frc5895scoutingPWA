@@ -1159,3 +1159,56 @@
         margin: 10px auto;
     }
 }
+
+/* imageSelect distribution boxes */
+.imageSelectDistribution {
+    margin: 16px 0;
+    width: 100%;
+}
+
+.distributionBoxes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.distributionBox {
+    flex: 1;
+    min-width: 90px;
+    max-width: 180px;
+    padding: 16px 10px;
+    border-radius: 10px;
+    text-align: center;
+    color: #0d1f35;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.distributionLabel {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    opacity: 0.9;
+    letter-spacing: 0.02em;
+}
+
+.distributionValue {
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+    .distributionBox {
+        min-width: 70px;
+        padding: 12px 6px;
+    }
+
+    .distributionValue {
+        font-size: 22px;
+    }
+
+    .distributionLabel {
+        font-size: 10px;
+    }
+}

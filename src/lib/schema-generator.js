@@ -122,6 +122,7 @@ function extractFieldsFromConfig(config) {
         break;
 
       case 'singleSelect':
+      case 'imageSelect':
         fieldNames.add(field.name);
         fields.push({
           name: field.name,
@@ -219,6 +220,7 @@ function getDefaultDbColumn(fieldType) {
     case 'comment':
       return { type: 'TEXT', default: null };
     case 'singleSelect':
+    case 'imageSelect':
     case 'starRating':
     case 'qualitative':
       return { type: 'INTEGER', default: null };
@@ -307,6 +309,58 @@ function sanitizePrescoutTableName(gameName) {
 
 function sanitizePhotosTableName(gameName) {
   return sanitizeTableName(gameName, 'photos_');
+}
+
+function sanitizeFieldImagesTableName(gameName) {
+  return sanitizeTableName(gameName, 'fieldimages_');
+}
+
+/**
+ * Walk all fields in a config and extract imageTag references from imageSelect fields.
+ * @param {Object} config - The game configuration JSON
+ * @returns {Array<{ tag: string, fieldName: string, fieldLabel: string }>}
+ */
+function extractImageTagsFromConfig(config) {
+  const tags = [];
+  const seen = new Set();
+
+  function processField(field) {
+    if (!field) return;
+
+    if (field.type === 'imageSelect' && field.imageTag && !seen.has(field.imageTag)) {
+      seen.add(field.imageTag);
+      tags.push({
+        tag: field.imageTag,
+        fieldName: field.name || '',
+        fieldLabel: field.label || field.name || '',
+      });
+      return;
+    }
+
+    if (field.type === 'table' && Array.isArray(field.rows)) {
+      field.rows.forEach((row) => {
+        if (Array.isArray(row.fields)) row.fields.forEach(processField);
+      });
+      return;
+    }
+
+    if (field.type === 'collapsible') {
+      if (field.trigger) processField(field.trigger);
+      if (Array.isArray(field.content)) field.content.forEach(processField);
+    }
+  }
+
+  if (config?.basics?.fields) {
+    config.basics.fields.forEach(processField);
+  }
+
+  if (config?.sections) {
+    config.sections.forEach((section) => {
+      if (section?.fields) section.fields.forEach(processField);
+    });
+  }
+
+  return tags;
 }
 
 function extractTimerFieldsFromConfig(config) {
@@ -594,6 +648,7 @@ export {
   extractConfidenceRatingField,
   extractScoringRequirementFields,
   extractTimerFieldsFromConfig,
+  extractImageTagsFromConfig,
   generateCreateTableSQL,
   generateCreateScoutLeadsTableSQL,
   sanitizeTableName,
@@ -601,6 +656,7 @@ export {
   sanitizeOprSettingsTableName,
   sanitizePrescoutTableName,
   sanitizePhotosTableName,
+  sanitizeFieldImagesTableName,
   getFieldDefaults,
   getNumericFields,
   getBooleanFields,

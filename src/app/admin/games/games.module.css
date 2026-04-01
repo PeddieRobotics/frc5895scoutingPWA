@@ -729,3 +729,115 @@
     width: 100%;
   }
 }
+
+/* Field image upload section on game cards */
+.imageAssetsSection {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: none;
+  position: relative;
+}
+
+.imageAssetsSection::before {
+  content: '';
+  display: block;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, rgba(189, 151, 72, 0.5), transparent);
+  width: 75%;
+  margin: 0 auto 0.75rem;
+}
+
+.imageAssetsTitle {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
+  color: #bd9748;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.imageUploadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.imageUploadInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.imageTagName {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8d5a3;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.imageFieldLabel {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.imageUploadControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.imageUploadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: #e8d5a3;
+  background: rgba(189, 151, 72, 0.12);
+  border: 1.5px solid rgba(189, 151, 72, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.imageUploadButton:hover {
+  background: rgba(189, 151, 72, 0.22);
+  border-color: rgba(189, 151, 72, 0.7);
+}
+
+.imageStatus {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.imageStatus_uploaded {
+  color: #9de387;
+  background: rgba(60, 180, 90, 0.15);
+}
+
+.imageStatus_missing {
+  color: #ffaaaa;
+  background: rgba(255, 80, 80, 0.12);
+}
+
+.imageStatus_uploading {
+  color: #ffd966;
+  background: rgba(255, 160, 0, 0.15);
+}
+
+.imageStatus_error {
+  color: #ffaaaa;
+  background: rgba(255, 80, 80, 0.12);
+}

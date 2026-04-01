@@ -14,6 +14,7 @@ import {
   sanitizeOprSettingsTableName,
   sanitizePrescoutTableName,
   sanitizePhotosTableName,
+  sanitizeFieldImagesTableName,
 } from './schema-generator.js';
 
 function quoteIdentifier(identifier) {
@@ -291,6 +292,20 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     `);
     console.log(`[GameConfig] Created photos table: ${photosTableName}`);
 
+    // Create field images table (for imageSelect background images)
+    const fieldImagesTableName = sanitizeFieldImagesTableName(gameName);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${fieldImagesTableName} (
+        id SERIAL PRIMARY KEY,
+        image_tag VARCHAR(100) NOT NULL UNIQUE,
+        image_data TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        uploaded_by VARCHAR(100),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created field images table: ${fieldImagesTableName}`);
+
     // Insert into game_configs
     const tbaEventCode = configJson.tbaEventCode || null;
     const insertResult = await client.query(`
@@ -414,6 +429,10 @@ async function deleteGame(id, dropTable = false) {
       console.log(`[GameConfig] Dropped table: ${prescoutTableName}`);
       await client.query(`DROP TABLE IF EXISTS ${photosTableName}`);
       console.log(`[GameConfig] Dropped table: ${photosTableName}`);
+
+      const fieldImagesTableName = sanitizeFieldImagesTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${fieldImagesTableName}`);
+      console.log(`[GameConfig] Dropped table: ${fieldImagesTableName}`);
     }
 
     await client.query('COMMIT');

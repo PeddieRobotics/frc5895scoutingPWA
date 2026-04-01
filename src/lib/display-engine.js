@@ -483,6 +483,14 @@ export function aggregateTeamData(rows, config, calcFns) {
     });
   }
 
+  // imageSelect distributions (config-driven singleSelect-like bucketing)
+  const imageSelectResults = {};
+  Object.entries(teamViewConfig.sections || {}).forEach(([sectionKey, sectionConfig]) => {
+    (sectionConfig.imageSelectDisplay || []).forEach(isd => {
+      imageSelectResults[isd.field] = bucketSingleSelectField(rows, isd);
+    });
+  });
+
   return {
     team,
     avgEpa, avgAuto, avgTele, avgEnd,
@@ -501,6 +509,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     attemptCage, successCage,
     qualitative,
     ...intakeData,
+    imageSelectResults,
   };
 }
 

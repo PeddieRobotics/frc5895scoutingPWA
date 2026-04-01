@@ -95,6 +95,9 @@ export default function GamesPage() {
   // Custom confirm modal state
   const [modal, setModal] = useState(null);
 
+  // Field image upload state: { [gameId_tag]: 'uploaded' | 'missing' | 'uploading' | 'error' }
+  const [imageUploadStatus, setImageUploadStatus] = useState({});
+
   const fileInputRef = useRef(null);
   const createFormRef = useRef(null);
   const router = useRouter();
@@ -218,6 +221,112 @@ export default function GamesPage() {
       setLoading(false);
     }
   };
+
+  // --- Field image helpers ---
+  function extractImageTags(configJson) {
+    const tags = [];
+    const seen = new Set();
+    function walk(field) {
+      if (!field) return;
+      if (field.type === 'imageSelect' && field.imageTag && !seen.has(field.imageTag)) {
+        seen.add(field.imageTag);
+        tags.push({ tag: field.imageTag, fieldLabel: field.label || field.name || field.imageTag });
+      }
+      if (field.type === 'collapsible') {
+        if (field.trigger) walk(field.trigger);
+        if (Array.isArray(field.content)) field.content.forEach(walk);
+      }
+      if (field.type === 'table' && Array.isArray(field.rows)) {
+        field.rows.forEach(r => { if (Array.isArray(r.fields)) r.fields.forEach(walk); });
+      }
+    }
+    if (configJson?.basics?.fields) configJson.basics.fields.forEach(walk);
+    if (configJson?.sections) configJson.sections.forEach(s => { if (s?.fields) s.fields.forEach(walk); });
+    return tags;
+  }
+
+  async function fetchImageStatuses(gameId) {
+    try {
+      const res = await fetch(`/api/admin/field-images?gameId=${gameId}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        const uploaded = new Set((data.images || []).map(i => i.image_tag));
+        return uploaded;
+      }
+    } catch { /* ignore */ }
+    return new Set();
+  }
+
+  async function refreshImageStatuses(gamesList) {
+    const statusUpdates = {};
+    for (const game of gamesList) {
+      const cfg = game.config_json || {};
+      const tags = extractImageTags(cfg);
+      if (tags.length === 0) continue;
+      const uploaded = await fetchImageStatuses(game.id);
+      tags.forEach(({ tag }) => {
+        statusUpdates[`${game.id}_${tag}`] = uploaded.has(tag) ? 'uploaded' : 'missing';
+      });
+    }
+    setImageUploadStatus(prev => ({ ...prev, ...statusUpdates }));
+  }
+
+  // Refresh image statuses whenever games list updates
+  useEffect(() => {
+    if (games.length > 0) {
+      refreshImageStatuses(games);
+    }
+  }, [games]);
+
+  async function handleFieldImageUpload(gameId, imageTag, event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files are allowed');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5 MB');
+      return;
+    }
+
+    const key = `${gameId}_${imageTag}`;
+    setImageUploadStatus(prev => ({ ...prev, [key]: 'uploading' }));
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('/api/admin/field-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ gameId, imageTag, imageData: base64, mimeType: file.type }),
+      });
+
+      if (res.ok) {
+        setImageUploadStatus(prev => ({ ...prev, [key]: 'uploaded' }));
+        setSuccess(`Image "${imageTag}" uploaded successfully`);
+      } else {
+        const data = await res.json();
+        setImageUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+        setError(data.message || 'Failed to upload image');
+      }
+    } catch (err) {
+      setImageUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+      setError('Network error uploading image');
+    }
+
+    // Reset file input
+    event.target.value = '';
+  }
+  // ----------------------------
 
   const validateConfig = async () => {
     if (!newGame.configJson.trim()) {
@@ -599,6 +708,38 @@ export default function GamesPage() {
                     </button>
                   )}
                 </div>
+                {/* Field image upload section */}
+                {extractImageTags(game.config_json || {}).length > 0 && (
+                  <div className={styles.imageAssetsSection}>
+                    <div className={styles.imageAssetsTitle}>Image Assets</div>
+                    {extractImageTags(game.config_json || {}).map(({ tag, fieldLabel }) => {
+                      const key = `${game.id}_${tag}`;
+                      const status = imageUploadStatus[key] || 'missing';
+                      return (
+                        <div key={tag} className={styles.imageUploadRow}>
+                          <div className={styles.imageUploadInfo}>
+                            <span className={styles.imageTagName}>{tag}</span>
+                            <span className={styles.imageFieldLabel}>for {fieldLabel}</span>
+                          </div>
+                          <div className={styles.imageUploadControls}>
+                            <label className={styles.imageUploadButton}>
+                              <UploadIcon /> {status === 'uploaded' ? 'Replace' : 'Upload'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleFieldImageUpload(game.id, tag, e)}
+                              />
+                            </label>
+                            <span className={`${styles.imageStatus} ${styles[`imageStatus_${status}`]}`}>
+                              {status === 'uploaded' ? 'Uploaded' : status === 'uploading' ? 'Uploading...' : status === 'error' ? 'Error' : 'Missing'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>

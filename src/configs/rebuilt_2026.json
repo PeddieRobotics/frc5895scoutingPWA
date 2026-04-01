@@ -35,6 +35,23 @@
       },
       "fields": [
         {
+          "type": "imageSelect",
+          "name": "autostartpos",
+          "label": "Starting Position",
+          "subHeader": "Starting Position",
+          "required": true,
+          "imageTag": "field_map",
+          "optionLayout": { "top": "33%", "distribution": "even" },
+          "options": [
+            { "value": 0, "label": "Trench (L)" },
+            { "value": 1, "label": "Left Bump" },
+            { "value": 2, "label": "Hub" },
+            { "value": 3, "label": "Right Bump" },
+            { "value": 4, "label": "Trench (R)" }
+          ],
+          "dbColumn": { "type": "INTEGER", "default": null }
+        },
+        {
           "type": "multiSelect",
           "subHeader": "Intake",
           "name": "autoIntakeOptions",
@@ -681,6 +698,19 @@
               "type": "epaLine",
               "label": "Auto Over Time",
               "dataKey": "autoOverTime"
+            }
+          ],
+          "imageSelectDisplay": [
+            {
+              "field": "autostartpos",
+              "label": "Starting Position Distribution",
+              "valueMapping": {
+                "0": "Trench (L)",
+                "1": "Left Bump",
+                "2": "Hub",
+                "3": "Right Bump",
+                "4": "Trench (R)"
+              }
             }
           ],
           "statTables": []

@@ -15,6 +15,7 @@ import SingleSelect from './SingleSelect';
 import MultiSelect from './MultiSelect';
 import Qualitative from './Qualitative';
 import HoldTimerInput from './HoldTimerInput';
+import ImageSelect from './ImageSelect';
 import styles from '../page.module.css';
 
 function InlineTimerGroup({ fields, groupKey }) {
@@ -55,7 +56,8 @@ export default function DynamicFormRenderer({
   breakdown,
   setBreakdown,
   defense,
-  setDefense
+  setDefense,
+  gameId,
 }) {
   // Generic state for any collapsible whose trigger isn't a named prop above
   const [collapsibleStates, setCollapsibleStates] = useState({});
@@ -172,6 +174,21 @@ export default function DynamicFormRenderer({
             <SingleSelect
               options={field.options}
               internalName={field.name}
+            />
+          </div>
+        );
+
+      case 'imageSelect':
+        return (
+          <div key={key}>
+            {field.subHeader && <SubHeader subHeaderName={field.subHeader} />}
+            <ImageSelect
+              options={field.options}
+              internalName={field.name}
+              imageTag={field.imageTag}
+              optionLayout={field.optionLayout}
+              required={field.required}
+              gameId={gameId}
             />
           </div>
         );

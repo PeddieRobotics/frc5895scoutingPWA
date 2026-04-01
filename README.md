@@ -38,6 +38,7 @@ This guide documents how to build and validate JSON game configurations for form
    - [text](#text)
    - [comment](#comment)
    - [singleSelect](#singleselect)
+   - [imageSelect](#imageselect)
    - [multiSelect](#multiselect)
    - [starRating](#starrating)
    - [qualitative](#qualitative)
@@ -787,6 +788,80 @@ A group of checkboxes where MULTIPLE options can be selected. **Each option beco
 **Renders as:** Multiple checkboxes. Each checkbox is independent.
 
 **Database columns created:** `coralgrndintake`, `coralstationintake`, `algaegrndintake`, `algaereefintake` (all BOOLEAN)
+
+---
+
+### imageSelect
+
+A single-select field rendered over a background image (e.g., a field map for starting position selection). Options are positioned as clickable pills on top of the image. Falls back to a standard `singleSelect` if the image is unavailable.
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Database column name |
+| `label` | string | No | Display label |
+| `subHeader` | string | No | Section sub-header |
+| `imageTag` | string | Yes | Key referencing an uploaded image in `fieldimages_<gameName>` table |
+| `required` | boolean | No | Whether selection is required for form submission |
+| `optionLayout` | object | No | Positioning config: `{ top: "<CSS value>", distribution: "even" }` |
+| `options` | array | Yes | Array of `{ value: number, label: string }` options |
+| `dbColumn` | object | No | Database column override (default: `INTEGER`, `null`) |
+
+**Image upload:** After creating a game at `/admin/games`, an "Image Assets" section appears on the game card for each `imageTag` referenced in the config. Upload the image there. Images are stored as base64 in a per-game `fieldimages_<gameName>` table (max 5 MB).
+
+**API routes:**
+
+All routes require a valid user session (`credentials: 'include'`). The `/api/admin/field-images` routes are accessible from the admin page (which gates access by admin password), but the API itself validates via `validateAuthToken` (any authenticated session), not the admin password.
+
+- `POST /api/admin/field-images` — Upload/replace image; body JSON: `{ gameId, imageTag, imageData (base64), mimeType }`. Max 5 MB. Upserts by `imageTag`.
+- `GET /api/admin/field-images?gameId=<id>` — List metadata for all field images (no image data)
+- `DELETE /api/admin/field-images?gameId=<id>&tag=<tag>` — Delete image by tag
+- `GET /api/field-images?gameId=<id>&tag=<tag>` — Fetch full image including base64 data (any authenticated user; `gameId` is optional and falls back to the active game)
+
+**Display config (`display.teamView.sections.<sectionKey>.imageSelectDisplay`):**
+
+Each entry in the array describes one `imageSelect` field to aggregate for team-view display.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `field` | string | Yes | Field name (must match an `imageSelect` field in the config) |
+| `label` | string | No | Section heading shown above the distribution boxes |
+| `valueMapping` | object | Yes | Maps each integer option value (as string key) to a display label |
+
+```json
+"imageSelectDisplay": [{
+  "field": "autostartpos",
+  "label": "Starting Position Distribution",
+  "valueMapping": { "0": "Trench (L)", "1": "Left Bump", "2": "Hub", "3": "Right Bump", "4": "Trench (R)" }
+}]
+```
+
+In team-view, each `imageSelectDisplay` entry renders as a row of alternating-color boxes showing the selection percentage per option across all scouted matches.
+
+**Example:**
+
+```json
+{
+  "type": "imageSelect",
+  "name": "autostartpos",
+  "label": "Starting Position",
+  "subHeader": "Starting Position",
+  "required": true,
+  "imageTag": "field_map",
+  "optionLayout": { "top": "33%", "distribution": "even" },
+  "options": [
+    { "value": 0, "label": "Trench (L)" },
+    { "value": 1, "label": "Left Bump" },
+    { "value": 2, "label": "Hub" },
+    { "value": 3, "label": "Right Bump" },
+    { "value": 4, "label": "Trench (R)" }
+  ],
+  "dbColumn": { "type": "INTEGER", "default": null }
+}
+```
+
+**Database column created:** `autostartpos` (INTEGER)
 
 ---
 
@@ -1578,7 +1653,7 @@ When you upload a configuration, it goes through validation. Here are common err
 **Fix:** Each field name must be unique across the entire configuration. Rename one of the duplicates.
 
 ### Error: "Invalid field type: X"
-**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
+**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `imageSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
 
 ### Error: "holdTimer scoutLeads must be an object"
 **Fix:** If you include `scoutLeads`, define it as an object:

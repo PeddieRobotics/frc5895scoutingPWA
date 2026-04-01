@@ -153,6 +153,24 @@ export function getTeamViewConfigIssues(config) {
     });
   }
 
+  // Validate imageSelectDisplay entries in each section
+  const sections = teamView.sections || {};
+  Object.entries(sections).forEach(([sectionKey, sectionConfig]) => {
+    if (Array.isArray(sectionConfig?.imageSelectDisplay)) {
+      sectionConfig.imageSelectDisplay.forEach((isd, idx) => {
+        const base = `display.teamView.sections.${sectionKey}.imageSelectDisplay[${idx}]`;
+        if (!isd.field) {
+          addIssue(issues, `${base}.field`, "is required");
+        } else {
+          validateFieldRef(issues, fieldSet, `${base}.field`, isd.field);
+        }
+        if (!isd.valueMapping || typeof isd.valueMapping !== 'object' || Object.keys(isd.valueMapping).length === 0) {
+          addIssue(issues, `${base}.valueMapping`, "must be a non-empty object");
+        }
+      });
+    }
+  });
+
   return issues;
 }
 
