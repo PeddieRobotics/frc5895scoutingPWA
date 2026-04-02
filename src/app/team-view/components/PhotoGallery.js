@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import styles from "./PhotoGallery.module.css";
+import LightboxModal from "../../components/LightboxModal";
 
 /**
  * PhotoGallery
@@ -224,15 +225,11 @@ export default function PhotoGallery({
 
           {/* Lightbox */}
           {lightbox && (
-            <div className={styles.lightboxOverlay} onClick={() => setLightbox(null)}>
-              <img
-                src={lightbox.src}
-                alt={lightbox.filename}
-                className={styles.lightboxImg}
-                onClick={e => e.stopPropagation()}
-              />
-              <button className={styles.lightboxClose} onClick={() => setLightbox(null)}>✕</button>
-            </div>
+            <LightboxModal
+              src={lightbox.src}
+              alt={lightbox.filename}
+              onClose={() => setLightbox(null)}
+            />
           )}
         </div>
       )}

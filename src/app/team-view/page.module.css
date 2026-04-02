@@ -3,7 +3,6 @@
 /* Team header: name with photo button overlaid top-right */
 .teamHeaderRow {
     position: relative;
-    padding-right: 52px; /* reserve space for 44px photo button + gap */
 }
 
 .teamHeaderRow > div h1,

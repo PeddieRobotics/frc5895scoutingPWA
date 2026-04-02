@@ -3,6 +3,10 @@
   "displayName": "REBUILT 2026",
   "tbaEventCode": "2026njwas",
   "usePPR": true,
+  "photoTags": [
+    { "name": "Featured", "emoji": "\u2b50", "color": "#FFD700" },
+    { "name": "Auto Routes", "emoji": "\ud83d\udee4\ufe0f", "color": "#4CAF50" }
+  ],
   "pprBreakdownFields": {
     "auto": "totalAutoPoints",
     "tele": "totalTeleopPoints",
@@ -554,6 +558,10 @@
   },
   "display": {
     "teamView": {
+      "photoSections": [
+        { "tag": "Featured", "placement": "aboveEpaChart" },
+        { "tag": "Auto Routes", "placement": "sections.auto.afterImageSelect" }
+      ],
       "epaChartOverlayOptions": [
         {
           "field": "auto",

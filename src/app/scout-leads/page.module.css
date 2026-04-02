@@ -40,7 +40,7 @@
     padding: 5px 8px;
     border: 1.5px solid rgba(160, 124, 48, 0.35);
     border-radius: 8px;
-    background: #faf8f3;
+    background: #faf8f4;
     font-family: 'Montserrat', sans-serif;
     font-size: 13px;
     color: #0d1f35;
@@ -1057,27 +1057,302 @@
     }
 }
 
-/* ── Photos section ────────────────────────────────── */
-.photosSection {
-    margin-top: 16px;
-    padding: 14px 18px;
+/* ── Gallery section ───────────────────────────────── */
+.gallerySection {
+    margin-top: 20px;
+    padding: 18px;
     background: #fff;
-    border: 1.5px solid rgba(160, 124, 48, 0.18);
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.05);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
 }
 
-.photosSectionHeader {
+.gallerySectionTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #a07c30;
+    margin: 0 0 14px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.galleryTeamRow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.galleryTeamInput {
+    flex: 1;
+    max-width: 180px;
+    padding: 10px 14px;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d1f35;
+    background: #faf8f4;
+    box-sizing: border-box;
+}
+.galleryTeamInput:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
+}
+
+.galleryEnterBtn {
+    padding: 10px 20px;
+    background: #a07c30;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s ease;
+}
+.galleryEnterBtn:hover {
+    background: #8a6a28;
+}
+.galleryEnterBtn:active {
+    transform: scale(0.97);
+}
+
+.galleryDropZone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 140px;
+    border: 2px dashed rgba(160, 124, 48, 0.35);
+    border-radius: 12px;
+    background: #faf8f4;
+    color: rgba(13, 31, 53, 0.5);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    margin-bottom: 12px;
+    padding: 20px;
+}
+.galleryDropZone:hover {
+    border-color: rgba(160, 124, 48, 0.55);
+    background: rgba(189, 151, 72, 0.05);
+}
+
+.galleryDropZoneActive {
+    border-color: #a07c30;
+    border-style: solid;
+    background: rgba(189, 151, 72, 0.1);
+}
+
+.galleryDropText {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.galleryTagRow {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.galleryTagPills {
+    display: flex;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
-.photosSectionTitle {
+.galleryTagPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 20px;
+    background: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1f35;
+    cursor: pointer;
+    min-height: 44px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.galleryTagPill:hover {
+    border-color: rgba(160, 124, 48, 0.55);
+    background: rgba(189, 151, 72, 0.05);
+}
+
+.galleryTagPillSelected {
+    font-weight: 700;
+    background: rgba(189, 151, 72, 0.12);
+    border-color: rgba(160, 124, 48, 0.6);
+    color: #a07c30;
+}
+
+.galleryUploadBtn {
+    padding: 10px 20px;
+    background: #a07c30;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
     font-size: 14px;
     font-weight: 700;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s ease;
+}
+.galleryUploadBtn:hover:not(:disabled) {
+    background: #8a6a28;
+}
+.galleryUploadBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.galleryUploadBtn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.galleryError {
+    color: #c0392b;
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0 0 10px;
+}
+
+.galleryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.galleryThumbWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.galleryThumb {
+    position: relative;
+    aspect-ratio: 1;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #faf8f4;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.galleryThumb:hover:not(:disabled) {
+    border-color: rgba(160, 124, 48, 0.55);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.1);
+}
+
+.galleryThumbImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.galleryThumbError {
+    font-size: 18px;
+    color: #c0392b;
+}
+
+.galleryThumbLoader {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(160, 124, 48, 0.2);
+    border-top-color: #a07c30;
+    border-radius: 50%;
+    animation: gallerySpin 0.8s linear infinite;
+}
+
+@keyframes gallerySpin {
+    to { transform: rotate(360deg); }
+}
+
+.galleryTagBadge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(13, 31, 53, 0.45);
+}
+
+.galleryThumbMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2px;
+}
+
+.galleryThumbUploader {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(13, 31, 53, 0.55);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.galleryTagSelect {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    border: 1px solid rgba(160, 124, 48, 0.25);
+    border-radius: 6px;
+    background: #faf8f4;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
     color: #0d1f35;
+    cursor: pointer;
+    appearance: auto;
+}
+.galleryTagSelect:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
+}
+
+.galleryDeleteBtn {
+    background: none;
+    border: none;
+    color: rgba(192, 57, 43, 0.6);
+    cursor: pointer;
+    padding: 0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    transition: color 0.15s ease;
+}
+.galleryDeleteBtn:hover {
+    color: #c0392b;
+}
+
+.galleryEmpty {
+    font-size: 13px;
+    color: rgba(13, 31, 53, 0.5);
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
     margin: 0;
 }

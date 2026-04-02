@@ -1,0 +1,81 @@
+.container {
+    margin-bottom: 12px;
+}
+
+.title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #a07c30;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.titleEmoji {
+    font-size: 16px;
+}
+
+.scrollRow {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-top: 6px;
+    justify-content: center;
+    -webkit-overflow-scrolling: touch;
+}
+
+.thumb {
+    flex-shrink: 0;
+    width: 100px;
+    height: 100px;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #faf8f4;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.thumb:hover:not(:disabled) {
+    border-color: rgba(160, 124, 48, 0.55);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.1);
+}
+
+.thumb:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
+}
+
+.thumbImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumbError {
+    font-size: 18px;
+    color: #c0392b;
+}
+
+.thumbLoader {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(160, 124, 48, 0.2);
+    border-top-color: #a07c30;
+    border-radius: 50%;
+    animation: taggedSpin 0.8s linear infinite;
+}
+
+@keyframes taggedSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}

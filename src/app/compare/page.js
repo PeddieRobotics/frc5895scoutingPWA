@@ -5,7 +5,6 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import PhotoGallery from "../team-view/components/PhotoGallery";
 import PrescoutSection from "../team-view/components/PrescoutSection";
 
 // Resolve a dotted path like "endPlacement.l3" on an object
@@ -62,7 +61,6 @@ function Compare() {
   const [teams, setTeams] = useState([]);
   const [tbaRanks, setTbaRanks] = useState({});
   const [fetchingTbaRanks, setFetchingTbaRanks] = useState(false);
-  const [teamPhotos, setTeamPhotos] = useState({});
   const [teamPrescout, setTeamPrescout] = useState({});
   const { config, gameId, loading: configLoading } = useGameConfig();
 
@@ -168,10 +166,6 @@ function Compare() {
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.data) setTeamPrescout(prev => ({ ...prev, [team]: d.data })); })
         .catch(() => {});
-      fetch(`/api/prescout/photos?${params.toString()}`, { headers })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => setTeamPhotos(prev => ({ ...prev, [team]: d?.photos || [] })))
-        .catch(() => {});
     });
   }, [teams, gameId]);
 
@@ -230,13 +224,6 @@ function Compare() {
                 View Team {team}
               </button>
             </Link>
-            <PhotoGallery
-              photos={teamPhotos[team] || []}
-              teamNumber={team}
-              readOnly={true}
-              gameId={gameId}
-              onDelete={(id) => setTeamPhotos(prev => ({ ...prev, [team]: (prev[team] || []).filter(p => p.id !== id) }))}
-            />
           </span>
         ))}
         <button onClick={() => fetchTbaRanksForTeams(teams)} disabled={fetchingTbaRanks} style={{ marginLeft: '0.5rem' }}>

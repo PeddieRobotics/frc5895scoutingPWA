@@ -7,7 +7,7 @@ import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScor
 import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
 import TeamScatterPlot from "../components/TeamScatterPlot";
-import PhotoGallery from "../team-view/components/PhotoGallery";
+import LightboxModal from "../components/LightboxModal";
 
 function getAuthHeaders() {
   if (typeof window === "undefined") return {};
@@ -382,9 +382,6 @@ export default function ScoutLeadsPage() {
   const [commentSuccess, setCommentSuccess] = useState("");
   const [scoutLeadsRows, setScoutLeadsRows] = useState([]);
 
-  // Photo gallery state (for the currently-viewed team)
-  const [teamPhotosSlead, setTeamPhotosSlead] = useState([]);
-
   // OPR sidebar state (active when config.usePPR === true)
   const [oprMatches, setOprMatches] = useState([]);
   const [oprEnabled, setOprEnabled] = useState({});  // { "Q1": true, "SF2": false, ... }
@@ -423,17 +420,6 @@ export default function ScoutLeadsPage() {
       // Ignore malformed localStorage profile.
     }
   }, []);
-
-  // Fetch photo metadata when team changes
-  useEffect(() => {
-    if (!team) { setTeamPhotosSlead([]); return; }
-    const params = new URLSearchParams({ team: String(team) });
-    if (gameId) params.set('gameId', String(gameId));
-    fetch(`/api/prescout/photos?${params.toString()}`, { headers: getAuthHeaders() })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => setTeamPhotosSlead(d?.photos || []))
-      .catch(() => {});
-  }, [team, gameId]);
 
   // Fetch all unscored matches on mount for the informational popup
   useEffect(() => {
@@ -583,8 +569,6 @@ export default function ScoutLeadsPage() {
     }
   };
 
-  const photoOnlyMode = team && (!match || match === "0");
-
   const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
     setError("");
     if (showLoadedMessage) {
@@ -595,11 +579,8 @@ export default function ScoutLeadsPage() {
       setError("Team is required.");
       return;
     }
-    if (!match || match === "0") {
-      // Photo-only mode — clear any previous match data, photos load via useEffect
-      setTimerSummary([]);
-      setAllScoutingRows([]);
-      setLoadedRecordMeta(null);
+    if (!match) {
+      setError("Match is required.");
       return;
     }
 
@@ -1145,18 +1126,18 @@ export default function ScoutLeadsPage() {
                 Match
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   value={match}
                   onChange={(event) => setMatch(event.target.value)}
                   onWheel={(e) => e.target.blur()}
-                  placeholder="0 = photos only"
+                  required
                 />
               </label>
 
             </div>
 
             <button type="submit" className={styles.primaryButton} disabled={loadingData}>
-              {loadingData ? "Loading..." : (!match || match === "0") ? "Load Photos" : "Load Match Data"}
+              {loadingData ? "Loading..." : "Load Match Data"}
             </button>
           </form>
 
@@ -1606,41 +1587,14 @@ export default function ScoutLeadsPage() {
             <div className={styles.info}>No scouting entries found for this team/match.</div>
           )}
 
-          {/* ── Photos section (upload + gallery for this team) ──── */}
-          {team && (photoOnlyMode || loadedRecordMeta) && dbGameName && (
-            <section className={styles.photosSection}>
-              <div className={styles.photosSectionHeader}>
-                <h2 className={styles.photosSectionTitle}>
-                  Photos — Team {team}
-                </h2>
-                <PhotoGallery
-                  photos={teamPhotosSlead}
-                  teamNumber={team}
-                  readOnly={false}
-                  gameName={dbGameName}
-                  gameId={gameId}
-                  onDelete={(id) => setTeamPhotosSlead(prev => prev.filter(p => p.id !== id))}
-                  onUpload={async (file) => {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    fd.append('team', String(team));
-                    fd.append('gameName', dbGameName);
-                    const res = await fetch('/api/prescout/photos', {
-                      method: 'POST',
-                      body: fd,
-                      credentials: 'include',
-                      headers: getAuthHeaders(),
-                    });
-                    if (!res.ok) {
-                      const d = await res.json();
-                      throw new Error(d.message || 'Upload failed');
-                    }
-                    const data = await res.json();
-                    setTeamPhotosSlead(prev => [...prev, data.photo]);
-                  }}
-                />
-              </div>
-            </section>
+          {/* ── Gallery section (standalone team photo upload + view) ──── */}
+          {dbGameName && (
+            <GallerySection
+              config={config}
+              gameId={gameId}
+              gameName={dbGameName}
+              getAuthHeaders={getAuthHeaders}
+            />
           )}
         </div>
 
@@ -1784,5 +1738,315 @@ export default function ScoutLeadsPage() {
 
       </div>
     </div>
+  );
+}
+
+/* ── GallerySection — standalone team photo upload + browsing ──── */
+
+function GallerySection({ config, gameId, gameName, getAuthHeaders }) {
+  const [galleryTeam, setGalleryTeam] = useState('');
+  const [loadedTeam, setLoadedTeam] = useState(null);
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [selectedTag, setSelectedTag] = useState(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [lightbox, setLightbox] = useState(null);
+  const [loadedPhotos, setLoadedPhotos] = useState({});
+  const fileInputRef = useRef(null);
+
+  const photoTags = config?.photoTags || [];
+
+  const fetchPhotos = async (teamNum) => {
+    const params = new URLSearchParams({ team: String(teamNum) });
+    if (gameId) params.set('gameId', String(gameId));
+    try {
+      const res = await fetch(`/api/prescout/photos?${params.toString()}`, { headers: getAuthHeaders() });
+      if (res.ok) {
+        const d = await res.json();
+        setGalleryPhotos(d?.photos || []);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleLoadTeam = (e) => {
+    e.preventDefault();
+    const teamNum = parseInt(galleryTeam, 10);
+    if (!teamNum) return;
+    setLoadedTeam(teamNum);
+    setGalleryPhotos([]);
+    setLoadedPhotos({});
+    setPendingFiles([]);
+    setUploadError('');
+    fetchPhotos(teamNum);
+  };
+
+  const handleDragOver = (e) => { e.preventDefault(); setDragActive(true); };
+  const handleDragLeave = () => { setDragActive(false); };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) setPendingFiles(prev => [...prev, ...files]);
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) setPendingFiles(prev => [...prev, ...files]);
+    e.target.value = '';
+  };
+
+  const handleUpload = async () => {
+    if (pendingFiles.length === 0 || !loadedTeam) return;
+    setUploading(true);
+    setUploadError('');
+
+    for (const file of pendingFiles) {
+      if (file.size > 3 * 1024 * 1024) {
+        setUploadError(`"${file.name}" exceeds 3 MB limit.`);
+        continue;
+      }
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('team', String(loadedTeam));
+      fd.append('gameName', gameName);
+      if (selectedTag) fd.append('tag', selectedTag);
+
+      try {
+        const res = await fetch('/api/prescout/photos', {
+          method: 'POST',
+          body: fd,
+          credentials: 'include',
+          headers: getAuthHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setGalleryPhotos(prev => [...prev, data.photo]);
+        } else {
+          const d = await res.json();
+          setUploadError(d.message || 'Upload failed');
+        }
+      } catch {
+        setUploadError('Upload failed. Please try again.');
+      }
+    }
+
+    setPendingFiles([]);
+    setUploading(false);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/prescout/photos/${id}${gameId ? `?gameId=${gameId}` : ''}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        setGalleryPhotos(prev => prev.filter(p => p.id !== id));
+        setLoadedPhotos(prev => { const n = { ...prev }; delete n[id]; return n; });
+        if (lightbox?.id === id) setLightbox(null);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadPhotoData = (photo) => {
+    if (loadedPhotos[photo.id]) return;
+    setLoadedPhotos(prev => ({ ...prev, [photo.id]: { src: null, loading: true } }));
+    fetch(`/api/prescout/photos/${photo.id}${gameId ? `?gameId=${gameId}` : ''}`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => {
+        if (data.photo_data) {
+          const src = `data:${data.mime_type};base64,${data.photo_data}`;
+          setLoadedPhotos(prev => ({ ...prev, [photo.id]: { src, loading: false } }));
+        } else {
+          setLoadedPhotos(prev => ({ ...prev, [photo.id]: { src: null, loading: false, error: true } }));
+        }
+      })
+      .catch(() => {
+        setLoadedPhotos(prev => ({ ...prev, [photo.id]: { src: null, loading: false, error: true } }));
+      });
+  };
+
+  // Lazy-load photos when loadedTeam changes
+  useEffect(() => {
+    if (!loadedTeam || galleryPhotos.length === 0) return;
+    galleryPhotos.forEach(p => loadPhotoData(p));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedTeam, galleryPhotos.length]);
+
+  const getTagConfig = (name) => photoTags.find(t => t.name === name);
+
+  const handleTagChange = async (photoId, newTag) => {
+    try {
+      const res = await fetch(`/api/prescout/photos/${photoId}${gameId ? `?gameId=${gameId}` : ''}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ tag: newTag }),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setGalleryPhotos(prev => prev.map(p => p.id === photoId ? { ...p, tag: newTag } : p));
+      }
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <section className={styles.gallerySection}>
+      <h2 className={styles.gallerySectionTitle}>Gallery</h2>
+
+      <form onSubmit={handleLoadTeam} className={styles.galleryTeamRow}>
+        <input
+          type="number"
+          min="1"
+          className={styles.galleryTeamInput}
+          placeholder="Team number"
+          value={galleryTeam}
+          onChange={e => setGalleryTeam(e.target.value)}
+          onWheel={e => e.target.blur()}
+        />
+        <button type="submit" className={styles.galleryEnterBtn}>Enter</button>
+      </form>
+
+      {loadedTeam && (
+        <>
+          {/* Drop zone */}
+          <div
+            className={`${styles.galleryDropZone} ${dragActive ? styles.galleryDropZoneActive : ''}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileSelect}
+            />
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span className={styles.galleryDropText}>
+              {pendingFiles.length > 0
+                ? `${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} selected`
+                : 'Drop photos here or click to upload'}
+            </span>
+          </div>
+
+          {/* Tag row + Upload button */}
+          <div className={styles.galleryTagRow}>
+            <div className={styles.galleryTagPills}>
+              {photoTags.map(tag => (
+                <button
+                  key={tag.name}
+                  type="button"
+                  className={`${styles.galleryTagPill} ${selectedTag === tag.name ? styles.galleryTagPillSelected : ''}`}
+                  style={{
+                    '--tag-color': tag.color,
+                    borderColor: selectedTag === tag.name ? tag.color : undefined,
+                    background: selectedTag === tag.name ? `${tag.color}22` : undefined,
+                  }}
+                  onClick={() => setSelectedTag(prev => prev === tag.name ? null : tag.name)}
+                >
+                  <span>{tag.emoji}</span> {tag.name}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={styles.galleryUploadBtn}
+              onClick={handleUpload}
+              disabled={uploading || pendingFiles.length === 0}
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </button>
+          </div>
+
+          {uploadError && <p className={styles.galleryError}>{uploadError}</p>}
+
+          {/* Photo grid */}
+          {galleryPhotos.length > 0 && (
+            <div className={styles.galleryGrid}>
+              {galleryPhotos.map(photo => {
+                const loaded = loadedPhotos[photo.id];
+                const tagCfg = getTagConfig(photo.tag);
+                return (
+                  <div key={photo.id} className={styles.galleryThumbWrapper}>
+                    <button
+                      type="button"
+                      className={styles.galleryThumb}
+                      onClick={() => loaded?.src && setLightbox({ id: photo.id, src: loaded.src, filename: photo.filename })}
+                      disabled={!loaded?.src}
+                    >
+                      {loaded?.src ? (
+                        <img src={loaded.src} alt={photo.filename} className={styles.galleryThumbImg} />
+                      ) : loaded?.error ? (
+                        <span className={styles.galleryThumbError}>!</span>
+                      ) : (
+                        <span className={styles.galleryThumbLoader} />
+                      )}
+                      {tagCfg && (
+                        <span className={styles.galleryTagBadge} style={{ background: tagCfg.color }}>
+                          {tagCfg.emoji}
+                        </span>
+                      )}
+                    </button>
+                    <div className={styles.galleryThumbMeta}>
+                      {photoTags.length > 0 && (
+                        <select
+                          className={styles.galleryTagSelect}
+                          value={photo.tag || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            if (val) handleTagChange(photo.id, val);
+                          }}
+                        >
+                          <option value="" disabled={!!photo.tag}>
+                            {photo.tag ? '' : 'Tag...'}
+                          </option>
+                          {photoTags.map(t => (
+                            <option key={t.name} value={t.name}>{t.emoji} {t.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.galleryDeleteBtn}
+                        onClick={() => handleDelete(photo.id)}
+                        title="Delete photo"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {galleryPhotos.length === 0 && (
+            <p className={styles.galleryEmpty}>No photos yet for team {loadedTeam}.</p>
+          )}
+        </>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <LightboxModal
+          src={lightbox.src}
+          alt={lightbox.filename}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+    </section>
   );
 }

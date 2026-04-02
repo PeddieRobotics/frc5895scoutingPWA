@@ -226,6 +226,7 @@ Every configuration file must have these top-level properties:
 | `version` | string | Version number for tracking changes | None |
 | `tbaEventCode` | string | TBA event code (e.g. `"2026njski"`); used by `/api/get-tba-rank` and the OPR Rankings sidebar | None |
 | `usePPR` | boolean | If `true`, shows the OPR Rankings sidebar on `/scout-leads`. Requires `tbaEventCode` to be set and `TBA_AUTH_KEY` env var configured | `false` |
+| `photoTags` | array | Tag definitions for photo uploads. Each entry: `{ name, emoji, color }`. When present, tag pills appear in the Gallery section on `/scout-leads` and in `display.teamView.photoSections` for config-driven display. See [Photo Tags](#photo-tags). | None |
 | `basics` | object | Pre-match fields (like "No Show") | None |
 | `sections` | array | Main form sections (Auto, Tele, etc.) | Required for form |
 | `calculations` | object | EPA point calculation formulas | None |
@@ -2368,7 +2369,7 @@ Both tables are created automatically when a game config is activated (inside `c
 | Table pattern | Key columns | Notes |
 |---------------|-------------|-------|
 | `prescout_<gameName>` | `team_number UNIQUE`, `data` (JSONB), `uploaded_at` | One row per team; upsert on re-upload. No `game_name` column — isolation is by table name. |
-| `photos_<gameName>` | `team_number`, `photo_data` (base64 TEXT), `mime_type`, `uploaded_by`, `uploaded_at` | Multiple photos per team allowed. No `game_name` column. |
+| `photos_<gameName>` | `team_number`, `photo_data` (base64 TEXT), `mime_type`, `uploaded_by`, `tag VARCHAR(100)`, `uploaded_at` | Multiple photos per team allowed. `tag` is nullable — photos without a tag are untagged. No `game_name` column. Existing tables are migrated automatically with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS tag`. |
 
 ### Prescout Spreadsheet Format
 
@@ -2414,9 +2415,9 @@ Features:
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| `GET` | `/api/prescout/photos?team=<num>&gameId=<id>` | Any authenticated user | Returns `{ photos[] }` — metadata only (no image data). Each item: `{ id, filename, mime_type, uploaded_by, uploaded_at }`. |
-| `POST` | `/api/prescout/photos` | Any authenticated user | Accepts `multipart/form-data` with `file` (image), `team`, and `gameName`. Returns `{ photo }` (metadata). Max 3 MB. |
-| `GET` | `/api/prescout/photos/[id]?gameId=<id>` | Any authenticated user | Returns full photo record including `photo_data` (base64). `gameId` required to resolve per-game table. Used by the gallery for lazy loading. |
+| `GET` | `/api/prescout/photos?team=<num>&gameId=<id>[&tag=<name>]` | Any authenticated user | Returns `{ photos[] }` — metadata only (no image data). Each item: `{ id, filename, mime_type, uploaded_by, uploaded_at, tag }`. Optional `tag` query param filters to photos with that tag only. |
+| `POST` | `/api/prescout/photos` | Any authenticated user | Accepts `multipart/form-data` with `file` (image), `team`, `gameName`, and optional `tag` (string). Returns `{ photo }` (metadata including `tag`). Max 3 MB. |
+| `GET` | `/api/prescout/photos/[id]?gameId=<id>` | Any authenticated user | Returns full photo record including `photo_data` (base64) and `tag`. `gameId` required to resolve per-game table. Used by the gallery for lazy loading. |
 | `DELETE` | `/api/prescout/photos/[id]?gameId=<id>` | Any authenticated user | Deletes the photo. `gameId` required. Returns `{ deleted: true }`. |
 
 ### Components
@@ -2431,7 +2432,7 @@ A collapsible key-value table component. Displays all non-null fields from a tea
 
 #### `PhotoGallery` (`src/app/team-view/components/PhotoGallery.js`)
 
-A modal photo gallery with lazy loading and a fullscreen lightbox.
+A modal photo gallery with lazy loading and a fullscreen lightbox. Used on `/scout-leads` entry cards to show photos associated with the entry's team (read-write: upload and delete enabled). Note: this component is **not** currently rendered on `/team-view` or `/compare` — those pages use `TaggedPhotoGrid` for config-driven tagged photo display.
 
 | Prop | Type | Description |
 |------|------|-------------|
@@ -2445,26 +2446,113 @@ A modal photo gallery with lazy loading and a fullscreen lightbox.
 | `uploadRef` | ref | Optional — parent can call `uploadRef.current()` to open the file picker |
 
 **Behavior:**
-- A "Photos (N)" camera-icon button triggers the modal.
+- A camera-icon button triggers the modal (badge shows photo count).
 - Photos are lazy-loaded from `/api/prescout/photos/[id]?gameId=<id>` when the modal opens.
-- Clicking a loaded thumbnail opens a fullscreen lightbox overlay.
+- Clicking a loaded thumbnail opens a fullscreen lightbox overlay (via `LightboxModal`).
 - Delete requires a two-step confirmation (delete icon → "Delete" / "Cancel").
 - Upload: only available when `readOnly=false`, `gameName` is set, and `onUpload` is provided. Image files only; client-side 3 MB check mirrors the server limit. Escape closes the lightbox or (if no lightbox) the modal.
+
+#### `TaggedPhotoGrid` (`src/app/team-view/components/TaggedPhotoGrid.js`)
+
+A config-driven, horizontally scrollable row of photo thumbnails for a single tag. Used by the `display.teamView.photoSections` system to render tagged photos inline on `/team-view`.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `tag` | string | Tag name (e.g. `"Robot"`) — used for display only |
+| `photos` | array | Photo metadata objects pre-filtered to this tag by the parent |
+| `gameId` | string/number | Game config ID for API calls |
+| `tagConfig` | object | `{ name, emoji, color }` from `config.photoTags` — drives the section title emoji |
+
+**Behavior:**
+- Fetches full photo data (`photo_data`) from `/api/prescout/photos/[id]` immediately on mount (no click-to-open modal).
+- Clicking a loaded thumbnail opens a fullscreen lightbox (via `LightboxModal`).
+- Returns `null` if `photos` is empty.
+
+#### `LightboxModal` (`src/app/components/LightboxModal.js`)
+
+Reusable fullscreen image lightbox. Used by both `PhotoGallery` and `TaggedPhotoGrid`.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `src` | string | Image `src` (data URI or URL) |
+| `alt` | string | Alt text / caption |
+| `onClose` | function | Called when the user closes the lightbox |
 
 ### Page Integration
 
 | Page | Prescout data | Photos |
 |------|--------------|--------|
-| `/team-view` | `PrescoutSection` shown below scouting stats | `PhotoGallery` button (`readOnly=true`) in team header |
-| `/compare` | `PrescoutSection` per team at bottom of each column | `PhotoGallery` button per team (`readOnly=true`) |
-| `/scout-leads` | Not shown | `PhotoGallery` with `readOnly=false` (upload + delete enabled) per team entry card |
+| `/team-view` | `PrescoutSection` shown below scouting stats | `TaggedPhotoGrid` rows rendered at placements defined in `display.teamView.photoSections` (config-driven) |
+| `/compare` | `PrescoutSection` per team at bottom of each column | Not shown |
+| `/scout-leads` | Not shown | Standalone **Gallery section** (own team input, drag-and-drop upload, tag selection, photo grid with lightbox, delete) + `PhotoGallery` button per team entry card |
 | `/admin/prescout` | Upload, view, clear via admin page | Not shown |
+
+### Photo Tags
+
+The optional `photoTags` top-level key defines a set of tags that scouts can apply when uploading photos. Tags are displayed as colored pill buttons in the Gallery section on `/scout-leads`. Tagged photos can be surfaced inline on `/team-view` using `display.teamView.photoSections`.
+
+```json
+{
+  "photoTags": [
+    { "name": "Robot", "emoji": "🤖", "color": "#4f8ef7" },
+    { "name": "Pit", "emoji": "🔧", "color": "#f7a94f" },
+    { "name": "Match", "emoji": "🎮", "color": "#4fd97a" }
+  ]
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Unique identifier and display label for the tag. Must be unique across all entries. |
+| `emoji` | string | Yes (warn if missing) | Emoji shown next to the tag name in pill buttons and section headers. |
+| `color` | string | Yes (warn if missing) | CSS color string used for the pill border and background tint when selected. |
+
+**Validation:** `config-validator.js` warns if `name` is missing or not a string, if `emoji` or `color` are not strings, or if duplicate names exist.
+
+#### Gallery Section on `/scout-leads`
+
+When `photoTags` is defined, the Gallery section on `/scout-leads` displays a row of tag pills above the Upload button. Scouts select a tag before uploading to associate it with the photo. Selecting the same tag again deselects it (upload proceeds with no tag). The photo grid groups photos by their stored tag using the configured `emoji` and `color`.
+
+#### `display.teamView.photoSections`
+
+An optional array on `display.teamView` that controls where tagged photo grids appear inline on `/team-view`. Each entry specifies which tag to display and where in the page layout it should be placed.
+
+```json
+{
+  "display": {
+    "teamView": {
+      "photoSections": [
+        { "tag": "Robot", "placement": "aboveEpaChart" },
+        { "tag": "Match", "placement": "sections.auto.afterImageSelect" }
+      ]
+    }
+  }
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `tag` | string | Yes | Must match a `name` in `photoTags`. Validator warns if not found. |
+| `placement` | string | Yes | Location in team-view where the `TaggedPhotoGrid` is rendered. |
+
+**Supported `placement` values:**
+
+| Value | Location |
+|-------|----------|
+| `"aboveEpaChart"` | Immediately above the EPA/PPR Over Time line chart in the team header area |
+| `"sections.auto.afterImageSelect"` | Below the `imageSelect` field in the Auto section of the team stats breakdown |
+
+When a team has no photos with the specified tag, the `TaggedPhotoGrid` returns null and no section is rendered.
+
+**Validation:** `config-validator.js` warns if `tag` or `placement` are missing/non-string, and warns if `tag` is not found in `photoTags`.
 
 ### Notes
 
 - The `xlsx` (SheetJS) npm package is used for spreadsheet parsing server-side.
 - Photos are stored as base64 strings in PostgreSQL (`TEXT` column). The 3 MB limit applies per photo. No external object storage is used.
 - `uploaded_by` on photos is set to the authenticated team's name at upload time (`teamName` from `validateAuthToken`).
+- The `tag` column on `photos_<gameName>` is nullable. Photos uploaded without selecting a tag have `tag = null`.
+- Existing `photos_<gameName>` tables from before the tagging feature was added are automatically migrated with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS tag VARCHAR(100)` on first use.
 - Prescout and photo data are scoped per game by table name (`prescout_<gameName>`, `photos_<gameName>`). Deleting a game from the admin panel drops both tables. There is no `game_name` column inside these tables.
 
 ---

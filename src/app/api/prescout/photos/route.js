@@ -24,14 +24,18 @@ async function ensurePhotosTable(client, tableName) {
       photo_data TEXT NOT NULL,
       mime_type VARCHAR(50) NOT NULL,
       uploaded_by VARCHAR(100),
+      tag VARCHAR(100),
       uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Migrate existing tables that lack the tag column
+  await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS tag VARCHAR(100)`);
 }
 
 /**
- * GET /api/prescout/photos?team=<num>&gameId=<id>
+ * GET /api/prescout/photos?team=<num>&gameId=<id>&tag=<name>
  * Returns photo metadata (no photo_data). Auth: any authenticated user.
+ * Optional tag filter: if provided, only returns photos with that tag.
  */
 export async function GET(request) {
   const { isValid, error } = await validateAuthToken(request);
@@ -42,6 +46,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const team = parseInt(searchParams.get('team'));
   const gameId = searchParams.get('gameId');
+  const tag = searchParams.get('tag');
 
   if (!team) {
     return NextResponse.json({ message: 'team parameter required' }, { status: 400 });
@@ -57,12 +62,19 @@ export async function GET(request) {
     const tableName = sanitizePhotosTableName(gameName);
     await ensurePhotosTable(client, tableName);
 
+    const params = [team];
+    let where = 'WHERE team_number = $1';
+    if (tag) {
+      where += ' AND tag = $2';
+      params.push(tag);
+    }
+
     const res = await client.query(
-      `SELECT id, filename, mime_type, uploaded_by, uploaded_at
+      `SELECT id, filename, mime_type, uploaded_by, uploaded_at, tag
        FROM ${tableName}
-       WHERE team_number = $1
+       ${where}
        ORDER BY uploaded_at ASC`,
-      [team]
+      params
     );
 
     return NextResponse.json({ photos: res.rows });
@@ -73,7 +85,7 @@ export async function GET(request) {
 
 /**
  * POST /api/prescout/photos
- * Uploads a photo for a team. multipart formData: file, team, gameName.
+ * Uploads a photo for a team. multipart formData: file, team, gameName, tag (optional).
  * Auth: any authenticated user.
  */
 export async function POST(request) {
@@ -87,6 +99,7 @@ export async function POST(request) {
     const file = formData.get('file');
     const team = parseInt(formData.get('team'));
     const gameName = formData.get('gameName');
+    const tag = formData.get('tag') || null;
 
     if (!file || !team || !gameName) {
       return NextResponse.json({ message: 'file, team, and gameName are required' }, { status: 400 });
@@ -103,16 +116,22 @@ export async function POST(request) {
 
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
-    const tableName = sanitizePhotosTableName(gameName);
     const client = await pool.connect();
     try {
+      // Validate gameName exists in game_configs to prevent orphan table creation
+      const gameCheck = await client.query('SELECT game_name FROM game_configs WHERE game_name = $1', [gameName]);
+      if (gameCheck.rows.length === 0) {
+        return NextResponse.json({ message: `Game "${gameName}" not found` }, { status: 404 });
+      }
+
+      const tableName = sanitizePhotosTableName(gameName);
       await ensurePhotosTable(client, tableName);
 
       const res = await client.query(
-        `INSERT INTO ${tableName} (team_number, filename, photo_data, mime_type, uploaded_by, uploaded_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())
-         RETURNING id, filename, mime_type, uploaded_by, uploaded_at`,
-        [team, file.name, base64, file.type, teamName || null]
+        `INSERT INTO ${tableName} (team_number, filename, photo_data, mime_type, uploaded_by, tag, uploaded_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         RETURNING id, filename, mime_type, uploaded_by, tag, uploaded_at`,
+        [team, file.name, base64, file.type, teamName || null, tag]
       );
 
       return NextResponse.json({ photo: res.rows[0] }, { status: 201 });

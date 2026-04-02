@@ -14,7 +14,7 @@ import CoralLineChart from './components/CoralLineChart';
 import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
 import PrescoutSection from "./components/PrescoutSection";
-import PhotoGallery from "./components/PhotoGallery";
+import TaggedPhotoGrid from "./components/TaggedPhotoGrid";
 import ImageSelectDistribution from "./components/ImageSelectDistribution";
 import useGameConfig from "../../lib/useGameConfig";
 import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
@@ -93,7 +93,7 @@ function TeamView() {
     const [slCommentsOpen, setSlCommentsOpen] = useState(false);
     const [navStuck, setNavStuck] = useState(false);
     const [prescoutData, setPrescoutData] = useState(null);
-    const [photos, setPhotos] = useState([]);
+    const [teamPhotos, setTeamPhotos] = useState([]);
     const matchNavRef = useRef(null);
     const teamFormRef = useRef(null);
     const router = useRouter();
@@ -107,6 +107,8 @@ function TeamView() {
 
     // Extract teamView config with defaults
     const tvConfig = config?.display?.teamView || {};
+    const photoSections = tvConfig.photoSections || [];
+    const photoTags = config?.photoTags || [];
     const overlayOptions = tvConfig.epaChartOverlayOptions || [];
     const [selectedVar, setSelectedVar] = useState(null);
     function resolveVar(sel, teamData) {
@@ -200,7 +202,7 @@ function TeamView() {
     useEffect(() => {
         if (!team) return;
         setPrescoutData(null);
-        setPhotos([]);
+        setTeamPhotos([]);
         const creds = (() => {
             try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
         })();
@@ -213,7 +215,7 @@ function TeamView() {
             .catch(() => {});
         fetch(`/api/prescout/photos?${params.toString()}`, { headers })
             .then(r => r.ok ? r.json() : null)
-            .then(d => setPhotos(d?.photos || []))
+            .then(d => setTeamPhotos(d?.photos || []))
             .catch(() => {});
     }, [team, gameId]);
 
@@ -921,15 +923,6 @@ function TeamView() {
                                 <h1 style={{ color: Colors[0][3] }}>Team {safeData.team} View</h1>
                                 <h3>{safeData.name}</h3>
                             </div>
-                            <span style={{ position: 'absolute', top: 0, right: 0 }}>
-                                <PhotoGallery
-                                    photos={photos}
-                                    teamNumber={safeData.team}
-                                    readOnly={true}
-                                    gameId={gameId}
-                                    onDelete={(id) => setPhotos(prev => prev.filter(p => p.id !== id))}
-                                />
-                            </span>
                         </div>
                         <div className={styles.EPAS}>
                             <div className={styles.EPA}>
@@ -989,6 +982,14 @@ function TeamView() {
                                 </div>
                             </div>
                         </div>
+                        {/* Config-driven tagged photo sections: aboveEpaChart */}
+                        {photoSections.filter(ps => ps.placement === 'aboveEpaChart').map(ps => {
+                            const tagCfg = photoTags.find(t => t.name === ps.tag);
+                            const filtered = teamPhotos.filter(p => p.tag === ps.tag);
+                            return tagCfg ? (
+                                <TaggedPhotoGrid key={ps.tag} tag={ps.tag} photos={filtered} gameId={gameId} tagConfig={tagCfg} titleClassName={styles.graphTitle} />
+                            ) : null;
+                        })}
                         <div className={styles.graphContainer}>
                             {(() => {
                                 const varChart = resolveVar(selectedVar, safeData);
@@ -1131,6 +1132,14 @@ function TeamView() {
                                             />
                                         </div>
                                     );
+                                })}
+                                {/* Config-driven tagged photo sections: sections.auto.afterImageSelect */}
+                                {photoSections.filter(ps => ps.placement === 'sections.auto.afterImageSelect').map(ps => {
+                                    const tagCfg = photoTags.find(t => t.name === ps.tag);
+                                    const filtered = teamPhotos.filter(p => p.tag === ps.tag);
+                                    return tagCfg ? (
+                                        <TaggedPhotoGrid key={ps.tag} tag={ps.tag} photos={filtered} gameId={gameId} tagConfig={tagCfg} titleClassName={styles.graphTitle} />
+                                    ) : null;
                                 })}
                                 {/* Auto climb pie chart (if autoPie config present) */}
                                 {autoPieData && (

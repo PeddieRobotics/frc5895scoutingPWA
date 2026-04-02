@@ -287,6 +287,7 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
         photo_data TEXT NOT NULL,
         mime_type VARCHAR(50) NOT NULL,
         uploaded_by VARCHAR(100),
+        tag VARCHAR(100),
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);

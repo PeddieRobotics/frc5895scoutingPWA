@@ -182,6 +182,56 @@ function validateConfig(config) {
     }
   }
 
+  // Validate photoTags (optional array of tag definitions for photo uploads)
+  if (config.photoTags !== undefined) {
+    if (!Array.isArray(config.photoTags)) {
+      result.addWarning('photoTags should be an array', 'photoTags');
+    } else {
+      const tagNames = new Set();
+      config.photoTags.forEach((tag, i) => {
+        const path = `photoTags[${i}]`;
+        if (!tag.name || typeof tag.name !== 'string') {
+          result.addWarning(`${path}.name is required and must be a string`, path);
+        }
+        if (typeof tag.emoji !== 'string') {
+          result.addWarning(`${path}.emoji should be a string`, path);
+        }
+        if (typeof tag.color !== 'string') {
+          result.addWarning(`${path}.color should be a string`, path);
+        }
+        if (tag.name && tagNames.has(tag.name)) {
+          result.addWarning(`Duplicate photoTag name: "${tag.name}"`, path);
+        }
+        if (tag.name) tagNames.add(tag.name);
+      });
+    }
+  }
+
+  // Validate display.teamView.photoSections
+  const photoSections = config.display?.teamView?.photoSections;
+  if (photoSections !== undefined) {
+    if (!Array.isArray(photoSections)) {
+      result.addWarning('display.teamView.photoSections should be an array', 'display.teamView.photoSections');
+    } else {
+      const tagNames = new Set((config.photoTags || []).map(t => t.name));
+      photoSections.forEach((ps, i) => {
+        const path = `display.teamView.photoSections[${i}]`;
+        if (!ps.tag || typeof ps.tag !== 'string') {
+          result.addWarning(`${path}.tag is required and must be a string`, path);
+        }
+        const VALID_PLACEMENTS = ['aboveEpaChart', 'sections.auto.afterImageSelect'];
+        if (!ps.placement || typeof ps.placement !== 'string') {
+          result.addWarning(`${path}.placement is required and must be a string`, path);
+        } else if (!VALID_PLACEMENTS.includes(ps.placement)) {
+          result.addWarning(`${path}.placement "${ps.placement}" is not a recognized slot. Valid: ${VALID_PLACEMENTS.join(', ')}`, path);
+        }
+        if (ps.tag && tagNames.size > 0 && !tagNames.has(ps.tag)) {
+          result.addWarning(`${path}.tag "${ps.tag}" not found in photoTags`, path);
+        }
+      });
+    }
+  }
+
   return result;
 }
 

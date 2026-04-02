@@ -61,6 +61,17 @@ export async function POST(request) {
       return NextResponse.json({ message: 'file and gameName are required' }, { status: 400 });
     }
 
+    // Validate gameName exists in game_configs before parsing the spreadsheet
+    const validateClient = await pool.connect();
+    try {
+      const gameCheck = await validateClient.query('SELECT game_name FROM game_configs WHERE game_name = $1', [gameName]);
+      if (gameCheck.rows.length === 0) {
+        return NextResponse.json({ message: `Game "${gameName}" not found` }, { status: 404 });
+      }
+    } finally {
+      validateClient.release();
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 

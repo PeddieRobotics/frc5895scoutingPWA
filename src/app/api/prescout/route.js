@@ -100,6 +100,12 @@ export async function DELETE(request) {
 
   const client = await pool.connect();
   try {
+    // Validate gameName exists in game_configs to prevent orphan table creation
+    const gameCheck = await client.query('SELECT game_name FROM game_configs WHERE game_name = $1', [gameName]);
+    if (gameCheck.rows.length === 0) {
+      return NextResponse.json({ message: `Game "${gameName}" not found` }, { status: 404 });
+    }
+
     const tableName = sanitizePrescoutTableName(gameName);
     await ensurePrescoutTable(client, tableName);
     const res = await client.query(`DELETE FROM ${tableName}`);
