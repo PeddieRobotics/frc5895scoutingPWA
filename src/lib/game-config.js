@@ -98,7 +98,7 @@ async function getAllGames() {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT id, game_name, display_name, table_name, is_active, tba_event_code, created_at, updated_at, created_by
+      SELECT id, game_name, display_name, table_name, is_active, tba_event_code, config_json, created_at, updated_at, created_by
       FROM game_configs
       ORDER BY created_at DESC
     `);

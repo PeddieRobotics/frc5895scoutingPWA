@@ -61,6 +61,9 @@ export default function GameDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
 
+  // Field image upload state
+  const [imageUploadStatus, setImageUploadStatus] = useState({});
+
   const validationTimer = useRef(null);
   const fileInputRef = useRef(null);
   const dbColumnsRef = useRef([]);
@@ -108,6 +111,84 @@ export default function GameDetailPage() {
     }
     fetchGame();
   }, [gameId, router]);
+
+  // --- Field image helpers ---
+  function extractImageTags(configJson) {
+    const tags = [];
+    const seen = new Set();
+    function walk(field) {
+      if (!field) return;
+      if (field.type === 'imageSelect' && field.imageTag && !seen.has(field.imageTag)) {
+        seen.add(field.imageTag);
+        tags.push({ tag: field.imageTag, fieldLabel: field.label || field.name || field.imageTag });
+      }
+      if (field.type === 'collapsible') {
+        if (field.trigger) walk(field.trigger);
+        if (Array.isArray(field.content)) field.content.forEach(walk);
+      }
+      if (field.type === 'table' && Array.isArray(field.rows)) {
+        field.rows.forEach(r => { if (Array.isArray(r.fields)) r.fields.forEach(walk); });
+      }
+    }
+    if (configJson?.basics?.fields) configJson.basics.fields.forEach(walk);
+    if (configJson?.sections) configJson.sections.forEach(s => { if (s?.fields) s.fields.forEach(walk); });
+    return tags;
+  }
+
+  useEffect(() => {
+    if (!game || !gameId) return;
+    const cfg = game.config || {};
+    const tags = extractImageTags(cfg);
+    if (tags.length === 0) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/field-images?gameId=${gameId}`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const uploaded = new Set((data.images || []).map(i => i.image_tag));
+          const updates = {};
+          tags.forEach(({ tag }) => { updates[tag] = uploaded.has(tag) ? 'uploaded' : 'missing'; });
+          setImageUploadStatus(updates);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, [game, gameId]);
+
+  async function handleFieldImageUpload(imageTag, event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setSaveMessage({ type: 'error', text: 'Only image files are allowed' }); return; }
+    if (file.size > 5 * 1024 * 1024) { setSaveMessage({ type: 'error', text: 'Image must be under 5 MB' }); return; }
+
+    setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'uploading' }));
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/admin/field-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ gameId, imageTag, imageData: base64, mimeType: file.type }),
+      });
+      if (res.ok) {
+        setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'uploaded' }));
+        setSaveMessage({ type: 'success', text: `Image "${imageTag}" uploaded successfully` });
+      } else {
+        const data = await res.json();
+        setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'error' }));
+        setSaveMessage({ type: 'error', text: data.message || 'Failed to upload image' });
+      }
+    } catch {
+      setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'error' }));
+      setSaveMessage({ type: 'error', text: 'Network error uploading image' });
+    }
+    event.target.value = '';
+  }
+  // ----------------------------
 
   const handleJsonChange = useCallback((e) => {
     const text = e.target.value;
@@ -261,6 +342,38 @@ export default function GameDetailPage() {
         <span>Table: <code>{game.tableName}</code></span>
         <span>{game.dataCount} row{game.dataCount !== 1 ? 's' : ''}</span>
       </div>
+
+      {/* Field image upload section */}
+      {parsedConfig && extractImageTags(parsedConfig).length > 0 && (
+        <div className={styles.imageAssetsSection}>
+          <div className={styles.imageAssetsTitle}>Image Assets</div>
+          {extractImageTags(parsedConfig).map(({ tag, fieldLabel }) => {
+            const status = imageUploadStatus[tag] || 'missing';
+            return (
+              <div key={tag} className={styles.imageUploadRow}>
+                <div className={styles.imageUploadInfo}>
+                  <span className={styles.imageTagName}>{tag}</span>
+                  <span className={styles.imageFieldLabel}>for {fieldLabel}</span>
+                </div>
+                <div className={styles.imageUploadControls}>
+                  <label className={styles.imageUploadButton}>
+                    {status === 'uploaded' ? 'Replace' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleFieldImageUpload(tag, e)}
+                    />
+                  </label>
+                  <span className={`${styles.imageStatus} ${styles[`imageStatus_${status}`]}`}>
+                    {status === 'uploaded' ? 'Uploaded' : status === 'uploading' ? 'Uploading...' : status === 'error' ? 'Error' : 'Missing'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {saveMessage?.type === 'success' && (
         <div className={styles.successBanner}>

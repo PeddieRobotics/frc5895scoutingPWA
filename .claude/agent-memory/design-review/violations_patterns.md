@@ -122,6 +122,8 @@ Admin page CSS occasionally uses `font-family: monospace` for code/tag display (
 
 **How to apply:** Any `font-family` that is not `'Montserrat', sans-serif` (outside of a `<code>/<pre>` validation/config preview block) is a violation. Replace with Montserrat and adjust weight to distinguish code-like text visually.
 
+**Fixed in:** Image Assets section (2026-04-02) — `.imageTagName` and `.imageUploadButton` now explicitly declare Montserrat. Monospace still appears in `.textarea`, `.jsonParseError`, `.diffItem` which are intentional code-display contexts.
+
 ---
 
 ## Solid border-top on section dividers — must use gradient
@@ -131,6 +133,46 @@ New sections within dark-mode cards sometimes add `border-top: 1px solid rgba(..
 **Why:** DESIGN.md Dividers section — "Use gradient hr rules rather than solid lines." This applies to any horizontal rule or section separator, not just literal `<hr>` elements. A CSS `::before` pseudo-element with the gradient background is the correct approach when an `<hr>` element is not used.
 
 **How to apply:** Replace any `border-top: 1px solid` used as a section divider with a gradient `::before` pseudo-element or an `<hr>` with the gradient rule.
+
+---
+
+## Off-token white-opacity for secondary text in dark mode
+
+Dark mode secondary/hint text is sometimes written as `rgba(255,255,255,0.5)` instead of the palette token `rgba(232,213,163,0.6)` (warm text dim). Seen in `.imageFieldLabel` in game-detail.module.css (2026-04-02).
+
+**Why:** Pure white-opacity reads cooler and breaks the warm gold-on-navy aesthetic. DESIGN.md defines "Warm text dim" as `rgba(232,213,163,0.6–0.8)` for secondary text; there is no pure-white secondary text token in dark mode.
+
+**How to apply:** Any `rgba(255,255,255,0.X)` used as body/label text color in a dark mode component is a violation. Replace with the warm text dim token at appropriate opacity.
+
+---
+
+## Button 1px border — should be 1.5px
+
+Admin page buttons (`.uploadButton`, `.formatButton`, `.imageUploadButton`) use `border: 1px solid` instead of the spec's `border: 1.5px solid`. Systemic in game-detail.module.css (discovered 2026-04-02).
+
+**Why:** DESIGN.md Buttons and Surfaces both specify 1.5px borders throughout. The 1px value makes borders visually lighter/weaker than the design system intends.
+
+**How to apply:** Any new dark mode button should use `border: 1.5px solid`. When modifying existing admin page buttons, correct to 1.5px at the same time.
+
+---
+
+## Button border-radius below 10px in dark mode
+
+Admin page buttons in game-detail.module.css use `border-radius: 5–6px`. DESIGN.md specifies 10–18px for all buttons.
+
+**Why:** Lower radius creates a squarer appearance inconsistent with the rounded design language. Discovered 2026-04-02 in `.imageUploadButton` (6px) and toolbar buttons (5px).
+
+**How to apply:** All dark mode buttons must use `border-radius: 10px` minimum. Flag any value below 10px on a button class.
+
+---
+
+## imageUploadButton touch target under-sizing in games.module.css
+
+`padding: 6px 12px` on `.imageUploadButton` produced ~30px height — well below the 44px minimum. Admin dark-mode upload controls are a repeated site of this violation.
+
+**Why:** DESIGN.md Mobile-First — 44px minimum applies to all interactive targets including `<label>` elements used as custom file inputs.
+
+**How to apply:** File-input labels (`<label>` acting as a button) must also have `min-height: 44px`. Use `padding: 0 Xpx` + `min-height: 44px` + `align-items: center` to keep the visual size controlled while meeting the touch target floor. Fixed in games.module.css (2026-04-02).
 
 ---
 
