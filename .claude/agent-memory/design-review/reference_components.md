@@ -60,6 +60,34 @@ Correct standard light mode card for admin pages:
 - `padding: 20px 22px`, `box-sizing: border-box` not declared but Next global reset covers it
 Note: border opacity `0.15` is slightly lighter than spec `0.25` — use `0.25` in new components.
 
+## LightboxModal.module.css — overlay backdrop
+
+`.overlay` is a textbook-correct dark overlay backdrop for the light mode context:
+- `background: rgba(13, 31, 53, 0.93)` — uses navy family, not pure black (fixes prior PhotoGallery violation)
+- `position: fixed; inset: 0; z-index: 1100` — correct overlay stacking
+- `box-shadow: 0 8px 48px rgba(13, 31, 53, 0.55)` on the image — navy shadow family
+
+## TaggedPhotoGrid.module.css — horizontal scrollable thumbnail strip
+
+Textbook light mode interactive tile in thumbnail form:
+- `border: 1.5px solid rgba(160, 124, 48, 0.25)` — correct gold border default
+- `border-radius: 8px`, `background: #faf8f4` — correct alt surface
+- Hover: `border-color: rgba(160, 124, 48, 0.55); box-shadow: 0 2px 8px rgba(13, 31, 53, 0.1)` — correct hover
+- `transition: border-color 0.15s ease, box-shadow 0.15s ease` — correct timing
+- Spinner uses `border: 2px solid rgba(160, 124, 48, 0.2); border-top-color: #a07c30` — on-token loading indicator
+
+## scout-leads gallery — `.gallerySection` card and `.galleryUploadBtn` / `.galleryEnterBtn`
+
+`.gallerySection` is a textbook standard light mode card:
+- `background: #fff; border: 1.5px solid rgba(160, 124, 48, 0.25); border-radius: 12px; box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08)`
+
+`.galleryUploadBtn` and `.galleryEnterBtn` are textbook Primary/Action buttons:
+- `background: #a07c30; color: #fff; border: none; border-radius: 8px; min-height: 44px`
+- Hover: `background: #8a6a28`
+- Active: `transform: scale(0.97)`
+
+`.galleryDropZone` correctly uses dashed gold border and `#faf8f4` alt surface background.
+
 ## PrescoutSection.module.css — table row styling
 
 Correct table alternating row pattern:

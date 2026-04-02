@@ -183,3 +183,53 @@ PhotoGallery.module.css lightbox uses `rgba(0, 0, 0, 0.88)` backdrop and `rgba(0
 **Why:** All shadows and overlay backdrops must use the navy color family to stay within the design language. Discovered 2026-03-31.
 
 **How to apply:** Replace any `rgba(0, 0, 0, ...)` in shadows or backdrops with `rgba(13, 31, 53, ...)` at equivalent opacity.
+
+---
+
+## `outline: none` without `:focus-visible` — recurs on form inputs
+
+`page.module.css` for scout-leads uses `outline: none` on many inputs/selects (`.scatterAxisSelect`, `.weightSelect`, `.field input`, `.field select`, `.fsPart input`, `.adminPasswordInput`, `.entryInput`, `.commentTextarea`) all paired with a `:focus` border-color change. `:focus` fires on mouse click; `:focus-visible` is for keyboard. Gold ring must use `:focus-visible` not just `:focus`.
+
+**Why:** DESIGN.md requires `outline: 2px solid rgba(160, 124, 48, 0.75)` via `:focus-visible`. Using only `:focus` border-color as the visual indicator is insufficient for keyboard accessibility. Discovered 2026-04-02.
+
+**How to apply:** Keep the `:focus` border change for mouse users if desired, but add a `:focus-visible` rule with the gold outline on every element that sets `outline: none`.
+
+---
+
+## `galleryTagPillSelected` — selected state has no color/border change
+
+`.galleryTagPillSelected` in page.module.css (scout-leads gallery) only sets `font-weight: 700`. DESIGN.md Light Mode Interactive Tiles selected state requires `background: rgba(189, 151, 72, 0.12); border-color: rgba(160, 124, 48, 0.6)`. The pill is visually indistinguishable from hover state on selection.
+
+**Why:** The selected state must be visually distinct from unselected. Discovered 2026-04-02.
+
+**How to apply:** Add `background: rgba(189, 151, 72, 0.12); border-color: rgba(160, 124, 48, 0.6); color: #a07c30;` to `.galleryTagPillSelected`.
+
+---
+
+## `.galleryDeleteBtn` — touch target below 44px minimum
+
+`.galleryDeleteBtn` in page.module.css uses `padding: 4px` with no `min-height`/`min-width`. The rendered size will be well under 44px. Systemic pattern for small icon/utility delete buttons. Discovered 2026-04-02.
+
+**Why:** DESIGN.md Mobile-First — 44px minimum touch target at all widths.
+
+**How to apply:** Add `min-width: 44px; min-height: 44px` to `.galleryDeleteBtn` even if the visible icon is smaller.
+
+---
+
+## LightboxModal `closeBtn` — off-token white border and off-token white text
+
+`.closeBtn` in LightboxModal.module.css uses `border: 1.5px solid rgba(255, 255, 255, 0.4)` and `color: #fff`. The modal spec does not define a white-border close button. The correct treatment for a close button on a dark overlay is to follow the dark mode Muted/Cancel button style: `rgba(255,255,255,0.15)` bg / `rgba(255,255,255,0.15)` border, or a gold outlined button. Also missing `:focus-visible`. Discovered 2026-04-02.
+
+**Why:** DESIGN.md button tokens are finite. No white-border close button variant is defined. The "What NOT to do" forbids `#ffffff` (pure white) backgrounds on interactive elements — `color: #fff` on text is not that rule, but border and background tokens should match the palette.
+
+**How to apply:** Style `.closeBtn` as a dark-mode Muted/Cancel button (`border: 1.5px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: rgba(232,213,163,0.6)`) or go with gold outlined (`border: 1.5px solid rgba(189,151,72,0.55); color: #bd9748`). Add `:focus-visible`.
+
+---
+
+## Off-token surface color `#faf8f3` (one digit off from spec)
+
+`.scatterAxisSelect` in scout-leads/page.module.css uses `background: #faf8f3` — one digit off from the spec token `#faf8f4` (Surface alt). Causes a barely-visible but technically off-spec warm tint. Discovered 2026-04-02.
+
+**Why:** Palette tokens must be exact. `#faf8f3` has a cooler/grayer tone than the intended `#faf8f4`.
+
+**How to apply:** Replace `#faf8f3` with `#faf8f4`.
