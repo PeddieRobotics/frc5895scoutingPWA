@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import useGameConfig from "../../lib/useGameConfig";
 import { extractTimerFieldsFromConfig, extractConfidenceRatingField, extractScoringRequirementFields } from "../../lib/schema-generator";
 import { computeOPR } from "../../lib/opr-calculator";
@@ -323,6 +324,7 @@ function flattenConfigFields(config) {
 }
 
 export default function ScoutLeadsPage() {
+  const router = useRouter();
   const { config, gameId, gameName: dbGameName, loading: configLoading } = useGameConfig();
   const configuredTimerFields = useMemo(
     () => extractTimerFieldsFromConfig(config || {}),
@@ -1094,7 +1096,12 @@ export default function ScoutLeadsPage() {
         </aside>
 
         <div className={styles.container}>
-          <h1 className={styles.title}>Scout Leads</h1>
+          <div className={styles.headerRow}>
+            <h1 className={styles.title}>Scout Leads</h1>
+            <button className={styles.prescoutBtn} onClick={() => router.push("/admin/prescout")}>
+              📋 Prescout
+            </button>
+          </div>
           <p className={styles.subtitle}>
             Load a team + match and enter a configurable per-second rate for each timer metric.
           </p>

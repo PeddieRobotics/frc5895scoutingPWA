@@ -352,11 +352,49 @@
 }
 
 /* ── Page header ──────────────────────────────── */
+.headerRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .title {
     margin: 0;
     font-size: 2rem;
     font-weight: 800;
     color: #0d1f35;
+}
+
+.prescoutBtn {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: 1.5px solid rgba(160, 124, 48, 0.55);
+    color: #a07c30;
+    border-radius: 8px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+.prescoutBtn:hover {
+    background: rgba(160, 124, 48, 0.08);
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.prescoutBtn:active {
+    transform: scale(0.97);
+}
+
+.prescoutBtn:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
 }
 
 .subtitle {
