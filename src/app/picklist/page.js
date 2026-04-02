@@ -1,170 +1,10 @@
 'use client';
 
 import styles from "./page.module.css";
-import { Fragment, useEffect, useState, useRef, memo, useMemo } from "react";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, Legend, ResponsiveContainer } from 'recharts';
+import { Fragment, useEffect, useState, useRef, useMemo } from "react";
 import useGameConfig from "../../lib/useGameConfig";
+import TeamScatterPlot from "../components/TeamScatterPlot";
 
-
-
-// Custom tooltip component for scatter plot
-const CustomTooltip = ({ active, payload, xLabel, yLabel }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className={styles.customTooltip}>
-        <p className={styles.tooltipTeam}>{`Team: ${data.team}`}</p>
-        <p>{`${xLabel}: ${data.x}`}</p>
-        <p>{`${yLabel}: ${data.y}`}</p>
-        <p>{`Matches: ${data.z}`}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Memoized ScatterPlot component to prevent re-renders
-const MemoizedScatterPlot = memo(function ScatterPlot({ teamData, isAuthenticated, scatterConfig }) {
-  const [teamHighlight, setTeamHighlight] = useState('');
-  const [highlightedTeams, setHighlightedTeams] = useState([]);
-
-  const xLabel = scatterConfig?.xAxis?.label || 'X';
-  const yLabel = scatterConfig?.yAxis?.label || 'Y';
-  const title = `${xLabel.replace('Total ', '')} vs ${yLabel.replace('Total ', '')} Scoring`;
-
-  // Update highlighted teams when the input changes
-  useEffect(() => {
-    if (!teamData || teamData.length === 0) return;
-
-    if (!teamHighlight.trim()) {
-      setHighlightedTeams([]);
-    } else {
-      // Parse team numbers from the input
-      const teamNumbers = teamHighlight
-        .split(',')
-        .map(val => val.trim())
-        .filter(val => val !== ''); // Filter out empty entries (like trailing commas)
-
-      setHighlightedTeams(teamNumbers);
-    }
-  }, [teamHighlight, teamData]);
-
-  // Handle team click with authentication check and mobile detection
-  const handleTeamClick = (data) => {
-    if (!isAuthenticated) {
-      alert('Please log in to view team details');
-      return;
-    }
-
-    // Check if device is mobile based on screen width
-    const isMobile = window.innerWidth <= 768;
-
-    if (!isMobile) {
-      // Only navigate to team view on non-mobile devices
-      window.open(`/team-view?team=${data.team}`, '_blank');
-    }
-    // No alert or action for mobile - just show the tooltip which is already handled by hover
-  };
-
-  // Show authentication required message if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className={styles.scatterPlotContainer}>
-        <h1>{title}</h1>
-        <div className={styles.authWarning}>
-          Authentication required to view this data
-        </div>
-        <div className={styles.loadingGraph}>
-          Please log in to access the {title.toLowerCase()} graph
-        </div>
-      </div>
-    );
-  }
-
-  // If authenticated but no data, show loading
-  if (!teamData || teamData.length === 0) {
-    return (
-      <div className={styles.scatterPlotContainer}>
-        <h1>{title}</h1>
-        <div className={styles.loadingGraph}>Loading team data...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.scatterPlotContainer}>
-      <h1>{title}</h1>
-      <div className={styles.teamFilterContainer}>
-        <input
-          type="text"
-          placeholder="Highlight teams (comma separated)"
-          value={teamHighlight}
-          onChange={(e) => setTeamHighlight(e.target.value)}
-          className={styles.teamFilterInput}
-        />
-      </div>
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-        >
-          <CartesianGrid />
-          <XAxis
-            type="number"
-            dataKey="x"
-            name={xLabel}
-            label={{ value: xLabel, position: 'bottom', offset: 0 }}
-          />
-          <YAxis
-            type="number"
-            dataKey="y"
-            name={yLabel}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft' }}
-          />
-          <ZAxis
-            type="number"
-            dataKey="z"
-            range={[30, 400]}
-            name="Matches"
-          />
-          <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip xLabel={xLabel} yLabel={yLabel} />} />
-          {/* Render background points (regular teams) */}
-          <Scatter
-            name="Teams"
-            data={teamData}
-            fill="#8884d8"
-            onClick={handleTeamClick}
-          />
-          {/* Render highlighted teams if any */}
-          {highlightedTeams.length > 0 && (
-            <Scatter
-              name="Highlighted Teams"
-              data={teamData.filter(team =>
-                highlightedTeams.some(t => team.team.toString() === t) // Exact match, not includes
-              )}
-              fill="#FF5733"
-              onClick={handleTeamClick}
-            />
-          )}
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}, (prevProps, nextProps) => {
-  // Only re-render if authentication status changes
-  if (prevProps.isAuthenticated !== nextProps.isAuthenticated) return false;
-
-  // Only re-render if the data length has changed or data is loaded for the first time
-  if (!prevProps.teamData && nextProps.teamData) return false;
-  if (!nextProps.teamData && prevProps.teamData) return false;
-  if (prevProps.teamData && nextProps.teamData &&
-    prevProps.teamData.length !== nextProps.teamData.length) return false;
-
-  // Re-render if scatter config changes
-  if (prevProps.scatterConfig !== nextProps.scatterConfig) return false;
-
-  // Consider it equal (don't re-render) in all other cases
-  return true;
-});
 
 export default function Picklist() {
   const { config, gameId, loading: configLoading } = useGameConfig();
@@ -178,7 +18,9 @@ export default function Picklist() {
   const [teamRatings, setTeamRatings] = useState({});
   const [weightsChanged, setWeightsChanged] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [teamData, setTeamData] = useState([]);
+  const [scatterX, setScatterX] = useState('');
+  const [scatterY, setScatterY] = useState('');
+  const [scatterTeams, setScatterTeams] = useState([]);
   const [eventCode, setEventCode] = useState('');
   const [fetchingAlliances, setFetchingAlliances] = useState(false);
   const [currentUserTeam, setCurrentUserTeam] = useState(''); // Add current user team state
@@ -197,81 +39,55 @@ export default function Picklist() {
 
   const weightsConfig = picklistConfig.weights || [];
   const tableColumnsConfig = picklistConfig.tableColumns || [];
-  const scatterConfig = picklistConfig.scatterPlot || {};
+  const scatterFieldsConfig = picklistConfig.scatterFields || [];
+
+  const weightsFirstKey = weightsConfig[0]?.key ?? null;
+  const scatterFirstKey = scatterFieldsConfig[0]?.key ?? null;
+
+  // Initialize scatter axis defaults when config loads
+  useEffect(() => {
+    if (!scatterFirstKey && !weightsFirstKey) return;
+    setScatterX(prev => prev || scatterFieldsConfig[0]?.key || weightsConfig[0]?.key || '');
+    setScatterY(prev => prev || scatterFieldsConfig[1]?.key || weightsConfig[1]?.key || scatterFieldsConfig[0]?.key || '');
+  }, [scatterFirstKey, weightsFirstKey]);
+
+  // Auto-fetch scatter data independently (no manual recalculation required)
+  useEffect(() => {
+    if (!isAuthenticated || (!weightsFirstKey && !scatterFirstKey)) return;
+    const equalWeights = weightsConfig.map(w => [w.key, '1']);
+    const headers = { 'Content-Type': 'application/json' };
+    if (gameId) headers['X-Game-Id'] = String(gameId);
+    fetch('/api/compute-picklist', {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(equalWeights),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.teamTable) setScatterTeams(data.teamTable); })
+      .catch(() => {});
+  }, [isAuthenticated, gameId, weightsFirstKey, scatterFirstKey]);
+
+  const resolveAxisValue = (t, key) => key === 'team' ? Number(t.team) : (t[key] ?? 0);
+  const axisOptions = scatterFieldsConfig.length > 0 ? scatterFieldsConfig : weightsConfig;
+  const resolveAxisLabel = (key) => key === 'team' ? 'Team Number' : (axisOptions.find(w => w.key === key)?.label ?? key);
+
+  // Scatter data derived from auto-fetched team metrics
+  const scatterData = useMemo(() =>
+    scatterTeams.map(t => ({
+      team: t.team,
+      x: resolveAxisValue(t, scatterX),
+      y: resolveAxisValue(t, scatterY),
+      z: 1,
+    })),
+    [scatterTeams, scatterX, scatterY]
+  );
 
   const formatUnscoredMatch = (issue) => {
     const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
     const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
     return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
   };
-
-  // Function to process raw match data into scatter plot data
-  function processTeamData(rows) {
-    console.log('Processing team data with', rows.length, 'rows');
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
-      console.error('Invalid or empty rows data:', rows);
-      return [];
-    }
-
-    console.log('Sample data row:', JSON.stringify(rows[0]));
-
-    const xFields = scatterConfig.xAxis?.fields || [];
-    const yFields = scatterConfig.yAxis?.fields || [];
-
-    // Group by team
-    const teamMap = {};
-
-    let processedCount = 0;
-    let skippedCount = 0;
-
-    rows.forEach(row => {
-      // Skip invalid rows
-      if (!row || typeof row !== 'object' || !row.team) {
-        skippedCount++;
-        return;
-      }
-
-      if (!teamMap[row.team]) {
-        teamMap[row.team] = {
-          team: row.team,
-          totalX: 0,
-          totalY: 0,
-          matches: 0
-        };
-      }
-
-      // Sum up x-axis fields from config
-      const xTotal = xFields.reduce((sum, field) => sum + (Number(row[field]) || 0), 0);
-      // Sum up y-axis fields from config
-      const yTotal = yFields.reduce((sum, field) => sum + (Number(row[field]) || 0), 0);
-
-      teamMap[row.team].totalX += xTotal;
-      teamMap[row.team].totalY += yTotal;
-      teamMap[row.team].matches += 1;
-      processedCount++;
-    });
-
-    console.log(`Processed ${processedCount} rows, skipped ${skippedCount} invalid rows`);
-    console.log(`Created data for ${Object.keys(teamMap).length} teams`);
-
-    // Convert to array and filter out teams with no matches
-    const result = Object.values(teamMap)
-      .filter(team => team.matches > 0)
-      .map(team => ({
-        team: team.team,
-        x: team.totalX,
-        y: team.totalY,
-        z: team.matches
-      }));
-
-    console.log(`Final result has ${result.length} teams`);
-
-    if (result.length > 0) {
-      console.log('Sample processed team:', result[0]);
-    }
-
-    return result;
-  }
 
   // Simplified token validation
   useEffect(() => {
@@ -305,12 +121,6 @@ export default function Picklist() {
           if (data.userTeam) {
             console.log('Setting team from data response:', data.userTeam);
             setCurrentUserTeam(data.userTeam);
-          }
-
-          if (data.rows && data.rows.length > 0) {
-            console.log(`Processing ${data.rows.length} rows from initial fetch`);
-            const processedData = processTeamData(data.rows);
-            setTeamData(processedData);
           }
 
           return;
@@ -419,87 +229,9 @@ export default function Picklist() {
     setTeamsToExclude(urlTeamsToExclude);
   }, [isClient]);
 
-  // Function to fetch data for all teams - only called when we know auth is valid
-  async function fetchTeamData() {
-    // Exit if we already have data (prevents duplicate fetches)
-    if (teamData && teamData.length > 0) {
-      console.log('Already have team data, skipping fetch');
-      return;
-    }
-
-    // Exit early if not authenticated
-    if (!isAuthenticated) {
-      console.log('Not authenticated, skipping data fetch');
-      return;
-    }
-
-    try {
-      console.log('Fetching team data for scatter plot graph');
-
-      // Create headers for the request
-      const headers = {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'X-Source-Page': 'picklist'
-      };
-
-      // Add Authorization header with team information if available
-      const storedCreds = (typeof window !== 'undefined') ? (sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials')) : null;
-      if (storedCreds) {
-        headers['Authorization'] = `Basic ${storedCreds}`;
-      }
-
-      // Use credentials: 'include' to send cookies with the request
-      const dataParams = new URLSearchParams();
-      if (gameId) dataParams.set('gameId', String(gameId));
-      const response = await fetch(`/api/get-data${dataParams.toString() ? `?${dataParams.toString()}` : ''}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers,
-        cache: 'no-store'
-      });
-
-      console.log(`Data fetch response: ${response.status}`);
-
-      if (!response.ok) {
-        console.error(`Failed to fetch data with status: ${response.status}`);
-        return;
-      }
-
-      const data = await response.json();
-      setUnscoredMatches(Array.isArray(data.unscoredMatches) ? data.unscoredMatches : []);
-
-      if (!data.rows || data.rows.length === 0) {
-        console.log('No data rows returned');
-        return;
-      }
-
-      console.log(`Fetched ${data.rows.length} data rows for graph`);
-
-      // Process data to calculate totals per team
-      const processedData = processTeamData(data.rows);
-      console.log(`Processed team data into ${processedData.length} teams`);
-      setTeamData(processedData);
-    } catch (error) {
-      console.error('Error fetching team data:', error);
-    }
-  }
-
-  // Fetch data when auth changes
   useEffect(() => {
-    if (isAuthenticated) {
-      console.log('Authentication confirmed, fetching data');
-      fetchTeamData();
-    } else {
-      console.log('Not authenticated, clearing data');
-      setTeamData([]);
-      setUnscoredMatches([]);
-    }
-  }, [isAuthenticated, gameId]);
-
-  useEffect(() => {
-    setTeamData([]);
     setPicklist([]);
+    setScatterTeams([]);
     setUnscoredMatches([]);
   }, [gameId]);
 
@@ -996,11 +728,42 @@ export default function Picklist() {
             }} className={weightsChanged ? styles.recalculateIsMad : ""}>Recalculate Picklist</button>
           </form>
 
-          {/* Pass isAuthenticated and scatterConfig to ScatterPlot */}
-          <MemoizedScatterPlot
-            teamData={teamData}
+          {/* Scatter plot with configurable axes */}
+          {axisOptions.length > 0 && (
+            <div className={styles.scatterAxisSelectors}>
+              <label className={styles.scatterAxisLabel}>
+                X Axis
+                <select
+                  className={styles.scatterAxisSelect}
+                  value={scatterX}
+                  onChange={e => setScatterX(e.target.value)}
+                >
+                  <option value="team">Team Number</option>
+                  {axisOptions.map(w => (
+                    <option key={w.key} value={w.key}>{w.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.scatterAxisLabel}>
+                Y Axis
+                <select
+                  className={styles.scatterAxisSelect}
+                  value={scatterY}
+                  onChange={e => setScatterY(e.target.value)}
+                >
+                  <option value="team">Team Number</option>
+                  {axisOptions.map(w => (
+                    <option key={w.key} value={w.key}>{w.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <TeamScatterPlot
+            teamData={scatterData}
             isAuthenticated={isAuthenticated}
-            scatterConfig={scatterConfig}
+            xLabel={resolveAxisLabel(scatterX)}
+            yLabel={resolveAxisLabel(scatterY)}
           />
 
           <div className={styles.alliances}>

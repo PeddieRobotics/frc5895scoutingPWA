@@ -481,7 +481,7 @@ export default function Sudo() {
       editable: true,
     },
     {
-      title: "EPA",
+      title: config?.usePPR ? "PPR" : "EPA",
       key: "EPA",
       render: (text, rec) => {
         return <>{calcEPA(rec)}</>;
@@ -838,7 +838,7 @@ export default function Sudo() {
                     padding: '8px 0',
                     fontWeight: 'bold'
                   }}>
-                    <span>EPA</span>
+                    <span>{config?.usePPR ? "PPR" : "EPA"}</span>
                     <span>{calcEPA(selectedRecord)}</span>
                   </div>
                 </Card>

@@ -12,7 +12,7 @@ const montserrat = Montserrat({
 
 export const metadata = {
   manifest: '/manifest.json',
-  title: '5895 SCOUTER',
+  title: 'Scouting Form',
   description: 'Peddie Robotics\' Scouting & Analysis App',
   icons: {
     icon: '/favicon.ico',

@@ -4,6 +4,7 @@ import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
+import { getTeamOPRMap, getLast3OPRMap } from "../../../lib/opr-service";
 
 export async function POST(request) {
   // First validate the auth token
@@ -73,6 +74,60 @@ export async function POST(request) {
   let teamTable = scoredRows.length > 0
     ? computePicklistMetrics(scoredRows, gameConfig, calculationFunctions, weightInputs)
     : [];
+
+  // If usePPR, replace EPA fields with PPR (Peddie Power Rating) then recompute weighted score
+  if (gameConfig?.usePPR === true) {
+    try {
+      const [oprMap, last3OprMap] = await Promise.all([
+        getTeamOPRMap(activeGame),
+        getLast3OPRMap(activeGame),
+      ]);
+      if (oprMap) {
+        // Step 1: inject raw PPR into real* and display fields
+        teamTable = teamTable.map((entry) => {
+          const opr = oprMap.get(Number(entry.team));
+          const last3Opr = last3OprMap?.get(Number(entry.team));
+          if (opr == null) return entry;
+          return { ...entry, realEpa: opr, realEpa3: last3Opr ?? opr, avgEpa: opr, last3Epa: last3Opr ?? opr };
+        });
+
+        // Step 2: re-normalize epa / epa3 relative to new PPR max so weights still scale 0–1
+        const maxEpa  = Math.max(...teamTable.map(e => e.realEpa  ?? 0), 0);
+        const maxEpa3 = Math.max(...teamTable.map(e => e.realEpa3 ?? 0), 0);
+        teamTable = teamTable.map(entry => ({
+          ...entry,
+          epa:  maxEpa  ? (entry.realEpa  ?? 0) / maxEpa  : 0,
+          epa3: maxEpa3 ? (entry.realEpa3 ?? 0) / maxEpa3 : 0,
+        }));
+
+        // Step 3: recompute score (normalized) and absoluteScore (real values) using the same weight formula
+        // Other normalized metrics (consistency, defense, breakdown, etc.) are unchanged.
+        const realKeyMap = {
+          epa: 'realEpa', epa3: 'realEpa3', defense: 'realDefense',
+          auto: 'realAuto', tele: 'realTele', end: 'realEnd', consistency: 'realConsistency',
+        };
+        teamTable = teamTable.map(entry => ({
+          ...entry,
+          score: weightInputs.reduce((sum, [key, weight]) => {
+            const value = entry[key] ?? 0;
+            if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+            return sum + (value * parseFloat(weight));
+          }, 0),
+          absoluteScore: weightInputs.reduce((sum, [key, weight]) => {
+            const realKey = realKeyMap[key] ?? `real${key.charAt(0).toUpperCase() + key.slice(1)}`;
+            const value = entry[realKey] ?? entry[key] ?? 0;
+            if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+            return sum + (value * parseFloat(weight));
+          }, 0),
+        }));
+
+        // Step 4: sort by weighted score
+        teamTable.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      }
+    } catch (oprError) {
+      console.error("[compute-picklist] PPR injection error:", oprError);
+    }
+  }
 
   // Fetch TBA Rankings (best effort)
   try {

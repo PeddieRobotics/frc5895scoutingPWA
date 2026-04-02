@@ -1,10 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+/* Picklist — light mode design system */
 
 .MainDiv {
     margin: 0;
-    padding: 10px;
+    padding: 16px;
     box-sizing: border-box;
     font-family: 'Montserrat', sans-serif;
+    background: #f4f1eb;
+    min-height: calc(100vh - 45px);
     display: flex;
     flex-direction: row;
     align-items: baseline;
@@ -12,37 +14,17 @@
     width: 100%;
     gap: 20px;
     max-width: 100%;
+    color: #0d1f35;
 }
-.weightsTable {
-    height: auto;
-    width: 100%;
-    font-size: 16px;
-    padding: 10px;
-    border: 1px solid gray;
-    border-radius: 10px;
-    border-spacing: 0;
-    margin: 10px 0;
-    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
-    max-width: 100%;
-    table-layout: fixed;
-}
-.weightsTable input {
-    height: 35px;
-    width: 50px;
-    border: 2px solid black;
-    border-radius: 5px;
-    text-align: center;
-    font-size: 16px;
-}
-.weightsTable td {
-    text-align: right;
-    white-space: nowrap;
-    padding: 0 3px;
-}
+
 .MainDiv h1 {
-    font-size: 28px;
+    font-size: 26px;
+    font-weight: 800;
     text-align: center;
+    color: #0d1f35;
 }
+
+/* ── Weights section ──────────────────────────── */
 .weights {
     display: flex;
     flex-direction: column;
@@ -51,10 +33,97 @@
     align-items: center;
     max-width: 100%;
     box-sizing: border-box;
-    border-radius: 5px;
+    border-radius: 12px;
     text-align: center;
     font-size: 16px;
 }
+
+.weightsTable {
+    height: auto;
+    width: 100%;
+    font-size: 15px;
+    padding: 10px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    border-spacing: 0;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+    max-width: 100%;
+    table-layout: fixed;
+}
+
+.weightsTable input {
+    height: 35px;
+    width: 50px;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 6px;
+    text-align: center;
+    font-size: 15px;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.weightsTable input:focus {
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.weightsTable td {
+    text-align: right;
+    white-space: nowrap;
+    padding: 4px 6px;
+    color: rgba(13, 31, 53, 0.85);
+    border-bottom: 1px solid rgba(160, 124, 48, 0.08);
+}
+
+.weightsTableContainer {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.weightsForm {
+    width: 100%;
+}
+
+.weightsForm button {
+    position: relative;
+    padding: 10px 20px;
+    margin: 8px 0;
+    border: 1.5px solid rgba(160, 124, 48, 0.55);
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    background: rgba(160, 124, 48, 0.1);
+    color: #a07c30;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.weightsForm button:hover {
+    background: rgba(160, 124, 48, 0.2);
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+button.recalculateIsMad {
+    background: #a07c30;
+    color: #ffffff;
+    border-color: #8a6a28;
+}
+
+button.recalculateIsMad:hover {
+    background: #8a6a28;
+}
+
+/* ── Alliance section ─────────────────────────── */
 .alliances {
     display: flex;
     flex-direction: column;
@@ -62,31 +131,51 @@
     width: 100%;
     align-items: center;
     margin: 20px 0 40px 0;
-    border: 1px solid gray;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
     padding: 15px;
-    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
     max-width: 100%;
     box-sizing: border-box;
+}
+
+.allianceTable {
+    width: 100%;
 }
 
 .allianceTable input {
     height: 35px;
     width: 70px;
-    border: 2px solid black;
-    border-radius: 5px;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 6px;
     text-align: center;
     font-size: 16px;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+}
+
+.allianceTableContainer {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 .wholeAlliance {
     font-size: 16px;
     border-spacing: 10px;
-    border: 1px solid gray;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.2);
     padding: 10px;
     border-radius: 10px;
     margin-top: 5px;
-    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.06);
     width: 100%;
 }
 
@@ -112,45 +201,51 @@
     height: 35px;
     font-family: 'Montserrat', sans-serif;
     font-size: larger;
-    font-weight: 200;
+    font-weight: 400;
     text-align: center;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 6px;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
 }
 
 .allianceMatchView label {
-    font-size: smaller;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(13, 31, 53, 0.7);
 }
 
 .allianceMatchView button {
     width: 50px;
     height: 40px;
     margin-top: 20px;
-    border: 2px solid #bd9748;
-    border-radius: 3px;
-    font-weight: 500;
-    background: #0b233b;
-    color: #bd9748;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
+    border: 1.5px solid rgba(160, 124, 48, 0.55);
+    border-radius: 6px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    background: rgba(160, 124, 48, 0.1);
+    color: #a07c30;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .allianceMatchView button:hover {
-    background: #bd9748;
-    color: #0b233b;
-    border-color: #0b233b;
+    background: rgba(160, 124, 48, 0.2);
+    border-color: rgba(160, 124, 48, 0.8);
 }
 
 .redInput {
-    border-color: red;
-    background-color: #ffd7d7;
+    border-color: rgba(192, 57, 43, 0.6) !important;
+    background-color: rgba(192, 57, 43, 0.06) !important;
 }
 
 .blueInput {
-    border-color: blue;
-    background-color: #D3DFFF;
-
+    border-color: rgba(37, 99, 235, 0.5) !important;
+    background-color: rgba(37, 99, 235, 0.06) !important;
 }
 
+/* ── Picklist container ───────────────────────── */
 .picklistContainer {
     width: 100%;
     display: flex;
@@ -167,83 +262,65 @@
     text-align: center;
 }
 
+.picklistTableContainer {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 .picklistTable {
     flex-grow: 1;
-    border-spacing: 5px 20px;
+    border-spacing: 5px 12px;
     width: 100%;
 }
 
 .picklistTable th {
-    border-bottom: 2px solid black;
-    font-size: 22px;
+    border-bottom: 2px solid rgba(160, 124, 48, 0.35);
+    font-size: 18px;
+    font-weight: 700;
+    color: #a07c30;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 8px;
 }
 
 .picklistTable td {
     text-align: center;
-    box-shadow: 0px 3px 8px rgba(0,0,0,0.2);
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.08);
     padding: 8px;
-    border-radius: 3px;
-    font-weight: 400;
-    font-size: 18px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 16px;
+    color: #0d1f35;
+    border: 1px solid rgba(160, 124, 48, 0.12);
 }
 
 .picklistTable td:first-child, .picklistTable td:nth-child(2) {
     box-shadow: none;
+    background: transparent;
+    border: none;
 }
 
 .picklistTable td:nth-child(2) {
-    background-color: #0146A0;
-    color: white;
+    background: rgba(160, 124, 48, 0.12);
+    color: #a07c30;
+    font-weight: 800;
+    border-radius: 6px;
     width: 30px;
     height: 30px;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
 }
 
 .picklistTable td:nth-child(3) {
-    border: 1px solid black;
-    background-color: #D4F0FF;
-}
-
-.weightsForm button {
-    position: relative;
-    padding: 10px;
-    margin: 5px 0;
-    border: 2px solid #bd9748;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 3px;
-    font-weight: 500;
-    background: #0b233b;
-    color: #bd9748;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.weightsForm button:hover {
-    background: #bd9748;
-    color: #0b233b;
-    border-color: #0b233b;
-}
-
-button.recalculateIsMad {
-    background: #bd9748;
-    color: #0b233b;
-    border-color: #0b233b;
-}
-
-button.recalculateIsMad:hover {
-    background: #dbb263;
-    color: #173e60;
-}
-
-.picklistTableContainer {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    background: rgba(160, 124, 48, 0.1);
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
+    font-weight: 700;
+    color: #0d1f35;
 }
 
 .arrows {
@@ -253,32 +330,31 @@ button.recalculateIsMad:hover {
 }
 
 .picklistRank {
-    /* display: flex;
-    flex-direction: row; */
     align-items: center;
     width: 50px;
     height: 50px;
     justify-content: space-between;
-    /* gap: 5px;
-    justify-self: left; */
 }
 
-/* Scatter Plot Styles */
+/* ── Scatter plot ─────────────────────────────── */
 .scatterPlotContainer {
     margin: 20px 0 40px 0;
-    border: 1px solid gray;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0px 3px 5px rgba(0,0,0,0.4);
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
 
 .scatterPlotContainer h1 {
-    font-size: 30px;
+    font-size: 22px;
+    font-weight: 800;
     margin-bottom: 10px;
     text-align: center;
+    color: #0d1f35;
 }
 
 .teamFilterContainer {
@@ -290,16 +366,24 @@ button.recalculateIsMad:hover {
 
 .teamFilterInput {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
     font-size: 14px;
     text-align: center;
     font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.teamFilterInput:focus {
+    border-color: rgba(160, 124, 48, 0.75);
 }
 
 .teamFilterInput::placeholder {
-    color: #999;
+    color: rgba(13, 31, 53, 0.4);
     font-style: italic;
 }
 
@@ -308,41 +392,28 @@ button.recalculateIsMad:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #666;
+    color: rgba(13, 31, 53, 0.4);
     font-style: italic;
 }
 
+/* ── Custom tooltip ───────────────────────────── */
 .customTooltip {
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
+    background: #0d1f35;
+    border: 1px solid rgba(189, 151, 72, 0.6);
+    padding: 10px 12px;
+    border-radius: 8px;
     font-family: 'Montserrat', sans-serif;
+    color: #e8d5a3;
+    font-size: 13px;
 }
 
 .tooltipTeam {
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #e8d5a3;
 }
 
-.authWarning {
-    background-color: #ffebee;
-    color: #d32f2f;
-    border: 1px solid #ffcdd2;
-    border-radius: 5px;
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    text-align: center;
-}
-
-.commentBox {
-    height: 50px;
-    width: 200px;
-    resize: none;
-}
-
-/* TBA Fetch Button Styles */
+/* ── TBA fetch ────────────────────────────────── */
 .tbaFetchContainer {
     display: flex;
     flex-direction: row;
@@ -361,273 +432,277 @@ button.recalculateIsMad:hover {
 }
 
 .eventCodeInput input {
-    height: 35px;
+    height: 38px;
     width: 120px;
-    border: 2px solid #0146A0;
-    border-radius: 5px;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 6px;
     text-align: center;
-    font-size: 16px;
+    font-size: 15px;
     font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.eventCodeInput input:focus {
+    border-color: rgba(160, 124, 48, 0.8);
 }
 
 .eventCodeInput label {
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(13, 31, 53, 0.75);
 }
 
 .tbaFetchButton {
-    padding: 8px 12px;
-    background: linear-gradient(100deg, #0146A0, #0066CC);
-    color: white;
+    padding: 8px 14px;
+    background: #a07c30;
+    color: #ffffff;
     border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
     font-family: 'Montserrat', sans-serif;
-    box-shadow: 0px 3px 5px rgba(0,0,0,0.2);
+    transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .tbaFetchButton:hover {
-    background: linear-gradient(100deg, #003E8F, #0058B3);
-    transform: translateY(-2px);
-    box-shadow: 0px 5px 8px rgba(0,0,0,0.3);
+    background: #8a6a28;
+    transform: translateY(-1px);
+}
+
+.tbaFetchButton:active {
+    transform: scale(0.97);
 }
 
 .tbaFetchButton:disabled {
-    background: #cccccc;
+    background: rgba(13, 31, 53, 0.15);
+    color: rgba(13, 31, 53, 0.4);
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
 }
 
-/* Add these responsive styles at the appropriate location in your CSS file */
-
-/* Main layout responsiveness */
-@media (max-width: 768px) {
-  .MainDiv {
-    padding: 5px;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    margin: 0;
-    gap: 10px;
-    overflow-x: hidden;
-  }
-  
-  .picklistContainer {
-    padding: 0;
-    margin: 0;
-    width: 100%;
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
-  
-  .weightsForm, .weights, .alliances, .scatterPlotContainer {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin-left: 0;
-    margin-right: 0;
-  }
-  
-  .scatterPlotContainer {
-    margin: 10px 0 20px 0;
-    padding: 10px;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-  
-  .picklistContainer h1,
-  .scatterPlotContainer h1,
-  .weights h1,
-  .alliances h1 {
-    font-size: 28px;
+/* ── Misc ─────────────────────────────────────── */
+.authWarning {
+    background: rgba(192, 57, 43, 0.08);
+    color: #c0392b;
+    border: 1px solid rgba(192, 57, 43, 0.35);
+    border-radius: 8px;
+    padding: 8px 12px;
     margin-bottom: 10px;
-  }
-  
-  .configSection {
-    max-width: 100%;
-    width: 100%;
-    overflow-x: hidden;
-  }
-}
-
-/* Make tables scrollable horizontally on mobile */
-.picklistTableContainer {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.weightsForm {
-  width: 100%;
-}
-
-/* Responsive weights table */
-@media (max-width: 768px) {
-  .weightsTable {
-    width: 100%;
-    font-size: 15px;
-    padding: 5px;
-    table-layout: fixed;
-    border-spacing: 0;
-  }
-  
-  .weightsTable td {
-    padding: 1px;
     font-size: 14px;
-  }
-  
-  .weightsTable input {
-    width: 40px;
-    height: 30px;
-    font-size: 14px;
-    padding: 0;
-  }
+    text-align: center;
 }
 
-/* Alliance table responsiveness */
-.allianceTable {
-  width: 100%;
+.commentBox {
+    height: 50px;
+    width: 200px;
+    resize: none;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 6px;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
+    padding: 6px 8px;
+    outline: none;
 }
 
-@media (max-width: 768px) {
-  .allianceTable input {
-    width: 100%;
-    max-width: 60px;
-  }
-  
-  .wholeAlliance {
-    width: 100%;
-  }
-}
-
-/* Responsive scatter plot */
-.scatterPlotContainer {
-  width: 100%;
-}
-
-/* Responsive picklist table */
-.picklistTable {
-  width: 100%;
-}
-
-.weightsTableContainer {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-@media (max-width: 768px) {
-  .picklistTable th {
-    font-size: 18px;
-    padding: 5px 3px;
-    white-space: nowrap;
-  }
-  
-  .picklistTable td {
-    font-size: 16px;
-    padding: 5px 3px;
-    white-space: nowrap;
-  }
-  
-  .picklistTable {
-    min-width: 800px;
-    border-spacing: 2px 10px;
-  }
-  
-  .allianceTable td,
-  .allianceTable th {
-    padding: 3px;
-  }
-}
-
-.allianceTableContainer {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-@media (max-width: 768px) {
-  .allianceTableContainer {
-    margin-bottom: 15px;
-  }
-  
-  .tbaFetchContainer {
+/* ── Scatter axis dropdowns ───────────────────── */
+.scatterAxisSelectors {
+    display: flex;
     flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 0 4px;
 }
 
-@media (max-width: 768px) {
-  .allianceMatchView {
-    flex-direction: row;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 15px;
-    margin-top: 10px;
-    width: 100%;
-  }
-  
-  .red, .blue {
-    align-items: center;
-    justify-content: flex-end;
-    margin-bottom: 0;
-    width: auto;
-  }
-
-  .allianceMatchView button {
-    margin-top: 0;
-    height: 35px;
-    align-self: flex-end;
-    width: 50px;
-  }
-  
-  .redInput, .blueInput {
-    width: 50px;
-    height: 35px;
-  }
+.scatterAxisLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(13, 31, 53, 0.65);
+    flex: 1;
+    min-width: 140px;
 }
 
-@media (max-width: 768px) {
-  .weightsForm button {
+.scatterAxisSelect {
+    padding: 5px 8px;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    border-radius: 8px;
+    background: #faf8f3;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    color: #0d1f35;
+    cursor: pointer;
+    outline: none;
     width: 100%;
-    max-width: 300px;
-    margin: 0 auto 20px;
-    display: block;
-    left: auto;
-    transform: none;
-  }
+}
+
+.scatterAxisSelect:focus {
+    border-color: rgba(160, 124, 48, 0.7);
 }
 
 .configSection {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 450px;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .configSection {
-    max-width: 100%;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-  }
+    max-width: 450px;
+    box-sizing: border-box;
 }
 
+/* ── Responsive ───────────────────────────────── */
 @media (max-width: 768px) {
-  .allianceTable {
-    min-width: 300px;
-  }
-}
+    .MainDiv {
+        padding: 5px;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        margin: 0;
+        gap: 10px;
+        overflow-x: hidden;
+    }
 
+    .picklistContainer {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+
+    .weightsForm, .weights, .alliances, .scatterPlotContainer {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .scatterPlotContainer {
+        margin: 10px 0 20px 0;
+        padding: 10px;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    .picklistContainer h1,
+    .scatterPlotContainer h1,
+    .weights h1,
+    .alliances h1 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    .configSection {
+        max-width: 100%;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .weightsTable {
+        width: 100%;
+        font-size: 14px;
+        padding: 5px;
+        table-layout: fixed;
+        border-spacing: 0;
+    }
+
+    .weightsTable td {
+        padding: 1px;
+        font-size: 13px;
+    }
+
+    .weightsTable input {
+        width: 40px;
+        height: 30px;
+        font-size: 13px;
+        padding: 0;
+    }
+
+    .allianceTable input {
+        width: 100%;
+        max-width: 60px;
+    }
+
+    .wholeAlliance {
+        width: 100%;
+    }
+
+    .picklistTable th {
+        font-size: 15px;
+        padding: 4px 3px;
+        white-space: nowrap;
+    }
+
+    .picklistTable td {
+        font-size: 14px;
+        padding: 4px 3px;
+        white-space: nowrap;
+    }
+
+    .picklistTable {
+        min-width: 800px;
+        border-spacing: 2px 8px;
+    }
+
+    .allianceTable td,
+    .allianceTable th {
+        padding: 3px;
+    }
+
+    .allianceMatchView {
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 15px;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .red, .blue {
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: 0;
+        width: auto;
+    }
+
+    .allianceMatchView button {
+        margin-top: 0;
+        height: 35px;
+        align-self: flex-end;
+        width: 50px;
+    }
+
+    .redInput, .blueInput {
+        width: 50px;
+        height: 35px;
+    }
+
+    .weightsForm button {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto 20px;
+        display: block;
+        left: auto;
+        transform: none;
+    }
+
+    .allianceTable {
+        min-width: 300px;
+    }
+
+    .tbaFetchContainer {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .allianceTableContainer {
+        margin-bottom: 15px;
+    }
+}

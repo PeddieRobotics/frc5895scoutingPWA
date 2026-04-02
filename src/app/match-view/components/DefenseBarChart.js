@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField, scope, gameId }) {
+export default function DefenseBarChart({ allianceData, colors, teamNumbers, defenseField, scope, gameId, allianceColor }) {
   const [defenseRatings, setDefenseRatings] = useState({
     team1: 0,
     team2: 0,
@@ -174,19 +174,30 @@ export default function DefenseBarChart({ allianceData, colors, teamNumbers, def
             data={data}
             margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+            <XAxis dataKey="name" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
             <YAxis
               domain={[0, 6]}
               ticks={[0, 1, 2, 3, 4, 5, 6]}
               interval={0}
+              tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
             />
-            <Tooltip formatter={(value) => value.toFixed(1)} />
+            <Tooltip
+              formatter={(value) => value.toFixed(1)}
+              contentStyle={{
+                background: '#0d1f35',
+                border: '1px solid rgba(189,151,72,0.6)',
+                borderRadius: '8px',
+                color: '#e8d5a3',
+                fontFamily: 'Montserrat',
+                fontSize: '13px',
+              }}
+            />
             <Legend />
             <Bar dataKey="team1" name={`Team ${teamNumbers[0] || 'N/A'}`} fill={colors[0]} />
             <Bar dataKey="team2" name={`Team ${teamNumbers[1] || 'N/A'}`} fill={colors[1]} />
             <Bar dataKey="team3" name={`Team ${teamNumbers[2] || 'N/A'}`} fill={colors[2]} />
-            <Bar dataKey="alliance" name="Alliance Average" fill="#000000" />
+            <Bar dataKey="alliance" name="Alliance Average" fill={allianceColor || "#7c3aed"} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -10,6 +10,13 @@ Next, configure the game collection JSON configuration file at /admin/games
 
 Please note that the PostgreSQL database keys, as well as ADMIN_PASSWORD must be defined in environment variables.
 
+Required environment variables:
+- `DATABASE_URL` — Neon PostgreSQL connection string
+- `ADMIN_PASSWORD` — Admin panel password
+
+Optional environment variables:
+- `TBA_AUTH_KEY` — The Blue Alliance API key (required when `usePPR: true` is set in the game config to enable the OPR Rankings sidebar). Obtain from https://www.thebluealliance.com/account
+
 ---
 
 # JSON Game Configuration Guide
@@ -31,6 +38,7 @@ This guide documents how to build and validate JSON game configurations for form
    - [text](#text)
    - [comment](#comment)
    - [singleSelect](#singleselect)
+   - [imageSelect](#imageselect)
    - [multiSelect](#multiselect)
    - [starRating](#starrating)
    - [qualitative](#qualitative)
@@ -54,7 +62,9 @@ This guide documents how to build and validate JSON game configurations for form
 14. [Best Practices](#best-practices)
 15. [Scout Leads Timer Workflow](#scout-leads-timer-workflow)
 16. [Scoring Requirements](#scoring-requirements)
-17. [Acknowledgements](#acknowledgements)
+17. [OPR Rankings Sidebar](#opr-rankings-sidebar)
+18. [Prescout Data & Photo Gallery](#prescout-data--photo-gallery)
+19. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -214,6 +224,8 @@ Every configuration file must have these top-level properties:
 |----------|------|-------------|---------|
 | `formTitle` | string | Title shown at the top of the scouting form | `displayName` |
 | `version` | string | Version number for tracking changes | None |
+| `tbaEventCode` | string | TBA event code (e.g. `"2026njski"`); used by `/api/get-tba-rank` and the OPR Rankings sidebar | None |
+| `usePPR` | boolean | If `true`, shows the OPR Rankings sidebar on `/scout-leads`. Requires `tbaEventCode` to be set and `TBA_AUTH_KEY` env var configured | `false` |
 | `basics` | object | Pre-match fields (like "No Show") | None |
 | `sections` | array | Main form sections (Auto, Tele, etc.) | Required for form |
 | `calculations` | object | EPA point calculation formulas | None |
@@ -342,6 +354,7 @@ A simple true/false toggle.
 | `label` | string | Yes | Display label next to checkbox |
 | `dbColumn` | object | Yes | Database column configuration |
 | `hidesForm` | boolean | No | If true, hides form sections when checked |
+| `errorStyle` | boolean | No | If true, the checkbox always renders with red danger styling (fill `rgba(255,80,80,0.12)`, border `rgba(255,120,120,0.55)`, text `#ffaaaa`) matching the DESIGN.md destructive-action palette. When used as a collapsible trigger, the surrounding collapsible box also turns red while expanded. |
 | `scoringRequirement` | object | No | Excludes scouting rows from scoring when the field value doesn't match `requiredValue`. See [Scoring Requirements](#scoring-requirements). |
 
 **Database Type:** `BOOLEAN`
@@ -778,6 +791,80 @@ A group of checkboxes where MULTIPLE options can be selected. **Each option beco
 
 ---
 
+### imageSelect
+
+A single-select field rendered over a background image (e.g., a field map for starting position selection). Options are positioned as clickable pills on top of the image. Falls back to a standard `singleSelect` if the image is unavailable.
+
+**Properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Database column name |
+| `label` | string | No | Display label |
+| `subHeader` | string | No | Section sub-header |
+| `imageTag` | string | Yes | Key referencing an uploaded image in `fieldimages_<gameName>` table |
+| `required` | boolean | No | Whether selection is required for form submission |
+| `optionLayout` | object | No | Positioning config: `{ top: "<CSS value>", distribution: "even" }` |
+| `options` | array | Yes | Array of `{ value: number, label: string }` options |
+| `dbColumn` | object | No | Database column override (default: `INTEGER`, `null`) |
+
+**Image upload:** After creating a game at `/admin/games`, an "Image Assets" section appears on the game card for each `imageTag` referenced in the config. Upload the image there. Images are stored as base64 in a per-game `fieldimages_<gameName>` table (max 5 MB).
+
+**API routes:**
+
+All routes require a valid user session (`credentials: 'include'`). The `/api/admin/field-images` routes are accessible from the admin page (which gates access by admin password), but the API itself validates via `validateAuthToken` (any authenticated session), not the admin password.
+
+- `POST /api/admin/field-images` — Upload/replace image; body JSON: `{ gameId, imageTag, imageData (base64), mimeType }`. Max 5 MB. Upserts by `imageTag`.
+- `GET /api/admin/field-images?gameId=<id>` — List metadata for all field images (no image data)
+- `DELETE /api/admin/field-images?gameId=<id>&tag=<tag>` — Delete image by tag
+- `GET /api/field-images?gameId=<id>&tag=<tag>` — Fetch full image including base64 data (any authenticated user; `gameId` is optional and falls back to the active game)
+
+**Display config (`display.teamView.sections.<sectionKey>.imageSelectDisplay`):**
+
+Each entry in the array describes one `imageSelect` field to aggregate for team-view display.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `field` | string | Yes | Field name (must match an `imageSelect` field in the config) |
+| `label` | string | No | Section heading shown above the distribution boxes |
+| `valueMapping` | object | Yes | Maps each integer option value (as string key) to a display label |
+
+```json
+"imageSelectDisplay": [{
+  "field": "autostartpos",
+  "label": "Starting Position Distribution",
+  "valueMapping": { "0": "Trench (L)", "1": "Left Bump", "2": "Hub", "3": "Right Bump", "4": "Trench (R)" }
+}]
+```
+
+In team-view, each `imageSelectDisplay` entry renders as a row of alternating-color boxes showing the selection percentage per option across all scouted matches.
+
+**Example:**
+
+```json
+{
+  "type": "imageSelect",
+  "name": "autostartpos",
+  "label": "Starting Position",
+  "subHeader": "Starting Position",
+  "required": true,
+  "imageTag": "field_map",
+  "optionLayout": { "top": "33%", "distribution": "even" },
+  "options": [
+    { "value": 0, "label": "Trench (L)" },
+    { "value": 1, "label": "Left Bump" },
+    { "value": 2, "label": "Hub" },
+    { "value": 3, "label": "Right Bump" },
+    { "value": 4, "label": "Trench (R)" }
+  ],
+  "dbColumn": { "type": "INTEGER", "default": null }
+}
+```
+
+**Database column created:** `autostartpos` (INTEGER)
+
+---
+
 ### starRating
 
 A star-based rating system (1-N stars).
@@ -789,15 +876,20 @@ A star-based rating system (1-N stars).
 | `type` | string | Yes | Must be `"starRating"` |
 | `name` | string | Yes | Database column name |
 | `label` | string | Yes | Display label |
-| `description` | string | No | Tooltip or helper text |
+| `description` | string | No | Italic helper text shown below the label |
+| `zeroLabel` | string | No | Text shown when no stars are selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero. |
+| `max` | integer | No | Maximum star count. Defaults to `6`. Must be ≥ 2. |
+| `ratingLabels` | string[] | No | Array of exactly `max` strings (default 6) to override the default Low→High scale labels. Shown below the stars when a rating is selected. |
 | `minWhenVisible` | number | No | Minimum rating required when visible |
 | `inverted` | boolean | No | If true, lower is better (affects display coloring) |
 | `isConfidenceRating` | boolean | No | Marks this field as the primary color controller for the `/scout-leads` entries section background. Supported on `starRating`/`qualitative` (red→green gradient) and `checkbox` (boolean ratio, see `invertColor`). At most one field per config. |
 | `dbColumn` | object | Yes | Database column configuration |
 
-> **Star ratings are always out of 6.** The `Qualitative` component renders exactly 6 stars for both `starRating` and `qualitative` field types. Do not add a `max` property — it is not used by the component, the form, or any display/calculation logic.
+> **Star count is configurable.** Use the optional `max` property to set the number of stars (default: `6`). All rendering, editing, and inversion logic uses the actual `max` value. If `ratingLabels` is provided, it must have exactly `max` entries.
 
 **Database Type:** `INTEGER`
+
+**Default rating labels (1→6):** `"Low"`, `"Relatively Low"`, `"Just Below Average"`, `"Just Above Average"`, `"Relatively High"`, `"High"`
 
 **Example:**
 
@@ -807,7 +899,21 @@ A star-based rating system (1-N stars).
   "name": "driverskill",
   "label": "Driver Skill",
   "description": "How well the driver controlled the robot",
-  "max": 6,
+  "dbColumn": { "type": "INTEGER", "default": null }
+}
+```
+
+**Example with custom labels:**
+
+```json
+{
+  "type": "starRating",
+  "name": "defenseplayed",
+  "label": "Defense Played",
+  "description": "Ability to Play Defense",
+  "zeroLabel": "Did Not Defend",
+  "ratingLabels": ["Very Poor", "Poor", "Below Average", "Above Average", "Good", "Elite"],
+  "minWhenVisible": 1,
   "dbColumn": { "type": "INTEGER", "default": null }
 }
 ```
@@ -820,22 +926,20 @@ A star-based rating system (1-N stars).
   "name": "aggression",
   "label": "Aggression",
   "description": "How aggressive/dangerous the robot is (lower is safer)",
-  "max": 6,
   "inverted": true,
   "dbColumn": { "type": "INTEGER", "default": null }
 }
 ```
 
-**Renders as:** Clickable stars. User clicks to select rating (1 to max).
+**Renders as:** Clickable stars. User clicks to select rating (1 to 6). The label below updates to reflect the selected value (or `zeroLabel` when nothing is selected).
 
 **About `minWhenVisible`:** Use this inside collapsible sections to require a rating when the section is expanded. Example: If defense is checked, require a defense rating.
-
 
 ---
 
 ### qualitative
 
-Identical to `starRating` - an alias for the same component. Use whichever name is more descriptive for your use case.
+Identical to `starRating` - an alias for the same component. Supports all the same properties including `zeroLabel` and `ratingLabels`. Use whichever name is more descriptive for your use case.
 
 ---
 
@@ -956,6 +1060,8 @@ A section that expands/collapses based on a trigger field (usually a checkbox). 
 - When checked: The checkbox plus all content fields appear below it
 
 **Use `minWhenVisible`:** Add `"minWhenVisible": 1` to star ratings inside collapsibles to require a rating when the section is visible.
+
+**Use `errorStyle` on the trigger:** Add `"errorStyle": true` to the trigger checkbox to style it with red danger colors (instead of the default gold/green). While expanded, the surrounding collapsible box also adopts a red background and border. Use this for destructive or warning-level actions (e.g. "Made a Mistake?").
 
 ---
 
@@ -1227,6 +1333,7 @@ Key responsibilities:
     "epaBreakdown": ["auto", "tele", "end"],
     "epaThresholds": { "overall": 12, "auto": 6, "tele": 10, "end": 6 },
     "piecePlacement": {
+      "label": "Piece Placement",
       "bars": [
         { "label": "L4", "autoField": "autol4success", "teleField": "telel4success" },
         { "label": "Fuel", "autoField": "auto.avgFuel", "teleField": "tele.avgFuel" }
@@ -1250,10 +1357,33 @@ Key responsibilities:
 ```
 
 Notes:
+- `piecePlacement.label` (string, optional): Title shown above the Piece Placement section in team-view. Defaults to `"Piece Placement"`.
+- `piecePlacement.<groupName>.avgLabel` (string, optional): Column header for the average column in the metric group TwoByTwo table (e.g., the algae stats table). Defaults to `"Average"`. Example: `"avgLabel": "Avg Algae"` on the `algae` group in a Reefscape config.
 - `piecePlacement.bars[*].autoField` and `teleField` can be:
   - raw form fields (for example `autol4success`)
   - computed dotted paths from aggregated output (for example `auto.avgFuel`)
 - Use `commentFields` instead of legacy `comments` when possible.
+
+#### `epaChartOverlayOptions` — PPR/EPA chart overlay selector
+
+An optional array of `{ field, label }` objects that adds a runtime overlay line to the PPR Over Time chart on `/team-view`, `/match-view`, and `/compare`. A pill-style selector appears above the chart; selecting an option renders a dashed second line on a right-side Y-axis.
+
+`field` can be:
+- `"auto"`, `"tele"`, or `"end"` — reuses the existing per-period EPA/PPR time series (left Y-axis scale, computed from existing over-time arrays)
+- Any field name from `qualitativeDisplay` (e.g. `"defenseplayed"`, `"driving"`) — plots per-match star-rating averages (1–6 scale) on a separate right Y-axis
+
+Omit or set to `[]` to hide the selector entirely.
+
+```json
+"epaChartOverlayOptions": [
+  { "field": "auto",          "label": "Auto" },
+  { "field": "tele",          "label": "Tele" },
+  { "field": "defenseplayed", "label": "Defense Rating" },
+  { "field": "driving",       "label": "Driving" }
+]
+```
+
+Note: The Auto Over Time and Tele Over Time sub-charts in team-view do **not** get an overlay selector — only the main PPR/EPA Over Time chart.
 
 #### `autoPie` — singleSelect outcome distribution chart
 
@@ -1311,11 +1441,17 @@ Key responsibilities:
       ]
     },
     "endgamePie": {
+      "label": "Endgame %",
       "labels": ["None", "Fail", "Park", "Shallow", "Deep"],
       "keys": ["none", "fail", "park", "shallow", "deep"]
     },
     "qualitativeFields": ["defenseplayed", "maneuverability"],
     "defenseBarField": "defenseplayed",
+    "showEpaOverTime": true,
+    "teamStats": [
+      { "label": "Defense", "key": "qualitative.defenseplayed", "format": "number" },
+      { "label": "Leave %", "key": "leave", "format": "percent" }
+    ],
     "rankingPoints": [
       {
         "label": "Auto",
@@ -1338,6 +1474,15 @@ Key responsibilities:
   }
 }
 ```
+
+Per-team card config-driven sections (all optional):
+- `endgamePie.label` (string, optional): Title shown above the endgame pie chart in each team card. Defaults to `"Endgame %"`. The entire endgame section is hidden when `endgamePie.keys` is absent or empty.
+- `piecePlacement.bars` — piece placement section is hidden when `bars` is empty or omitted.
+- `showEpaOverTime` (bool, default `false`): When `true`, each team card in match-view displays a per-match EPA/PPR line chart. When `usePPR: true`, uses TBA-derived adjusted-contribution data; otherwise uses scouted EPA. PPR over-time injection is skipped (avoiding TBA calls) when this flag is `false`.
+- `teamStats` (array, default `[]`): Additional stat rows rendered at the bottom of each team card. Each entry:
+  - `label` (string): Display label shown on the left.
+  - `key` (string): Dot-notation path into the per-team data object. Examples: `"qualitative.defenseplayed"` for a qualitative rating average, `"leave"` for a top-level field. Field names are lowercase per DB convention.
+  - `format` (`"number"` | `"percent"`): `"percent"` multiplies by 100 then appends `%` — use this for 0–1 fraction fields like `leave`. `"number"` rounds to one decimal place — use this for qualitative averages and other numeric values.
 
 Supported ranking point `type` values:
 - `allLeaveAndCoral`
@@ -1383,31 +1528,43 @@ Key responsibilities:
 
 ### Compare Configuration
 
-Key responsibilities:
-- Multi-team bar comparisons
-- Scoring expression chart
-- Endgame comparison chart
+The `compare` key drives the `/compare` page, which shows side-by-side pill cards with deltas for two teams.
 
 ```json
 {
   "compare": {
-    "metricsChart": [
-      { "key": "avgEpa", "label": "EPA" },
-      { "key": "avgAuto", "label": "Auto" }
+    "sections": [
+      {
+        "label": "Overall",
+        "stats": [
+          { "key": "avgEpa", "label": "PPR" },
+          { "key": "avgAuto", "label": "Auto" },
+          { "compute": "endPlacement.none", "label": "None %", "format": "percent", "invertDelta": true }
+        ]
+      }
     ],
-    "scoringChart": [
-      { "key": "coral", "label": "Coral", "compute": "auto.coral.total + tele.coral.total" }
-    ],
-    "endgameChart": {
-      "metrics": ["None", "Park", "Deep"],
-      "keys": ["none", "park", "deep"],
-      "endgameSource": "endPlacement",
-      "fallbackSource": "endgame"
-    },
-    "defenseField": "defenseplayed"
+    "qualitativeSection": {
+      "label": "Qualitative",
+      "stats": [
+        { "label": "Defense Played", "defenseField": "defenseplayed" }
+      ]
+    }
   }
 }
 ```
+
+**`sections[]`** — array of `{ label, stats[] }` groups rendered as pill-card sections.
+
+Each stat in `stats[]` supports:
+- `label` (string, required): Display label.
+- `key` (string): Direct property on the per-team data object (e.g. `"avgEpa"`).
+- `compute` (string): Dot-path or `"path1 + path2"` expression into the team data object (e.g. `"endPlacement.none"`).
+- `format` (`"number"` | `"percent"`): `"percent"` appends `%`; `"number"` (default) shows one decimal.
+- `invertDelta` (boolean, default `false`): When `true`, the delta color is inverted — a positive delta is shown in red and a negative delta in green. Use this for stats where higher is worse (e.g. "None %" or "Failed %" in endgame).
+
+**`qualitativeSection`** — `{ label, stats[] }` for qualitative data.
+
+Each stat supports `defenseField` (renders avg star rating pill + per-entry hover tooltip), as well as `key`/`compute`/`format`/`invertDelta` for plain numeric stats.
 
 ### API Aggregation Configuration
 
@@ -1496,7 +1653,7 @@ When you upload a configuration, it goes through validation. Here are common err
 **Fix:** Each field name must be unique across the entire configuration. Rename one of the duplicates.
 
 ### Error: "Invalid field type: X"
-**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
+**Fix:** Use one of the valid types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `imageSelect`, `multiSelect`, `starRating`, `qualitative`, `table`, `collapsible`.
 
 ### Error: "holdTimer scoutLeads must be an object"
 **Fix:** If you include `scoutLeads`, define it as an object:
@@ -2098,6 +2255,9 @@ Both requirement types operate independently. A scouting row must satisfy **all*
 - `invertColor` is only meaningful on `checkbox` fields with `isConfidenceRating: true`. Using it on any other field type produces a **warning** and is ignored.
 - `scoringRequirement` is only supported on `checkbox` fields. Using it on any other type is a **warning** and is ignored.
 - `scoringRequirement.requiredValue` must be a boolean. Any other type is a validation **error**.
+- `starRating`/`qualitative` `zeroLabel` must be a string when present. Any other type is a **warning** and is ignored.
+- `starRating`/`qualitative` `max` must be an integer ≥ 2 when present. Invalid values produce a **warning** and the default of 6 is used.
+- `starRating`/`qualitative` `ratingLabels` must be an array of exactly `max` strings (default 6) when present. Wrong length or non-string entries produce a **warning** and the default Low→High scale is used instead.
 
 ---
 
@@ -2155,10 +2315,168 @@ A: Yes! Field names only need to be unique within a single configuration. Differ
 
 ---
 
+## OPR Rankings Sidebar
+
+When `usePPR: true` is set in the game config, the `/scout-leads` page shows an **OPR Rankings** sidebar to the right of the main content column.
+
+### Setup
+
+1. Set `"tbaEventCode"` to your event code (e.g. `"2026njski"`) in your game config JSON.
+2. Set `"usePPR": true` in the game config JSON.
+3. Set the `TBA_AUTH_KEY` environment variable to your TBA API key (obtain from https://www.thebluealliance.com/account).
+
+### How It Works
+
+- On page load, the sidebar fetches all **played** matches for the configured event from The Blue Alliance API.
+- Click **"▼ Show Matches"** to expand the match list. Each row shows the match identifier, and the red and blue alliance scores.
+- Each match has a **✓/✗ toggle** to include or exclude it from the OPR calculation.
+- Click **Recalculate** to run OPR computation client-side using the currently enabled matches.
+- The results appear as a ranked list of teams with their OPR values (higher = better).
+
+### Algorithm
+
+OPR is solved as a least-squares system: **X = (Mᵀ·M)⁻¹ · Mᵀ · s**
+
+- **M** — match participation matrix (2 rows per match, one per alliance; column j = 1 if team j played)
+- **s** — score vector (one entry per alliance per match)
+- **X** — OPR value per team
+
+The system is solved using Gaussian elimination with partial pivoting (no external dependencies). If the matrix is singular (too few matches relative to teams), the sidebar shows a message to include more matches.
+
+### Config Example
+
+```json
+{
+  "gameName": "my_game_2026",
+  "displayName": "MY GAME 2026",
+  "tbaEventCode": "2026njski",
+  "usePPR": true,
+  ...
+}
+```
+
+---
+
+## Prescout Data & Photo Gallery
+
+The prescout feature lets admin users bulk-import pre-event scouting data from a spreadsheet and any authenticated user upload robot photos. This data is then surfaced alongside scouting data on `/team-view`, `/compare`, and `/scout-leads`.
+
+### Database Tables
+
+Both tables are created automatically when a game config is activated (inside `createGame()` in `src/lib/game-config.js`) and dropped when the game is deleted. Table names are generated by `sanitizePrescoutTableName()` and `sanitizePhotosTableName()` in `src/lib/schema-generator.js`.
+
+| Table pattern | Key columns | Notes |
+|---------------|-------------|-------|
+| `prescout_<gameName>` | `team_number UNIQUE`, `data` (JSONB), `uploaded_at` | One row per team; upsert on re-upload. No `game_name` column — isolation is by table name. |
+| `photos_<gameName>` | `team_number`, `photo_data` (base64 TEXT), `mime_type`, `uploaded_by`, `uploaded_at` | Multiple photos per team allowed. No `game_name` column. |
+
+### Prescout Spreadsheet Format
+
+Upload a `.xlsx` file with a sheet named exactly **`Prescout`** (case-sensitive). The sheet uses a **transposed** layout:
+
+```
+         | B        | C        | D        | ...
+---------+----------+----------+----------+
+Row 1    | 1234     | 5678     | 9012     |   ← team numbers (integer or float OK)
+---------+----------+----------+----------+
+Row 2    | Value A  | Value B  | Value C  |   ← data for field named in A2
+Row 3    | Value A  | Value B  | Value C  |   ← data for field named in A3
+...      | ...      | ...      | ...      |
+```
+
+- **Column A**: field names (row 1 cell A1 is ignored).
+- **Row 1 from column B onward**: team numbers. Floats are rounded to integers (e.g. `1234.0` → `1234`).
+- All cell values are stored as strings. Empty cells are stored as `null` and are filtered out in the UI.
+- Re-uploading replaces (`ON CONFLICT DO UPDATE`) existing data for matching `team_number` within the per-game table.
+- Requires the **Admin password** (`ADMIN_PASSWORD` env var).
+
+### Admin Page — `/admin/prescout`
+
+Accessible via the "Prescout" button in the `/admin/games` header. Requires admin authentication.
+
+Features:
+- **Upload .xlsx**: select file → the Prescout sheet is parsed and data is upserted for the active game.
+- **View imported teams**: displayed as a pill list; count shown in the card header.
+- **Clear all data**: two-tap confirmation button calls `DELETE /api/prescout?gameName=<name>`, removing all prescout rows for the active game (photos are unaffected).
+
+### API Routes
+
+#### Prescout Data
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/prescout?team=<num>&gameId=<id>` | Any authenticated user | Returns `{ data, uploadedAt }` for a team. `gameId` is optional; defaults to active game. |
+| `DELETE` | `/api/prescout?gameName=<name>` | Admin only | Deletes all prescout rows for a game. |
+| `POST` | `/api/prescout/upload` | Admin only | Accepts `multipart/form-data` with `file` (.xlsx) and `gameName`. Returns `{ imported, teams[] }`. |
+| `GET` | `/api/prescout/teams?gameName=<name>` | Admin only | Returns `{ teams[] }` — sorted list of team numbers with prescout data for the game. |
+
+#### Photos
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/prescout/photos?team=<num>&gameId=<id>` | Any authenticated user | Returns `{ photos[] }` — metadata only (no image data). Each item: `{ id, filename, mime_type, uploaded_by, uploaded_at }`. |
+| `POST` | `/api/prescout/photos` | Any authenticated user | Accepts `multipart/form-data` with `file` (image), `team`, and `gameName`. Returns `{ photo }` (metadata). Max 3 MB. |
+| `GET` | `/api/prescout/photos/[id]?gameId=<id>` | Any authenticated user | Returns full photo record including `photo_data` (base64). `gameId` required to resolve per-game table. Used by the gallery for lazy loading. |
+| `DELETE` | `/api/prescout/photos/[id]?gameId=<id>` | Any authenticated user | Deletes the photo. `gameId` required. Returns `{ deleted: true }`. |
+
+### Components
+
+#### `PrescoutSection` (`src/app/team-view/components/PrescoutSection.js`)
+
+A collapsible key-value table component. Displays all non-null fields from a team's prescout JSONB object.
+
+- Props: `prescoutData` (object or null)
+- Shown on `/team-view` (read-only) and `/compare` (one per team, at the bottom of each column).
+- Renders "No prescout data for this team." when `prescoutData` is null or all fields are empty.
+
+#### `PhotoGallery` (`src/app/team-view/components/PhotoGallery.js`)
+
+A modal photo gallery with lazy loading and a fullscreen lightbox.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `photos` | array | Metadata objects from `GET /api/prescout/photos` |
+| `teamNumber` | number | Displayed in modal header |
+| `readOnly` | boolean | When `true`, hides delete button and upload UI (default: `false`) |
+| `gameId` | string/number | Game config ID; passed to per-game photo API routes for table resolution |
+| `gameName` | string | Required to enable upload UI; omit or leave empty to hide it |
+| `onDelete` | async function | Called with `id` after successful delete; triggers parent refetch |
+| `onUpload` | async function | Called with `File` after user selects a file; triggers parent refetch |
+| `uploadRef` | ref | Optional — parent can call `uploadRef.current()` to open the file picker |
+
+**Behavior:**
+- A "Photos (N)" camera-icon button triggers the modal.
+- Photos are lazy-loaded from `/api/prescout/photos/[id]?gameId=<id>` when the modal opens.
+- Clicking a loaded thumbnail opens a fullscreen lightbox overlay.
+- Delete requires a two-step confirmation (delete icon → "Delete" / "Cancel").
+- Upload: only available when `readOnly=false`, `gameName` is set, and `onUpload` is provided. Image files only; client-side 3 MB check mirrors the server limit. Escape closes the lightbox or (if no lightbox) the modal.
+
+### Page Integration
+
+| Page | Prescout data | Photos |
+|------|--------------|--------|
+| `/team-view` | `PrescoutSection` shown below scouting stats | `PhotoGallery` button (`readOnly=true`) in team header |
+| `/compare` | `PrescoutSection` per team at bottom of each column | `PhotoGallery` button per team (`readOnly=true`) |
+| `/scout-leads` | Not shown | `PhotoGallery` with `readOnly=false` (upload + delete enabled) per team entry card |
+| `/admin/prescout` | Upload, view, clear via admin page | Not shown |
+
+### Notes
+
+- The `xlsx` (SheetJS) npm package is used for spreadsheet parsing server-side.
+- Photos are stored as base64 strings in PostgreSQL (`TEXT` column). The 3 MB limit applies per photo. No external object storage is used.
+- `uploaded_by` on photos is set to the authenticated team's name at upload time (`teamName` from `validateAuthToken`).
+- Prescout and photo data are scoped per game by table name (`prescout_<gameName>`, `photos_<gameName>`). Deleting a game from the admin panel drops both tables. There is no `game_name` column inside these tables.
+
+---
+
 ## Acknowledgements
 
 This project is based on the scouting system originally developed by **FRC Team 2485 - Overclocked**. Their work served as the foundation for this app, and we're grateful for the open-source culture in the FRC community that makes projects like this possible.
 
 - GitHub: [https://github.com/team2485/](https://github.com/team2485/)
+
+The OPR viewer tool included in this repository was originally created by **Jayden Li (glolichen)**, used under the MIT License.
+
+- GitHub: [https://github.com/glolichen/frc-opr-viewer](https://github.com/glolichen/frc-opr-viewer)
 
 ---

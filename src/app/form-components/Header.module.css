@@ -1,25 +1,29 @@
+/* Section header — bold gold with gradient rule */
+
 .header {
     text-align: center;
-    justify-content: center;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    font-size: 45px;
+    width: 100%;
+    margin-top: 28px;
+    margin-bottom: 4px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    color: #bd9748;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .header hr {
-    min-width: 400px;
-    width: 60%;
-    margin: 0 auto;
+    width: 65%;
+    max-width: 320px;
+    margin: 6px auto 0;
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #bd9748, transparent);
+    opacity: 0.55;
 }
 
 @media (max-width: 480px) {
-    .header hr {
-        width: 280px;
-        min-width: 280px;
-        margin: 0 auto;
-    }
-    
-    .header {
-        font-size: 36px;
-    }
+    .header { font-size: 24px; }
+    .header hr { width: 78%; max-width: 260px; }
 }

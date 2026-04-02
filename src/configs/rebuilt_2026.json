@@ -1,7 +1,13 @@
 {
   "gameName": "rebuilt_2026",
   "displayName": "REBUILT 2026",
-  "tbaEventCode": "2026rebu",
+  "tbaEventCode": "2026njwas",
+  "usePPR": true,
+  "pprBreakdownFields": {
+    "auto": "totalAutoPoints",
+    "tele": "totalTeleopPoints",
+    "end": "endGameTowerPoints"
+  },
   "formTitle": "KUNPENSCOUTER",
   "version": "1.0",
   "basics": {
@@ -29,41 +35,21 @@
       },
       "fields": [
         {
-          "type": "holdTimer",
-          "name": "autofuelsuccess",
-          "label": "Auto Fuel (s)",
-          "buttonLabel": "Hold While Shooting Auto Fuel",
-          "inline": true,
-          "buttonColor": "#2da44e",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Balls / Second",
-            "placeholder": "e.g. 2.40",
-            "defaultRate": 0,
-            "group": "Fuel",
-            "groupLabel": "Fuel Scoring",
-            "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
-            }
-          }
-        },
-        {
-          "type": "holdTimer",
-          "name": "autopasssuccess",
-          "label": "Auto Pass (s)",
-          "buttonLabel": "Hold While Passing Auto",
-          "inline": true,
-          "buttonColor": "#ff7c61",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          }
+          "type": "imageSelect",
+          "name": "autostartpos",
+          "label": "Starting Position",
+          "subHeader": "Starting Position",
+          "required": true,
+          "imageTag": "field_map",
+          "optionLayout": { "top": "33%", "distribution": "even" },
+          "options": [
+            { "value": 0, "label": "Trench (L)" },
+            { "value": 1, "label": "Left Bump" },
+            { "value": 2, "label": "Hub" },
+            { "value": 3, "label": "Right Bump" },
+            { "value": 4, "label": "Trench (R)" }
+          ],
+          "dbColumn": { "type": "INTEGER", "default": null }
         },
         {
           "type": "multiSelect",
@@ -87,6 +73,57 @@
               }
             }
           ]
+        },
+        {
+          "type": "collapsible",
+          "id": "autoShootOnTheMoveSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "autoshootonthemove",
+            "label": "Shooting on the Move?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "autoshootonthemoverating",
+              "label": "Shooting While Moving (Auto)",
+              "description": "How well did the robot maintain speed and accuracy while shooting on the move during auto?",
+              "max": 4,
+              "ratingLabels": [
+                "Robot slows significantly AND most shots miss while moving",
+                "Robot maintains speed OR accuracy, but not both",
+                "Robot maintains moderate speed and lands most shots",
+                "Robot maintains full speed with consistent shot accuracy"
+              ],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "starRating",
+          "name": "autoshootingrate",
+          "label": "Shooting Rate (Auto)",
+          "description": "Estimated average fuel pieces scored per second during autonomous period",
+          "max": 5,
+          "ratingLabels": [
+            "Under 1 fuel/sec",
+            "1-4 fuel/sec",
+            "5-10 fuel/sec",
+            "11-20 fuel/sec",
+            "20+ fuel/sec"
+          ],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
         },
         {
           "type": "singleSelect",
@@ -124,41 +161,123 @@
       },
       "fields": [
         {
-          "type": "holdTimer",
-          "name": "telefuelsuccess",
-          "label": "Tele Fuel (s)",
-          "buttonLabel": "Hold While Shooting Tele Fuel",
-          "inline": true,
-          "buttonColor": "#2da44e",
-          "precision": 2,
-          "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
-          },
-          "scoutLeads": {
-            "rateLabel": "Balls / Second",
-            "placeholder": "e.g. 2.70",
-            "defaultRate": 0,
-            "group": "Fuel",
-            "groupLabel": "Fuel Scoring",
+          "type": "collapsible",
+          "id": "teleShootOnTheMoveSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "teleshootonthemove",
+            "label": "Shooting on the Move?",
             "dbColumn": {
-              "type": "NUMERIC(10,4)",
-              "default": 0
+              "type": "BOOLEAN",
+              "default": false
             }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "teleshootonthemoverating",
+              "label": "Shooting While Moving (Tele)",
+              "description": "How well did the robot maintain speed and accuracy while shooting on the move during teleop?",
+              "max": 4,
+              "ratingLabels": [
+                "Robot slows significantly AND most shots miss while moving",
+                "Robot maintains speed OR accuracy, but not both",
+                "Robot maintains moderate speed and lands most shots",
+                "Robot maintains full speed with consistent shot accuracy"
+              ],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "starRating",
+          "name": "teleshootingrate",
+          "label": "Shooting Rate (Tele)",
+          "description": "Estimated fuel pieces scored per second during teleop",
+          "max": 5,
+          "ratingLabels": [
+            "Under 1 fuel/sec",
+            "1-4 fuel/sec",
+            "5-10 fuel/sec",
+            "11-20 fuel/sec",
+            "20+ fuel/sec"
+          ],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
           }
         },
         {
-          "type": "holdTimer",
-          "name": "telepasssuccess",
-          "label": "Tele Pass (s)",
-          "buttonLabel": "Hold While Passing Tele",
-          "inline": true,
-          "buttonColor": "#ff7c61",
-          "precision": 2,
+          "type": "starRating",
+          "name": "driving",
+          "label": "Driver Spatial Awareness",
+          "description": "Driver's field navigation without blocking teammates or taking inefficient paths",
+          "max": 4,
+          "ratingLabels": [
+            "Frequently blocks teammates and takes inefficient paths",
+            "Occasionally blocks teammates or takes suboptimal routes",
+            "Rarely blocks teammates and usually takes efficient paths",
+            "Never blocks teammates and consistently takes optimal paths"
+          ],
           "dbColumn": {
-            "type": "NUMERIC(10,3)",
-            "default": 0
+            "type": "INTEGER",
+            "default": null
           }
+        },
+        {
+          "type": "comment",
+          "name": "drivingcomments",
+          "label": "Driving Comments",
+          "dbColumn": {
+            "type": "TEXT",
+            "default": null
+          }
+        },
+        {
+          "type": "collapsible",
+          "id": "passingSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "passing",
+            "label": "Did the Robot Pass?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "passingrating",
+              "label": "Passing",
+              "description": "Ability to pass fuel to consistent target zone across distance",
+              "max": 4,
+              "ratingLabels": [
+                "Rarely succeed passing attempts",
+                "Passes from Neutral Zone or farther, but hit inconsistent target",
+                "Passes consistently from Neutral Zone to target zone",
+                "Makes consistent cross-court passes with accurate placement"
+              ],
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
+                "default": null
+              }
+            },
+            {
+              "type": "comment",
+              "name": "passingcomments",
+              "label": "Passing Comments",
+              "dbColumn": {
+                "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
         },
         {
           "type": "collapsible",
@@ -186,7 +305,15 @@
               "type": "starRating",
               "name": "defenseplayed",
               "label": "Defense Played",
-              "description": "Ability to Play Defense",
+              "description": "How effectively the robot disrupts opponent scoring OR movement when playing defense",
+              "zeroLabel": "Did Not Defend",
+              "max": 4,
+              "ratingLabels": [
+                "Defended robot continues normal scoring/movement",
+                "Defended robot's scoring/movement is somewhat disrupted",
+                "Defended robot's scoring/movement is significantly disrupted",
+                "Defended robot is consistently unable to score/move freely"
+              ],
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
@@ -286,6 +413,58 @@
           ]
         },
         {
+          "type": "starRating",
+          "name": "shootingcapacity",
+          "label": "Fuel Capacity (Per Cycle)",
+          "description": "Maximum pieces of fuel the robot held and transported in a single scoring run",
+          "max": 5,
+          "ratingLabels": [
+            "0-5 pieces",
+            "6-15 pieces",
+            "16-30 pieces",
+            "31-50 pieces",
+            "50+ pieces"
+          ],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "shootingaccuracy",
+          "label": "Shooting Accuracy",
+          "description": "% of attempted shots that successfully scored, observed across the full match",
+          "max": 4,
+          "ratingLabels": [
+            "Under 50% scored",
+            "50-75% scored",
+            "75-95% scored",
+            "95+% scored"
+          ],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
+          "type": "starRating",
+          "name": "shootingrange",
+          "label": "Effective Shooting Range",
+          "description": "Estimated distance from which the robot can consistently score into the hub",
+          "max": 4,
+          "ratingLabels": [
+            "Pressed against hub",
+            "Multiple specific positions within alliance zone",
+            "Most of the alliance zone excluding far corners",
+            "Anywhere within the alliance zone"
+          ],
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
+        },
+        {
           "type": "collapsible",
           "id": "breakdownSection",
           "trigger": {
@@ -317,6 +496,7 @@
             "label": "Made a Mistake?",
             "isConfidenceRating": true,
             "invertColor": true,
+            "errorStyle": true,
             "scoringRequirement": {
               "requiredValue": false
             },
@@ -347,97 +527,18 @@
           }
         }
       ]
-    },
-    {
-      "id": "qualitative",
-      "header": "Qualitative Ratings",
-      "showWhen": {
-        "field": "noshow",
-        "equals": false
-      },
-      "hidden": true,
-      "description": "These fields are for internal tracking and not shown on the main form",
-      "fields": [
-        {
-          "type": "starRating",
-          "name": "shootingspeed",
-          "label": "Shooting Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "shootingaccuracy",
-          "label": "Shooting Accuracy",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "intakespeed",
-          "label": "Intake Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "climbspeed",
-          "label": "Climb Speed",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "maneuverability",
-          "label": "Maneuverability",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "defenseevasion",
-          "label": "Defense Evasion",
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        },
-        {
-          "type": "starRating",
-          "name": "aggression",
-          "label": "Aggression",
-          "inverted": true,
-          "dbColumn": {
-            "type": "INTEGER",
-            "default": null
-          }
-        }
-      ]
     }
   ],
   "calculations": {
     "auto": {
-      "formula": "autofuelsuccess + (autoclimb==1?15:0)",
+      "formula": "(autoclimb==1?15:0)",
       "fields": [
-        "autofuelsuccess",
         "autoclimb"
       ]
     },
     "tele": {
-      "formula": "telefuelsuccess",
-      "fields": [
-        "telefuelsuccess"
-      ]
+      "formula": "0",
+      "fields": []
     },
     "end": {
       "type": "mapping",
@@ -453,6 +554,38 @@
   },
   "display": {
     "teamView": {
+      "epaChartOverlayOptions": [
+        {
+          "field": "auto",
+          "label": "Auto PPR"
+        },
+        {
+          "field": "tele",
+          "label": "Teleop PPR"
+        },
+        {
+          "field": "usestrench",
+          "label": "Trench Mobility",
+          "allowZero": true
+        },
+        {
+          "field": "usesbump",
+          "label": "Bump Mobility",
+          "allowZero": true
+        },
+        {
+          "field": "defenseplayed",
+          "label": "Defense Rating"
+        },
+        {
+          "field": "driving",
+          "label": "Driving"
+        },
+        {
+          "field": "passingrating",
+          "label": "Passing"
+        }
+      ],
       "epaBreakdown": [
         "auto",
         "tele",
@@ -479,12 +612,24 @@
           "field": "defensecomments",
           "dataKey": "defenseComments",
           "title": "Defense Comments"
+        },
+        {
+          "field": "drivingcomments",
+          "dataKey": "drivingComments",
+          "title": "Driving Comments"
+        },
+        {
+          "field": "passingcomments",
+          "dataKey": "passingComments",
+          "title": "Passing Comments"
         }
       ],
       "comments": [
         "generalcomments",
         "breakdowncomments",
-        "defensecomments"
+        "defensecomments",
+        "drivingcomments",
+        "passingcomments"
       ],
       "autoPie": {
         "field": "autoclimb",
@@ -529,26 +674,7 @@
           3
         ]
       },
-      "piecePlacement": {
-        "bars": [
-          {
-            "label": "Auto Fuel",
-            "autoField": "auto.avgFuel",
-            "teleField": null
-          },
-          {
-            "label": "Tele Fuel",
-            "autoField": null,
-            "teleField": "tele.avgFuel"
-          }
-        ]
-      },
       "overallStats": [
-        {
-          "key": "consistency",
-          "title": "Consistency",
-          "format": "percent"
-        },
         {
           "key": "defense",
           "title": "Defense %",
@@ -572,31 +698,22 @@
               "type": "epaLine",
               "label": "Auto Over Time",
               "dataKey": "autoOverTime"
-            },
-            {
-              "type": "passLine",
-              "label": "Auto Passes Over Time",
-              "dataKey": "autoPassOverTime",
-              "valueKey": "autopasssuccess"
             }
           ],
-          "statTables": [
+          "imageSelectDisplay": [
             {
-              "title": "Fuel",
-              "columns": [
-                "Success",
-                "Avg"
-              ],
-              "rows": [
-                {
-                  "values": [
-                    "auto.successFuel",
-                    "auto.avgFuel"
-                  ]
-                }
-              ]
+              "field": "autostartpos",
+              "label": "Starting Position Distribution",
+              "valueMapping": {
+                "0": "Trench (L)",
+                "1": "Left Bump",
+                "2": "Hub",
+                "3": "Right Bump",
+                "4": "Trench (R)"
+              }
             }
-          ]
+          ],
+          "statTables": []
         },
         "tele": {
           "charts": [
@@ -604,31 +721,9 @@
               "type": "epaLine",
               "label": "Tele Over Time",
               "dataKey": "teleOverTime"
-            },
-            {
-              "type": "passLine",
-              "label": "Tele Passes Over Time",
-              "dataKey": "telePassOverTime",
-              "valueKey": "telepasssuccess"
             }
           ],
-          "statTables": [
-            {
-              "title": "Fuel",
-              "columns": [
-                "Success",
-                "Avg"
-              ],
-              "rows": [
-                {
-                  "values": [
-                    "tele.successFuel",
-                    "tele.avgFuel"
-                  ]
-                }
-              ]
-            }
-          ]
+          "statTables": []
         }
       },
       "intakeDisplay": [
@@ -659,37 +754,49 @@
       ],
       "qualitativeDisplay": [
         {
-          "name": "shootingspeed",
-          "label": "Shooting Speed"
+          "name": "autoshootingrate",
+          "label": "Shooting Rate (Auto)",
+          "section": "auto"
+        },
+        {
+          "name": "teleshootingrate",
+          "label": "Shooting Rate (Tele)",
+          "section": "tele"
+        },
+        {
+          "name": "autoshootonthemoverating",
+          "label": "Shooting While Moving (Auto)",
+          "section": "auto"
+        },
+        {
+          "name": "teleshootonthemoverating",
+          "label": "Shooting While Moving (Tele)",
+          "section": "tele"
+        },
+        {
+          "name": "driving",
+          "label": "Driver Spatial Awareness",
+          "section": "tele"
+        },
+        {
+          "name": "shootingcapacity",
+          "label": "Fuel Capacity (Per Cycle)"
         },
         {
           "name": "shootingaccuracy",
           "label": "Shooting Accuracy"
         },
         {
-          "name": "intakespeed",
-          "label": "Intake Speed"
+          "name": "shootingrange",
+          "label": "Effective Shooting Range"
         },
         {
-          "name": "climbspeed",
-          "label": "Climb Speed"
-        },
-        {
-          "name": "maneuverability",
-          "label": "Maneuverability"
+          "name": "passingrating",
+          "label": "Passing"
         },
         {
           "name": "defenseplayed",
-          "label": "Defense Played"
-        },
-        {
-          "name": "defenseevasion",
-          "label": "Defense Evasion"
-        },
-        {
-          "name": "aggression",
-          "label": "Aggression",
-          "inverted": true
+          "label": "Defense"
         }
       ],
       "defenseBarField": "defenseplayed"
@@ -706,18 +813,10 @@
         "end"
       ],
       "piecePlacement": {
-        "bars": [
-          {
-            "label": "Auto Fuel",
-            "key": "autoFuel"
-          },
-          {
-            "label": "Tele Fuel",
-            "key": "teleFuel"
-          }
-        ]
+        "bars": []
       },
       "endgamePie": {
+        "label": "Endgame %",
         "field": "endlocation",
         "labels": [
           "None",
@@ -735,33 +834,19 @@
         ]
       },
       "qualitativeFields": [
-        "shootingspeed",
+        "autoshootingrate",
+        "teleshootingrate",
+        "autoshootonthemoverating",
+        "teleshootonthemoverating",
+        "driving",
+        "shootingcapacity",
         "shootingaccuracy",
-        "intakespeed",
-        "climbspeed",
-        "maneuverability",
-        "defenseplayed",
-        "defenseevasion",
-        "aggression"
+        "shootingrange",
+        "passingrating",
+        "defenseplayed"
       ],
       "defenseBarField": "defenseplayed",
       "rankingPoints": [
-        {
-          "label": "Fuel",
-          "type": "levelThreshold",
-          "levels": [
-            {
-              "key": "autoFuel",
-              "threshold": 6
-            },
-            {
-              "key": "teleFuel",
-              "threshold": 18
-            }
-          ],
-          "greenCount": 2,
-          "yellowCount": 1
-        },
         {
           "label": "Climb",
           "type": "endgameThreshold",
@@ -779,30 +864,24 @@
           }
         },
         {
-          "label": "Avg Fuel",
-          "type": "sum",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
-        },
-        {
           "label": "Breakdown %",
           "field": "breakdown",
           "type": "percentage"
         }
-      ]
+      ],
+      "showEpaOverTime": true,
+      "teamStats": []
     },
     "picklist": {
       "weights": [
         {
           "key": "epa",
-          "label": "EPA",
+          "label": "PPR",
           "default": 1.2
         },
         {
           "key": "epa3",
-          "label": "3 EPA",
+          "label": "3 PPR",
           "default": 1.0
         },
         {
@@ -840,13 +919,13 @@
       "tableColumns": [
         {
           "key": "realEpa",
-          "label": "EPA",
+          "label": "PPR",
           "colorScale": "epa",
           "format": "one"
         },
         {
           "key": "realEpa3",
-          "label": "3 EPA",
+          "label": "3 PPR",
           "colorScale": "epa3",
           "format": "one"
         },
@@ -889,77 +968,181 @@
       ],
       "computedMetrics": [
         {
-          "key": "fuelTotal",
-          "type": "sumFields",
+          "key": "trenchRate",
+          "type": "booleanRate",
+          "field": "usestrench"
+        },
+        {
+          "key": "bumpRate",
+          "type": "booleanRate",
+          "field": "usesbump"
+        },
+        {
+          "key": "avgShootOnMove",
+          "type": "averageFields",
           "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
+            "autoshootonthemoverating",
+            "teleshootonthemoverating"
+          ]
+        },
+        {
+          "key": "avgShootingRate",
+          "type": "averageFields",
+          "fields": [
+            "autoshootingrate",
+            "teleshootingrate"
           ]
         }
       ],
-      "scatterPlot": {
-        "xAxis": {
-          "label": "Total Fuel",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
+      "scatterFields": [
+        {
+          "key": "realEpa",
+          "label": "PPR"
         },
-        "yAxis": {
-          "label": "Fuel Attempts",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
+        {
+          "key": "realEpa3",
+          "label": "Last 3 PPR"
+        },
+        {
+          "key": "realAuto",
+          "label": "Auto PPR"
+        },
+        {
+          "key": "realTele",
+          "label": "Teleop PPR"
+        },
+        {
+          "key": "match",
+          "label": "Match (Time)"
+        },
+        {
+          "key": "realTrenchRate",
+          "label": "Trench Mobility"
+        },
+        {
+          "key": "realBumpRate",
+          "label": "Bump Mobility"
+        },
+        {
+          "key": "realDefense",
+          "label": "Defense"
+        },
+        {
+          "key": "driving",
+          "label": "Driving"
+        },
+        {
+          "key": "passingrating",
+          "label": "Passing"
+        },
+        {
+          "key": "shootingcapacity",
+          "label": "Fuel Capacity"
+        },
+        {
+          "key": "shootingrange",
+          "label": "Shooting Range"
+        },
+        {
+          "key": "shootingaccuracy",
+          "label": "Shooting Accuracy"
+        },
+        {
+          "key": "realAvgShootOnMove",
+          "label": "Shoot on the Move"
+        },
+        {
+          "key": "realAvgShootingRate",
+          "label": "Shooting Rate"
         }
-      },
+      ],
       "defenseField": "defenseplayed"
     },
     "compare": {
-      "metricsChart": [
+      "sections": [
         {
-          "key": "avgEpa",
-          "label": "EPA"
+          "label": "Overall",
+          "stats": [
+            {
+              "key": "avgEpa",
+              "label": "PPR"
+            },
+            {
+              "key": "avgAuto",
+              "label": "Auto"
+            },
+            {
+              "key": "avgTele",
+              "label": "Tele"
+            },
+            {
+              "key": "avgEnd",
+              "label": "End"
+            },
+            {
+              "key": "last3Epa",
+              "label": "Last 3 PPR"
+            }
+          ]
         },
         {
-          "key": "avgAuto",
-          "label": "Auto"
-        },
-        {
-          "key": "avgTele",
-          "label": "Tele"
-        },
-        {
-          "key": "avgEnd",
-          "label": "End"
+          "label": "Endgame",
+          "stats": [
+            {
+              "compute": "endPlacement.none",
+              "label": "None",
+              "format": "percent",
+              "invertDelta": true
+            },
+            {
+              "compute": "endPlacement.l1",
+              "label": "L1",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.l2",
+              "label": "L2",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.l3",
+              "label": "L3",
+              "format": "percent"
+            },
+            {
+              "compute": "endPlacement.failed",
+              "label": "Failed",
+              "format": "percent",
+              "invertDelta": true
+            }
+          ]
         }
       ],
-      "scoringChart": [
-        {
-          "key": "fuel",
-          "label": "Fuel Avg",
-          "compute": "auto.avgFuel + tele.avgFuel"
-        }
-      ],
-      "endgameChart": {
-        "metrics": [
-          "None",
-          "L1",
-          "L2",
-          "L3",
-          "Failed"
-        ],
-        "keys": [
-          "none",
-          "l1",
-          "l2",
-          "l3",
-          "failed"
-        ],
-        "endgameSource": "endPlacement",
-        "fallbackSource": "endgame"
-      },
-      "defenseField": "defenseplayed"
+      "qualitativeSection": {
+        "label": "Qualitative",
+        "stats": [
+          {
+            "label": "Defense",
+            "defenseField": "defenseplayed"
+          },
+          {
+            "label": "Driver Spatial Awareness",
+            "defenseField": "driving"
+          },
+          {
+            "label": "Shooting Accuracy",
+            "defenseField": "shootingaccuracy"
+          },
+          {
+            "label": "Effective Shooting Range",
+            "defenseField": "shootingrange"
+          },
+          {
+            "label": "Passing",
+            "defenseField": "passingrating"
+          }
+        ]
+      }
     },
     "apiAggregation": {
       "booleanFields": [
@@ -970,43 +1153,23 @@
         "fueldepotintake",
         "fueloutpostintake",
         "usesbump",
-        "usestrench"
+        "usestrench",
+        "autoshootonthemove",
+        "teleshootonthemove",
+        "passing"
       ],
       "textFields": [
         "scoutname",
         "generalcomments",
         "defensecomments",
-        "breakdowncomments"
+        "breakdowncomments",
+        "drivingcomments",
+        "passingcomments"
       ],
       "breakdownField": "breakdown",
       "defenseField": "defense",
       "leaveField": "leave",
-      "successFailPairs": [
-        {
-          "key": "Fuel",
-          "phase": "auto",
-          "successField": "autofuelsuccess",
-          "failField": null
-        },
-        {
-          "key": "Fuel",
-          "phase": "tele",
-          "successField": "telefuelsuccess",
-          "failField": null
-        },
-        {
-          "key": "Pass",
-          "phase": "auto",
-          "successField": "autopasssuccess",
-          "failField": null
-        },
-        {
-          "key": "Pass",
-          "phase": "tele",
-          "successField": "telepasssuccess",
-          "failField": null
-        }
-      ],
+      "successFailPairs": [],
       "autoclimbConfig": {
         "field": "autoclimb",
         "valueMapping": {
@@ -1026,14 +1189,16 @@
         }
       },
       "qualitativeFields": [
-        "shootingspeed",
+        "autoshootingrate",
+        "teleshootingrate",
+        "autoshootonthemoverating",
+        "teleshootonthemoverating",
+        "driving",
+        "shootingcapacity",
         "shootingaccuracy",
-        "intakespeed",
-        "climbspeed",
-        "maneuverability",
-        "defenseplayed",
-        "defenseevasion",
-        "aggression"
+        "shootingrange",
+        "passingrating",
+        "defenseplayed"
       ],
       "booleanIntakeFields": [
         "fuelgrndintake",
@@ -1042,36 +1207,8 @@
         "usesbump",
         "usestrench"
       ],
-      "alliancePiecePlacement": [
-        {
-          "key": "autoFuel",
-          "fields": [
-            "autofuelsuccess"
-          ]
-        },
-        {
-          "key": "teleFuel",
-          "fields": [
-            "telefuelsuccess"
-          ]
-        }
-      ],
-      "customSumFields": [
-        {
-          "key": "totalFuel",
-          "fields": [
-            "autofuelsuccess",
-            "telefuelsuccess"
-          ]
-        },
-        {
-          "key": "totalPass",
-          "fields": [
-            "autopasssuccess",
-            "telepasssuccess"
-          ]
-        }
-      ]
+      "alliancePiecePlacement": [],
+      "customSumFields": []
     }
   }
 }

@@ -1,0 +1,8 @@
+/* Sudo — light mode wrapper (Ant Design handles component internals) */
+
+.page {
+    min-height: calc(100vh - 45px);
+    background: #f4f1eb;
+    padding: 20px;
+    font-family: 'Montserrat', sans-serif;
+}

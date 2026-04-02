@@ -82,17 +82,17 @@ export async function PATCH(request) {
   allowedFieldNames.add("scoutname");
   allowedFieldNames.add("noshow");
 
-  const qualitativeFieldNames = new Set(
+  const qualitativeFieldMap = new Map(
     configFields
       .filter((f) => f.type === "starRating" || f.type === "qualitative")
-      .map((f) => f.name)
+      .map((f) => [f.name, f.max || 6])
   );
 
   const filteredUpdates = Object.entries(updates)
     .filter(([key]) => allowedFieldNames.has(key))
     .map(([key, val]) => {
-      if (qualitativeFieldNames.has(key) && typeof val === "number") {
-        return [key, Math.max(0, Math.min(6, val))];
+      if (qualitativeFieldMap.has(key) && typeof val === "number") {
+        return [key, Math.max(0, Math.min(qualitativeFieldMap.get(key), val))];
       }
       return [key, val];
     });

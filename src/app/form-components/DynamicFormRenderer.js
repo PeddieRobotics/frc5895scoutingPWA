@@ -15,6 +15,7 @@ import SingleSelect from './SingleSelect';
 import MultiSelect from './MultiSelect';
 import Qualitative from './Qualitative';
 import HoldTimerInput from './HoldTimerInput';
+import ImageSelect from './ImageSelect';
 import styles from '../page.module.css';
 
 function InlineTimerGroup({ fields, groupKey }) {
@@ -55,7 +56,8 @@ export default function DynamicFormRenderer({
   breakdown,
   setBreakdown,
   defense,
-  setDefense
+  setDefense,
+  gameId,
 }) {
   // Generic state for any collapsible whose trigger isn't a named prop above
   const [collapsibleStates, setCollapsibleStates] = useState({});
@@ -111,6 +113,7 @@ export default function DynamicFormRenderer({
             visibleName={field.label}
             internalName={field.name}
             changeListener={changeListener}
+            errorStyle={field.errorStyle}
           />
         );
       }
@@ -175,6 +178,21 @@ export default function DynamicFormRenderer({
           </div>
         );
 
+      case 'imageSelect':
+        return (
+          <div key={key}>
+            {field.subHeader && <SubHeader subHeaderName={field.subHeader} />}
+            <ImageSelect
+              options={field.options}
+              internalName={field.name}
+              imageTag={field.imageTag}
+              optionLayout={field.optionLayout}
+              required={field.required}
+              gameId={gameId}
+            />
+          </div>
+        );
+
       case 'multiSelect':
         return (
           <div key={key}>
@@ -194,7 +212,9 @@ export default function DynamicFormRenderer({
             internalName={field.name}
             description={field.description}
             minWhenVisible={field.minWhenVisible}
-            max={6}
+            max={field.max || 6}
+            zeroLabel={field.zeroLabel}
+            ratingLabels={field.ratingLabels}
           />
         );
 
@@ -284,14 +304,12 @@ export default function DynamicFormRenderer({
       ? { ...trigger, _isCollapsibleTrigger: true }
       : trigger;
 
+    const collapsibleClass = `${styles.collapsibleBox}${trigger?.errorStyle && isExpanded ? ` ${styles.collapsibleBoxError}` : ''}`;
+
     return (
-      <div key={key}>
+      <div key={key} className={collapsibleClass}>
         {taggedTrigger && renderField(taggedTrigger, `${key}-trigger`)}
-        {isExpanded && (
-          <div className={styles.collapsibleContent}>
-            {content.map((field, i) => renderField(field, `${key}-content-${i}`))}
-          </div>
-        )}
+        {isExpanded && content.map((field, i) => renderField(field, `${key}-content-${i}`))}
       </div>
     );
   };

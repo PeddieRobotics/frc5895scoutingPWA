@@ -60,9 +60,10 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
   - `compute-picklist/` — Picklist computation
   - `scout-leads/` — Scout-lead timer rate CRUD
   - `edit-match-entry/` — PATCH endpoint to update a single scouting row (config-driven field allowlist; auth: own entry or admin password)
+  - `prescout/` — Prescout data CRUD: `GET ?team&gameId` (any auth), `DELETE ?gameName` (admin); `upload/` POST xlsx (admin); `teams/` GET list (admin); `photos/` GET metadata + POST upload (any auth); `photos/[id]/` GET full data + DELETE (any auth)
   - `admin/` — Game management, auth, team management
 
-- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/sudo`
+- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/admin/prescout`, `/sudo`
 
 - `src/configs/` — Reference JSON game configs (`reefscape_2025.json`, `rebuilt_2026.json`)
 
@@ -86,8 +87,16 @@ See `README.md` for full reference. Key top-level keys:
 - `sections` — form sections with fields; supports `showWhen` conditional visibility
 - `calculations` — EPA formulas (`auto`, `tele`, `end`) using formula or mapping types
 - `display` — config for all display pages: `teamView`, `matchView`, `picklist`, `compare`, `apiAggregation`
+  - `matchView.showEpaOverTime` (bool): when `true`, each team card in match-view shows a per-match EPA/PPR over-time line chart; PPR injection skipped when `false`
+  - `matchView.teamStats[]` — `{label, key, format}` for additional stat rows per team card; `key` uses dot-notation path traversal (e.g., `"qualitative.defenseplayed"`); `format`: `"number"` (1 decimal) or `"percent"` (×100 + %)
+  - `matchView.endgamePie.label` — section title for endgame pie in team cards (default: `"Endgame %"`); section hidden when `keys` is absent/empty
+  - `matchView.piecePlacement.bars` — piece placement bar section hidden in match-view team cards when empty/omitted
+  - `teamView.piecePlacement.<group>.avgLabel` — TwoByTwo avg column header override (default: `"Average"`)
+  - `compare.sections[]` — array of `{ label, stats[] }` groups rendered as pill-card sections on `/compare`; each stat is `{ label, key?, compute?, format? }` where `key` is a direct property on team data, `compute` is a dot-path or `"path1 + path2"` expression, and `format` is `"number"` (default, 1 decimal) or `"percent"` (1 decimal + `%`)
+  - `compare.qualitativeSection` — `{ label, stats[] }` section for qualitative data; each stat supports `defenseField` (scouting row field name) which renders a pill showing the avg rating with a hover tooltip listing `"{scout} #Q{match}: {rating}"` per entry; also supports `key`/`compute` for plain numeric stats
+  - `teamView.epaChartOverlayOptions[]` — `{field, label}` array. Adds a pill-style selector above the main PPR/EPA Over Time chart on `/team-view`, `/match-view`, and `/compare`. Selecting an option renders a dashed second line on a right-side Y-axis. `field` is either `"auto"/"tele"/"end"` (reuses existing per-period over-time arrays) or a `qualitativeDisplay` field name (plots per-match star-rating averages from `overlayOverTime`). Omit or set to `[]` to hide selector. Auto/Tele sub-charts in team-view do **not** get an overlay selector.
 
-Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `multiSelect`, `starRating`/`qualitative`, `table`, `collapsible`
+Field types: `checkbox`, `counter`, `number`, `holdTimer`, `text`, `comment`, `singleSelect`, `imageSelect`, `multiSelect`, `starRating`/`qualitative`, `table`, `collapsible`
 
 #### holdTimer & Scout Leads Grouping
 
@@ -107,11 +116,82 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 - `isConfidenceRating: true` on a single `starRating`/`qualitative` field drives a red→green section background based on average confidence. `extractConfidenceRatingField()` in `schema-generator.js` extracts this field client-side.
 - The GET `/api/scout-leads` now returns `allScoutingRows` (all rows including noshow) and `currentUserTeam` in addition to existing timer data.
 - Edits are saved via `PATCH /api/edit-match-entry` which validates auth, checks allowed fields against config, and uses parameterized SQL.
-- **`starRating`/`qualitative` fields always render 6 stars.** The `Qualitative` component hardcodes `[1,2,3,4,5,6]`. Do not add `max` to these fields — it is stripped from all configs and ignored everywhere in the codebase.
+- **`starRating`/`qualitative` fields render `max` stars (default: 6).** Add `"max": N` (integer ≥ 2) to configure the star count. All rendering, editing, display, and inversion logic uses the actual `max` value.
+- **`zeroLabel`** (string, optional): text shown below the stars when no rating is selected (e.g. `"Did Not Defend"`). If omitted, nothing is shown at zero.
+- **`ratingLabels`** (array of exactly `max` strings, optional, default 6): overrides the default Low→High scale labels shown below the stars when a rating is selected. Defaults to `["Low", "Relatively Low", "Just Below Average", "Just Above Average", "Relatively High", "High"]`. Validated by `config-validator.js` — wrong length or non-strings produce a warning.
+
+### Prescout Data & Photo Gallery
+
+Per-game DB tables (created alongside scouting tables in `createGame()`, dropped in `deleteGame()`):
+
+- **`prescout_<gameName>`** — `team_number UNIQUE`; `data` JSONB column holds ordered array of `{field, value}` prescout fields; upserted on re-upload. Table name generated by `sanitizePrescoutTableName()` in `schema-generator.js`.
+- **`photos_<gameName>`** — multiple photos per team; `photo_data TEXT` stores base64; `mime_type`, `uploaded_by`, `uploaded_at` metadata columns. Table name generated by `sanitizePhotosTableName()` in `schema-generator.js`.
+
+**Spreadsheet ingestion (`POST /api/prescout/upload`):**
+- Admin-only. Accepts `.xlsx` via `multipart/form-data` (`file` + `gameName`).
+- Parses the sheet named `"Prescout"` (case-sensitive) using the `xlsx` (SheetJS) package.
+- Transposed layout: row 0 = team numbers (cols 1+), col 0 = field names (rows 1+). All values stored as strings; nulls filtered in UI.
+
+**Photos (`/api/prescout/photos`):**
+- Any authenticated user can upload (`POST`) or delete (`DELETE /api/prescout/photos/[id]?gameId=<id>`).
+- Max 3 MB enforced server-side; client-side check mirrors this.
+- `GET /api/prescout/photos?team&gameId` returns metadata only (no base64). `GET /api/prescout/photos/[id]?gameId=<id>` returns full record including `photo_data`.
+- `photos/[id]` routes require `gameId` query param to resolve which per-game table to query.
+- Gallery lazy-loads images only when the modal is opened.
+
+**Components (both in `src/app/team-view/components/`):**
+- `PrescoutSection.js` — collapsible key-value table; shown on `/team-view` (read-only) and `/compare` (per-team).
+- `PhotoGallery.js` — modal gallery with lightbox; `readOnly` prop controls delete/upload UI visibility. Upload enabled only on `/scout-leads` (readOnly=false). Accepts `gameId` prop for per-game photo table resolution.
+
+See `README.md` — "Prescout Data & Photo Gallery" section for full API reference, spreadsheet layout, and page integration table.
+
+### imageSelect Field Type & Field Images
+
+`imageSelect` renders selectable options positioned over a background image (e.g., field map with starting positions). Stores a single INTEGER value like `singleSelect`.
+
+**Per-game DB table:** `fieldimages_<gameName>` — `image_tag VARCHAR(100) UNIQUE`, `image_data TEXT` (base64), `mime_type`, `uploaded_by`, `uploaded_at`. Created alongside scouting tables in `createGame()`, dropped in `deleteGame()`. Table name generated by `sanitizeFieldImagesTableName()` in `schema-generator.js`.
+
+**Config field properties:** `imageTag` (required string, references uploaded image), `optionLayout` (optional: `{ top: "<CSS string>", distribution: "even" }` — `distribution` only supports `"even"` currently; other values warn), `options` (array of `{ value, label }`), `required` (bool).
+
+**Admin upload:** After game creation, the `/admin/games` page detects `imageSelect` fields and shows an "Image Assets" section with upload buttons per `imageTag`. Uses `POST /api/admin/field-images`. Auth note: the `/api/admin/field-images` routes use `validateAuthToken` (any valid session), not admin password — the admin password gate is at the page level, not the API level.
+
+**Form component:** `src/app/form-components/ImageSelect.js` — fetches image via `GET /api/field-images?gameId=<id>&tag=<tag>` (requires both `gameId` and `tag` from the component; the API itself makes `gameId` optional with active-game fallback). Caches response in sessionStorage. Falls back to plain `SingleSelect` if image is unavailable. Uses hidden `<input type="radio">` for `processFormData()` compatibility.
+
+**Display:** `display.teamView.sections.<key>.imageSelectDisplay[]` — each entry `{ field, label, valueMapping }` uses `bucketSingleSelectField()` in `display-engine.js` for aggregation. Rendered as alternating-color percentage boxes in team-view.
 
 ### Display Config Validation
 
 `src/lib/display-config-validation.js` validates at runtime that display config keys are internally consistent (e.g., `matchView.piecePlacement.bars[*].key` must exist in `apiAggregation.alliancePiecePlacement[*].key`). Failures show a config error panel instead of broken UI.
+
+### PPR (Peddie Power Rating) — `usePPR` Config Flag
+
+Setting `usePPR: true` in the top-level game config JSON activates OPR-based scoring (TBA data) instead of scouting EPA across all display pages.
+
+**How it works:**
+- OPR is computed server-side via `src/lib/opr-service.js`, which fetches played matches from TBA and solves the least-squares system in `src/lib/opr-calculator.js`.
+- A short in-memory cache (60 s) in `opr-service.js` prevents redundant TBA HTTP requests per request cycle.
+- `opr-service.js` also reads/writes an OPR blacklist (excluded match keys) from `opr_settings_<gameName>` DB table via `getOprBlacklist` / `saveOprBlacklist`.
+
+**Exported functions from `opr-service.js`:**
+- `getTeamOPRMap(activeGame)` — full-event OPR: `Map<teamNumber, opr>`
+- `getLast3OPRMap(activeGame)` — adjusted-contribution last-3: for each team, estimates their per-match contribution as `allianceScore − sum(teammates' full-event OPR)`, averages the 3 most recent.
+- `getPPROverTime(activeGame, teamNumber)` — per-match adjusted contributions for Q matches only: `[{match, epa}]` used for the "PPR Over Time" chart in team-view.
+- `getTBAMatches(tbaEventCode)` — cached TBA fetch (internal helper, also exported).
+
+**API injection points:**
+- `GET /api/get-team-data` — overrides `avgEpa`, `last3Epa`, and `epaOverTime`; preserves scouting `autoOverTime`/`teleOverTime`.
+- `GET /api/get-alliance-data` — overrides `avgEpa` and `last3Epa` per team.
+- `POST /api/compute-picklist` — injects PPR into `realEpa`/`realEpa3`, re-normalizes `epa`/`epa3` to 0–1 against new PPR max, then recomputes the weighted score using the same formula as `computePicklistMetrics`. Weights remain fully functional.
+
+**Front-end label behavior:**
+- All pages check `config?.usePPR` to rename "EPA" → "PPR" in user-visible labels (chart titles, column headers, stat labels, sudo table).
+- Config JSON labels for games with `usePPR: true` should use "PPR" / "3 PPR" directly (see `rebuilt_2026.json`).
+
+**`computeOPR` in `opr-calculator.js`:**
+- Accepts optional `lambda` (Tikhonov regularization) parameter (default 0 — no change to existing callers).
+- PPR uses the adjusted-contribution method for last-3 and over-time charts, so regularization is not needed in normal operation.
+
+**TBA event code:** read from `activeGame.tba_event_code` or `config.tbaEventCode`. `TBA_AUTH_KEY` env var required.
 
 ### webpack Config Note
 

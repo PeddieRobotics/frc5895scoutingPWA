@@ -5,7 +5,7 @@
   padding: 2rem;
   width: 100%;
   min-height: 100vh;
-  background-color: #0b233b;
+  background-color: #0b1929;
   color: #ffffff;
   font-family: "Montserrat", sans-serif;
 }
@@ -30,6 +30,70 @@
   width: fit-content;
 }
 
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.navCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(189, 151, 72, 0.22);
+  border-radius: 10px;
+  color: #e8d5a3;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.navCard:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(189, 151, 72, 0.5);
+}
+
+.navCard:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
+}
+
+.navCard:active {
+  transform: scale(0.96);
+}
+
+.navCardIcon {
+  color: #bd9748;
+  flex-shrink: 0;
+}
+
+.navCardLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navCardTitle {
+  color: #e8d5a3;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.navCardDesc {
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(232, 213, 163, 0.6);
+}
+
 .adminContent {
   display: flex;
   flex-direction: column;
@@ -38,10 +102,11 @@
 }
 
 .card {
-  background-color: #152a42;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(189, 151, 72, 0.18);
   border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   width: 100%;
 }
 
@@ -127,7 +192,7 @@
 
 .submitButton {
   background-color: #bd9748;
-  color: #0b233b;
+  color: #0b1929;
   font-weight: 600;
   padding: 12px 20px;
   border: none;
@@ -193,14 +258,14 @@
 
 .logoutButton:hover {
   background-color: #bd9748;
-  color: #0b233b;
+  color: #0b1929;
 }
 
 /* Table wrapper to ensure full width */
 .tableWrapper {
   width: 100%;
   overflow-x: auto;
-  background-color: rgba(11, 35, 59, 0.6);
+  background-color: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
 }
 
@@ -339,8 +404,8 @@
 }
 
 .debugInfo {
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(189, 151, 72, 0.2);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -350,7 +415,7 @@
 
 .debugInfo h3 {
   margin-top: 0;
-  color: #343a40;
+  color: #bd9748;
   font-size: 14px;
 }
 
@@ -358,7 +423,8 @@
   white-space: pre-wrap;
   word-break: break-all;
   font-size: 12px;
-  background-color: #e9ecef;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.75);
   padding: 8px;
   border-radius: 4px;
   max-height: 100px;
@@ -366,9 +432,9 @@
 }
 
 .refreshButton {
-  background-color: #6c757d;
-  color: white;
-  border: none;
+  background-color: rgba(189, 151, 72, 0.15);
+  color: #bd9748;
+  border: 1px solid rgba(189, 151, 72, 0.4);
   border-radius: 4px;
   padding: 6px 12px;
   font-size: 14px;
@@ -377,14 +443,14 @@
 }
 
 .refreshButton:hover {
-  background-color: #446290;
+  background-color: rgba(189, 151, 72, 0.25);
 }
 
 /* Tab navigation */
 .tabs {
   display: flex;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(189, 151, 72, 0.22);
 }
 
 .tabButton {
@@ -395,7 +461,7 @@
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  color: var(--text-color);
+  color: rgba(232, 213, 163, 0.7);
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s;
@@ -403,10 +469,12 @@
 
 .tabButton:hover {
   background-color: rgba(255, 255, 255, 0.05);
+  color: #e8d5a3;
 }
 
 .activeTab {
-  border-bottom-color: var(--primary-color);
+  border-bottom-color: #bd9748;
+  color: #e8d5a3;
   font-weight: 500;
 }
 
@@ -421,7 +489,7 @@
 .sessionActions {
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(189, 151, 72, 0.22);
 }
 
 .bulkActionForm {
@@ -433,10 +501,10 @@
 .teamSelect {
   flex: 1;
   padding: 8px 12px;
-  background-color: var(--bg-color-light);
-  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(189, 151, 72, 0.4);
   border-radius: 4px;
-  color: var(--text-color);
+  color: #e8d5a3;
 }
 
 .dangerButton {
@@ -456,7 +524,7 @@
 .emptyState {
   text-align: center;
   padding: 40px 0;
-  color: var(--text-color-faded);
+  color: rgba(232, 213, 163, 0.45);
 }
 
 /* Adjust existing admin header for tabs */
@@ -468,10 +536,11 @@
 }
 
 .section {
-  background-color: #152a42;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(189, 151, 72, 0.18);
   border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   width: 100%;
   margin-bottom: 2.5rem;
 }
@@ -488,7 +557,7 @@
 .tokenManagementContainer {
   width: 100%;
   overflow-x: auto;
-  background-color: rgba(11, 35, 59, 0.6);
+  background-color: rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   margin-top: 1rem;
 }
@@ -550,9 +619,9 @@
 .adminButton {
   padding: 6px 10px;
   border-radius: 4px;
-  background-color: #8a63d2;
-  color: white;
-  border: none;
+  background-color: rgba(189, 151, 72, 0.15);
+  color: #bd9748;
+  border: 1px solid rgba(189, 151, 72, 0.4);
   font-size: 0.9rem;
   cursor: pointer;
   display: flex;
@@ -563,10 +632,10 @@
 }
 
 .adminButton:hover {
-  background-color: #7146c2;
+  background-color: rgba(189, 151, 72, 0.28);
 }
 
 .adminButton:disabled {
-  background-color: #aaa;
+  opacity: 0.4;
   cursor: not-allowed;
 } 

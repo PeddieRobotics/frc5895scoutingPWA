@@ -122,10 +122,8 @@ export default function NavBar() {
                 <ul className={styles.siteMapTree}>
                     {visiblePages.map(p => (
                         <li key={p.href}>
-                            <span className={styles.siteMapBranch}>├─</span>
                             <AuthLink href={p.href} onClose={() => setSiteMapOpen(false)}>
                                 {p.label}
-                                <span className={styles.siteMapPath}>{p.href}</span>
                             </AuthLink>
                         </li>
                     ))}

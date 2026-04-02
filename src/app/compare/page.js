@@ -1,38 +1,55 @@
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { useState, useEffect, useMemo, useRef } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import PhotoGallery from "../team-view/components/PhotoGallery";
+import PrescoutSection from "../team-view/components/PrescoutSection";
 
-// Helper to resolve a dotted path like "auto.coral.total" on an object
+// Resolve a dotted path like "endPlacement.l3" on an object
 function resolvePath(obj, path) {
   return path.split('.').reduce((acc, key) => acc?.[key], obj);
 }
 
-// Helper to evaluate a compute string like "auto.coral.total + tele.coral.total"
+// Evaluate "path1 + path2" style expressions (single path also works)
 function computeValue(data, computeStr) {
   const parts = computeStr.split(' + ');
   return parts.reduce((sum, path) => sum + (resolvePath(data, path.trim()) || 0), 0);
 }
 
-// Custom tooltip formatter to show 1 decimal place
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className={styles.customTooltip}>
-        <p className={styles.label}>{`${label}`}</p>
-        {payload.map((entry, index) => (
-          <p key={`item-${index}`} style={{ color: entry.color }}>
-            {`${entry.name}: ${parseFloat(entry.value).toFixed(1)}`}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
+function formatStatVal(v, format) {
+  const n = Math.round(10 * (v || 0)) / 10;
+  if (format === 'percent') return `${n.toFixed(1)}%`;
+  return n.toFixed(1);
+}
+
+// Colors for each team — design system palette
+const COLORS = [
+  "#a07c30", // gold (primary)
+  "#2563eb", // blue
+  "#1a7f3c", // green
+  "#c0392b", // red
+];
+
+// Lighter tooltip-safe versions of each team color (readable on dark #0d1f35 background)
+const TOOLTIP_COLORS = {
+  "#a07c30": "#f0c94a",
+  "#2563eb": "#93c5fd",
+  "#1a7f3c": "#6ee7b7",
+  "#c0392b": "#fca5a5",
 };
+
+// Win/loss colors for relative comparison
+const WIN_COLOR  = '#1a7f3c';
+const LOSS_COLOR = '#c0392b';
+
+// Transparent tints for pill backgrounds
+function pillBg(hex) {
+  return `${hex}18`;
+}
+
 
 export default function ComparePage() {
   return <Compare />;
@@ -45,30 +62,24 @@ function Compare() {
   const [teams, setTeams] = useState([]);
   const [tbaRanks, setTbaRanks] = useState({});
   const [fetchingTbaRanks, setFetchingTbaRanks] = useState(false);
+  const [teamPhotos, setTeamPhotos] = useState({});
+  const [teamPrescout, setTeamPrescout] = useState({});
   const { config, gameId, loading: configLoading } = useGameConfig();
 
-  const compareConfig = useMemo(
-    () => config?.display?.compare,
-    [config]
-  );
+  const compareConfig = useMemo(() => config?.display?.compare, [config]);
 
-
-  // Parse URL parameters on the client side
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const parsedTeams = [
         urlParams.get('team1'),
         urlParams.get('team2'),
-        urlParams.get('team3'),
-        urlParams.get('team4')
-      ].filter(team => team !== null && team !== "");
-
+      ].filter(t => t !== null && t !== "");
       setTeams(parsedTeams);
     }
   }, []);
 
-  // Guard: if no compare config, show fallback (must be after all hooks)
+  // Guard: must be after all hooks
   if (!configLoading && !compareConfig) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: '#fff' }}>
@@ -78,42 +89,26 @@ function Compare() {
     );
   }
 
-  // Colors for each team (same as match-view)
-  const COLORS = [
-    "#A4E5DF", // green
-    "#B7D1F7", // blue
-    "#DDB7F7", // purple
-    "#F6C1D8", // pink
-  ];
-
   useEffect(() => {
     let isMounted = true;
 
     async function fetchTeamData() {
-      if (teams.length === 0) {
-        setLoading(false);
-        return;
-      }
-
+      if (teams.length === 0) { setLoading(false); return; }
       setLoading(true);
       setError(null);
 
       try {
-        // Get the current user's team
         let currentUserTeam = null;
         try {
-          // Try localStorage first
           const storedTeam = localStorage.getItem('userTeam');
           if (storedTeam) {
             currentUserTeam = storedTeam;
           } else {
-            // Check cookies as fallback
             const cookies = document.cookie.split(';').reduce((acc, cookie) => {
               const [key, value] = cookie.trim().split('=');
               acc[key] = value;
               return acc;
             }, {});
-
             if (cookies.team_name) {
               currentUserTeam = cookies.team_name;
               localStorage.setItem('userTeam', cookies.team_name);
@@ -124,30 +119,16 @@ function Compare() {
         }
 
         const teamDataPromises = teams.map(team => {
-          const params = new URLSearchParams({
-            team: String(team),
-            includeRows: "true",
-          });
+          const params = new URLSearchParams({ team: String(team), includeRows: "true" });
           if (gameId) params.set("gameId", String(gameId));
-
           return fetch(`/api/get-team-data?${params.toString()}`, {
-            headers: {
-              'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}`
-            }
-          })
-            .then(async response => {
-              if (!response.ok) {
-                console.error(`Error fetching team ${team} data:`, response.status);
-                throw new Error(`Failed to fetch data for team ${team}`);
-              }
-              const data = await response.json();
-              // Check if the API returned an error message
-              if (data.message && data.message.startsWith('ERROR:')) {
-                console.error(`API error for team ${team}:`, data.message);
-                throw new Error(data.message);
-              }
-              return data;
-            });
+            headers: { 'Authorization': `Basic ${btoa(`${currentUserTeam || team || 'guest'}:`)}` }
+          }).then(async response => {
+            if (!response.ok) throw new Error(`Failed to fetch data for team ${team}`);
+            const data = await response.json();
+            if (data.message?.startsWith('ERROR:')) throw new Error(data.message);
+            return data;
+          });
         });
 
         const results = await Promise.all(teamDataPromises);
@@ -155,59 +136,50 @@ function Compare() {
         if (isMounted) {
           const teamsDataObj = {};
           results.forEach((data, index) => {
-            // Check if data has required fields, if not provide defaults
-            if (!data.avgEpa && data.avgEpa !== 0) {
-              console.warn(`Team ${teams[index]} data is missing avgEpa field`);
-            }
-
-            teamsDataObj[teams[index]] = data || {
-              team: teams[index],
-              name: `Team ${teams[index]}`,
-              avgEpa: 0,
-              avgAuto: 0,
-              avgTele: 0,
-              avgEnd: 0,
-              last3Epa: 0,
-              last3Auto: 0,
-              last3Tele: 0,
-              last3End: 0
-            };
-
-            // Log last3EPA values from API
-            console.log(`Team ${teams[index]} Last 3 EPA values:`, {
-              epa: teamsDataObj[teams[index]].last3Epa,
-              auto: teamsDataObj[teams[index]].last3Auto,
-              tele: teamsDataObj[teams[index]].last3Tele,
-              end: teamsDataObj[teams[index]].last3End
-            });
+            teamsDataObj[teams[index]] = data || { team: teams[index], name: `Team ${teams[index]}` };
           });
-
-          console.log('Processed team data:', teamsDataObj);
           setTeamsData(teamsDataObj);
           setLoading(false);
+          fetchTbaRanksForTeams(teams);
         }
-      } catch (error) {
+      } catch (err) {
         if (isMounted) {
-          console.error("Error fetching team data:", error);
-          setError(error.message || "Failed to fetch team data");
+          setError(err.message || "Failed to fetch team data");
           setLoading(false);
         }
       }
     }
 
     fetchTeamData();
-
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [teams, gameId]);
 
-  async function fetchTbaRanks() {
+  // Fetch prescout data and photos for each team
+  useEffect(() => {
+    if (teams.length === 0) return;
+    const creds = (() => {
+      try { return sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials'); } catch (_) { return null; }
+    })();
+    const headers = creds ? { Authorization: `Basic ${creds}` } : {};
+    teams.forEach(team => {
+      const params = new URLSearchParams({ team: String(team) });
+      if (gameId) params.set('gameId', String(gameId));
+      fetch(`/api/prescout?${params.toString()}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.data) setTeamPrescout(prev => ({ ...prev, [team]: d.data })); })
+        .catch(() => {});
+      fetch(`/api/prescout/photos?${params.toString()}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setTeamPhotos(prev => ({ ...prev, [team]: d?.photos || [] })))
+        .catch(() => {});
+    });
+  }, [teams, gameId]);
+
+  async function fetchTbaRanksForTeams(teamList) {
     setFetchingTbaRanks(true);
     try {
       const results = await Promise.all(
-        teams.map(team =>
+        teamList.map(team =>
           fetch(`/api/get-tba-rank?team=${team}`)
             .then(r => r.json())
             .then(d => ({ team, rank: d.rank, total: d.totalTeams, error: d.message }))
@@ -225,22 +197,21 @@ function Compare() {
   }
 
   if (loading || configLoading) {
-    return (
-      <div className={styles.container}>
-        <h1>Loading...</h1>
-      </div>
-    );
+    return <div className={styles.container}><h1>Loading...</h1></div>;
   }
 
   if (teams.length === 0) {
     return (
       <div className={styles.container}>
         <h1>Team Comparison</h1>
-        <p>Enter up to 4 teams to compare</p>
+        <p>Enter 2 teams to compare</p>
         <TeamInputForm />
       </div>
     );
   }
+
+  const sections = compareConfig?.sections || [];
+  const qualSection = compareConfig?.qualitativeSection || null;
 
   return (
     <div className={styles.container}>
@@ -249,394 +220,389 @@ function Compare() {
 
       {error && <div className={styles.error}>{error}</div>}
 
+      {/* Team legend + links */}
       <div className={styles.linkContainer} style={{ margin: "20px 0" }}>
         {teams.map((team, index) => (
-          <Link key={index} href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&team3=${teams[2] || ""}&team4=${teams[3] || ""}&source=compare`}>
-            <button style={{ backgroundColor: COLORS[index] }}>
-              {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
-              View Team {team}
-            </button>
-          </Link>
+          <span key={index} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Link href={`/team-view?team=${team}&team1=${teams[0] || ""}&team2=${teams[1] || ""}&source=compare`}>
+              <button style={{ backgroundColor: COLORS[index], color: '#FFFFFF' }}>
+                {tbaRanks[team] && <span style={{ marginRight: '0.4rem', opacity: 0.8 }}>{tbaRanks[team]}</span>}
+                View Team {team}
+              </button>
+            </Link>
+            <PhotoGallery
+              photos={teamPhotos[team] || []}
+              teamNumber={team}
+              readOnly={true}
+              gameId={gameId}
+              onDelete={(id) => setTeamPhotos(prev => ({ ...prev, [team]: (prev[team] || []).filter(p => p.id !== id) }))}
+            />
+          </span>
         ))}
-        <button onClick={fetchTbaRanks} disabled={fetchingTbaRanks} style={{ marginLeft: '0.5rem' }}>
+        <button onClick={() => fetchTbaRanksForTeams(teams)} disabled={fetchingTbaRanks} style={{ marginLeft: '0.5rem' }}>
           {fetchingTbaRanks ? 'Fetching...' : 'TBA Ranks'}
         </button>
       </div>
 
-      <div className={styles.comparisonGrid}>
-        <MetricsComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        <ScoreComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
-        {compareConfig?.coralLevelChart && <LevelComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />}
-        {compareConfig?.endgameChart && <EndgameComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />}
-      </div>
+      {/* PPR/EPA over time — both teams on one chart */}
+      <EpaOverTimeChart teams={teams} teamsData={teamsData} colors={COLORS} usePPR={config?.usePPR} overlayOptions={config?.display?.teamView?.epaChartOverlayOptions || []} />
 
-      {/* Defense ratings section outside the grid to span full width */}
-      <QualitativeComparison teamsData={teamsData} teams={teams} colors={COLORS} compareConfig={compareConfig} />
+      {/* Config-driven sections */}
+      {sections.map(section => (
+        <SectionCard
+          key={section.label}
+          section={section}
+          teamsData={teamsData}
+          teams={teams}
+          colors={COLORS}
+        />
+      ))}
+
+      {/* Qualitative section */}
+      {qualSection && (
+        <QualitativeSection
+          config={qualSection}
+          teamsData={teamsData}
+          teams={teams}
+          colors={COLORS}
+        />
+      )}
+
+      {/* Prescout data — one card per team if data exists */}
+      {teams.some(t => { const d = teamPrescout[t]; return d && (Array.isArray(d) ? d.length > 0 : Object.keys(d).length > 0); }) && (
+        <div style={{ marginTop: '24px' }}>
+          <h2 style={{ fontFamily: 'Montserrat, sans-serif', color: '#0d1f35', fontSize: '16px', marginBottom: '12px' }}>Prescout Data</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${teams.length}, 1fr)`, gap: '12px' }}>
+            {teams.map((team, index) => (
+              <div key={team}>
+                <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: COLORS[index], fontSize: '13px', marginBottom: '6px' }}>Team {team}</div>
+                {teamPrescout[team] && (Array.isArray(teamPrescout[team]) ? teamPrescout[team].length > 0 : Object.keys(teamPrescout[team]).length > 0)
+                  ? <PrescoutSection prescoutData={teamPrescout[team]} />
+                  : <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '12px', color: '#8a9aaa', margin: 0 }}>No prescout data.</p>
+                }
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function TeamInputForm({ initialTeams = ["", "", "", ""] }) {
-  const [teamInputs, setTeamInputs] = useState(initialTeams.concat(Array(4 - initialTeams.length).fill("")));
+function TeamInputForm({ initialTeams = ["", ""] }) {
+  const [teamInputs, setTeamInputs] = useState(initialTeams.concat(Array(2 - initialTeams.length).fill("")).slice(0, 2));
+  const [isStuck, setIsStuck] = useState(false);
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsStuck(!entry.isIntersecting),
+      { threshold: 1, rootMargin: '-45px 0px 0px 0px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Filter out empty team numbers
-    const validTeams = teamInputs.filter(team => team !== "");
-
-    if (validTeams.length === 0) {
-      alert("Please enter at least one team number");
-      return;
-    }
-
-    // Construct the URL with team parameters
+    const validTeams = teamInputs.filter(t => t !== "");
+    if (validTeams.length === 0) { alert("Please enter at least one team number"); return; }
     const params = new URLSearchParams();
-    validTeams.forEach((team, index) => {
-      params.append(`team${index + 1}`, team);
-    });
-
+    validTeams.forEach((team, index) => params.append(`team${index + 1}`, team));
     window.location.href = `/compare?${params.toString()}`;
   };
 
-  const handleTeamChange = (index, value) => {
-    const newInputs = [...teamInputs];
-    newInputs[index] = value;
-    setTeamInputs(newInputs);
-  };
-
   return (
-    <form className={styles.teamInputForm} onSubmit={handleSubmit}>
+    <>
+      <div ref={sentinelRef} style={{ height: 1, marginTop: -1 }} />
+      <form className={`${styles.teamInputForm} ${isStuck ? styles.teamInputFormStuck : ''}`} onSubmit={handleSubmit}>
       <div className={styles.formFields}>
         {teamInputs.map((team, index) => (
           <div key={index} className={styles.inputGroup}>
-            <label htmlFor={`team${index + 1}`}>Team {index + 1}</label>
+            <label htmlFor={`team${index + 1}`} style={{ color: COLORS[index] }}>Team {index + 1}</label>
             <input
               id={`team${index + 1}`}
               type="number"
               placeholder="Team #"
               value={team}
-              onChange={(e) => handleTeamChange(index, e.target.value)}
+              onChange={(e) => {
+                const newInputs = [...teamInputs];
+                newInputs[index] = e.target.value;
+                setTeamInputs(newInputs);
+              }}
+              style={{ borderColor: COLORS[index] }}
             />
           </div>
         ))}
       </div>
       <button type="submit" className={styles.compareButton}>Compare Teams</button>
     </form>
+    </>
   );
 }
 
-function MetricsComparison({ teamsData, teams, colors, compareConfig }) {
-  const metricsChart = compareConfig?.metricsChart || [];
-
-  // Prepare data for metric comparison chart
-  const metricsData = teams.map((team, index) => {
-    const data = teamsData[team] || {};
-    const entry = {
-      team: team,
-      teamName: data.name || `Team ${team}`,
-      color: colors[index],
-    };
-    metricsChart.forEach(metric => {
-      entry[metric.key] = data[metric.key] || 0;
-    });
-    return entry;
-  });
-
-  const chartData = metricsChart.map(metric => ({
-    name: metric.label,
-    ...formatChartData(metricsData, metric.key),
-  }));
-
+// A section card containing a grid of stat cards
+function SectionCard({ section, teamsData, teams, colors }) {
   return (
-    <div className={styles.chartContainer}>
-      <h2>Overall Metrics</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {teams.map((team, index) => (
-            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function ScoreComparison({ teamsData, teams, colors, compareConfig }) {
-  const scoringChart = compareConfig?.scoringChart || [];
-
-  const chartData = scoringChart.map(metric => {
-    const dataPoint = { name: metric.label };
-
-    teams.forEach(team => {
-      const data = teamsData[team] || {};
-      dataPoint[`team${team}`] = computeValue(data, metric.compute);
-    });
-
-    return dataPoint;
-  });
-
-  return (
-    <div className={styles.chartContainer}>
-      <h2>Scoring Comparison</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {teams.map((team, index) => (
-            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function LevelComparison({ teamsData, teams, colors, compareConfig }) {
-  const coralConfig = compareConfig?.coralLevelChart || {};
-  const { levels, autoPrefix, telePrefix, failMetric } = coralConfig;
-
-  // Build metric list: levels + optional fail metric
-  const allMetrics = [...levels];
-  if (failMetric) {
-    allMetrics.push(failMetric.label);
-  }
-
-  const chartData = allMetrics.map(metric => {
-    const dataPoint = { name: metric };
-
-    teams.forEach(team => {
-      const data = teamsData[team] || {};
-
-      if (failMetric && metric === failMetric.label) {
-        const autoSuccess = resolvePath(data, failMetric.autoSuccessKey) || 0;
-        const teleSuccess = resolvePath(data, failMetric.teleSuccessKey) || 0;
-        dataPoint[`team${team}`] = 100 - (autoSuccess + teleSuccess) / 2;
-      } else {
-        // Level metric: resolve autoPrefix + level + telePrefix + level
-        const autoVal = resolvePath(data, `${autoPrefix}${metric}`) || 0;
-        const teleVal = resolvePath(data, `${telePrefix}${metric}`) || 0;
-        dataPoint[`team${team}`] = autoVal + teleVal;
-      }
-    });
-
-    return dataPoint;
-  });
-
-  return (
-    <div className={styles.chartContainer}>
-      <h2>Coral Level Comparison</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {teams.map((team, index) => (
-            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function EndgameComparison({ teamsData, teams, colors, compareConfig }) {
-  const endgameConfig = compareConfig?.endgameChart || {};
-  const { metrics, keys, endgameSource, fallbackSource } = endgameConfig;
-
-  const chartData = metrics.map((metric, metricIndex) => {
-    const dataPoint = { name: metric };
-    const key = keys[metricIndex];
-
-    teams.forEach(team => {
-      const data = teamsData[team] || {};
-      const primary = data[endgameSource] || {};
-      const fallback = data[fallbackSource] || {};
-
-      dataPoint[`team${team}`] = primary[key] || fallback[key] || 0;
-    });
-
-    return dataPoint;
-  });
-
-  return (
-    <div className={styles.chartContainer}>
-      <h2>Endgame Comparison</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {teams.map((team, index) => (
-            <Bar key={team} dataKey={`team${team}`} name={`Team ${team}`} fill={colors[index]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function QualitativeComparison({ teamsData, teams, colors, compareConfig }) {
-  const defenseField = compareConfig?.defenseField || '';
-
-  // Build case-variant list from the configured field name
-  const baseField = defenseField;
-  const fieldVariants = [
-    baseField,
-    baseField.charAt(0).toUpperCase() + baseField.slice(1),
-    baseField.toUpperCase(),
-    baseField.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, ''),
-    baseField.charAt(0).toUpperCase() + baseField.slice(1).replace(/([a-z])([A-Z])/g, '$1$2'),
-  ];
-
-  // Format team-specific defense data using bar charts like in team-view
-  return (
-    <div className={styles.qualitativeContainer}>
-      <h2>Defense Ratings</h2>
-      <div className={styles.defenseGridContainer}>
-        {teams.map((team, index) => {
-          const data = teamsData[team] || {};
-          const rows = data.rows || [];
-
-          // Get defense played ratings using configured field with case variants
-          const getDefensePlayed = (row) => {
-            for (const field of fieldVariants) {
-              if (row[field] !== undefined && row[field] !== null && row[field] > 0) {
-                return row[field];
-              }
-            }
-            return null;
-          };
-
-          // Filter valid defense ratings
-          const validDefenseRatings = rows.filter(row => {
-            const defenseValue = getDefensePlayed(row);
-            return row.team == team && defenseValue !== null;
-          });
-
-          // Debug for when there's no row data
-          if (rows.length === 0) {
-            console.log(`Team ${team}: No row data available from API.`);
-          } else if (validDefenseRatings.length === 0) {
-            console.log(`Team ${team}: Has ${rows.length} rows but no defense ratings found.`);
-          }
-
-          // Prepare chart data
-          let chartData = [];
-
-          if (validDefenseRatings.length > 0) {
-            // Calculate average defense rating
-            const totalSum = validDefenseRatings.reduce((sum, row) => {
-              const defenseValue = getDefensePlayed(row);
-              return sum + defenseValue;
-            }, 0);
-
-            const totalAvg = totalSum / validDefenseRatings.length;
-
-            // Debug log defense data
-            console.log(`Team ${team} Defense Ratings:`, {
-              numRows: rows.length,
-              validRatings: validDefenseRatings.length,
-              totalAvg,
-              ratings: validDefenseRatings.map(row => ({
-                match: row.match,
-                scout: row.scoutname,
-                rating: getDefensePlayed(row)
-              }))
-            });
-
-            chartData = [{ name: 'TOTAL', value: totalAvg }];
-
-            // Group by scout
-            const scoutMap = {};
-            validDefenseRatings.forEach(row => {
-              const scoutName = row.scoutname || 'Unknown';
-              if (!scoutMap[scoutName]) {
-                scoutMap[scoutName] = [];
-              }
-              scoutMap[scoutName].push(getDefensePlayed(row));
-            });
-
-            // Add scout averages
-            Object.entries(scoutMap).forEach(([scout, ratings]) => {
-              if (ratings.length > 0) {
-                const scoutSum = ratings.reduce((sum, rating) => sum + rating, 0);
-                const scoutAvg = scoutSum / ratings.length;
-                chartData.push({
-                  name: scout,
-                  value: scoutAvg
-                });
-              }
-            });
-          }
-          // If no row-level data but has qualitative array
-          else if (data.qualitative) {
-            // Check for defense rating in qualitative data
-            const defenseItem = Array.isArray(data.qualitative)
-              ? data.qualitative.find(q => q.name === "Defense Played")
-              : null;
-
-            if (defenseItem && defenseItem.rating > 0) {
-              chartData = [{ name: 'TOTAL', value: defenseItem.rating }];
-            } else {
-              chartData = [{ name: 'TOTAL', value: 0 }];
-            }
-          } else {
-            chartData = [{ name: 'TOTAL', value: 0 }];
-          }
-
-          return (
-            <div key={team} className={styles.defenseChart}>
-              <h3 style={{ color: colors[index] }}>Team {team}</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    angle={-45}
-                    textAnchor="end"
-                    height={70}
-                    tick={{ dy: 10, fontSize: 12 }}
-                  />
-                  <YAxis
-                    domain={[0, 6]}
-                    ticks={[0, 1, 2, 3, 4, 5, 6]}
-                    interval={0}
-                  />
-                  <Tooltip formatter={(value) => parseFloat(value).toFixed(1)} />
-                  <Bar dataKey="value" fill={colors[index]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          );
-        })}
+    <div className={styles.section}>
+      <h2>{section.label}</h2>
+      <div className={styles.statGrid}>
+        {(section.stats || []).map(stat => (
+          <StatCard key={stat.label} stat={stat} teamsData={teamsData} teams={teams} colors={colors} />
+        ))}
       </div>
     </div>
   );
 }
 
-// Helper function to format data for charts
-function formatChartData(teamsData, metric) {
-  const formattedData = {};
+// A single metric card with one pill per team
+function StatCard({ stat, teamsData, teams, colors }) {
+  const getValue = (teamData) => {
+    if (stat.key !== undefined) return teamData[stat.key] ?? 0;
+    if (stat.compute !== undefined) return computeValue(teamData, stat.compute);
+    return 0;
+  };
 
-  teamsData.forEach(data => {
-    formattedData[`team${data.team}`] = data[metric];
+  const v1 = getValue(teamsData[teams[0]] || {});
+  const v2 = teams.length >= 2 ? getValue(teamsData[teams[1]] || {}) : null;
+  const delta = v2 !== null ? v2 - v1 : null;
+
+  return (
+    <div className={styles.statCard}>
+      <div className={styles.statCardLabel}>{stat.label}</div>
+      <div className={styles.pillList}>
+        {teams.map((team, i) => {
+          const v = i === 0 ? v1 : (v2 ?? 0);
+          return (
+            <span
+              key={team}
+              className={`${styles.pill} ${i === 0 ? styles.pillPrimary : styles.pillSecondary}`}
+              style={{ borderColor: colors[i], color: colors[i], background: pillBg(colors[i]) }}
+            >
+              {formatStatVal(v, stat.format)}
+            </span>
+          );
+        })}
+      </div>
+      {delta !== null && delta !== 0 && (
+        <div className={styles.deltaRow}>
+          <span
+            className={styles.deltaBadge}
+            style={{ color: (delta > 0) !== (stat.invertDelta === true) ? WIN_COLOR : LOSS_COLOR }}
+          >
+            {delta > 0 ? '+' : ''}{formatStatVal(delta, stat.format)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Qualitative section: pills with hover tooltip showing per-scout/match breakdown
+function QualitativeSection({ config, teamsData, teams, colors }) {
+  const stats = config.stats || [];
+
+  return (
+    <div className={styles.section}>
+      <h2>{config.label || "Qualitative"}</h2>
+      <div className={styles.statGrid}>
+        {stats.map(stat => (
+          <QualStatCard
+            key={stat.label}
+            stat={stat}
+            teamsData={teamsData}
+            teams={teams}
+            colors={colors}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EpaOverTimeChart({ teams, teamsData, colors, usePPR, overlayOptions = [] }) {
+  const [isClient, setIsClient] = useState(false);
+  const [selectedVar, setSelectedVar] = useState(null);
+  useEffect(() => { setIsClient(true); }, []);
+  if (!isClient) return null;
+
+  function getTeamArr(team, sel) {
+    const d = teamsData[team];
+    if (!d) return [];
+    if (!sel) return d.epaOverTime || [];
+    if (sel === 'auto') return d.autoOverTime || [];
+    if (sel === 'tele') return d.teleOverTime || [];
+    if (sel === 'end')  return d.endOverTime  || [];
+    return d.overlayOverTime?.[sel] || [];
+  }
+  function getVarKey(sel) {
+    if (!sel) return 'epa';
+    if (['auto', 'tele', 'end'].includes(sel)) return sel;
+    return 'value';
+  }
+
+  // Only hide the whole section if there's no base PPR/EPA data at all
+  const baseMatches = new Set();
+  teams.forEach(team => getTeamArr(team, null).forEach(p => baseMatches.add(p.match)));
+  if (baseMatches.size === 0) return null;
+
+  const allMatches = new Set();
+  teams.forEach(team => getTeamArr(team, selectedVar).forEach(p => allMatches.add(p.match)));
+  const hasData = allMatches.size > 0;
+
+  const sortedMatches = hasData ? Array.from(allMatches).sort((a, b) => a - b) : [];
+  const maxMatch = sortedMatches[sortedMatches.length - 1] ?? 0;
+  const xTickInterval = Math.ceil(maxMatch / 9) || 1;
+  const xDomainEnd = (Math.floor(maxMatch / xTickInterval) + 1) * xTickInterval;
+  const xTicks = Array.from({ length: Math.floor(xDomainEnd / xTickInterval) + 1 }, (_, i) => i * xTickInterval);
+
+  const varKey = getVarKey(selectedVar);
+  const chartData = sortedMatches.map(match => {
+    const point = { match };
+    teams.forEach((team, i) => {
+      const entry = getTeamArr(team, selectedVar).find(p => p.match === match);
+      point[`team${i}`] = entry != null ? Math.round((entry[varKey] ?? 0) * 10) / 10 : null;
+    });
+    return point;
   });
 
-  return formattedData;
+  const chartLabel = selectedVar ? (overlayOptions.find(o => o.field === selectedVar)?.label || selectedVar) : (usePPR ? 'PPR' : 'EPA');
+
+  const CustomTooltip = ({ active, payload, label: matchLabel }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div style={{ background: '#0d1f35', border: '1px solid rgba(189,151,72,0.6)', padding: '10px', borderRadius: '8px', fontFamily: 'Montserrat', fontSize: '13px', color: '#e8d5a3' }}>
+        <p style={{ margin: '0 0 4px', fontWeight: '700' }}>Match {matchLabel}</p>
+        {payload.map((entry, i) => (
+          <p key={i} style={{ margin: '0', color: TOOLTIP_COLORS[entry.stroke] || '#e8d5a3' }}>{entry.name}: {entry.value ?? '—'}</p>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className={styles.section}>
+      <h2>{chartLabel} Over Time</h2>
+      {overlayOptions.length > 0 && (
+        <select
+          className={styles.overlaySelect}
+          value={selectedVar || ''}
+          onChange={e => setSelectedVar(e.target.value || null)}
+        >
+          <option value="">{usePPR ? 'PPR' : 'EPA'}</option>
+          {overlayOptions.map(opt => (
+            <option key={opt.field} value={opt.field}>{opt.label}</option>
+          ))}
+        </select>
+      )}
+      {hasData ? (
+        <div style={{ touchAction: 'pan-y', width: '100%' }}>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,124,48,0.15)" />
+              <XAxis type="number" dataKey="match" domain={[0, xDomainEnd]} ticks={xTicks} tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }} />
+              <Tooltip content={<CustomTooltip />} />
+              {teams.map((team, i) => (
+                <Line key={team} yAxisId="left" type="monotone" dataKey={`team${i}`} name={`Team ${team}`} stroke={colors[i]} strokeWidth={3} dot={{ r: 3, fill: colors[i] }} connectNulls={true} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p style={{ textAlign: 'center', color: 'rgba(13,31,53,0.4)', fontFamily: 'Montserrat', fontSize: '13px', margin: '20px 0 8px' }}>
+          No data available for this selection.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function QualStatCard({ stat, teamsData, teams, colors }) {
+  // Build per-team: { avg, tooltipLines[] }
+  const teamEntries = teams.map((team, i) => {
+    const data = teamsData[team] || {};
+
+    if (stat.defenseField) {
+      const field = stat.defenseField;
+      const fieldVariants = [
+        field,
+        field.charAt(0).toUpperCase() + field.slice(1),
+        field.toUpperCase(),
+      ];
+
+      const getVal = (row) => {
+        for (const f of fieldVariants) {
+          if (row[f] !== undefined && row[f] !== null && row[f] > 0) return row[f];
+        }
+        return null;
+      };
+
+      const rows = (data.rows || []).filter(r => r.team == team);
+      const valid = rows.filter(r => getVal(r) !== null);
+
+      const avg = valid.length > 0
+        ? valid.reduce((s, r) => s + getVal(r), 0) / valid.length
+        : null;
+
+      const tooltipLines = valid.map(r => {
+        const rating = getVal(r);
+        return `${r.scoutname || 'Unknown'} #Q${r.match}: ${rating}`;
+      });
+
+      return { team, color: colors[i], avg, tooltipLines };
+    }
+
+    // Fallback: plain key or compute
+    const v = stat.key !== undefined
+      ? (data[stat.key] ?? 0)
+      : stat.compute !== undefined
+        ? computeValue(data, stat.compute)
+        : 0;
+    return { team, color: colors[i], avg: v, tooltipLines: [] };
+  });
+
+  const e1 = teamEntries[0];
+  const e2 = teamEntries.length >= 2 ? teamEntries[1] : null;
+  const qualDelta = (e1?.avg !== null && e2?.avg !== null && e2 !== null)
+    ? e2.avg - e1.avg
+    : null;
+
+  return (
+    <div className={styles.statCard}>
+      <div className={styles.statCardLabel}>{stat.label}</div>
+      <div className={styles.pillList}>
+        {teamEntries.map((entry, i) => {
+          return (
+            <span
+              key={entry.team}
+              className={`${styles.pill} ${i === 0 ? styles.pillPrimary : styles.pillSecondary} ${entry.tooltipLines.length > 0 ? styles.pillHoverable : ''}`}
+              style={{ borderColor: entry.color, color: entry.color, background: pillBg(entry.color) }}
+            >
+              {entry.avg !== null ? formatStatVal(entry.avg, stat.format) : '—'}
+              {entry.tooltipLines.length > 0 && (
+                <span className={styles.qualTooltip}>
+                  {entry.tooltipLines.map((line, i) => (
+                    <span key={i} className={styles.qualTooltipLine}>{line}</span>
+                  ))}
+                </span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+      {qualDelta !== null && qualDelta !== 0 && (
+        <div className={styles.deltaRow}>
+          <span
+            className={styles.deltaBadge}
+            style={{ color: qualDelta > 0 ? WIN_COLOR : LOSS_COLOR }}
+          >
+            {qualDelta > 0 ? '+' : ''}{formatStatVal(qualDelta, stat.format)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -61,16 +61,19 @@ export default function CoralLineChart({
     if (active && payload && payload.length) {
       const matchNumber = payload[0]?.payload?.match || label;
       return (
-        <div style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid #ccc',
+        <div style={{
+          background: '#0d1f35',
+          border: '1px solid rgba(189,151,72,0.6)',
           padding: '10px',
-          borderRadius: '5px',
-          minWidth: '150px'
+          borderRadius: '8px',
+          minWidth: '120px',
+          fontFamily: 'Montserrat',
+          fontSize: '13px',
+          color: '#e8d5a3',
         }}>
-          <p style={{ margin: '0', fontWeight: 'bold' }}>{`Match: ${matchNumber}`}</p>
+          <p style={{ margin: '0', fontWeight: '700' }}>{`Match: ${matchNumber}`}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ margin: '0', color: entry.color }}>
+            <p key={index} style={{ margin: '0', color: '#e8d5a3' }}>
               {`${entry.name}: ${Math.round(entry.value * 10) / 10}`}
             </p>
           ))}
@@ -82,10 +85,10 @@ export default function CoralLineChart({
 
   // Fixed line configuration with correct colors
   const lineConfigs = [
-    { id: "L4", name: "L4", color: "#ff8042", dataKey: "L4" },  // purple
-    { id: "L3", name: "L3", color: "#ffc658", dataKey: "L3" },  // yellow
-    { id: "L2", name: "L2", color: "#82ca9d", dataKey: "L2" }, // green
-    { id: "L1", name: "L1", color: "#8884d8", dataKey: "L1" }   // orange
+    { id: "L4", name: "L4", color: "#a07c30", dataKey: "L4" },
+    { id: "L3", name: "L3", color: "#2563eb", dataKey: "L3" },
+    { id: "L2", name: "L2", color: "#1a7f3c", dataKey: "L2" },
+    { id: "L1", name: "L1", color: "#c0392b", dataKey: "L1" }
   ];
 
   // Get Y-axis props
@@ -99,16 +102,18 @@ export default function CoralLineChart({
         data={formattedData}
         margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
       >
-        <XAxis 
-          type="category" 
+        <XAxis
+          type="category"
           dataKey="matchLabel"
           label={{ value: 'Match', position: 'insideBottomRight', offset: -5 }}
           allowDecimals={false}
+          tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
         />
-        <YAxis 
+        <YAxis
           domain={yAxisProps.domain}
-          ticks={yAxisProps.ticks} 
+          ticks={yAxisProps.ticks}
           allowDecimals={false}
+          tick={{ fill: 'rgba(13,31,53,0.55)', fontFamily: 'Montserrat', fontSize: 11 }}
         />
         <CartesianGrid strokeDasharray="3 3" />
         <Tooltip content={<CustomTooltip />} />

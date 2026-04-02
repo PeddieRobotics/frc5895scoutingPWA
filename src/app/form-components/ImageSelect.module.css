@@ -1,0 +1,128 @@
+/* ImageSelect — image background with positioned radio options */
+
+.imageSelectContainer {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.imageWrapper {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid rgba(189, 151, 72, 0.22);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.backgroundImage {
+    width: 100%;
+    display: block;
+    opacity: 0.75;
+    user-select: none;
+    pointer-events: none;
+}
+
+.optionsOverlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    transform: translateY(-50%);
+    padding: 0 8px;
+    gap: 4px;
+}
+
+.optionMarker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 8px;
+    background: rgba(11, 25, 41, 0.82);
+    border: 2px solid rgba(189, 151, 72, 0.4);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    text-align: center;
+}
+
+.optionMarker:hover {
+    background: rgba(11, 25, 41, 0.9);
+    border-color: rgba(189, 151, 72, 0.7);
+}
+
+.optionSelected {
+    background: rgba(60, 180, 90, 0.25);
+    border-color: rgba(60, 180, 90, 0.7);
+    box-shadow: 0 0 8px rgba(60, 180, 90, 0.3);
+}
+
+.optionSelected:hover {
+    background: rgba(60, 180, 90, 0.3);
+    border-color: rgba(60, 180, 90, 0.8);
+}
+
+.hiddenRadio {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.optionLabel {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #e8d5a3;
+    user-select: none;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+}
+
+.optionSelected .optionLabel {
+    color: #9de387;
+}
+
+.loadingSkeleton {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(189, 151, 72, 0.15);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .optionMarker {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 4px 5px;
+    }
+
+    .optionLabel {
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 320px) {
+    .optionMarker {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 3px 4px;
+    }
+
+    .optionLabel {
+        font-size: 8px;
+    }
+}

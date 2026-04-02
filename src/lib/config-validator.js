@@ -17,6 +17,7 @@ const VALID_FIELD_TYPES = [
   'qualitative',
   'table',
   'collapsible',
+  'imageSelect',
 ];
 
 // Reserved field names that cannot be used
@@ -166,6 +167,21 @@ function validateConfig(config) {
     result.addWarning('No display section defined - display pages will show a fallback message', 'display');
   }
 
+  // Validate usePPR (optional boolean that enables the OPR Rankings sidebar)
+  if (config.usePPR !== undefined) {
+    if (typeof config.usePPR !== 'boolean') {
+      result.addWarning('usePPR should be a boolean (true or false)', 'usePPR');
+    } else if (config.usePPR === true) {
+      const code = config.tbaEventCode;
+      if (!code || typeof code !== 'string' || !code.trim()) {
+        result.addWarning(
+          'usePPR is true but tbaEventCode is missing or empty. The OPR Rankings sidebar requires a valid tbaEventCode.',
+          'tbaEventCode'
+        );
+      }
+    }
+  }
+
   return result;
 }
 
@@ -256,6 +272,10 @@ function validateField(field, path, fieldNames, result) {
 
     case 'singleSelect':
       validateSingleSelectField(field, path, fieldNames, result);
+      break;
+
+    case 'imageSelect':
+      validateImageSelectField(field, path, fieldNames, result);
       break;
 
     case 'multiSelect':
@@ -527,6 +547,87 @@ function validateSingleSelectField(field, path, fieldNames, result) {
 }
 
 /**
+ * Validate an imageSelect field
+ */
+function validateImageSelectField(field, path, fieldNames, result) {
+  // Validate name
+  if (!field.name) {
+    result.addError('ImageSelect field name is required', `${path}.name`);
+    return;
+  }
+
+  if (typeof field.name !== 'string') {
+    result.addError('ImageSelect field name must be a string', `${path}.name`);
+    return;
+  }
+
+  // Check for duplicates
+  if (fieldNames.has(field.name.toLowerCase())) {
+    result.addError(`Duplicate field name: ${field.name}`, `${path}.name`);
+    return;
+  }
+
+  fieldNames.add(field.name.toLowerCase());
+
+  // Validate imageTag (required)
+  if (!field.imageTag) {
+    result.addError('ImageSelect field requires an imageTag', `${path}.imageTag`);
+  } else if (typeof field.imageTag !== 'string') {
+    result.addError('ImageSelect imageTag must be a string', `${path}.imageTag`);
+  }
+
+  // Validate options
+  if (!field.options) {
+    result.addError('ImageSelect field requires options', `${path}.options`);
+    return;
+  }
+
+  if (!Array.isArray(field.options)) {
+    result.addError('ImageSelect options must be an array', `${path}.options`);
+    return;
+  }
+
+  if (field.options.length === 0) {
+    result.addWarning('ImageSelect has no options', `${path}.options`);
+  }
+
+  field.options.forEach((opt, index) => {
+    if (opt.value === undefined) {
+      result.addError(`Option ${index} is missing a value`, `${path}.options[${index}].value`);
+    }
+    if (!opt.label) {
+      result.addWarning(`Option ${index} is missing a label`, `${path}.options[${index}].label`);
+    }
+  });
+
+  // Validate optionLayout (optional)
+  if (field.optionLayout) {
+    if (typeof field.optionLayout !== 'object') {
+      result.addWarning('ImageSelect optionLayout should be an object', `${path}.optionLayout`);
+    } else {
+      if (field.optionLayout.top && typeof field.optionLayout.top !== 'string') {
+        result.addWarning('ImageSelect optionLayout.top should be a CSS value string', `${path}.optionLayout.top`);
+      }
+      if (field.optionLayout.distribution && field.optionLayout.distribution !== 'even') {
+        result.addWarning('ImageSelect optionLayout.distribution currently only supports "even"', `${path}.optionLayout.distribution`);
+      }
+    }
+  }
+
+  // Validate dbColumn (optional)
+  if (field.dbColumn) {
+    validateDbColumn(field.dbColumn, path, result);
+  }
+
+  result.addField({
+    name: field.name,
+    type: field.type,
+    label: field.label || field.name,
+    path,
+  });
+}
+
+/**
  * Validate a multiSelect field
  */
 function validateMultiSelectField(field, path, fieldNames, result) {
@@ -587,6 +688,30 @@ function validateStarRatingField(field, path, fieldNames, result) {
   if (field.minWhenVisible !== undefined) {
     if (typeof field.minWhenVisible !== 'number') {
       result.addWarning('starRating minWhenVisible should be a number', `${path}.minWhenVisible`);
+    }
+  }
+
+  // Validate zeroLabel
+  if (field.zeroLabel !== undefined && typeof field.zeroLabel !== 'string') {
+    result.addWarning('starRating zeroLabel should be a string', `${path}.zeroLabel`);
+  }
+
+  // Validate max (optional)
+  if (field.max !== undefined) {
+    if (!Number.isInteger(field.max) || field.max < 2) {
+      result.addWarning('starRating max should be an integer >= 2', `${path}.max`);
+    }
+  }
+
+  // Validate ratingLabels
+  const effectiveMax = (Number.isInteger(field.max) && field.max >= 2) ? field.max : 6;
+  if (field.ratingLabels !== undefined) {
+    if (!Array.isArray(field.ratingLabels)) {
+      result.addWarning(`starRating ratingLabels should be an array of ${effectiveMax} strings`, `${path}.ratingLabels`);
+    } else if (field.ratingLabels.length !== effectiveMax) {
+      result.addWarning(`starRating ratingLabels must have exactly ${effectiveMax} entries (found ${field.ratingLabels.length})`, `${path}.ratingLabels`);
+    } else if (field.ratingLabels.some(l => typeof l !== 'string')) {
+      result.addWarning('starRating ratingLabels entries must all be strings', `${path}.ratingLabels`);
     }
   }
 }

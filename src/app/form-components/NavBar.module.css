@@ -6,7 +6,7 @@
     top: 0;
     background-color: #081526;
     z-index: 10;
-    width: 100vw;
+    width: 100%;
     overflow: hidden;
     padding-top: env(safe-area-inset-top);
 }
@@ -70,11 +70,18 @@
     left: 8px;
     z-index: 100;
     background: #081526;
-    border: 1px solid #bd9748;
-    border-radius: 8px;
+    border: 1.5px solid rgba(189, 151, 72, 0.5);
+    border-radius: 10px;
     padding: 12px 16px 16px;
     min-width: 220px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.pages a:focus-visible,
+.siteMapTree a:focus-visible {
+    outline: 2px solid rgba(189, 151, 72, 0.7);
+    outline-offset: 2px;
+    border-radius: 3px;
 }
 
 .siteMapHeader {

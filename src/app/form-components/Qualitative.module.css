@@ -2,89 +2,162 @@
     display: flex;
     flex-direction: row;
     justify-content: center;
+    gap: 2px;
+}
+
+.starCell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    gap: 2px;
 }
 
 .symbol {
-    color: white;
-    font-size: 50px;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 42px;
     cursor: pointer;
+    line-height: 1;
+    transition: color 0.1s ease, text-shadow 0.1s ease;
 }
 .symbol.selected {
     color: #ffD90f;
-    text-shadow: 0px 0px 15px yellow;
+    text-shadow: 0px 0px 12px rgba(255, 220, 0, 0.6);
 }
 
-.symbol:hover {
-    color: yellow;
-    text-shadow: 0px 0px 15px yellow;
+.starCell:hover .symbol {
+    color: #ffe44d;
+    text-shadow: 0px 0px 12px rgba(255, 220, 0, 0.5);
+}
+
+.starNum {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(232, 213, 163, 0.35);
+    line-height: 1;
+    transition: color 0.1s ease;
+}
+
+.starNumActive {
+    color: rgba(255, 217, 15, 0.8);
+}
+
+.starCell:hover .starNum {
+    color: rgba(232, 213, 163, 0.7);
 }
 
 .qual {
     width: 100%;
-    max-width: 300px;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     text-align: center;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.qual label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #bd9748;
+    letter-spacing: 0.03em;
+}
+
+.qual hr {
+    width: 75%;
+    max-width: 220px;
+    margin: 4px auto 6px;
+    border: none;
+    height: 1.5px;
+    background: linear-gradient(to right, transparent, rgba(189, 151, 72, 0.5), transparent);
 }
 
 .description {
-    font-size: 0.8em;
-    opacity: 0.7;
-    margin-bottom: 6px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(232, 213, 163, 0.6);
     font-style: italic;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    max-width: 280px;
 }
 
 .ratingLabel {
-    font-size: 0.9em;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(232, 213, 163, 0.8);
     margin-top: 6px;
-    opacity: 0.85;
+    letter-spacing: 0.02em;
 }
 
 .clearButton {
-    background-color: #ff9999; /* Pastel red */
-    color: #333;
-    width: 140px; /* Increased from 80px to fit longer text */
-    height: 50px;
-    font-size: calc(14px + 0.5vw); /* Responsive font size */
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-    padding: 0 8px; /* Add horizontal padding for text */
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
     margin-top: 10px;
+    padding: 6px 16px;
+    height: 36px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border-radius: 18px;
+    border: 1.5px solid rgba(255, 120, 120, 0.55);
+    background: rgba(255, 80, 80, 0.12);
+    color: #ffaaaa;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .clearButton:hover {
-    background-color: #ffb3b3; /* Lighter pastel red on hover */
+    background: rgba(255, 80, 80, 0.22);
+    border-color: rgba(255, 120, 120, 0.8);
+    color: #ffcccc;
+}
+
+.clearButton:active {
+    transform: scale(0.96);
+}
+
+/* Armed / confirm state */
+.clearButton.clearConfirm {
+    background: rgba(255, 160, 0, 0.18);
+    border-color: rgba(255, 180, 0, 0.7);
+    color: #ffd966;
+    animation: clearPulse 0.6s ease-in-out infinite alternate;
+}
+
+.clearButton.clearConfirm:hover {
+    background: rgba(255, 160, 0, 0.3);
+    border-color: rgba(255, 200, 0, 0.9);
+    color: #ffe599;
+}
+
+@keyframes clearPulse {
+    from { box-shadow: 0 0 0px rgba(255, 180, 0, 0); }
+    to   { box-shadow: 0 0 8px rgba(255, 180, 0, 0.45); }
 }
 
 /* Mobile optimizations */
 @media (max-width: 480px) {
     .symbol {
-        font-size: 40px;
+        font-size: 36px;
     }
-    
+
     .qual {
         padding: 0 5px;
-    }
-    
-    .clearButton {
-        width: 120px; /* Slightly smaller on mobile but still fits text */
-        height: 45px;
-        font-size: 16px; /* Fixed size for mobile */
     }
 }
 
 /* Very small screens */
 @media (max-width: 320px) {
-    .clearButton {
-        width: 110px;
-        height: 40px;
-        font-size: 14px;
-    }
-    
     .symbol {
-        font-size: 35px;
+        font-size: 30px;
+    }
+
+    .starNum {
+        font-size: 10px;
     }
 }

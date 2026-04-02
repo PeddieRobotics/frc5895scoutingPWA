@@ -229,7 +229,7 @@ export default function GameDetailPage() {
     } finally {
       setSaving(false);
     }
-  }, [canSave, gameId, displayName, originalDisplayName, jsonText, originalJson, parsedConfig, validation]);
+  }, [canSave, gameId, displayName, originalDisplayName, tbaEventCode, originalTbaEventCode, jsonText, originalJson, parsedConfig, validation]);
 
   if (loading) {
     return <div className={styles.container}><div className={styles.loading}>Loading...</div></div>;

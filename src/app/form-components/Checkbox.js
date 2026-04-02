@@ -2,7 +2,7 @@
 import styles from "./Checkbox.module.css";
 import { useState, useEffect, useRef } from "react";
 
-export default function Checkbox ({ visibleName, internalName, changeListener, className, style }) {
+export default function Checkbox ({ visibleName, internalName, changeListener, className, style, errorStyle }) {
     const lsKey = `form_field_${internalName}`;
     const [checked, setChecked] = useState(() => {
         if (typeof window === 'undefined') return false;
@@ -72,8 +72,8 @@ export default function Checkbox ({ visibleName, internalName, changeListener, c
     const isLongLabel = visibleName && visibleName.length > 10;
     
     return (
-        <div 
-            className={`${styles.boxContainer} ${className || ''} ${isLongLabel ? styles.longLabel : ''}`}
+        <div
+            className={`${styles.boxContainer} ${className || ''} ${isLongLabel ? styles.longLabel : ''} ${errorStyle ? styles.errorStyleContainer : ''}`}
             style={style}
         >
             <div className={styles.box} onClick={handleBoxClick}>

@@ -1,0 +1,353 @@
+.page {
+  min-height: 100vh;
+  background: #f4f1eb;
+  font-family: 'Montserrat', sans-serif;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px; /* V2 fix: 44px touch target */
+  border: 1.5px solid rgba(160, 124, 48, 0.35);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  white-space: nowrap;
+  margin-top: 4px;
+  transition: background 0.15s;
+}
+
+.backBtn:hover {
+  background: rgba(160, 124, 48, 0.08);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0d1f35;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  /* V1 fix: palette token instead of #5a6a7a */
+  color: rgba(13, 31, 53, 0.65);
+  margin: 0;
+}
+
+.subtitle strong {
+  color: #0d1f35;
+}
+
+/* Alert banners */
+.errorBanner {
+  padding: 10px 16px;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1.5px solid rgba(192, 57, 43, 0.25);
+  border-radius: 10px;
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.successBanner {
+  padding: 10px 16px;
+  /* V4 fix: correct green palette token rgba(26, 127, 60, ...) */
+  background: rgba(26, 127, 60, 0.1);
+  border: 1.5px solid rgba(26, 127, 60, 0.2);
+  border-radius: 10px;
+  color: #1a7f3c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Cards */
+.card {
+  background: #fff;
+  border-radius: 14px;
+  /* V8 fix: border opacity 0.25 per spec */
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 12px rgba(13, 31, 53, 0.06);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0d1f35;
+  margin: 0;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardDesc {
+  font-size: 13px;
+  /* V1 fix: palette token */
+  color: rgba(13, 31, 53, 0.65);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.cardDesc code {
+  font-family: monospace;
+  background: #f4f1eb;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #0d1f35;
+}
+
+/* Upload button */
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  min-height: 44px; /* V2 fix */
+  background: rgba(160, 124, 48, 0.1);
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 10px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  align-self: flex-start;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  background: rgba(160, 124, 48, 0.18);
+  border-color: rgba(160, 124, 48, 0.6);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Clear buttons */
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px; /* V2 fix */
+  background: transparent;
+  border: 1.5px solid rgba(192, 57, 43, 0.3);
+  border-radius: 8px;
+  color: #c0392b;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.clearBtn:hover {
+  background: rgba(192, 57, 43, 0.06);
+}
+
+/* V3 fix: armed state is amber (warning) not red (destruction) */
+.clearBtnArmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px; /* V2 fix */
+  background: rgba(255, 160, 0, 0.18);
+  border: 1.5px solid rgba(255, 180, 0, 0.7);
+  border-radius: 8px;
+  color: #c07000;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  animation: pulseArmed 0.6s ease-in-out infinite alternate;
+  flex-shrink: 0;
+}
+
+@keyframes pulseArmed {
+  from { box-shadow: 0 0 0px rgba(255, 180, 0, 0); }
+  to   { box-shadow: 0 0 8px rgba(255, 180, 0, 0.45); }
+}
+
+/* Upload result */
+.uploadResult {
+  /* V4 fix: correct green palette tokens */
+  background: rgba(26, 127, 60, 0.05);
+  border: 1px solid rgba(26, 127, 60, 0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uploadResultText {
+  font-size: 13px;
+  /* V4 fix: correct green token */
+  color: #1a7f3c;
+  margin: 0;
+}
+
+/* Team pills */
+.teamPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.teamPill {
+  display: inline-block;
+  padding: 3px 10px;
+  background: rgba(160, 124, 48, 0.1);
+  border: 1px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b5320;
+}
+
+/* Text states */
+.loadingText {
+  font-size: 13px;
+  /* V1 fix: palette token */
+  color: rgba(13, 31, 53, 0.4);
+  text-align: center;
+  margin: 0;
+}
+
+.emptyText {
+  font-size: 13px;
+  /* V1 fix: palette token */
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+}
+
+/* Auth gate */
+.authCard {
+  max-width: 380px;
+  margin: 60px auto;
+  background: #fff;
+  border-radius: 12px; /* W4 fix: 12px spec, not 16px */
+  border: 1.5px solid rgba(160, 124, 48, 0.25); /* V8 spec opacity */
+  box-shadow: 0 4px 24px rgba(13, 31, 53, 0.1);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.authIcon {
+  color: #a07c30;
+}
+
+.authTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0d1f35;
+  margin: 0;
+  text-align: center;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.authInput {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  color: #0d1f35;
+  background: #faf8f4;
+  /* V5 fix: remove outline:none; use focus-visible with gold ring instead */
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.authInput:focus-visible {
+  border-color: #a07c30;
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.authError {
+  font-size: 12px;
+  color: #c0392b;
+  margin: 0;
+  text-align: center;
+}
+
+.authBtn {
+  width: 100%;
+  padding: 0;
+  min-height: 44px; /* V2 fix */
+  background: #a07c30;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.authBtn:hover:not(:disabled) {
+  background: #8a6a28;
+}
+
+.authBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.backLink {
+  font-size: 13px;
+  color: #a07c30;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

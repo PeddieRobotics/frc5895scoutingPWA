@@ -4,6 +4,7 @@
  */
 
 import { tidy, mutate, mean, select, summarizeAll, groupBy, summarize, first, arrange, asc, desc, max } from '@tidyjs/tidy';
+import { getAllFields } from './form-renderer.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -180,15 +181,43 @@ export function aggregateTeamData(rows, config, calcFns) {
   const last3Tele = computeLast3ByMatch(teamTable, 'tele');
   const last3End = computeLast3ByMatch(teamTable, 'end');
 
+  // Build match → scout names map for tooltip display
+  const scoutsByMatch = {};
+  teamTable.forEach(row => {
+    if (row.scoutname && row.scoutname.trim()) {
+      if (!scoutsByMatch[row.match]) scoutsByMatch[row.match] = [];
+      if (!scoutsByMatch[row.match].includes(row.scoutname)) scoutsByMatch[row.match].push(row.scoutname);
+    }
+  });
+
   const epaOverTime = computeMatchAverages(teamTable, 'epa').map(d => ({
-    ...d, epa: Math.round(d.epa * 100) / 100
+    ...d, epa: Math.round(d.epa * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
   const autoOverTime = computeMatchAverages(teamTable, 'auto').map(d => ({
-    ...d, auto: Math.round(d.auto * 100) / 100
+    ...d, auto: Math.round(d.auto * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
   const teleOverTime = computeMatchAverages(teamTable, 'tele').map(d => ({
-    ...d, tele: Math.round(d.tele * 100) / 100
+    ...d, tele: Math.round(d.tele * 100) / 100,
+    scout: (scoutsByMatch[d.match] || []).join(', ') || null,
   }));
+  const endOverTime = computeMatchAverages(teamTable, 'end').map(d => ({
+    ...d, end: Math.round(d.end * 100) / 100,
+  }));
+
+  // Overlay over time — per-match averages for each epaChartOverlayOptions field
+  const overlayOverTime = {};
+  (teamViewConfig.epaChartOverlayOptions || []).forEach(opt => {
+    if (['auto', 'tele', 'end'].includes(opt.field)) return; // already have dedicated arrays
+    const validRows = teamTable.filter(r => r[opt.field] != null && r[opt.field] != -1 && (opt.allowZero || Number(r[opt.field]) > 0));
+    if (validRows.length > 0) {
+      overlayOverTime[opt.field] = computeMatchAverages(validRows, opt.field).map(d => ({
+        match: d.match,
+        value: Math.round(d[opt.field] * 100) / 100,
+      }));
+    }
+  });
 
   // Pass-line data — config-driven from passLine chart entries in teamView sections
   const passLineData = {};
@@ -413,11 +442,22 @@ export function aggregateTeamData(rows, config, calcFns) {
   }
 
   // Qualitative
+  const formFieldByName = Object.fromEntries(getAllFields(config).map(f => [f.name, f]));
   const qualitative = (teamViewConfig.qualitativeDisplay || []).map(q => {
-    const vals = rows.filter(r => r[q.name] != null && r[q.name] != -1).map(r => Number(r[q.name]));
-    let rating = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-    if (q.inverted) rating = 6 - rating;
-    return { name: q.label, rating };
+    const validRows = rows.filter(r => r[q.name] != null && r[q.name] != -1);
+    const vals = validRows.map(r => Number(r[q.name]));
+    let rating = 0;
+    if (vals.length) {
+      const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+      const fieldMax = formFieldByName[q.name]?.max || 6;
+      rating = q.inverted ? fieldMax - avg : avg;
+    }
+    const entries = validRows.map(r => ({
+      scout: r.scoutname || 'Unknown',
+      match: r.match,
+      rating: Number(r[q.name]),
+    }));
+    return { name: q.label, rating, section: q.section || null, entries };
   });
 
   // Boolean intake fields
@@ -443,11 +483,19 @@ export function aggregateTeamData(rows, config, calcFns) {
     });
   }
 
+  // imageSelect distributions (config-driven singleSelect-like bucketing)
+  const imageSelectResults = {};
+  Object.entries(teamViewConfig.sections || {}).forEach(([sectionKey, sectionConfig]) => {
+    (sectionConfig.imageSelectDisplay || []).forEach(isd => {
+      imageSelectResults[isd.field] = bucketSingleSelectField(rows, isd);
+    });
+  });
+
   return {
     team,
     avgEpa, avgAuto, avgTele, avgEnd,
     last3Epa, last3Auto, last3Tele, last3End,
-    epaOverTime, autoOverTime, teleOverTime,
+    epaOverTime, autoOverTime, teleOverTime, endOverTime, overlayOverTime,
     ...passLineData,
     consistency, defense, breakdown, lastBreakdown,
     noShow, leave, matchesScouted, scouts,
@@ -461,6 +509,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     attemptCage, successCage,
     qualitative,
     ...intakeData,
+    imageSelectResults,
   };
 }
 
@@ -606,6 +655,48 @@ export function aggregateAllianceData(rows, config, calcFns) {
     responseObject[team].last3Tele = avg(last3, "tele");
     responseObject[team].last3End = avg(last3, "end");
     responseObject[team].last3EPA = avg(last3, "epa");
+
+    responseObject[team].epaOverTime = teamRows.map(r => ({
+      match: r.match,
+      epa: Math.round(r.epa * 10) / 10,
+    }));
+
+    const computeOverTimeForField = (arr, field) => {
+      const groups = {};
+      arr.forEach(r => {
+        if (!groups[r.match]) groups[r.match] = { sum: 0, count: 0 };
+        groups[r.match].sum += r[field] || 0;
+        groups[r.match].count += 1;
+      });
+      return Object.entries(groups).map(([match, d]) => ({
+        match: parseInt(match),
+        [field]: Math.round((d.sum / d.count) * 100) / 100,
+      })).sort((a, b) => a.match - b.match);
+    };
+
+    responseObject[team].autoOverTime = computeOverTimeForField(teamRows, 'auto');
+    responseObject[team].teleOverTime = computeOverTimeForField(teamRows, 'tele');
+    responseObject[team].endOverTime = computeOverTimeForField(teamRows, 'end');
+
+    const overlayOverTime = {};
+    const overlayOptions = config?.display?.teamView?.epaChartOverlayOptions || [];
+    overlayOptions.forEach(opt => {
+      if (['auto', 'tele', 'end'].includes(opt.field)) return;
+      const validRows = teamRows.filter(r => r[opt.field] != null && r[opt.field] != -1 && (opt.allowZero || Number(r[opt.field]) > 0));
+      if (validRows.length > 0) {
+        const groups = {};
+        validRows.forEach(r => {
+          if (!groups[r.match]) groups[r.match] = { sum: 0, count: 0 };
+          groups[r.match].sum += Number(r[opt.field]) || 0;
+          groups[r.match].count += 1;
+        });
+        overlayOverTime[opt.field] = Object.entries(groups).map(([match, d]) => ({
+          match: parseInt(match),
+          value: Math.round((d.sum / d.count) * 100) / 100,
+        })).sort((a, b) => a.match - b.match);
+      }
+    });
+    responseObject[team].overlayOverTime = overlayOverTime;
   });
 
   return responseObject;
@@ -641,6 +732,13 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   teamTable = teamTable.filter(dr => !dr.noshow);
 
   let teamMatchData = teamTable;
+  // Pre-compute per-team match lists once to avoid O(N×M) filtering in each mutator
+  const teamMatchesByTeam = new Map();
+  for (const row of teamMatchData) {
+    const list = teamMatchesByTeam.get(row.team);
+    if (list) list.push(row);
+    else teamMatchesByTeam.set(row.team, [row]);
+  }
   teamTable = tidy(teamTable, groupBy(['team'], [summarizeAll(averageField)]));
 
   // Compute calc-based metrics
@@ -667,12 +765,23 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
         const fail = metric.failFields.reduce((s, f) => s + (d[f] || 0), 0);
         return (success + fail) > 0 ? (success / (success + fail)) * 100 : 0;
       };
+    } else if (metric.type === 'averageFields') {
+      mutators[metric.key] = d => {
+        const vals = (metric.fields || []).map(f => d[f]).filter(v => v != null);
+        return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+      };
+    } else if (metric.type === 'booleanRate') {
+      mutators[metric.key] = d => {
+        const teamMatches = teamMatchesByTeam.get(d.team) || [];
+        const trueCount = teamMatches.filter(m => m[metric.field] === true).length;
+        return teamMatches.length > 0 ? trueCount / teamMatches.length : 0;
+      };
     }
   });
 
   // Consistency
   mutators.consistency = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     // Use configurable metric key for consistency, default to first successRate metric
     const consistencyKey = display.picklist?.consistencyMetricKey
       || (computedMetrics.find(m => m.type === 'successRate')?.key);
@@ -701,7 +810,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // Defense
   mutators.defense = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const validRatings = teamMatches.filter(r => {
       const val = r[defenseField];
       return val !== undefined && val !== null && val > 0;
@@ -714,7 +823,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // Breakdown
   mutators.breakdown = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const total = teamMatches.length;
     const breakdownFieldName = apiConfig.breakdownField || 'breakdown';
     const breakdowns = teamMatches.filter(m =>
@@ -725,7 +834,7 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   // EPA last 3
   mutators.epa3 = d => {
-    const teamMatches = teamMatchData.filter(m => m.team === d.team);
+    const teamMatches = teamMatchesByTeam.get(d.team) || [];
     const latest3 = teamMatches.sort((a, b) => b.match - a.match).slice(0, 3);
     if (latest3.length === 0) return 0;
     return latest3.map(m => calcFns.calcEPA(m)).reduce((s, v) => s + v, 0) / latest3.length;
@@ -733,28 +842,48 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
 
   teamTable = tidy(teamTable, mutate(mutators));
 
-  // Select fields for output
-  const selectFields = ['team', 'auto', 'tele', 'end', 'epa', 'epa3', 'consistency', 'defense', 'breakdown',
-    ...computedMetrics.map(m => m.key)];
+  // Select fields for output.
+  // NOTE: real* variants (realEpa, realTrenchRate, etc.) are created by the normalization
+  // mutate AFTER this select, so we must include only the base keys here.
+  // Map any real{Key} scatter field back to its base key so normalization can create it.
+  const scatterFieldDefs = picklistConfig.scatterFields || [];
+  const scatterBaseKeys = scatterFieldDefs
+    .map(sf => sf.key)
+    .filter(k => k !== 'team')
+    .map(k => (k.startsWith('real') && k.length > 4)
+      ? k.charAt(4).toLowerCase() + k.slice(5)
+      : k);
+  const selectFields = [...new Set([
+    'team', 'match', 'auto', 'tele', 'end', 'epa', 'epa3', 'consistency', 'defense', 'breakdown',
+    ...computedMetrics.map(m => m.key),
+    ...scatterBaseKeys,
+  ])];
   teamTable = tidy(teamTable, select(selectFields));
+
+  // Metrics that have custom normalization (or none) and must be excluded from the generic real* pass
+  const unnormalizedMetricKeys = ['consistency', 'defense', 'breakdown'];
 
   // Normalize and score
   const maxes = tidy(teamTable, summarizeAll(max))[0];
 
   teamTable = tidy(teamTable, mutate({
+    realAuto: d => d.auto,
     auto: d => maxes.auto ? d.auto / maxes.auto : 0,
+    realTele: d => d.tele,
     tele: d => maxes.tele ? d.tele / maxes.tele : 0,
+    realEnd: d => d.end,
     end: d => maxes.end ? d.end / maxes.end : 0,
     realEpa: d => d.epa,
     epa: d => maxes.epa ? d.epa / maxes.epa : 0,
     realEpa3: d => d.epa3,
     epa3: d => maxes.epa3 ? d.epa3 / maxes.epa3 : 0,
+    realConsistency: d => d.consistency,
     consistency: d => maxes.consistency ? d.consistency / maxes.consistency : 0,
     realDefense: d => d.defense,
     defense: d => maxes.defense ? d.defense / maxes.defense : 0,
     breakdown: d => d.breakdown,
     ...Object.fromEntries(computedMetrics
-      .filter(m => !['consistency', 'defense', 'breakdown'].includes(m.key))
+      .filter(m => !unnormalizedMetricKeys.includes(m.key))
       .map(m => {
         const realKey = `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`;
         return [
@@ -764,6 +893,25 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
       }).flat()),
     score: d => weightEntries.reduce((sum, [key, weight]) => {
       const value = d[key] ?? 0;
+      if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
+      return sum + (value * parseFloat(weight));
+    }, 0),
+  }));
+
+  // Compute absolute score using real (un-normalized) values
+  const realKeyMap = {
+    auto: 'realAuto', tele: 'realTele', end: 'realEnd',
+    epa: 'realEpa', epa3: 'realEpa3',
+    consistency: 'realConsistency', defense: 'realDefense',
+    breakdown: 'breakdown',
+    ...Object.fromEntries(computedMetrics
+      .filter(m => !unnormalizedMetricKeys.includes(m.key))
+      .map(m => [m.key, `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`])),
+  };
+  teamTable = tidy(teamTable, mutate({
+    absoluteScore: d => weightEntries.reduce((sum, [key, weight]) => {
+      const realKey = realKeyMap[key] ?? key;
+      const value = d[realKey] ?? d[key] ?? 0;
       if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
       return sum + (value * parseFloat(weight));
     }, 0),

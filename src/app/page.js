@@ -1293,6 +1293,7 @@ export default function Home() {
           setBreakdown={setBreakdown}
           defense={defense}
           setDefense={setDefense}
+          gameId={activeGameConfig?.gameId}
         />
 
         {!gameConfigLoading && !activeGameConfig && (

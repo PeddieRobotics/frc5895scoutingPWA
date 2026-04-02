@@ -1,8 +1,12 @@
+/* Match View — light mode design system */
+
 .teamForm {
     margin: 20px;
-    padding: 25px;
-    background: #eee;
-    border-radius: 10px;
+    padding: 24px 20px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -30,82 +34,332 @@
     display: inline-block;
     margin-top: 10px;
     margin-bottom: -5px;
-    font-size: 40px;
-    font-family: "Montserrat", sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    font-family: 'Montserrat', sans-serif;
+    color: #0d1f35;
     text-align: center;
     width: 100%;
 }
 
 .teamForm input {
-    padding: 5px;
-    border: 1px solid #0b233b;
-    background: white;
-    box-shadow: 0px 0px 3px rgba(189, 151, 72, 0.4);
+    padding: 8px 12px;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0d1f35;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
     margin: 10px;
+    outline: none;
+    transition: border-color 0.15s ease;
 }
 
-/* Updated button styling with blue and gold theme */
-.goButton {
-    padding: 10px;
+.teamForm input:focus {
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.formActions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.clearButton {
+    padding: 10px 24px;
     min-width: 30%;
-    background: #0b233b;
-    color: #bd9748;
-    font-size: 40px;
-    border: 2px solid #bd9748;
-    border-radius: 20px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    margin: 10px;
+    background: rgba(192, 57, 43, 0.08);
+    border: 1.5px solid rgba(192, 57, 43, 0.5);
+    color: #c0392b;
+    font-size: 28px;
+    font-weight: 800;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.15);
+    margin: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    font-family: 'Montserrat', sans-serif;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.clearButton:hover {
+    background: rgba(192, 57, 43, 0.15);
+    border-color: rgba(192, 57, 43, 0.8);
+}
+
+.clearButton:active {
+    transform: scale(0.97);
+}
+
+.goButton {
+    padding: 10px 24px;
+    min-width: 30%;
+    background: #a07c30;
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 800;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.15);
+    margin: 12px;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .goButton:hover {
-    background: #bd9748;
-    color: #0b233b;
-    border-color: #0b233b;
+    background: #8a6a28;
 }
 
-/* Old button style - keeping for reference
-.teamForm button {
-    padding: 10px;
-    min-width: 30%;
-    background: linear-gradient(70deg, rgb(255, 242, 142), rgb(129, 216, 136));
-    font-size: 40px;
+.goButton:active {
+    transform: scale(0.97);
+}
+
+.errorContainer {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px;
+}
+
+.errorCard {
+    background: #ffffff;
+    border: 1.5px solid rgba(192, 57, 43, 0.35);
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+    max-width: 480px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.errorTitle {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #c0392b;
+    margin: 0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.errorMessage {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(13, 31, 53, 0.7);
+    margin: 0;
+}
+
+.editButton {
+    padding: 10px 28px;
+    background: #a07c30;
+    color: #ffffff;
     border: none;
-    border-radius: 20px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    margin: 10px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    min-height: 44px;
+    margin-top: 4px;
 }
-*/
 
+.editButton:hover {
+    background: #8a6a28;
+}
+
+.editButton:active {
+    transform: scale(0.97);
+}
+
+/* ── Match navigation ─────────────────────────── */
 .matchNav {
+    position: sticky;
+    top: 45px;
+    z-index: 9;
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
-    padding: 10px;
-    gap: 5px;
+    align-items: center;
+    padding: 10px 20px;
+    gap: 8px;
     flex-wrap: wrap;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(13, 31, 53, 0.12);
+    margin: 0 10px 8px;
 }
 
+.matchNavStuck {
+    border-radius: 0 0 12px 12px;
+    border-top-color: transparent;
+}
+
+/* Active chip — always gold fill */
+.teamChipActive {
+    background: #a07c30;
+    border-color: #a07c30;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.teamChipActive:hover {
+    opacity: 0.88;
+}
+
+/* ── Team chips ───────────────────────────────── */
+.teamChip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    min-height: 44px;
+    padding: 6px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    border: 1.5px solid rgba(160, 124, 48, 0.35);
+    background: transparent;
+    color: rgba(13, 31, 53, 0.65);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.teamChip:hover {
+    background: rgba(160, 124, 48, 0.08);
+    border-color: rgba(160, 124, 48, 0.6);
+    color: #0d1f35;
+}
+
+.teamChip:active {
+    transform: scale(0.97);
+}
+
+/* Red alliance */
+.teamChipRed {
+    border-color: rgba(192, 57, 43, 0.45);
+    color: #b03020;
+    background: rgba(192, 57, 43, 0.05);
+}
+
+.teamChipRed:hover {
+    background: rgba(192, 57, 43, 0.1);
+    border-color: rgba(192, 57, 43, 0.7);
+    color: #c0392b;
+}
+
+/* Blue alliance */
+.teamChipBlue {
+    border-color: rgba(37, 99, 235, 0.45);
+    color: #1e40af;
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.teamChipBlue:hover {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.7);
+    color: #1d4ed8;
+}
+
+.navActionButton {
+    padding: 4px 18px !important;
+    background: #a07c30 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.12);
+    align-self: center;
+}
+
+.navActionButton:hover {
+    background: #8a6a28 !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+.navActionButton:active {
+    transform: scale(0.97);
+}
+
+/* ── Data range toggle ────────────────────────── */
+.dataRangeContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.dataRangeLabel {
+    font-weight: 700;
+    font-size: 14px;
+    color: #a07c30;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dataRangeToggle {
+    display: flex;
+    border: 1.5px solid rgba(160, 124, 48, 0.4);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.dataRangeBtn {
+    padding: 8px 18px;
+    background: #ffffff;
+    color: rgba(13, 31, 53, 0.65);
+    border: none;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dataRangeBtn + .dataRangeBtn {
+    border-left: 1.5px solid rgba(160, 124, 48, 0.4);
+}
+
+.dataRangeBtn:hover {
+    background: rgba(189, 151, 72, 0.07);
+    color: #0d1f35;
+}
+
+.dataRangeBtnActive {
+    background: rgba(189, 151, 72, 0.15);
+    color: #a07c30;
+    font-weight: 700;
+    cursor: default;
+}
+
+.dataRangeBtnActive:hover {
+    background: rgba(189, 151, 72, 0.15);
+    color: #a07c30;
+}
+
+/* ── Alliance layout ──────────────────────────── */
 .allianceBoard {
     display: flex;
     justify-content: space-evenly;
     flex-grow: 1;
     flex-wrap: wrap;
-}
-
-.matchNav button {
-    border: 1px solid black;
-    padding: 3px 15px;
-    padding-bottom: 0px;
-    border-radius: 5px;
-    font-size: 45px;
-    font-family: "Montserrat", sans-serif;
-}
-
-.matchNav button:hover {
-    background: black !important;
-    color: var(--btn-color, yellow) !important;
 }
 
 .allianceEPAs {
@@ -117,23 +371,22 @@
 }
 
 .allianceGraphs {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     padding: 10px;
     margin: 10px;
     margin-top: 0px;
-    gap: 0px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
-    justify-content: center;
-    align-items: flex-start;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.2);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
 .graphContainer {
     display: flex;
     flex-direction: column;
     min-width: 30%;
+    width: 100%;
     text-align: center;
     justify-content: center;
     align-content: center;
@@ -141,20 +394,19 @@
     overflow: hidden;
 }
 
-@media (max-width: 600px) {
-    .graphContainer {
-        width: 100%;
-    }
-}
 .lineGraphContainer {
     display: flex;
     flex-direction: column;
     min-width: 30%;
+    width: 100%;
     text-align: center;
     justify-content: center;
     align-content: center;
     align-items: center;
+    overflow: hidden;
 }
+
+/* ── Ranking points ───────────────────────────── */
 .RPs {
     display: flex;
     margin: 10px 40px;
@@ -164,24 +416,28 @@
 .RPs > div {
     display: inline-block;
     flex-grow: 1;
-    border: 1px solid black;
+    background: #ffffff;
+    border: 1px solid rgba(160, 124, 48, 0.2);
     text-align: center;
-    padding: 5px;
+    padding: 6px;
+    font-size: 13px;
+    color: #0d1f35;
 }
 
 .RPs > div:first-child {
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
 }
+
 .RPs > div:last-child {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
 }
 
+/* ── Per-match grid ───────────────────────────── */
 .matches {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin: 10px;
 }
@@ -192,40 +448,50 @@
 
 .lightBorderBox {
     flex-grow: 1;
-    border-radius: 10px;
-    box-shadow: 0px 0px 5px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    border: 1.5px solid rgba(160, 124, 48, 0.25);
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
+    background: #ffffff;
     overflow: hidden;
 }
 
 .lightBorderBox h1, .lightBorderBox h2 {
     text-align: center;
+    color: #0d1f35;
 }
 
 .lightBorderBox h1 {
     font-size: 45px;
     margin-bottom: -20px;
 }
+
 .lightBorderBox .EPABox {
     height: 50px;
     text-align: center;
     padding: 10px;
     margin-top: 5px;
-    border: 1px solid black;
+    background: #ffffff;
+    border: 1px solid rgba(160, 124, 48, 0.2);
     border-radius: 10px 10px 0 0;
     font-size: 30px;
     font-weight: 800;
-    text-align: center;
+    color: #0d1f35;
 }
+
 .lightBorderBox .EPABreakdown {
     height: 30px;
     text-align: center;
     display: flex;
     flex-direction: row;
 }
+
 .lightBorderBox .EPABreakdown div {
     padding: 2px;
+    color: rgba(13, 31, 53, 0.7);
+    font-size: 13px;
 }
 
+/* ── Score breakdown ──────────────────────────── */
 .scoreBreakdownContainer {
     display: flex;
     flex-direction: column;
@@ -239,11 +505,18 @@
 }
 
 .EPABreakdown div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
     text-align: center;
     flex-grow: 1;
-    border: 1px solid black;
+    background: #ffffff;
+    border: 1px solid rgba(160, 124, 48, 0.2);
+    border-top: none;
     padding: 5px;
-    font-size: larger;
+    font-size: 14px;
+    color: rgba(13, 31, 53, 0.75);
 }
 
 .EPABreakdown div:first-child {
@@ -255,40 +528,50 @@
 }
 
 .EPABox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
     padding: 10px;
-    margin-top: 5px;
-    border: 1px solid black;
+    margin-top: 16px;
+    background: #ffffff;
+    border: 1.5px solid rgba(160, 124, 48, 0.3);
     border-radius: 10px 10px 0 0;
     font-size: 30px;
     font-weight: 800;
     text-align: center;
+    color: #0d1f35;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
 }
 
 .EPABox::before {
-    content: "Last 3 EPA";
+    content: var(--epa-box-label, "Last 3 EPA");
     display: block;
-    position: relative;
-    top: 0;
-    width: 125px;
+    position: absolute;
+    top: -13px;
     left: 50%;
-    transform: translate(-50%, calc(-50% - 10px));
-    border: 1px solid black;
-    background: white;
-    padding: auto;
+    transform: translateX(-50%);
+    width: 125px;
+    background: #a07c30;
+    color: #ffffff;
     border-radius: 5px;
-    padding: 5px;
-    margin-bottom: -25px;
-    font-size: 20px;
-    font-weight: 800;
+    padding: 4px 6px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
 }
 
+/* ── Chart containers ─────────────────────────── */
 .chartContainer {
     width: 100%;
     max-width: 320px;
     height: 300px;
     margin: auto;
-    overflow: hidden;
 }
+
 .barchartContainer {
     width: 100%;
     height: 300px;
@@ -309,21 +592,22 @@
     touch-action: pan-y;
 }
 
+/* ── Responsive ───────────────────────────────── */
 @media screen and (max-width: 1150px) {
-    .MainDiv {
-        margin: 0px;
-    }
-
-    .barchartContainer {
-        width: 400px;
-    }
-
-    .chartContainer {
-        width: 400px;
+    .teamForm {
+        margin: 10px;
     }
 }
 
 @media screen and (max-width: 600px) {
+    .matches {
+        grid-template-columns: 1fr;
+    }
+
+    .allianceGraphs {
+        grid-template-columns: 1fr;
+    }
+
     .graphContainer {
         width: 100%;
         overflow: hidden;
@@ -342,7 +626,33 @@
         width: 100%;
     }
 
-    .matchNav button {
-        font-size: 32px;
+    .teamChip {
+        font-size: 14px;
+        min-width: 60px;
+        padding: 5px 14px;
     }
+}
+
+/* ── Overlay selector ─────────────────────────────── */
+.overlaySelect {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(160, 124, 48, 0.5);
+    background: rgba(160, 124, 48, 0.06);
+    color: rgba(13, 31, 53, 0.75);
+    cursor: pointer;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.overlaySelect:focus {
+    outline: none;
+    border-color: rgba(160, 124, 48, 0.8);
+    background: rgba(160, 124, 48, 0.1);
 }

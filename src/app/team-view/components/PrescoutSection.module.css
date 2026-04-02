@@ -1,0 +1,99 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a07c30;
+  letter-spacing: 0.02em;
+  text-align: left;
+  transition: border-color 0.15s, border-radius 0.15s;
+}
+
+.toggle:hover {
+  border-color: rgba(160, 124, 48, 0.55);
+}
+
+.toggle[aria-expanded="true"] {
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+}
+
+.chevron {
+  font-size: 10px;
+  opacity: 0.55;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.body {
+  background: #fff;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.06);
+}
+
+.empty {
+  padding: 12px 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  /* V1 fix: use palette token instead of off-brand #8a9aaa */
+  color: rgba(13, 31, 53, 0.4);
+  text-align: center;
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.row:nth-child(even) .fieldCell,
+.row:nth-child(even) .valueCell {
+  background: #faf8f4;
+}
+
+.fieldCell {
+  padding: 7px 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a07c30;
+  width: 40%;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.1);
+  word-break: break-word;
+}
+
+.valueCell {
+  padding: 7px 14px 7px 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500; /* V7 fix: explicit weight, spec floor is 500 */
+  color: #0d1f35;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.1);
+  word-break: break-word;
+}
+
+.row:last-child .fieldCell,
+.row:last-child .valueCell {
+  border-bottom: none;
+}

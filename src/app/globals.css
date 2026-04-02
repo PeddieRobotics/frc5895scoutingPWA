@@ -1,3 +1,25 @@
+:root {
+  /* ── Light mode tokens ─────────────────────── */
+  --lm-bg:           #f4f1eb;
+  --lm-surface:      #ffffff;
+  --lm-surface-alt:  #faf8f4;
+  --lm-gold:         #a07c30;
+  --lm-gold-bright:  #bd9748;
+  --lm-gold-border:  rgba(160, 124, 48, 0.25);
+  --lm-gold-hover:   rgba(160, 124, 48, 0.55);
+  --lm-gold-fill:    rgba(189, 151, 72, 0.1);
+  --lm-text:         #0d1f35;
+  --lm-text-dim:     rgba(13, 31, 53, 0.55);
+  --lm-shadow:       0 2px 8px rgba(13, 31, 53, 0.08);
+  --lm-shadow-hover: 0 4px 16px rgba(13, 31, 53, 0.13);
+  /* ── Dark mode tokens ──────────────────────── */
+  --dm-bg:           #0b1929;
+  --dm-surface:      rgba(255, 255, 255, 0.05);
+  --dm-gold:         #bd9748;
+  --dm-gold-border:  rgba(189, 151, 72, 0.22);
+  --dm-text:         #e8d5a3;
+}
+
 *, html, body {
   margin: 0;
   padding: 0;
@@ -14,6 +36,7 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   min-height: 100%;
+  background: #f4f1eb;
 }
 
 /* Add viewport meta settings equivalents in CSS */
@@ -25,5 +48,3 @@ html {
 input, button, textarea, select {
   max-width: 100%;
 }
-
-

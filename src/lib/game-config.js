@@ -11,6 +11,10 @@ import {
   generateCreateScoutLeadsTableSQL,
   sanitizeTableName,
   sanitizeScoutLeadsTableName,
+  sanitizeOprSettingsTableName,
+  sanitizePrescoutTableName,
+  sanitizePhotosTableName,
+  sanitizeFieldImagesTableName,
 } from './schema-generator.js';
 
 function quoteIdentifier(identifier) {
@@ -261,6 +265,47 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     await client.query(createScoutLeadsTableSQL);
     console.log(`[GameConfig] Created scout leads table: ${scoutLeadsTableName}`);
 
+    // Create prescout and photos tables
+    const prescoutTableName = sanitizePrescoutTableName(gameName);
+    const photosTableName = sanitizePhotosTableName(gameName);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${prescoutTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL UNIQUE,
+        data JSONB NOT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created prescout table: ${prescoutTableName}`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${photosTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        photo_data TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        uploaded_by VARCHAR(100),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created photos table: ${photosTableName}`);
+
+    // Create field images table (for imageSelect background images)
+    const fieldImagesTableName = sanitizeFieldImagesTableName(gameName);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${fieldImagesTableName} (
+        id SERIAL PRIMARY KEY,
+        image_tag VARCHAR(100) NOT NULL UNIQUE,
+        image_data TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        uploaded_by VARCHAR(100),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created field images table: ${fieldImagesTableName}`);
+
     // Insert into game_configs
     const tbaEventCode = configJson.tbaEventCode || null;
     const insertResult = await client.query(`
@@ -377,6 +422,17 @@ async function deleteGame(id, dropTable = false) {
       const scoutLeadsTableName = sanitizeScoutLeadsTableName(game.game_name);
       await client.query(`DROP TABLE IF EXISTS ${scoutLeadsTableName}`);
       console.log(`[GameConfig] Dropped table: ${scoutLeadsTableName}`);
+
+      const prescoutTableName = sanitizePrescoutTableName(game.game_name);
+      const photosTableName = sanitizePhotosTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${prescoutTableName}`);
+      console.log(`[GameConfig] Dropped table: ${prescoutTableName}`);
+      await client.query(`DROP TABLE IF EXISTS ${photosTableName}`);
+      console.log(`[GameConfig] Dropped table: ${photosTableName}`);
+
+      const fieldImagesTableName = sanitizeFieldImagesTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${fieldImagesTableName}`);
+      console.log(`[GameConfig] Dropped table: ${fieldImagesTableName}`);
     }
 
     await client.query('COMMIT');
@@ -614,6 +670,34 @@ async function migrateScoutLeadsTable(scoutLeadsTableName, timerFields) {
   }
 }
 
+/**
+ * Ensure the OPR settings table exists for a given game.
+ * Creates opr_settings_{gameName} with a single JSON blacklist row.
+ * @param {Object} game - Game row with game_name
+ * @param {Object|null} existingClient - Optional PG client to reuse
+ * @returns {Promise<string>} The table name
+ */
+async function ensureOprSettingsTableForGame(game, existingClient = null) {
+  if (!game) throw new Error('Game is required');
+  const gameName = game.game_name || game.gameName || game.config_json?.gameName;
+  if (!gameName) throw new Error('Game name is required');
+
+  const tableName = sanitizeOprSettingsTableName(gameName);
+  const client = existingClient || await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${tableName} (
+        id SERIAL PRIMARY KEY,
+        blacklist JSONB NOT NULL DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } finally {
+    if (!existingClient) client.release();
+  }
+  return tableName;
+}
+
 export {
   initializeGameConfigsTable,
   getAllGames,
@@ -632,6 +716,7 @@ export {
   getTableColumns,
   getScoutLeadsTableName,
   ensureScoutLeadsTableForGame,
+  ensureOprSettingsTableForGame,
   migrateScoutingTable,
   migrateScoutLeadsTable,
 };
