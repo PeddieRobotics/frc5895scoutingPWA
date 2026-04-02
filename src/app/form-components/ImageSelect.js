@@ -1,31 +1,53 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './ImageSelect.module.css';
 import SingleSelect from './SingleSelect';
 
 export default function ImageSelect({ options, internalName, imageTag, optionLayout, required, gameId }) {
-    const defaultOption = options?.find(o => o.default) || options?.[0];
     const lsKey = `form_field_${internalName}`;
     const [selected, setSelected] = useState(() => {
-        if (typeof window === 'undefined') return defaultOption?.value ?? null;
+        if (typeof window === 'undefined') return null;
         const stored = localStorage.getItem(lsKey);
         if (stored !== null) {
             const num = Number(stored);
             return Number.isNaN(num) ? stored : num;
         }
-        return defaultOption?.value ?? null;
+        return null;
     });
+
+    const [confirmClear, setConfirmClear] = useState(false);
+    const confirmTimerRef = useRef(null);
 
     const [imageData, setImageData] = useState(null);
     const [mimeType, setMimeType] = useState(null);
     const [imageLoading, setImageLoading] = useState(true);
     const [imageFailed, setImageFailed] = useState(false);
 
+    // Cancel confirm state when selection is cleared
+    useEffect(() => {
+        if (selected === null) {
+            setConfirmClear(false);
+            clearTimeout(confirmTimerRef.current);
+        }
+    }, [selected]);
+
+    const handleClearClick = () => {
+        if (!confirmClear) {
+            setConfirmClear(true);
+            confirmTimerRef.current = setTimeout(() => setConfirmClear(false), 3000);
+        } else {
+            clearTimeout(confirmTimerRef.current);
+            setConfirmClear(false);
+            setSelected(null);
+            localStorage.removeItem(lsKey);
+        }
+    };
+
     // Listen for form reset events
     useEffect(() => {
         const handleReset = () => {
             localStorage.removeItem(lsKey);
-            setSelected(defaultOption?.value ?? null);
+            setSelected(null);
         };
 
         window.addEventListener('reset_form_components', handleReset);
@@ -35,7 +57,7 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
             window.removeEventListener('reset_form_components', handleReset);
             window.removeEventListener('reset_numeric_inputs', handleReset);
         };
-    }, [defaultOption, lsKey]);
+    }, [lsKey]);
 
     // Fetch image
     useEffect(() => {
@@ -118,9 +140,7 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
                                 className={`${styles.optionMarker} ${isSelected ? styles.optionSelected : ''}`}
                                 onClick={() => {
                                     setSelected(opt.value);
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.setItem(lsKey, String(opt.value));
-                                    }
+                                    localStorage.setItem(lsKey, String(opt.value));
                                 }}
                             >
                                 <input
@@ -131,9 +151,7 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
                                     required={required}
                                     onChange={() => {
                                         setSelected(opt.value);
-                                        if (typeof window !== 'undefined') {
-                                            localStorage.setItem(lsKey, String(opt.value));
-                                        }
+                                        localStorage.setItem(lsKey, String(opt.value));
                                     }}
                                     className={styles.hiddenRadio}
                                 />
@@ -143,6 +161,15 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
                     })}
                 </div>
             </div>
+            {selected !== null && (
+                <button
+                    type="button"
+                    className={`${styles.clearButton} ${confirmClear ? styles.clearConfirm : ''}`}
+                    onClick={handleClearClick}
+                >
+                    {confirmClear ? 'Tap again to clear' : 'Clear'}
+                </button>
+            )}
         </div>
     );
 }

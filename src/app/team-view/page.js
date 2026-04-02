@@ -15,12 +15,37 @@ import Endgame from "./components/Endgame";
 import Qualitative from "./components/Qualitative";
 import PrescoutSection from "./components/PrescoutSection";
 import PhotoGallery from "./components/PhotoGallery";
+import ImageSelectDistribution from "./components/ImageSelectDistribution";
 import useGameConfig from "../../lib/useGameConfig";
 import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
 import { LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar } from 'recharts';
 
 export default function TeamViewPage() {
     return <Suspense><TeamView /></Suspense>;
+}
+
+// Find a form field definition by name from the full game config
+function findFormField(config, fieldName) {
+    if (!config || !fieldName) return null;
+    const sources = [
+        ...(config.basics?.fields || []),
+        ...(config.sections || []).flatMap(s => s.fields || []),
+    ];
+    for (const f of sources) {
+        if (f.name === fieldName) return f;
+        if (f.type === 'collapsible') {
+            if (f.trigger?.name === fieldName) return f.trigger;
+            const inner = (f.content || []).find(c => c.name === fieldName);
+            if (inner) return inner;
+        }
+        if (f.type === 'table' && f.rows) {
+            for (const r of f.rows) {
+                const inner = (r.fields || []).find(c => c.name === fieldName);
+                if (inner) return inner;
+            }
+        }
+    }
+    return null;
 }
 
 // Helper to resolve a dotted path like "auto.coral.successL1" from an object
@@ -1092,26 +1117,18 @@ function TeamView() {
                                 {/* imageSelect distributions (e.g., starting position) */}
                                 {(autoSectionConfig.imageSelectDisplay || []).map((isd, i) => {
                                     const distribution = safeData.imageSelectResults?.[isd.field] || {};
-                                    const entries = Object.entries(distribution);
-                                    if (entries.length === 0) return null;
-                                    const total = entries.reduce((s, [, v]) => s + v, 0);
+                                    const formField = findFormField(config, isd.field);
                                     return (
                                         <div key={i} className={styles.imageSelectDistribution}>
                                             <h4 className={styles.graphTitle}>{isd.label}</h4>
-                                            <div className={styles.distributionBoxes}>
-                                                {entries.map(([label, count], j) => (
-                                                    <div
-                                                        key={label}
-                                                        className={styles.distributionBox}
-                                                        style={{ backgroundColor: j % 2 === 0 ? Colors[1][2] : Colors[1][1] }}
-                                                    >
-                                                        <div className={styles.distributionLabel}>{label}</div>
-                                                        <div className={styles.distributionValue}>
-                                                            {total > 0 ? `${Math.round((count / total) * 100)}%` : '0%'}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <ImageSelectDistribution
+                                                distribution={distribution}
+                                                valueMapping={isd.valueMapping}
+                                                imageTag={formField?.imageTag}
+                                                optionLayout={formField?.optionLayout}
+                                                gameId={gameId}
+                                                sectionColors={Colors[1]}
+                                            />
                                         </div>
                                     );
                                 })}

@@ -448,9 +448,11 @@ export function aggregateTeamData(rows, config, calcFns) {
     const vals = validRows.map(r => Number(r[q.name]));
     let rating = 0;
     if (vals.length) {
-      const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+      const sorted = [...vals].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
       const fieldMax = formFieldByName[q.name]?.max || 6;
-      rating = q.inverted ? fieldMax - avg : avg;
+      rating = q.inverted ? fieldMax - median : median;
     }
     const entries = validRows.map(r => ({
       scout: r.scoutname || 'Unknown',
