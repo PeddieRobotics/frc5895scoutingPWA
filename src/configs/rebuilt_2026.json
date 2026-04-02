@@ -4,8 +4,16 @@
   "tbaEventCode": "2026njwas",
   "usePPR": true,
   "photoTags": [
-    { "name": "Featured", "emoji": "\u2b50", "color": "#FFD700" },
-    { "name": "Auto Routes", "emoji": "\ud83d\udee4\ufe0f", "color": "#4CAF50" }
+    {
+      "name": "Featured",
+      "emoji": "\u2b50",
+      "color": "#FFD700"
+    },
+    {
+      "name": "Auto Routes",
+      "emoji": "\ud83d\udee4\ufe0f",
+      "color": "#4CAF50"
+    }
   ],
   "pprBreakdownFields": {
     "auto": "totalAutoPoints",
@@ -45,15 +53,36 @@
           "subHeader": "Starting Position",
           "required": true,
           "imageTag": "field_map",
-          "optionLayout": { "top": "33%", "distribution": "even" },
+          "optionLayout": {
+            "top": "33%",
+            "distribution": "even"
+          },
           "options": [
-            { "value": 0, "label": "Trench (L)" },
-            { "value": 1, "label": "Left Bump" },
-            { "value": 2, "label": "Hub" },
-            { "value": 3, "label": "Right Bump" },
-            { "value": 4, "label": "Trench (R)" }
+            {
+              "value": 0,
+              "label": "Trench (L)"
+            },
+            {
+              "value": 1,
+              "label": "Left Bump"
+            },
+            {
+              "value": 2,
+              "label": "Hub"
+            },
+            {
+              "value": 3,
+              "label": "Right Bump"
+            },
+            {
+              "value": 4,
+              "label": "Trench (R)"
+            }
           ],
-          "dbColumn": { "type": "INTEGER", "default": null }
+          "dbColumn": {
+            "type": "INTEGER",
+            "default": null
+          }
         },
         {
           "type": "multiSelect",
@@ -559,8 +588,14 @@
   "display": {
     "teamView": {
       "photoSections": [
-        { "tag": "Featured", "placement": "aboveEpaChart" },
-        { "tag": "Auto Routes", "placement": "sections.auto.afterImageSelect" }
+        {
+          "tag": "Featured",
+          "placement": "aboveEpaChart"
+        },
+        {
+          "tag": "Auto Routes",
+          "placement": "sections.auto.afterImageSelect"
+        }
       ],
       "epaChartOverlayOptions": [
         {
@@ -888,11 +923,6 @@
           "default": 1.2
         },
         {
-          "key": "epa3",
-          "label": "3 PPR",
-          "default": 1.0
-        },
-        {
           "key": "auto",
           "label": "Auto",
           "default": 0.8
@@ -929,12 +959,6 @@
           "key": "realEpa",
           "label": "PPR",
           "colorScale": "epa",
-          "format": "one"
-        },
-        {
-          "key": "realEpa3",
-          "label": "3 PPR",
-          "colorScale": "epa3",
           "format": "one"
         },
         {
@@ -1008,20 +1032,12 @@
           "label": "PPR"
         },
         {
-          "key": "realEpa3",
-          "label": "Last 3 PPR"
-        },
-        {
           "key": "realAuto",
           "label": "Auto PPR"
         },
         {
           "key": "realTele",
           "label": "Teleop PPR"
-        },
-        {
-          "key": "match",
-          "label": "Match (Time)"
         },
         {
           "key": "realTrenchRate",
@@ -1086,10 +1102,6 @@
             {
               "key": "avgEnd",
               "label": "End"
-            },
-            {
-              "key": "last3Epa",
-              "label": "Last 3 PPR"
             }
           ]
         },
