@@ -67,18 +67,6 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
             return;
         }
 
-        const cacheKey = `fieldimage_${gameId}_${imageTag}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                setImageData(parsed.image_data);
-                setMimeType(parsed.mime_type);
-                setImageLoading(false);
-                return;
-            } catch { /* ignore cache parse error */ }
-        }
-
         fetch(`/api/field-images?gameId=${gameId}&tag=${encodeURIComponent(imageTag)}`)
             .then(res => {
                 if (!res.ok) throw new Error('Image not found');
@@ -88,10 +76,6 @@ export default function ImageSelect({ options, internalName, imageTag, optionLay
                 if (data.image) {
                     setImageData(data.image.image_data);
                     setMimeType(data.image.mime_type);
-                    sessionStorage.setItem(cacheKey, JSON.stringify({
-                        image_data: data.image.image_data,
-                        mime_type: data.image.mime_type,
-                    }));
                 } else {
                     setImageFailed(true);
                 }

@@ -313,6 +313,8 @@ export default function GamesPage() {
       if (res.ok) {
         setImageUploadStatus(prev => ({ ...prev, [key]: 'uploaded' }));
         setSuccess(`Image "${imageTag}" uploaded successfully`);
+        // Clear sessionStorage cache so form/display components fetch the new image
+        sessionStorage.removeItem(`fieldimage_${gameId}_${imageTag}`);
       } else {
         const data = await res.json();
         setImageUploadStatus(prev => ({ ...prev, [key]: 'error' }));
