@@ -12,6 +12,7 @@ const SITE_PAGES = [
     { href: '/match-view', label: 'Match View' },
     { href: '/compare', label: 'Compare' },
     { href: '/picklist', label: 'Picklist' },
+    { href: '/betting', label: 'Betting', configFlag: 'enableBetting' },
     { href: '/admin', label: 'Admin', sudoOnly: true },
     { href: '/admin/games', label: 'Game Config', sudoOnly: true },
     { href: '/sudo', label: 'Sudo', sudoOnly: true },
@@ -21,6 +22,7 @@ export default function NavBar() {
     const [sudo, setSudo] = useState(false);
     const [authCredentials, setAuthCredentials] = useState(null);
     const [siteMapOpen, setSiteMapOpen] = useState(false);
+    const [activeConfig, setActiveConfig] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -36,6 +38,12 @@ export default function NavBar() {
             if (storedCreds) {
                 setAuthCredentials(storedCreds);
             }
+
+            // Fetch active game config for feature flags
+            fetch('/api/admin/games/active', { cache: 'no-store' })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => { if (data?.config) setActiveConfig(data.config); })
+                .catch(() => {});
         }
     }, []);
 
@@ -94,7 +102,11 @@ export default function NavBar() {
         return <Link href={href} onClick={handleClick}>{children}</Link>;
     };
 
-    const visiblePages = SITE_PAGES.filter(p => !p.sudoOnly || sudo);
+    const visiblePages = SITE_PAGES.filter(p => {
+        if (p.sudoOnly && !sudo) return false;
+        if (p.configFlag && !activeConfig?.[p.configFlag]) return false;
+        return true;
+    });
 
     return <>
         <nav className={styles.navbar}>

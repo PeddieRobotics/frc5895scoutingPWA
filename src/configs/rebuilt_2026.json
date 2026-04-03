@@ -3,6 +3,7 @@
   "displayName": "REBUILT 2026",
   "tbaEventCode": "2026njwas",
   "usePPR": true,
+  "enableBetting": true,
   "photoTags": [
     {
       "name": "Featured",

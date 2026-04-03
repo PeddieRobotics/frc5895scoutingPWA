@@ -638,4 +638,96 @@
 .adminButton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Confirmation Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 35, 59, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #0b233b;
+  border: 2px solid #bd9748;
+  border-radius: 10px;
+  padding: 28px 24px;
+  max-width: 360px;
+  width: 90%;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.modalMessage {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8d5a3;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modalCancelButton {
+  padding: 0.6rem 1.25rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(232, 213, 163, 0.6);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  min-height: 44px;
+}
+
+.modalCancelButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modalCancelButton:active {
+  transform: scale(0.96);
+}
+
+.modalDangerButton {
+  padding: 0.6rem 1.25rem;
+  border: 1.5px solid rgba(255, 120, 120, 0.55);
+  background: rgba(255, 80, 80, 0.12);
+  color: #ffaaaa;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  min-height: 44px;
+}
+
+.modalDangerButton:hover {
+  background: rgba(255, 80, 80, 0.22);
+  border-color: rgba(255, 120, 120, 0.8);
+  color: #ffcccc;
+}
+
+.modalDangerButton:active {
+  transform: scale(0.96);
+}
+
+.modalCancelButton:focus-visible,
+.modalDangerButton:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
 } 

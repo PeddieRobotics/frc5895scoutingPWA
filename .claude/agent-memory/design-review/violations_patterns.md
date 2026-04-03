@@ -283,3 +283,53 @@ LightboxModal.module.css `.navBtn` uses `font-size: 28px` for single-character c
 **Why:** The spec does not distinguish icon-only from text-labeled buttons. However, 28px is clearly chosen for visual legibility inside a 48px circle, not as a text label.
 
 **How to apply:** Flag as a warning (not a hard violation) when a button uses a single character/icon at a size clearly above 16px for visual clarity. Raise to the design lead to add an icon-button font-size exception to DESIGN.md. If no exception is added, reduce to 18–20px as a compromise.
+
+---
+
+## Off-palette red/blue alliance color tokens
+
+BettingSection.module.css `.redButton` uses `rgba(255,60,60,...)` fill / `rgba(255,100,100,...)` border / `#ff8888` text instead of the spec Destructive tokens (`rgba(255,80,80,...)` / `rgba(255,120,120,...)` / `#ffaaaa`). `.blueButton` uses entirely invented blue tokens with no palette basis. Discovered 2026-04-03.
+
+**Why:** DESIGN.md defines exact red danger tokens. The blue alliance context has no matching entry in the dark mode palette — only the Light Mode Navigation Team Chips section defines `#1e40af` as a blue alliance chip color. Using `rgba(60,120,255,...)` invents a new dark-mode color family.
+
+**How to apply:** For red alliance buttons, align to the spec Destructive button tokens. For blue alliance buttons, use the chip color `#1e40af` family if confirmed by the design lead, or raise as a gap in DESIGN.md. Do not invent blue tokens from scratch.
+
+---
+
+## `border-radius`/`overflow: hidden` must be on table container div, not `<table>` element
+
+BettingLeaderboard page.module.css applies `border-radius: 12px; overflow: hidden` directly to the `<table>` element with `border-collapse: collapse`. This is unreliable across browsers — `border-radius` on a collapsed-border table is frequently ignored. Discovered 2026-04-03.
+
+**Why:** DESIGN.md Data Tables spec places the container styling (`border-radius`, `overflow: hidden`, `border`) on the wrapping div, not the table itself. `overflow: hidden` on the wrapper clips row background colors to the rounded corners.
+
+**How to apply:** When reviewing table components, check that `border-radius`, `overflow: hidden`, `border`, and `box-shadow` are on the wrapper `div`, not the `<table>` or `<thead>`/`<tbody>` elements.
+
+---
+
+## Warm text dim — opacity floor is 0.6, not 0.5
+
+BettingSection.module.css `.predictionLabel` and `.lockedMessage` use `rgba(232,213,163,0.5)`. DESIGN.md specifies "Warm text dim: `rgba(232,213,163,0.6–0.8)`" — 0.6 is the minimum. Discovered 2026-04-03.
+
+**Why:** Values below 0.6 fail to meet the arena legibility bar the design system is built for.
+
+**How to apply:** Flag any `rgba(232,213,163,X)` where X < 0.6 in dark mode components as a violation.
+
+---
+
+## Invented colored glows on selected tiles — not a palette token
+
+BettingSection.module.css `.redButton.selected` and `.blueButton.selected` use `box-shadow: 0 0 8px rgba(255,60,60,0.3)` and `box-shadow: 0 0 8px rgba(60,120,255,0.3)`. The only glow defined in DESIGN.md is the Armed state amber pulse. No red or blue glow tokens exist. Discovered 2026-04-03.
+
+**Why:** Colored glows outside the amber armed-state are not defined in the design system. They invent a new visual language.
+
+**How to apply:** Any non-amber `box-shadow` glow on a selected or interactive tile is a violation unless explicitly added to DESIGN.md. Remove or replace with `0 0 8px rgba(189,151,72,0.3)` (gold) as the closest on-palette alternative.
+
+---
+
+## Solid gold table header (`background: #a07c30; color: #fff`) vs. spec tinted header
+
+BettingLeaderboard page.module.css uses `background: #a07c30; color: #ffffff` for thead. DESIGN.md Data Tables spec documents `background: rgba(189,151,72,0.1); color: #a07c30`. Discovered 2026-04-03.
+
+**Why:** The solid-gold inverted header is not explicitly prohibited — it stays within the palette — but it deviates from the documented pattern.
+
+**How to apply:** Flag as a Warning, not a hard violation. Ask the design lead to confirm and, if approved, add the solid-gold header as a documented Data Table variant to DESIGN.md.

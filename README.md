@@ -64,7 +64,8 @@ This guide documents how to build and validate JSON game configurations for form
 16. [Scoring Requirements](#scoring-requirements)
 17. [OPR Rankings Sidebar](#opr-rankings-sidebar)
 18. [Prescout Data & Photo Gallery](#prescout-data--photo-gallery)
-19. [Acknowledgements](#acknowledgements)
+19. [Betting System](#betting-system)
+20. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -226,6 +227,7 @@ Every configuration file must have these top-level properties:
 | `version` | string | Version number for tracking changes | None |
 | `tbaEventCode` | string | TBA event code (e.g. `"2026njski"`); used by `/api/get-tba-rank` and the OPR Rankings sidebar | None |
 | `usePPR` | boolean | If `true`, shows the OPR Rankings sidebar on `/scout-leads`. Requires `tbaEventCode` to be set and `TBA_AUTH_KEY` env var configured | `false` |
+| `enableBetting` | boolean | If `true`, enables the match betting system. Shows a `BettingSection` on the scouting form between basics and the dynamic form sections. Requires `tbaEventCode` to be set (Statbotics uses the same event code). See [Betting System](#betting-system). | `false` |
 | `photoTags` | array | Tag definitions for photo uploads. Each entry: `{ name, emoji, color }`. When present, tag pills appear in the Gallery section on `/scout-leads` and in `display.teamView.photoSections` for config-driven display. See [Photo Tags](#photo-tags). | None |
 | `basics` | object | Pre-match fields (like "No Show") | None |
 | `sections` | array | Main form sections (Auto, Tele, etc.) | Required for form |
@@ -2566,6 +2568,121 @@ When a team has no photos with the specified tag, the `TaggedPhotoGrid` returns 
 - The `tag` column on `photos_<gameName>` is nullable. Photos uploaded without selecting a tag have `tag = null`.
 - Existing `photos_<gameName>` tables from before the tagging feature was added are automatically migrated with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS tag VARCHAR(100)` on first use.
 - Prescout and photo data are scoped per game by table name (`prescout_<gameName>`, `photos_<gameName>`). Deleting a game from the admin panel drops both tables. There is no `game_name` column inside these tables.
+
+---
+
+## Betting System
+
+The betting system lets scouts wager virtual points on match outcomes using win probability predictions from the [Statbotics](https://www.statbotics.io/) API. It is entirely optional and activated per game via a config flag.
+
+### Enabling Betting
+
+Add `"enableBetting": true` to the top-level game config JSON. The game must also have `tbaEventCode` (or `tba_event_code`) set — the same event code is used to build the Statbotics match key.
+
+```json
+{
+  "gameName": "mygame_2026",
+  "displayName": "My Game 2026",
+  "tbaEventCode": "2026xxabc",
+  "enableBetting": true,
+  ...
+}
+```
+
+When `enableBetting` is `false` or absent, the `BettingSection` component is not rendered, the betting API routes still function but return data from an empty or nonexistent table, and the `/betting` leaderboard page shows a "Betting is not enabled" message.
+
+### Database Table
+
+A per-game `betting_<gameName>` table is created automatically alongside `scouting_<gameName>` and `scoutleads_<gameName>` when `createGame()` runs. It is dropped when the game is deleted.
+
+The table is also lazily created on first bet placement (`ensureBettingTable()` in `src/lib/betting.js`) to handle games that existed before the feature was added.
+
+Schema:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | SERIAL PK | Auto-increment row ID |
+| `scoutname` | VARCHAR(100) | Scout's name |
+| `scoutteam` | VARCHAR(100) | Scout's team (from session auth) |
+| `match` | INTEGER | Qualification match number |
+| `matchtype` | INTEGER | Match type (default `2` = qualification) |
+| `alliance` | VARCHAR(4) | `'red'` or `'blue'` |
+| `red_win_prob` | NUMERIC(6,4) | Red win probability at time of bet |
+| `blue_win_prob` | NUMERIC(6,4) | Blue win probability at time of bet |
+| `points_wagered` | INTEGER | Points at stake for this bet |
+| `status` | VARCHAR(10) | `'pending'`, `'won'`, or `'lost'` |
+| `points_earned` | INTEGER | `+points_wagered` on win, `-points_wagered` on loss; `0` while pending |
+| `placed_at` | TIMESTAMP | When the bet was placed |
+| `resolved_at` | TIMESTAMP | When the bet was resolved (null while pending) |
+
+A UNIQUE constraint on `(scoutname, scoutteam, match, matchtype)` prevents duplicate bets per scout per match.
+
+### Points System
+
+Points wagered for a given alliance pick = `round((1 - chosenAllianceWinProb) * 100)`.
+
+- Betting the underdog earns more points on a win.
+- Win: balance increases by `points_wagered`.
+- Loss: balance decreases by `points_wagered`.
+- Balance starts at `0` and can go negative.
+- There is no wallet cap — the balance is the sum of all `points_earned` rows.
+
+### Statbotics Integration
+
+Win probabilities are fetched from `https://api.statbotics.io/v3/match/{eventCode}_qm{matchNumber}`. No API key is required. The service returns `pred.red_win_prob`; blue probability is computed as `1 - red_win_prob`.
+
+Predictions are cached in memory for 60 seconds per match key. Bets can only be placed when Statbotics reports the match status as `'Upcoming'`. Attempting to bet on an in-progress or completed match returns HTTP 409.
+
+Bet resolution is automatic: `GET /api/betting/leaderboard` calls `resolveCompletedBets()` which checks all `pending` bets against Statbotics results and updates `status`, `points_earned`, and `resolved_at` in one pass before returning the leaderboard. No separate resolution job is required.
+
+### Scouting Form Integration
+
+When `enableBetting: true`, a `BettingSection` appears between the basics section (No Show) and the dynamic form sections on the main scouting form (`/`).
+
+**Workflow on the form:**
+
+1. Scout enters the match number. The section debounces 500 ms then fetches the Statbotics prediction.
+2. Predicted win percentages for Red and Blue are displayed.
+3. Scout clicks **RED**, **BLUE**, or **X** (abstain):
+   - RED / BLUE: shows the points at stake and a **Place Bet** button. Clicking it records the bet.
+   - X (abstain): skips betting and unlocks the form.
+4. The dynamic form below the betting section is dimmed (`opacity: 0.4`, `pointer-events: none`) until the bet is placed or the scout abstains.
+5. If the scout interacts with the form before placing a bet (or abstaining), betting is automatically locked (`window.__lockBetting()`) and the form unlocks. The betting card shows "Form started — betting locked".
+
+Existing bets are fetched on load (by match number + scout name) so re-opening the form shows the previously placed bet.
+
+### Leaderboard Page (`/betting`)
+
+The `/betting` page is a light-mode leaderboard showing all scouts ranked by balance. Columns: rank, scout name, team, balance (colored green/red), wins (W), losses (L), pending (P).
+
+The page checks `config?.enableBetting` and shows an "Betting is not enabled" message when the flag is absent or false.
+
+### API Routes
+
+All betting routes require a valid session token (standard `validateAuthToken`). Game context is resolved via `?gameId=<id>` query param or `X-Game-Id` request header, falling back to the active game.
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/betting/prediction?match=<n>[&gameId=<id>]` | Returns `{ redWinProb, blueWinProb, predictedWinner, matchStatus, resultWinner }` from Statbotics |
+| `POST` | `/api/betting/place` | Places a bet. Body: `{ match, alliance, scoutname, gameId? }`. Returns `{ bet, pointsWagered, prediction }`. 409 if match is not Upcoming or bet already exists. |
+| `GET` | `/api/betting/my-bet?match=<n>&scoutname=<name>[&matchtype=<n>][&gameId=<id>]` | Returns `{ bet }` (null if not placed) for the authenticated scout's team + supplied scout name |
+| `GET` | `/api/betting/balance?scoutname=<name>[&gameId=<id>]` | Returns `{ balance, totalBets, wins, losses, pending }` for the scout |
+| `GET` | `/api/betting/leaderboard[?gameId=<id>]` | Auto-resolves pending bets, then returns `{ gameName, leaderboard[] }` sorted by balance desc |
+
+### Key Files
+
+- `src/lib/betting.js` — service layer: `getStatboticsPrediction`, `calculatePointsWagered`, `placeBet`, `getUserBet`, `getUserBalance`, `getLeaderboard`, `resolveCompletedBets`, `ensureBettingTable`
+- `src/app/form-components/BettingSection.js` — client component rendered on the scouting form
+- `src/app/betting/page.js` — leaderboard page
+- `src/lib/schema-generator.js` — `sanitizeBettingTableName()` generates the safe table name
+
+### Notes
+
+- Betting only covers qualification matches (`qm`). Other match types are not supported by the Statbotics match key format used.
+- `matchtype` defaults to `2` (qualification) throughout the system; the DB column exists for forward compatibility.
+- The `tbaEventCode` / `tba_event_code` field is shared with the OPR/PPR system. Both `usePPR` and `enableBetting` can be active simultaneously.
+- Scouts are identified by `scoutname` (from the form's scout profile) and `scoutteam` (from their session's `teamName`). Each scout can place at most one bet per match per team.
+- Balance is a derived value (`SUM(points_earned)`), not a stored column. The leaderboard re-aggregates live on every fetch.
 
 ---
 

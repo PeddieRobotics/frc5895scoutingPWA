@@ -30,10 +30,11 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
 
 ### Data Flow
 
-1. **Admin uploads a JSON game config** at `/admin/games` → validated, stored in `game_configs` table, scouting table (`scouting_<gameName>`) and scout-leads table (`scoutleads_<gameName>`) are auto-created.
-2. **Scouts open the app** → form is dynamically rendered from the active game config → submissions write rows to `scouting_<gameName>`.
+1. **Admin uploads a JSON game config** at `/admin/games` → validated, stored in `game_configs` table, scouting table (`scouting_<gameName>`), scout-leads table (`scoutleads_<gameName>`), and betting table (`betting_<gameName>`) are auto-created.
+2. **Scouts open the app** → form is dynamically rendered from the active game config → submissions write rows to `scouting_<gameName>`. When `enableBetting: true`, a `BettingSection` appears between basics and the dynamic form.
 3. **Scout leads open `/scout-leads`** → enter per-second rates for `holdTimer` fields (individual or grouped) → stored in `scoutleads_<gameName>`. Also access the standalone **Gallery section** to upload/tag/view robot photos for any team.
 4. **Display pages** (`/team-view`, `/match-view`, `/picklist`, `/compare`) call API routes which use the display engine to aggregate data from `scouting_<gameName>` using field references from the active config.
+5. **Scouts visit `/betting`** → leaderboard of virtual point balances from match outcome bets (when `enableBetting: true`).
 
 ### Key Directories
 
@@ -61,9 +62,10 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
   - `scout-leads/` — Scout-lead timer rate CRUD
   - `edit-match-entry/` — PATCH endpoint to update a single scouting row (config-driven field allowlist; auth: own entry or admin password)
   - `prescout/` — Prescout data CRUD: `GET ?team&gameId` (any auth), `DELETE ?gameName` (admin); `upload/` POST xlsx (admin); `teams/` GET list (admin); `photos/` GET metadata + POST upload (any auth); `photos/[id]/` GET full data + DELETE (any auth)
+  - `betting/` — Betting system (requires `enableBetting: true` in config + `tbaEventCode`): `prediction/` GET Statbotics win probabilities; `place/` POST place a bet; `my-bet/` GET scout's bet for a match; `balance/` GET scout's point balance; `leaderboard/` GET ranked balance table (also auto-resolves completed bets)
   - `admin/` — Game management, auth, team management
 
-- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/admin`, `/admin/prescout`, `/sudo`
+- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/betting`, `/admin`, `/admin/prescout`, `/sudo`
 
 - `src/configs/` — Reference JSON game configs (`reefscape_2025.json`, `rebuilt_2026.json`)
 
@@ -82,7 +84,8 @@ There are two separate DB connection mechanisms — use the right one for the co
 ### Game Config JSON Structure
 
 See `README.md` for full reference. Key top-level keys:
-- `gameName` — becomes the DB table suffix (`scouting_<gameName>`, `scoutleads_<gameName>`)
+- `gameName` — becomes the DB table suffix (`scouting_<gameName>`, `scoutleads_<gameName>`, `betting_<gameName>`)
+- `enableBetting` — optional boolean; activates the match betting system (Statbotics predictions, `betting_<gameName>` table, `BettingSection` on form, `/betting` leaderboard). Requires `tbaEventCode`.
 - `basics` — pre-match fields (e.g., "No Show")
 - `sections` — form sections with fields; supports `showWhen` conditional visibility
 - `calculations` — EPA formulas (`auto`, `tele`, `end`) using formula or mapping types
@@ -198,6 +201,28 @@ Setting `usePPR: true` in the top-level game config JSON activates OPR-based sco
 - PPR uses the adjusted-contribution method for last-3 and over-time charts, so regularization is not needed in normal operation.
 
 **TBA event code:** read from `activeGame.tba_event_code` or `config.tbaEventCode`. `TBA_AUTH_KEY` env var required.
+
+### Betting System — `enableBetting` Config Flag
+
+Setting `enableBetting: true` in the top-level game config JSON activates the match outcome betting system. `tbaEventCode` must also be set.
+
+**Per-game DB table:** `betting_<gameName>` — created in `createGame()`, dropped in `deleteGame()`. Schema: `scoutname`, `scoutteam`, `match`, `matchtype`, `alliance` (`'red'`/`'blue'`), `red_win_prob`, `blue_win_prob`, `points_wagered`, `status` (`'pending'`/`'won'`/`'lost'`), `points_earned`, `placed_at`, `resolved_at`. UNIQUE on `(scoutname, scoutteam, match, matchtype)`. `ensureBettingTable()` in `betting.js` creates it lazily on first bet if missing.
+
+**Points formula:** `points_wagered = round((1 - chosenAllianceWinProb) * 100)`. Win → `+points_wagered`, loss → `-points_wagered`. Balance = `SUM(points_earned)` (derived, not stored).
+
+**Statbotics:** predictions fetched from `https://api.statbotics.io/v3/match/{eventCode}_qm{matchNumber}` — no API key. 60 s in-memory cache per match key. Bets can only be placed when `matchStatus === 'Upcoming'`; attempting to bet on an in-progress or completed match returns 409. Bet resolution is triggered automatically on `GET /api/betting/leaderboard` via `resolveCompletedBets()`.
+
+**Form integration (`src/app/page.js`):** when `enableBetting: true`, `BettingSection` renders between the basics block and the dynamic form. The dynamic form is dimmed (`opacity: 0.4`, `pointerEvents: none`) until the scout places a bet or abstains (X button). If the form is interacted with first, `window.__lockBetting()` fires, locking the betting card and unlocking the form.
+
+**NavBar:** `/betting` link is always present in `NavBar.js`; the page itself shows a "not enabled" message when the config flag is absent.
+
+**Key files:**
+- `src/lib/betting.js` — service layer (Statbotics fetch, bet CRUD, leaderboard, resolution)
+- `src/app/form-components/BettingSection.js` — client component on scouting form
+- `src/app/betting/page.js` — leaderboard page (light mode)
+- `src/lib/schema-generator.js` — `sanitizeBettingTableName()`
+
+See `README.md` — "Betting System" section for full API reference, points formula, and config details.
 
 ### webpack Config Note
 

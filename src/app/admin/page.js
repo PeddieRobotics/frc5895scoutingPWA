@@ -128,7 +128,21 @@ export default function AdminPage() {
   const [cookieDebug, setCookieDebug] = useState('');
   const [showDebugUI, setShowDebugUI] = useState(false);
   const [activeTab, setActiveTab] = useState('teams');
+  const [modal, setModal] = useState(null);
   const router = useRouter();
+
+  // Modal helpers
+  const hideModal = () => setModal(null);
+  const showConfirm = (message, confirmLabel = 'Confirm') =>
+    new Promise((resolve) => {
+      setModal({
+        message,
+        actions: [
+          { label: 'Cancel', className: styles.modalCancelButton, autoFocus: true, callback: () => { hideModal(); resolve(false); } },
+          { label: confirmLabel, className: styles.modalDangerButton, callback: () => { hideModal(); resolve(true); } },
+        ],
+      });
+    });
 
   // Define fetchTeams function before it's used in checkAuth
   const fetchTeams = async () => {
@@ -333,7 +347,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteTeam = async (teamName) => {
-    if (!confirm(`Are you sure you want to delete ${teamName}?`)) {
+    if (!(await showConfirm(`Are you sure you want to delete ${teamName}?`, 'Delete'))) {
       return;
     }
     
@@ -375,7 +389,7 @@ export default function AdminPage() {
 
   // Add function to delete a session
   const handleDeleteSession = async (sessionId) => {
-    if (!confirm(`Are you sure you want to terminate this session?`)) {
+    if (!(await showConfirm(`Are you sure you want to terminate this session?`, 'Terminate'))) {
       return;
     }
     
@@ -644,6 +658,22 @@ export default function AdminPage() {
 
   return (
     <div className={styles.adminContainer}>
+      {/* Custom confirmation modal */}
+      {modal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-describedby="modal-message">
+            <p id="modal-message" className={styles.modalMessage}>{modal.message}</p>
+            <div className={styles.modalActions}>
+              {modal.actions.map((action, i) => (
+                <button key={i} className={action.className} onClick={action.callback} autoFocus={action.autoFocus}>
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.adminHeader}>
         <h1 className={styles.adminTitle}>Team Authentication Management</h1>
         <div>

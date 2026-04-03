@@ -315,6 +315,31 @@ function sanitizeFieldImagesTableName(gameName) {
   return sanitizeTableName(gameName, 'fieldimages_');
 }
 
+function sanitizeBettingTableName(gameName) {
+  return sanitizeTableName(gameName, 'betting_');
+}
+
+function generateCreateBettingTableSQL(tableName) {
+  return `
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      id SERIAL PRIMARY KEY,
+      scoutname VARCHAR(100) NOT NULL,
+      scoutteam VARCHAR(100) NOT NULL,
+      match INTEGER NOT NULL,
+      matchtype INTEGER NOT NULL DEFAULT 2,
+      alliance VARCHAR(4) NOT NULL,
+      red_win_prob NUMERIC(6,4) NOT NULL,
+      blue_win_prob NUMERIC(6,4) NOT NULL,
+      points_wagered INTEGER NOT NULL,
+      status VARCHAR(10) NOT NULL DEFAULT 'pending',
+      points_earned INTEGER DEFAULT 0,
+      placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      resolved_at TIMESTAMP,
+      UNIQUE(scoutname, scoutteam, match, matchtype)
+    )
+  `;
+}
+
 /**
  * Walk all fields in a config and extract imageTag references from imageSelect fields.
  * @param {Object} config - The game configuration JSON
@@ -657,6 +682,8 @@ export {
   sanitizePrescoutTableName,
   sanitizePhotosTableName,
   sanitizeFieldImagesTableName,
+  sanitizeBettingTableName,
+  generateCreateBettingTableSQL,
   getFieldDefaults,
   getNumericFields,
   getBooleanFields,

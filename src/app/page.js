@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import DynamicFormRenderer from "./form-components/DynamicFormRenderer";
+import BettingSection from "./form-components/BettingSection";
 import styles from "./page.module.css";
 import compactStyles from "./compact.module.css";
 import AuthDialog from "./form-components/AuthDialog";
@@ -36,6 +37,10 @@ export default function Home() {
   const [savedTeam, setSavedTeam] = useState("");
   const [showClearFormDialog, setShowClearFormDialog] = useState(false);
   const [showValidationError, setShowValidationError] = useState(false);
+
+  // Betting state
+  const [betState, setBetState] = useState(null); // null | 'placed' | 'abstained' | 'locked'
+  const [liveMatchNumber, setLiveMatchNumber] = useState("");
 
   // Active game configuration state
   const [activeGameConfig, setActiveGameConfig] = useState(null);
@@ -443,6 +448,7 @@ export default function Home() {
       if (savedProfile) {
         const profileData = JSON.parse(savedProfile);
         setScoutProfile(profileData);
+        if (profileData.match) setLiveMatchNumber(String(profileData.match));
 
         // Directly set form values after a short delay to ensure form is mounted
         setTimeout(() => {
@@ -841,6 +847,8 @@ export default function Home() {
       setNoShow(false);
       setBreakdown(false);
       setDefense(false);
+      setBetState(null);
+      setLiveMatchNumber("");
 
       // Clear saved team scouted
       setSavedTeam("");
@@ -1293,6 +1301,13 @@ export default function Home() {
               type={"tel"}
               pattern="[0-9]*"
               className="preMatchInput"
+              onChange={(e) => {
+                setLiveMatchNumber(e.target.value);
+                // Persist match number so it survives reload
+                const currentProfile = JSON.parse(localStorage.getItem("ScoutProfile") || "{}");
+                currentProfile.match = e.target.value;
+                localStorage.setItem("ScoutProfile", JSON.stringify(currentProfile));
+              }}
             />
           </div>
           <div className={`${styles.MatchInfo} ${compactStyles.MatchInfo}`}>
@@ -1325,6 +1340,20 @@ export default function Home() {
           defense={defense}
           setDefense={setDefense}
           gameId={activeGameConfig?.gameId}
+          sectionsLocked={activeGameConfig?.config?.enableBetting && betState !== 'placed'}
+          afterBasicsSlot={
+            activeGameConfig?.config?.enableBetting ? (
+              <BettingSection
+                matchNumber={liveMatchNumber}
+                gameId={activeGameConfig?.gameId}
+                tbaEventCode={activeGameConfig?.config?.tbaEventCode}
+                enabled={!!activeGameConfig?.config?.enableBetting}
+                onBetStateChange={(state) => setBetState(state)}
+                authCredentials={authCredentials}
+                scoutName={scoutProfile?.scoutname || ""}
+              />
+            ) : null
+          }
         />
 
         {!gameConfigLoading && !activeGameConfig && (

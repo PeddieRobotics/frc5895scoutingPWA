@@ -15,6 +15,8 @@ import {
   sanitizePrescoutTableName,
   sanitizePhotosTableName,
   sanitizeFieldImagesTableName,
+  sanitizeBettingTableName,
+  generateCreateBettingTableSQL,
 } from './schema-generator.js';
 
 function quoteIdentifier(identifier) {
@@ -307,6 +309,11 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     `);
     console.log(`[GameConfig] Created field images table: ${fieldImagesTableName}`);
 
+    // Create betting table (for match betting feature)
+    const bettingTableName = sanitizeBettingTableName(gameName);
+    await client.query(generateCreateBettingTableSQL(bettingTableName));
+    console.log(`[GameConfig] Created betting table: ${bettingTableName}`);
+
     // Insert into game_configs
     const tbaEventCode = configJson.tbaEventCode || null;
     const insertResult = await client.query(`
@@ -434,6 +441,10 @@ async function deleteGame(id, dropTable = false) {
       const fieldImagesTableName = sanitizeFieldImagesTableName(game.game_name);
       await client.query(`DROP TABLE IF EXISTS ${fieldImagesTableName}`);
       console.log(`[GameConfig] Dropped table: ${fieldImagesTableName}`);
+
+      const bettingTableName = sanitizeBettingTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${bettingTableName}`);
+      console.log(`[GameConfig] Dropped table: ${bettingTableName}`);
     }
 
     await client.query('COMMIT');

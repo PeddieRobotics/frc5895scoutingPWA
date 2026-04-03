@@ -18,3 +18,15 @@ When a new config key introduces a finite set of valid string values that the re
 ## JSDoc Example Strings
 
 Component JSDoc comments sometimes include example game-specific values (e.g., `tag - tag name string (e.g., "Featured")`). These are not runtime literals and are not violations, but they age out of date across seasons. Acceptable as documentation.
+
+## NavBar Conditional Feature Links Pattern (new hotspot — betting audit 2026-04-03)
+
+`NavBar.js` uses a static `SITE_PAGES` array. When a new feature is added with a config flag (e.g., `enableBetting`), there is a HIGH-severity risk that the nav link is added statically to the array rather than conditionally on the config flag. The NavBar does not currently load game config, so showing/hiding the Betting link based on `config.enableBetting` requires either:
+- Adding `useGameConfig()` to NavBar and filtering `SITE_PAGES` on `config?.enableBetting`, OR
+- Adding a `configOnly: true` guard property to the page entry and a config check in the filter.
+
+The `/betting` page itself already guards with `if (!config?.enableBetting)` — but the nav link is always visible regardless. This is a HIGH violation pattern to watch on any future feature-flagged page additions.
+
+## Betting Table Creation Duplication Pattern (new finding — betting audit 2026-04-03)
+
+The betting table DDL is defined in TWO places: `src/lib/game-config.js` (in `createGame()`) and `src/lib/betting.js` (in `ensureBettingTable()`). This is structural duplication that risks schema drift. Not a config-driven violation per se, but a maintainability concern to flag whenever new per-game tables are added.

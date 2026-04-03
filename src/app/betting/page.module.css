@@ -1,0 +1,139 @@
+/* Betting Leaderboard — light mode design system */
+
+.page {
+  margin: 0;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+  background: #f4f1eb;
+  min-height: calc(100vh - 45px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #0d1f35;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0d1f35;
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a07c30;
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+.loadingText,
+.emptyState {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(13, 31, 53, 0.55);
+  text-align: center;
+  margin-top: 40px;
+}
+
+.errorText {
+  font-size: 15px;
+  font-weight: 600;
+  color: #c0392b;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.tableWrapper {
+  width: 100%;
+  max-width: 700px;
+  overflow-x: auto;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table thead {
+  background: #a07c30;
+  color: #ffffff;
+}
+
+.table th {
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 10px 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.evenRow {
+  background: #ffffff;
+}
+
+.oddRow {
+  background: #faf8f4;
+}
+
+.rankCol {
+  width: 40px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.nameCol {
+  min-width: 100px;
+}
+
+.teamCol {
+  min-width: 60px;
+}
+
+.balanceCol {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 70px;
+}
+
+.recordCol {
+  text-align: center;
+  width: 40px;
+  font-variant-numeric: tabular-nums;
+}
+
+.positive {
+  color: #1a7f3c;
+}
+
+.negative {
+  color: #c0392b;
+}
+
+/* Responsive: stack on very small screens */
+@media (max-width: 480px) {
+  .table {
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 6px;
+  }
+}

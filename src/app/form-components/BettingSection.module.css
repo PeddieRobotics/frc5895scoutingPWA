@@ -1,0 +1,318 @@
+.bettingSection {
+  width: 100%;
+  max-width: 500px;
+  margin: 8px auto 4px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(189, 151, 72, 0.22);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.header {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #bd9748;
+  text-align: center;
+}
+
+.divider {
+  border: none;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, rgba(189, 151, 72, 0.5), transparent);
+  width: 75%;
+  margin: 6px auto 10px;
+}
+
+.hint {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(232, 213, 163, 0.6);
+  text-align: center;
+  margin: 8px 0;
+}
+
+.loginLink {
+  color: #bd9748;
+  text-decoration: underline;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.error {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffaaaa;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.predictionCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(189, 151, 72, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 8px 0;
+}
+
+.predictionLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(232, 213, 163, 0.6);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.predictionRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.allianceLabel {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e8d5a3;
+  min-width: 50px;
+  text-align: right;
+}
+
+.winnerPercent {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #9de387;
+  font-variant-numeric: tabular-nums;
+  min-width: 55px;
+}
+
+.loserPercent {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffaaaa;
+  font-variant-numeric: tabular-nums;
+  min-width: 55px;
+}
+
+.allianceButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+
+.redButton,
+.blueButton,
+.abstainButton {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 10px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.redButton {
+  background: rgba(255, 80, 80, 0.12);
+  border: 1.5px solid rgba(255, 120, 120, 0.55);
+  color: #ffaaaa;
+}
+
+.redButton:hover {
+  background: rgba(255, 80, 80, 0.22);
+  border-color: rgba(255, 120, 120, 0.8);
+}
+
+.redButton.selected {
+  background: rgba(255, 80, 80, 0.3);
+  border-color: rgba(255, 120, 120, 0.9);
+  color: #ffcccc;
+}
+
+.blueButton {
+  background: rgba(30, 64, 175, 0.15);
+  border: 1.5px solid rgba(30, 64, 175, 0.5);
+  color: #93b5ff;
+}
+
+.blueButton:hover {
+  background: rgba(30, 64, 175, 0.25);
+  border-color: rgba(30, 64, 175, 0.7);
+}
+
+.blueButton.selected {
+  background: rgba(30, 64, 175, 0.35);
+  border-color: rgba(30, 64, 175, 0.9);
+  color: #bbccff;
+}
+
+.abstainButton {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: rgba(232, 213, 163, 0.6);
+  padding: 10px 16px;
+}
+
+.abstainButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.redButton:active,
+.blueButton:active,
+.abstainButton:active {
+  transform: scale(0.96);
+}
+
+.redButton:focus-visible,
+.blueButton:focus-visible,
+.abstainButton:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
+}
+
+.betConfirmed {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8d5a3;
+  text-align: center;
+  margin: 10px 0 4px;
+}
+
+.redText {
+  color: #ff8888;
+}
+
+.blueText {
+  color: #88aaff;
+}
+
+.lockedMessage {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(232, 213, 163, 0.6);
+  text-align: center;
+  margin: 10px 0;
+  font-style: italic;
+}
+
+.stakeInfo {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.stakeAmount {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8d5a3;
+  margin-bottom: 8px;
+}
+
+.stakeAmount strong {
+  font-size: 18px;
+  font-weight: 800;
+  color: #bd9748;
+  font-variant-numeric: tabular-nums;
+}
+
+.placeBetButton {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 10px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 44px;
+  border: 1.5px solid rgba(189, 151, 72, 0.55);
+  background: rgba(189, 151, 72, 0.12);
+  color: #e8d5a3;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.placeBetButton:hover {
+  background: rgba(189, 151, 72, 0.2);
+  border-color: rgba(189, 151, 72, 0.8);
+  color: #f5e6b8;
+}
+
+.placeBetButton:active {
+  transform: scale(0.96);
+}
+
+.placeBetButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.placeBetButton:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
+}
+
+.skipButton {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 10px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 44px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(232, 213, 163, 0.6);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.skipButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(232, 213, 163, 0.8);
+}
+
+.skipButton:active {
+  transform: scale(0.96);
+}
+
+.skipButton:focus-visible {
+  outline: 2px solid rgba(189, 151, 72, 0.7);
+  outline-offset: 2px;
+}
+
+.balanceDisplay {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 8px;
+  padding: 6px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.positiveBalance {
+  color: #9de387;
+}
+
+.negativeBalance {
+  color: #ffaaaa;
+}

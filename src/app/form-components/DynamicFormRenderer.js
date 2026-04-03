@@ -58,6 +58,8 @@ export default function DynamicFormRenderer({
   defense,
   setDefense,
   gameId,
+  afterBasicsSlot,
+  sectionsLocked,
 }) {
   // Generic state for any collapsible whose trigger isn't a named prop above
   const [collapsibleStates, setCollapsibleStates] = useState({});
@@ -316,14 +318,22 @@ export default function DynamicFormRenderer({
 
   return (
     <>
-      {/* Render basics section */}
+      {/* Render basics section (No Show, etc.) — always accessible */}
       {config.basics?.fields && (
         <div className={styles.BasicsSection}>
           {config.basics.fields.map((field, i) => renderField(field, `basics-${i}`))}
         </div>
       )}
 
-      {/* Render all sections */}
+      {/* Slot between basics and sections (used for BettingSection) */}
+      {afterBasicsSlot}
+
+      {/* Render all sections — lockable when betting is pending */}
+      <div style={
+        sectionsLocked
+          ? { opacity: 0.4, pointerEvents: 'none', transition: 'opacity 0.2s ease' }
+          : { opacity: 1, transition: 'opacity 0.2s ease' }
+      }>
       {config.sections?.map((section, sectionIndex) => {
         if (!shouldShowSection(section)) return null;
 
@@ -336,6 +346,7 @@ export default function DynamicFormRenderer({
           </div>
         );
       })}
+      </div>
     </>
   );
 }
