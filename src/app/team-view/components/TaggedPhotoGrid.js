@@ -15,7 +15,7 @@ import LightboxModal from "../../components/LightboxModal";
  */
 export default function TaggedPhotoGrid({ tag, photos, gameId, tagConfig, titleClassName }) {
   const [loadedPhotos, setLoadedPhotos] = useState({});
-  const [lightbox, setLightbox] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   useEffect(() => {
     if (!photos || photos.length === 0) return;
@@ -48,14 +48,14 @@ export default function TaggedPhotoGrid({ tag, photos, gameId, tagConfig, titleC
         {tag}
       </h4>
       <div className={styles.scrollRow}>
-        {photos.map(p => {
+        {photos.map((p, idx) => {
           const loaded = loadedPhotos[p.id];
           return (
             <button
               key={p.id}
               type="button"
               className={styles.thumb}
-              onClick={() => loaded?.src && setLightbox({ id: p.id, src: loaded.src, filename: p.filename })}
+              onClick={() => loaded?.src && setLightboxIndex(idx)}
               disabled={!loaded?.src}
               title={p.filename}
             >
@@ -71,11 +71,13 @@ export default function TaggedPhotoGrid({ tag, photos, gameId, tagConfig, titleC
         })}
       </div>
 
-      {lightbox && (
+      {lightboxIndex >= 0 && loadedPhotos[photos[lightboxIndex]?.id]?.src && (
         <LightboxModal
-          src={lightbox.src}
-          alt={lightbox.filename}
-          onClose={() => setLightbox(null)}
+          src={loadedPhotos[photos[lightboxIndex].id].src}
+          alt={photos[lightboxIndex].filename}
+          onClose={() => setLightboxIndex(-1)}
+          onPrev={photos.length > 1 ? () => setLightboxIndex(i => (i - 1 + photos.length) % photos.length) : undefined}
+          onNext={photos.length > 1 ? () => setLightboxIndex(i => (i + 1) % photos.length) : undefined}
         />
       )}
     </div>

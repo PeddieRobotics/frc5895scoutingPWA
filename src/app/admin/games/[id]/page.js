@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import styles from './game-detail.module.css';
+import { compressImage } from '../../../../lib/compressImage';
 
 const SYSTEM_COLUMNS = new Set([
   'id', 'scoutname', 'scoutteam', 'team', 'match', 'matchtype', 'noshow', 'timestamp',
@@ -158,10 +159,15 @@ export default function GameDetailPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { setSaveMessage({ type: 'error', text: 'Only image files are allowed' }); return; }
-    if (file.size > 5 * 1024 * 1024) { setSaveMessage({ type: 'error', text: 'Image must be under 5 MB' }); return; }
 
     setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'uploading' }));
     try {
+      file = await compressImage(file, 5 * 1024 * 1024);
+      if (file.size > 5 * 1024 * 1024) {
+        setSaveMessage({ type: 'error', text: 'Image still exceeds 5 MB after compression' });
+        setImageUploadStatus(prev => ({ ...prev, [imageTag]: 'error' }));
+        return;
+      }
       const reader = new FileReader();
       const base64 = await new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result.split(',')[1]);

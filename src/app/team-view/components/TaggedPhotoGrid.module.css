@@ -20,18 +20,17 @@
 
 .scrollRow {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    overflow-x: auto;
     padding-bottom: 4px;
     margin-top: 6px;
     justify-content: center;
-    -webkit-overflow-scrolling: touch;
 }
 
 .thumb {
     flex-shrink: 0;
-    width: 100px;
-    height: 100px;
+    width: 130px;
+    height: 130px;
     border: 1.5px solid rgba(160, 124, 48, 0.25);
     border-radius: 8px;
     overflow: hidden;

@@ -1567,6 +1567,18 @@ Each stat in `stats[]` supports:
 
 Each stat supports `defenseField` (renders avg star rating pill + per-entry hover tooltip), as well as `key`/`compute`/`format`/`invertDelta` for plain numeric stats.
 
+**`photoTag`** (string, optional) — When set, the `/compare` page renders a side-by-side photo row for each compared team, showing photos tagged with this value. The string must match a `name` in the top-level `photoTags` array. One `TaggedPhotoGrid` is rendered per team, each filtered to the specified tag. Omit the key entirely to suppress the photo row.
+
+```json
+{
+  "compare": {
+    "photoTag": "Featured"
+  }
+}
+```
+
+**Validation:** `config-validator.js` warns if `photoTag` is not a string, or if the value does not match any name in `photoTags`.
+
 ### API Aggregation Configuration
 
 This section drives backend aggregation for team, alliance, picklist, and compare pages.

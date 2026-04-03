@@ -226,6 +226,26 @@ PhotoGallery.module.css lightbox uses `rgba(0, 0, 0, 0.88)` backdrop and `rgba(0
 
 ---
 
+## Modal title letter-spacing too low — must be 0.08–0.1em
+
+`.validationErrorTitle` in page.module.css uses `letter-spacing: 0.04em`. DESIGN.md section-header typography specifies `letter-spacing: 0.08–0.1em` for 20–22px / font-weight 800 elements. Discovered 2026-04-02 in validation error modal.
+
+**Why:** Section headers (and modal titles that share the same size/weight role) require the wider tracking defined in DESIGN.md to maintain visual hierarchy.
+
+**How to apply:** Any heading at 20–22px / weight 800 must use `letter-spacing: 0.08em` minimum. Flag values of `0.04em` or lower on header-weight text as a violation.
+
+---
+
+## Body text font-weight 500 — should be 600
+
+`.validationErrorMessage` uses `font-weight: 500`. DESIGN.md body/option-label text requires `font-weight: 600`. Weight 500 is reserved for "Descriptions / hints" (12px italic). Any 15px paragraph used as a user-facing message is body text. Discovered 2026-04-02 in validation error modal.
+
+**Why:** Using 500 on body copy makes it lighter than the design system intends, reducing legibility in a dim arena environment.
+
+**How to apply:** Flag `font-weight: 500` on any non-hint, non-italic body text at 14–15px as a violation. Descriptions/hints at 12px italic may use 500.
+
+---
+
 ## Off-token surface color `#faf8f3` (one digit off from spec)
 
 `.scatterAxisSelect` in scout-leads/page.module.css uses `background: #faf8f3` — one digit off from the spec token `#faf8f4` (Surface alt). Causes a barely-visible but technically off-spec warm tint. Discovered 2026-04-02.
@@ -233,3 +253,33 @@ PhotoGallery.module.css lightbox uses `rgba(0, 0, 0, 0.88)` backdrop and `rgba(0
 **Why:** Palette tokens must be exact. `#faf8f3` has a cooler/grayer tone than the intended `#faf8f4`.
 
 **How to apply:** Replace `#faf8f3` with `#faf8f4`.
+
+---
+
+## `transition` missing explicit `ease` keyword
+
+LightboxModal.module.css `.navBtn` and `.closeBtn` use `transition: background 0.15s` without the `ease` keyword. The spec says "0.15s ease" — the entire codebase uses the explicit shorthand. Omitting `ease` technically still defaults to ease, but deviates from the established convention. Discovered 2026-04-02.
+
+**Why:** DESIGN.md Transitions — "Color/border/background changes: 0.15s ease." The explicit `ease` keyword is the project-wide convention.
+
+**How to apply:** Any `transition` that uses a bare duration without a timing function should be flagged. Correct to `0.15s ease`.
+
+---
+
+## Off-token surface hover `rgba(255,255,255,0.12)` in dark-mode overlays
+
+LightboxModal.module.css `.navBtn:hover` uses `rgba(255, 255, 255, 0.12)` — not a palette token. The surface hover token in dark mode is `rgba(255,255,255,0.09)`. The sibling `.closeBtn:hover` correctly uses `0.09`. Discovered 2026-04-02.
+
+**Why:** DESIGN.md Color Palette — "Surface hover: rgba(255,255,255,0.09)." No `0.12` opacity value exists in the dark mode palette.
+
+**How to apply:** In dark-mode overlays, any `rgba(255,255,255,...)` hover background must use `0.09`. Flag `0.10`, `0.11`, `0.12`, etc. as off-token.
+
+---
+
+## Button label font-size — icon-only buttons (unresolved ambiguity)
+
+LightboxModal.module.css `.navBtn` uses `font-size: 28px` for single-character chevron arrows (‹ ›). DESIGN.md button label spec is 13–16px. No exception is defined for icon-only or single-character buttons. Discovered 2026-04-02.
+
+**Why:** The spec does not distinguish icon-only from text-labeled buttons. However, 28px is clearly chosen for visual legibility inside a 48px circle, not as a text label.
+
+**How to apply:** Flag as a warning (not a hard violation) when a button uses a single character/icon at a size clearly above 16px for visual clarity. Raise to the design lead to add an icon-button font-size exception to DESIGN.md. If no exception is added, reduce to 18–20px as a compromise.

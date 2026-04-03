@@ -67,14 +67,15 @@ Note: border opacity `0.15` is slightly lighter than spec `0.25` — use `0.25` 
 - `position: fixed; inset: 0; z-index: 1100` — correct overlay stacking
 - `box-shadow: 0 8px 48px rgba(13, 31, 53, 0.55)` on the image — navy shadow family
 
-## TaggedPhotoGrid.module.css — horizontal scrollable thumbnail strip
+## TaggedPhotoGrid.module.css — wrapping thumbnail grid
 
-Textbook light mode interactive tile in thumbnail form:
+Textbook light mode interactive tile in thumbnail form (changed from horizontal scroll to flex-wrap in 2026-04-02 review):
 - `border: 1.5px solid rgba(160, 124, 48, 0.25)` — correct gold border default
 - `border-radius: 8px`, `background: #faf8f4` — correct alt surface
 - Hover: `border-color: rgba(160, 124, 48, 0.55); box-shadow: 0 2px 8px rgba(13, 31, 53, 0.1)` — correct hover
 - `transition: border-color 0.15s ease, box-shadow 0.15s ease` — correct timing
 - Spinner uses `border: 2px solid rgba(160, 124, 48, 0.2); border-top-color: #a07c30` — on-token loading indicator
+- `.scrollRow`: `flex-wrap: wrap; justify-content: center; gap: 8px` — DESIGN.md does not mandate horizontal scroll for grids; wrapping is compliant
 
 ## scout-leads gallery — `.gallerySection` card and `.galleryUploadBtn` / `.galleryEnterBtn`
 

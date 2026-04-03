@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import styles from "./PhotoGallery.module.css";
 import LightboxModal from "../../components/LightboxModal";
+import { compressImage } from "../../../lib/compressImage";
 
 /**
  * PhotoGallery
@@ -90,12 +91,14 @@ export default function PhotoGallery({
       setUploadError('Only image files are allowed.');
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setUploadError('Photo must be under 3 MB.');
-      return;
-    }
     setUploading(true);
     try {
+      file = await compressImage(file);
+      if (file.size > 3 * 1024 * 1024) {
+        setUploadError('Photo still exceeds 3 MB after compression.');
+        setUploading(false);
+        return;
+      }
       await onUpload?.(file);
     } catch {
       setUploadError('Upload failed. Please try again.');

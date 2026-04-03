@@ -207,6 +207,19 @@ function validateConfig(config) {
     }
   }
 
+  // Validate display.compare.photoTag
+  const comparePhotoTag = config.display?.compare?.photoTag;
+  if (comparePhotoTag !== undefined) {
+    if (typeof comparePhotoTag !== 'string') {
+      result.addWarning('display.compare.photoTag should be a string', 'display.compare.photoTag');
+    } else {
+      const tagNames = new Set((config.photoTags || []).map(t => t.name));
+      if (tagNames.size > 0 && !tagNames.has(comparePhotoTag)) {
+        result.addWarning(`display.compare.photoTag "${comparePhotoTag}" not found in photoTags`, 'display.compare.photoTag');
+      }
+    }
+  }
+
   // Validate display.teamView.photoSections
   const photoSections = config.display?.teamView?.photoSections;
   if (photoSections !== undefined) {

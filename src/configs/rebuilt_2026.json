@@ -1083,6 +1083,7 @@
       "defenseField": "defenseplayed"
     },
     "compare": {
+      "photoTag": "Featured",
       "sections": [
         {
           "label": "Overall",

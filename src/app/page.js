@@ -33,7 +33,9 @@ export default function Home() {
   const [authCredentials, setAuthCredentials] = useState(null);
   const [authRedirectTarget, setAuthRedirectTarget] = useState(null);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [savedTeam, setSavedTeam] = useState("");
   const [showClearFormDialog, setShowClearFormDialog] = useState(false);
+  const [showValidationError, setShowValidationError] = useState(false);
 
   // Active game configuration state
   const [activeGameConfig, setActiveGameConfig] = useState(null);
@@ -458,6 +460,18 @@ export default function Home() {
         }, 100);
       }
 
+      // Restore team scouted value
+      const storedTeam = localStorage.getItem("ScoutTeamScouted");
+      if (storedTeam) {
+        setSavedTeam(storedTeam);
+        setTimeout(() => {
+          if (form.current) {
+            const teamInput = form.current.querySelector('input[name="team"]');
+            if (teamInput) teamInput.value = storedTeam;
+          }
+        }, 100);
+      }
+
       // Check online status
       setIsOnline(navigator.onLine);
       window.addEventListener('online', () => setIsOnline(true));
@@ -678,7 +692,7 @@ export default function Home() {
     let preMatchInputs = document.querySelectorAll(".preMatchInput");
     for (let preMatchInput of preMatchInputs) {
       if (preMatchInput.value == "" || preMatchInput.value <= "0") {
-        alert("Invalid Pre-Match Data!");
+        setShowValidationError(true);
         return null;
       }
     }
@@ -828,6 +842,10 @@ export default function Home() {
       setBreakdown(false);
       setDefense(false);
 
+      // Clear saved team scouted
+      setSavedTeam("");
+      localStorage.removeItem("ScoutTeamScouted");
+
       // Notify mounted components to clear their localStorage before unmounting
       window.dispatchEvent(new CustomEvent('reset_form_components'));
 
@@ -882,6 +900,10 @@ export default function Home() {
     setNoShow(false);
     setBreakdown(false);
     setDefense(false);
+
+    // Clear saved team scouted
+    setSavedTeam("");
+    localStorage.removeItem("ScoutTeamScouted");
 
     // Notify mounted components to clear their localStorage before unmounting
     window.dispatchEvent(new CustomEvent('reset_form_components'));
@@ -1277,9 +1299,18 @@ export default function Home() {
             <TextInput
               visibleName={"Team Scouted:"}
               internalName={"team"}
+              defaultValue={savedTeam}
               type={"tel"}
               pattern="[0-9]*"
               className="preMatchInput"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val) {
+                  localStorage.setItem("ScoutTeamScouted", val);
+                } else {
+                  localStorage.removeItem("ScoutTeamScouted");
+                }
+              }}
             />
           </div>
         </div>
@@ -1387,12 +1418,12 @@ export default function Home() {
                                 if (field.type === 'comment') {
                                   return val ? <li key={field.name}><strong>{label}:</strong> {val}</li> : null;
                                 }
-                                if (field.type === 'singleSelect') {
+                                if (field.type === 'singleSelect' || field.type === 'imageSelect') {
                                   const opt = field.options?.find(o => o.value === val);
                                   return <li key={field.name}><strong>{label}:</strong> {opt?.label ?? val}</li>;
                                 }
                                 if (field.type === 'starRating' || field.type === 'qualitative') {
-                                  return <li key={field.name}><strong>{label}:</strong> {val}/6</li>;
+                                  return <li key={field.name}><strong>{label}:</strong> {val}/{field.max || 6}</li>;
                                 }
                                 return <li key={field.name}><strong>{label}:</strong> {val}</li>;
                               })}
@@ -1452,6 +1483,8 @@ export default function Home() {
                   setNoShow(false);
                   setBreakdown(false);
                   setDefense(false);
+                  setSavedTeam("");
+                  localStorage.removeItem("ScoutTeamScouted");
                   window.dispatchEvent(new CustomEvent('reset_form_components'));
                   setFormResetKey(prev => prev + 1);
                 }}
@@ -1465,6 +1498,24 @@ export default function Home() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Validation Error Dialog */}
+      {showValidationError && (
+        <div className={styles.QRCodeOverlay}>
+          <div className={styles.validationErrorContainer}>
+            <h2 className={styles.validationErrorTitle}>Invalid Pre-Match Data</h2>
+            <p className={styles.validationErrorMessage}>
+              Please fill in all pre-match fields (Scout Name, Match #, and Team #) before submitting.
+            </p>
+            <button
+              className={styles.SubmitButton}
+              onClick={() => setShowValidationError(false)}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

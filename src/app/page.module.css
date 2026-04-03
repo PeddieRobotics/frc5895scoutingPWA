@@ -439,6 +439,38 @@ hr.subsubheading {
   margin-bottom: 20px;
 }
 
+.validationErrorContainer {
+  background: #0b233b;
+  padding: 28px 24px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 360px;
+  border: 2px solid rgba(255, 120, 120, 0.55);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.validationErrorTitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffaaaa;
+  margin: 0 0 12px;
+  letter-spacing: 0.08em;
+}
+
+.validationErrorMessage {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8d5a3;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
 .QRCodeRow {
   display: flex;
   gap: 20px;

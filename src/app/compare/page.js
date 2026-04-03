@@ -6,6 +6,7 @@ import Link from "next/link";
 import useGameConfig from "../../lib/useGameConfig";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PrescoutSection from "../team-view/components/PrescoutSection";
+import TaggedPhotoGrid from "../team-view/components/TaggedPhotoGrid";
 
 // Resolve a dotted path like "endPlacement.l3" on an object
 function resolvePath(obj, path) {
@@ -62,6 +63,7 @@ function Compare() {
   const [tbaRanks, setTbaRanks] = useState({});
   const [fetchingTbaRanks, setFetchingTbaRanks] = useState(false);
   const [teamPrescout, setTeamPrescout] = useState({});
+  const [teamPhotos, setTeamPhotos] = useState({});
   const { config, gameId, loading: configLoading } = useGameConfig();
 
   const compareConfig = useMemo(() => config?.display?.compare, [config]);
@@ -166,6 +168,10 @@ function Compare() {
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d?.data) setTeamPrescout(prev => ({ ...prev, [team]: d.data })); })
         .catch(() => {});
+      fetch(`/api/prescout/photos?${params.toString()}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setTeamPhotos(prev => ({ ...prev, [team]: d?.photos || [] })))
+        .catch(() => {});
     });
   }, [teams, gameId]);
 
@@ -230,6 +236,37 @@ function Compare() {
           {fetchingTbaRanks ? 'Fetching...' : 'TBA Ranks'}
         </button>
       </div>
+
+      {/* Photo galleries — side by side per team, filtered to configured tag */}
+      {(() => {
+        const photoTags = config?.photoTags || [];
+        const comparePhotoTag = compareConfig?.photoTag;
+        if (!comparePhotoTag || photoTags.length === 0) return null;
+        const tagCfg = photoTags.find(t => t.name === comparePhotoTag);
+        if (!tagCfg) return null;
+        const hasAnyPhotos = teams.some(t => (teamPhotos[t] || []).filter(p => p.tag === comparePhotoTag).length > 0);
+        if (!hasAnyPhotos) return null;
+        return (
+          <div className={styles.section}>
+            <h2>{tagCfg.emoji ? `${tagCfg.emoji} ` : ''}{comparePhotoTag}</h2>
+            <div className={styles.photoGalleryRow}>
+              {teams.map((team, index) => {
+                const filtered = (teamPhotos[team] || []).filter(p => p.tag === comparePhotoTag);
+                return (
+                  <div key={team} className={styles.photoGalleryCol}>
+                    <div className={styles.photoGalleryTeamLabel} style={{ backgroundColor: COLORS[index] }}>Team {team}</div>
+                    {filtered.length > 0 ? (
+                      <TaggedPhotoGrid tag={comparePhotoTag} photos={filtered} gameId={gameId} tagConfig={tagCfg} />
+                    ) : (
+                      <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '12px', color: 'rgba(13, 31, 53, 0.4)', margin: 0, textAlign: 'center' }}>No photos.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* PPR/EPA over time — both teams on one chart */}
       <EpaOverTimeChart teams={teams} teamsData={teamsData} colors={COLORS} usePPR={config?.usePPR} overlayOptions={config?.display?.teamView?.epaChartOverlayOptions || []} />

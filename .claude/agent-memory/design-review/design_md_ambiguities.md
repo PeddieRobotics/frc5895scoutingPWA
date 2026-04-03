@@ -21,3 +21,9 @@ DESIGN.md says "Always use `box-sizing: border-box`." This is interpreted as: if
 ## :focus-visible gold ring — global vs. per-component
 
 DESIGN.md requires gold focus rings everywhere. Interpreted as: this should be in a global stylesheet. Per-component overrides are only necessary if the component has an opaque background that would hide a global outline. Not flagging absence of per-button :focus-visible as a violation if a global rule exists — flag it as a Warning instead.
+
+---
+
+## Icon-only button font-size exception (unresolved)
+
+DESIGN.md button label spec is 13–16px. No exception is made for single-character icon buttons (e.g., ‹ › × for lightbox nav/close). In practice, `font-size: 28px` is used on LightboxModal navBtn chevrons for legibility inside a 48px circle — this appears intentional. Flagging as a warning, not a hard violation, until the spec explicitly adds an icon-button exception. If no exception is added, 18–20px is the suggested compromise range. Discovered 2026-04-02.

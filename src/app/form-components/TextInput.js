@@ -1,15 +1,16 @@
 import styles from './TextInput.module.css'
-export default function TextInput ({ visibleName, internalName, defaultValue, type="text", pattern, className }) {
+export default function TextInput ({ visibleName, internalName, defaultValue, type="text", pattern, className, onChange }) {
     return (
         <div className={styles.TextInput}>
             <label htmlFor={internalName}>{visibleName}</label>
-            <input 
-                className={className || ""} 
-                type={type} 
-                id={internalName} 
-                name={internalName} 
+            <input
+                className={className || ""}
+                type={type}
+                id={internalName}
+                name={internalName}
                 defaultValue={defaultValue}
                 pattern={pattern}
+                onChange={onChange}
             ></input>
         </div>
     )

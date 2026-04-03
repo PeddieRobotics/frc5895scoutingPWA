@@ -4,7 +4,7 @@ import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
-import { getTeamOPRMap, getLast3OPRMap } from "../../../lib/opr-service";
+import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps } from "../../../lib/opr-service";
 
 export async function POST(request) {
   // First validate the auth token
@@ -78,26 +78,44 @@ export async function POST(request) {
   // If usePPR, replace EPA fields with PPR (Peddie Power Rating) then recompute weighted score
   if (gameConfig?.usePPR === true) {
     try {
-      const [oprMap, last3OprMap] = await Promise.all([
+      const [oprMap, last3OprMap, periodMaps] = await Promise.all([
         getTeamOPRMap(activeGame),
         getLast3OPRMap(activeGame),
+        getPerPeriodOPRMaps(activeGame),
       ]);
       if (oprMap) {
         // Step 1: inject raw PPR into real* and display fields
         teamTable = teamTable.map((entry) => {
-          const opr = oprMap.get(Number(entry.team));
-          const last3Opr = last3OprMap?.get(Number(entry.team));
+          const num = Number(entry.team);
+          const opr = oprMap.get(num);
+          const last3Opr = last3OprMap?.get(num);
           if (opr == null) return entry;
-          return { ...entry, realEpa: opr, realEpa3: last3Opr ?? opr, avgEpa: opr, last3Epa: last3Opr ?? opr };
+          const updated = { ...entry, realEpa: opr, realEpa3: last3Opr ?? opr, avgEpa: opr, last3Epa: last3Opr ?? opr };
+          // Inject per-period PPR so scatterplot realAuto/realTele/realEnd reflect OPR
+          if (periodMaps) {
+            const autoOpr = periodMaps.auto?.get(num);
+            const teleOpr = periodMaps.tele?.get(num);
+            const endOpr  = periodMaps.end?.get(num);
+            if (autoOpr != null) { updated.auto = autoOpr; updated.realAuto = autoOpr; }
+            if (teleOpr != null) { updated.tele = teleOpr; updated.realTele = teleOpr; }
+            if (endOpr  != null) { updated.end  = endOpr;  updated.realEnd  = endOpr;  }
+          }
+          return updated;
         });
 
-        // Step 2: re-normalize epa / epa3 relative to new PPR max so weights still scale 0–1
+        // Step 2: re-normalize epa / epa3 / auto / tele / end relative to new PPR maxes so weights still scale 0–1
         const maxEpa  = Math.max(...teamTable.map(e => e.realEpa  ?? 0), 0);
         const maxEpa3 = Math.max(...teamTable.map(e => e.realEpa3 ?? 0), 0);
+        const maxAuto = Math.max(...teamTable.map(e => e.realAuto ?? 0), 0);
+        const maxTele = Math.max(...teamTable.map(e => e.realTele ?? 0), 0);
+        const maxEnd  = Math.max(...teamTable.map(e => e.realEnd  ?? 0), 0);
         teamTable = teamTable.map(entry => ({
           ...entry,
           epa:  maxEpa  ? (entry.realEpa  ?? 0) / maxEpa  : 0,
           epa3: maxEpa3 ? (entry.realEpa3 ?? 0) / maxEpa3 : 0,
+          auto: maxAuto ? (entry.realAuto ?? 0) / maxAuto : 0,
+          tele: maxTele ? (entry.realTele ?? 0) / maxTele : 0,
+          end:  maxEnd  ? (entry.realEnd  ?? 0) / maxEnd  : 0,
         }));
 
         // Step 3: recompute score (normalized) and absoluteScore (real values) using the same weight formula

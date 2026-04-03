@@ -8,6 +8,7 @@ import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
 import TeamScatterPlot from "../components/TeamScatterPlot";
 import LightboxModal from "../components/LightboxModal";
+import { compressImage } from "../../lib/compressImage";
 
 function getAuthHeaders() {
   if (typeof window === "undefined") return {};
@@ -1802,9 +1803,15 @@ function GallerySection({ config, gameId, gameName, getAuthHeaders }) {
     setUploading(true);
     setUploadError('');
 
-    for (const file of pendingFiles) {
+    for (let file of pendingFiles) {
+      try {
+        file = await compressImage(file);
+      } catch {
+        setUploadError(`Failed to process "${file.name}".`);
+        continue;
+      }
       if (file.size > 3 * 1024 * 1024) {
-        setUploadError(`"${file.name}" exceeds 3 MB limit.`);
+        setUploadError(`"${file.name}" still exceeds 3 MB after compression.`);
         continue;
       }
       const fd = new FormData();

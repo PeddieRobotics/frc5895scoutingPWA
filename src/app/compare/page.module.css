@@ -317,3 +317,37 @@
     border-color: rgba(160, 124, 48, 0.8);
     background: rgba(160, 124, 48, 0.1);
 }
+
+/* ── Photo gallery row (side-by-side per team) ── */
+.photoGalleryRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .photoGalleryRow {
+        grid-template-columns: 1fr;
+    }
+}
+
+.photoGalleryCol {
+    min-width: 0;
+    background: #faf8f4;
+    border: 1px solid rgba(160, 124, 48, 0.13);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.photoGalleryTeamLabel {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: #ffffff;
+    text-align: center;
+    padding: 5px 14px;
+    border-radius: 7px;
+    margin: 0 auto 10px;
+    width: fit-content;
+    letter-spacing: 0.03em;
+}

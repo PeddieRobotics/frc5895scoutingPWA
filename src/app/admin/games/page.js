@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './games.module.css';
+import { compressImage } from '../../../lib/compressImage';
 
 // Icon components
 const GameIcon = () => (
@@ -287,15 +288,16 @@ export default function GamesPage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5 MB');
-      return;
-    }
-
     const key = `${gameId}_${imageTag}`;
     setImageUploadStatus(prev => ({ ...prev, [key]: 'uploading' }));
 
     try {
+      file = await compressImage(file, 5 * 1024 * 1024);
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image still exceeds 5 MB after compression');
+        setImageUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+        return;
+      }
       const reader = new FileReader();
       const base64 = await new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result.split(',')[1]);
