@@ -1,5 +1,5 @@
 // next.config.js
-const withPWA = require('next-pwa')({
+const withPWA = require('@ducanh2912/next-pwa').default({
   dest: 'public',
   register: true,
   skipWaiting: true,
@@ -38,6 +38,7 @@ function generateDynamicBuildId() {
 const nextConfig = {
   reactStrictMode: true,
   generateBuildId: generateDynamicBuildId,
+  turbopack: {},
   webpack: (config, { isServer }) => {
     // Use mock modules for client-side only, but NOT for API routes
     if (!isServer) {

@@ -171,7 +171,7 @@ function clearAuthCookies(response) {
   response.cookies.set('auth_session_secure', '', { ...base, sameSite: 'none', secure: true });
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const { isVercelPreview, isProduction, isDevelopment } = getEnvironmentType(request);
   

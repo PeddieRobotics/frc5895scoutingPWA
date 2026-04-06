@@ -43,7 +43,7 @@ export default function BettingSection({
     }
   }, [betPlaced, selectedAlliance, placedBet, matchNumber, enabled, lsKey, scoutName]);
 
-  // Restore betting state from localStorage on mount or match change
+  // Restore betting state from localStorage on mount
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
     const match = parseInt(matchNumber, 10);
@@ -240,7 +240,6 @@ export default function BettingSection({
 
       setPlacedBet(data.bet);
       setBetPlaced(true);
-      setBalance(prev => prev); // Trigger re-fetch on next render
       onBetStateChange?.('placed');
     } catch {
       setError('Network error placing bet');
@@ -377,23 +376,24 @@ export default function BettingSection({
             </div>
           )}
 
-          {!betPlaced && !locked && (
+          {!betPlaced && !locked && pointsAtStake !== null && authCredentials && !authExpired && (
             <div className={styles.stakeInfo}>
-              {pointsAtStake !== null && authCredentials && !authExpired ? (
-                <>
-                  <div className={styles.stakeAmount}>
-                    You are betting <strong>{pointsAtStake}</strong> points.
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.placeBetButton}
-                    onClick={handlePlaceBet}
-                    disabled={placing}
-                  >
-                    {placing ? 'Placing...' : 'Place Bet'}
-                  </button>
-                </>
-              ) : null}
+              <div className={styles.stakeAmount}>
+                You are betting <strong>{pointsAtStake}</strong> points.
+              </div>
+              <button
+                type="button"
+                className={styles.placeBetButton}
+                onClick={handlePlaceBet}
+                disabled={placing}
+              >
+                {placing ? 'Placing...' : 'Place Bet'}
+              </button>
+            </div>
+          )}
+
+          {!betPlaced && !locked && !(pointsAtStake !== null && authCredentials && !authExpired) && (
+            <div className={styles.stakeInfo}>
               <button
                 type="button"
                 className={styles.skipButton}

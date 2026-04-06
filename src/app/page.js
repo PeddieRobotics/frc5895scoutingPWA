@@ -39,7 +39,7 @@ export default function Home() {
   const [showValidationError, setShowValidationError] = useState(false);
 
   // Betting state
-  const [betState, setBetState] = useState(null); // null | 'placed' | 'abstained' | 'locked'
+  const [betState, setBetState] = useState(null); // null | 'placed' | 'locked'
   const [liveMatchNumber, setLiveMatchNumber] = useState("");
 
   // Active game configuration state
@@ -1301,6 +1301,7 @@ export default function Home() {
               type={"tel"}
               pattern="[0-9]*"
               className="preMatchInput"
+              disabled={activeGameConfig?.config?.enableBetting && betState === 'placed'}
               onChange={(e) => {
                 setLiveMatchNumber(e.target.value);
                 // Persist match number so it survives reload
@@ -1501,9 +1502,15 @@ export default function Home() {
         <div className={styles.QRCodeOverlay}>
           <div className={styles.QRCodeContainer}>
             <h2 className={styles.qrTitle}>Clear Form</h2>
-            <p style={{ color: 'white', textAlign: 'center', marginBottom: '24px', fontSize: '18px' }}>
+            <p style={{ color: 'white', textAlign: 'center', marginBottom: '8px', fontSize: '18px' }}>
               Are you sure you want to clear all form data?
             </p>
+            {betState === 'placed' && activeGameConfig?.config?.enableBetting && (
+              <p style={{ color: '#ffaaaa', textAlign: 'center', marginBottom: '24px', fontSize: '15px', fontWeight: 600 }}>
+                Your bet is locked — you cannot re-bet on this match.
+              </p>
+            )}
+            {!(betState === 'placed' && activeGameConfig?.config?.enableBetting) && <div style={{ marginBottom: '16px' }} />}
             <div className={styles.SubmitButtons}>
               <button
                 className={styles.SubmitButton}
@@ -1512,6 +1519,7 @@ export default function Home() {
                   setNoShow(false);
                   setBreakdown(false);
                   setDefense(false);
+                  setBetState(null);
                   setSavedTeam("");
                   localStorage.removeItem("ScoutTeamScouted");
                   window.dispatchEvent(new CustomEvent('reset_form_components'));

@@ -156,7 +156,7 @@ export default function GameDetailPage() {
   }, [game, gameId]);
 
   async function handleFieldImageUpload(imageTag, event) {
-    const file = event.target.files?.[0];
+    let file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { setSaveMessage({ type: 'error', text: 'Only image files are allowed' }); return; }
 

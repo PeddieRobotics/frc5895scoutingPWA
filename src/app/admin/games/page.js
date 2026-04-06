@@ -280,7 +280,7 @@ export default function GamesPage() {
   }, [games]);
 
   async function handleFieldImageUpload(gameId, imageTag, event) {
-    const file = event.target.files?.[0];
+    let file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {

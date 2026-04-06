@@ -11,6 +11,7 @@
   "dependencies": {
     "@ant-design/plots": "^2.5.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@neondatabase/serverless": "^1.0.0",
     "@tidyjs/tidy": "^2.5.2",
     "@vercel/analytics": "^1.5.0",
@@ -21,15 +22,14 @@
     "base-58": "^0.0.1",
     "base58": "^2.0.1",
     "base85": "^3.1.0",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "brotli-wasm": "^3.0.1",
     "chart.js": "^4.4.7",
     "js-confetti": "^0.12.0",
     "lodash": "^4.17.21",
     "msgpack-lite": "^0.1.26",
     "nanoid": "^5.1.5",
-    "next": "^15.1.6",
-    "next-pwa": "^5.6.0",
+    "next": "^16.2.2",
     "pako": "^2.1.0",
     "pg": "^8.14.1",
     "postgres": "^3.4.5",
@@ -40,9 +40,12 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "recharts": "^2.15.1",
-    "tar": "^7.5.7",
+    "tar": "^7.5.13",
     "victory": "^37.3.6",
     "ws": "^8.18.1",
     "xlsx": "^0.18.5"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
   }
 }
