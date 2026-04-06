@@ -253,8 +253,9 @@ export function aggregateTeamData(rows, config, calcFns) {
   const lastBreakdown = teamTable.filter(e => e[breakdownFieldName] === true).reduce((a, b) => b.match, "N/A");
   const noShow = computePercentage(teamTable, 'noshow', true);
 
+  const leaveFieldName = apiConfig.leaveField || 'leave';
   const leave = (() => {
-    const uniqueLeaveMatches = new Set(teamTable.filter(e => e.leave === true).map(e => e.match));
+    const uniqueLeaveMatches = new Set(teamTable.filter(e => e[leaveFieldName] === true).map(e => e.match));
     return uniqueLeaveMatches.size / uniqueMatches.size || 0;
   })();
 
@@ -731,6 +732,15 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   }
 
   let teamTable = tidy(rows, groupBy(['team', 'match'], [summarizeAll(averageField)]));
+
+  // Build a map INCLUDING noshow rows (needed for booleanRateAll metrics like noshowRate)
+  const allTeamMatchesByTeam = new Map();
+  for (const row of teamTable) {
+    const list = allTeamMatchesByTeam.get(row.team);
+    if (list) list.push(row);
+    else allTeamMatchesByTeam.set(row.team, [row]);
+  }
+
   teamTable = teamTable.filter(dr => !dr.noshow);
 
   let teamMatchData = teamTable;
@@ -777,6 +787,35 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
         const teamMatches = teamMatchesByTeam.get(d.team) || [];
         const trueCount = teamMatches.filter(m => m[metric.field] === true).length;
         return teamMatches.length > 0 ? trueCount / teamMatches.length : 0;
+      };
+    } else if (metric.type === 'booleanRateAll') {
+      // Like booleanRate but includes noshow matches (for computing noshow % itself)
+      mutators[metric.key] = d => {
+        const allMatches = allTeamMatchesByTeam.get(d.team) || [];
+        const trueCount = allMatches.filter(m => m[metric.field] === true).length;
+        return allMatches.length > 0 ? trueCount / allMatches.length : 0;
+      };
+    } else if (metric.type === 'maxField') {
+      mutators[metric.key] = d => {
+        const teamMatches = teamMatchesByTeam.get(d.team) || [];
+        if (!teamMatches.length) return 0;
+        const fn = calcFns[metric.calcFn];
+        return Math.max(...teamMatches.map(m => fn(m)));
+      };
+    } else if (metric.type === 'minField') {
+      mutators[metric.key] = d => {
+        const teamMatches = teamMatchesByTeam.get(d.team) || [];
+        if (!teamMatches.length) return 0;
+        const fn = calcFns[metric.calcFn];
+        return Math.min(...teamMatches.map(m => fn(m)));
+      };
+    } else if (metric.type === 'fieldValueRate') {
+      // Percentage of matches where a field equals a specific value
+      mutators[metric.key] = d => {
+        const teamMatches = teamMatchesByTeam.get(d.team) || [];
+        if (!teamMatches.length) return 0;
+        const count = teamMatches.filter(m => Math.round(m[metric.field] ?? -1) === metric.value).length;
+        return count / teamMatches.length;
       };
     }
   });
@@ -863,7 +902,9 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
   teamTable = tidy(teamTable, select(selectFields));
 
   // Metrics that have custom normalization (or none) and must be excluded from the generic real* pass
-  const unnormalizedMetricKeys = ['consistency', 'defense', 'breakdown'];
+  const unnormalizedMetricKeys = ['consistency', 'defense', 'breakdown',
+    ...computedMetrics.filter(m => m.normalize === false).map(m => m.key)
+  ];
 
   // Normalize and score
   const maxes = tidy(teamTable, summarizeAll(max))[0];

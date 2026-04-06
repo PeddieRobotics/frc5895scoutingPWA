@@ -30,3 +30,25 @@ The `/betting` page itself already guards with `if (!config?.enableBetting)` —
 ## Betting Table Creation Duplication Pattern (new finding — betting audit 2026-04-03)
 
 The betting table DDL is defined in TWO places: `src/lib/game-config.js` (in `createGame()`) and `src/lib/betting.js` (in `ensureBettingTable()`). This is structural duplication that risks schema drift. Not a config-driven violation per se, but a maintainability concern to flag whenever new per-game tables are added.
+
+## display-engine.js `leave` Field Hardcoded in `aggregateTeamData` (found picklist audit 2026-04-06)
+
+In `aggregateTeamData` (line ~257), the `leave` field is referenced as a literal `e.leave` without going through `apiConfig.leaveField`. The `aggregateAllianceData` function in the same file correctly uses `apiConfig.leaveField || 'leave'` (line 530). This asymmetry means if a game doesn't use a field named `leave`, the team-data aggregation silently returns the wrong value. LOW severity since `'leave'` acts as a generic structural fallback, but the pattern is inconsistent with how the same field is handled elsewhere in the file.
+
+Fix: change line 257 to use `const leaveFieldName = apiConfig.leaveField || 'leave';` and reference `e[leaveFieldName]`.
+
+## display-engine.js `noshow` Used as Literal String in Multiple Places (structural exception — picklist audit 2026-04-06)
+
+`noshow`, `scoutname`, `match`, `matchtype`, `team` are the structural DB columns defined by the schema (not game-specific fields). Their direct literal use in display-engine.js is acceptable — they are part of the framework schema, not game config. This is the same category as `id`, `timestamp`, etc.
+
+## display-engine.js `computedMetrics` `calcFn` String Must Reference Valid `calcFns` Keys (new risk — picklist audit 2026-04-06)
+
+The new `maxField`/`minField` metric types in `computePicklistMetrics` take a `calcFn` string from the config (`metric.calcFn`) and look it up as `calcFns[metric.calcFn]`. If the config spells the function name wrong (e.g., `"calcEpa"` instead of `"calcEPA"`), it silently returns `NaN`. No validation exists for this. Config authors must use exactly: `"calcEPA"`, `"calcAuto"`, `"calcTele"`, `"calcEnd"`. Consider adding a validation warning in `config-validator.js` when a `computedMetrics` entry of type `maxField`/`minField` has a `calcFn` value not in that set.
+
+## Picklist `page.js` Rewrite — Confirmed Clean (picklist audit 2026-04-06)
+
+The new `src/app/picklist/page.js` is fully config-driven:
+- All column definitions, scatter fields, weights, and defaultSort come from `picklistConfig.tableColumns`, `picklistConfig.scatterFields`, `picklistConfig.weights`, `picklistConfig.defaultSort`
+- K/S list stat display uses `usePPR` flag correctly for PPR/EPA label toggle
+- No game-specific field names, labels, or thresholds hardcoded anywhere in the file
+- `page.module.css` contains no game-specific references

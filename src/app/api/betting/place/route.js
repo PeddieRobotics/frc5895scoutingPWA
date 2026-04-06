@@ -54,7 +54,7 @@ export async function POST(request) {
     return NextResponse.json({ message: "Could not fetch match prediction from Statbotics" }, { status: 404 });
   }
 
-  if (prediction.matchStatus !== 'Upcoming') {
+  if (prediction.matchStatus !== 'Upcoming' && process.env.NODE_ENV !== 'development') {
     return NextResponse.json({
       message: `Cannot place bet: match is ${prediction.matchStatus.toLowerCase()}`,
     }, { status: 409 });

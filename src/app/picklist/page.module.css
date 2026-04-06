@@ -1,708 +1,771 @@
-/* Picklist — light mode design system */
+/* Picklist — light mode design system (redesigned) */
 
-.MainDiv {
-    margin: 0;
-    padding: 16px;
-    box-sizing: border-box;
-    font-family: 'Montserrat', sans-serif;
-    background: #f4f1eb;
-    min-height: calc(100vh - 45px);
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-evenly;
-    width: 100%;
-    gap: 20px;
-    max-width: 100%;
-    color: #0d1f35;
+.page {
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+  background: #f4f1eb;
+  min-height: calc(100vh - 45px);
+  max-width: 1400px;
+  color: #0d1f35;
 }
 
-.MainDiv h1 {
-    font-size: 26px;
-    font-weight: 800;
-    text-align: center;
-    color: #0d1f35;
+.page h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #a07c30;
+  margin: 0 0 12px 0;
 }
 
-/* ── Weights section ──────────────────────────── */
-.weights {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    width: 100%;
-    align-items: center;
-    max-width: 100%;
-    box-sizing: border-box;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 16px;
+/* ── Loading / empty ─────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(13, 31, 53, 0.5);
+  font-style: italic;
+  font-size: 15px;
 }
 
-.weightsTable {
-    height: auto;
-    width: 100%;
-    font-size: 15px;
-    padding: 10px;
-    background: #ffffff;
-    border: 1.5px solid rgba(160, 124, 48, 0.25);
-    border-radius: 12px;
-    border-spacing: 0;
-    margin: 10px 0;
-    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
-    max-width: 100%;
-    table-layout: fixed;
+/* ── Unscored banner ─────────────────────────── */
+.unscoredBanner {
+  margin: 0 0 16px 0;
+  padding: 12px 14px;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  border-radius: 10px;
+  color: #7d1f1f;
+  font-size: 14px;
 }
 
-.weightsTable input {
-    height: 35px;
-    width: 50px;
-    border: 1.5px solid rgba(160, 124, 48, 0.4);
-    border-radius: 6px;
-    text-align: center;
-    font-size: 15px;
-    font-family: 'Montserrat', sans-serif;
-    color: #0d1f35;
-    background: #ffffff;
-    outline: none;
-    transition: border-color 0.15s ease;
+.unscoredBanner strong {
+  display: block;
+  margin-bottom: 6px;
 }
 
-.weightsTable input:focus {
-    border-color: rgba(160, 124, 48, 0.8);
+.unscoredBanner ul {
+  margin: 0 0 0 18px;
+  padding: 0;
 }
 
-.weightsTable td {
-    text-align: right;
-    white-space: nowrap;
-    padding: 4px 6px;
-    color: rgba(13, 31, 53, 0.85);
-    border-bottom: 1px solid rgba(160, 124, 48, 0.08);
+/* ── Scatter section ─────────────────────────── */
+.scatterCard {
+  background: #ffffff;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
 }
 
-.weightsTableContainer {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-.weightsForm {
-    width: 100%;
-}
-
-.weightsForm button {
-    position: relative;
-    padding: 10px 20px;
-    margin: 8px 0;
-    border: 1.5px solid rgba(160, 124, 48, 0.55);
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 14px;
-    font-family: 'Montserrat', sans-serif;
-    background: rgba(160, 124, 48, 0.1);
-    color: #a07c30;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.weightsForm button:hover {
-    background: rgba(160, 124, 48, 0.2);
-    border-color: rgba(160, 124, 48, 0.8);
-}
-
-button.recalculateIsMad {
-    background: #a07c30;
-    color: #ffffff;
-    border-color: #8a6a28;
-}
-
-button.recalculateIsMad:hover {
-    background: #8a6a28;
-}
-
-/* ── Alliance section ─────────────────────────── */
-.alliances {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    width: 100%;
-    align-items: center;
-    margin: 20px 0 40px 0;
-    background: #ffffff;
-    border: 1.5px solid rgba(160, 124, 48, 0.25);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-.allianceTable {
-    width: 100%;
-}
-
-.allianceTable input {
-    height: 35px;
-    width: 70px;
-    border: 1.5px solid rgba(160, 124, 48, 0.4);
-    border-radius: 6px;
-    text-align: center;
-    font-size: 16px;
-    font-family: 'Montserrat', sans-serif;
-    color: #0d1f35;
-    background: #ffffff;
-    outline: none;
-}
-
-.allianceTableContainer {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-.wholeAlliance {
-    font-size: 16px;
-    border-spacing: 10px;
-    background: #ffffff;
-    border: 1.5px solid rgba(160, 124, 48, 0.2);
-    padding: 10px;
-    border-radius: 10px;
-    margin-top: 5px;
-    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.06);
-    width: 100%;
-}
-
-.red, .blue {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    align-items: center;
-}
-
-.allianceMatchView {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 20px;
-    align-items: flex-end;
-    margin-top: 15px;
-    width: 100%;
-}
-
-.allianceMatchView input {
-    width: 50px;
-    height: 35px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: larger;
-    font-weight: 400;
-    text-align: center;
-    border: 1.5px solid rgba(160, 124, 48, 0.4);
-    border-radius: 6px;
-    color: #0d1f35;
-    background: #ffffff;
-    outline: none;
-}
-
-.allianceMatchView label {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(13, 31, 53, 0.7);
-}
-
-.allianceMatchView button {
-    width: 50px;
-    height: 40px;
-    margin-top: 20px;
-    border: 1.5px solid rgba(160, 124, 48, 0.55);
-    border-radius: 6px;
-    font-weight: 600;
-    font-family: 'Montserrat', sans-serif;
-    background: rgba(160, 124, 48, 0.1);
-    color: #a07c30;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.allianceMatchView button:hover {
-    background: rgba(160, 124, 48, 0.2);
-    border-color: rgba(160, 124, 48, 0.8);
-}
-
-.redInput {
-    border-color: rgba(192, 57, 43, 0.6) !important;
-    background-color: rgba(192, 57, 43, 0.06) !important;
-}
-
-.blueInput {
-    border-color: rgba(37, 99, 235, 0.5) !important;
-    background-color: rgba(37, 99, 235, 0.06) !important;
-}
-
-/* ── Picklist container ───────────────────────── */
-.picklistContainer {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    margin: 0;
-    padding: 0 5px;
-    box-sizing: border-box;
-    flex-grow: 1;
-    max-width: 100%;
-}
-
-.picklistContainer span {
-    text-align: center;
-}
-
-.picklistTableContainer {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-.picklistTable {
-    flex-grow: 1;
-    border-spacing: 5px 12px;
-    width: 100%;
-}
-
-.picklistTable th {
-    border-bottom: 2px solid rgba(160, 124, 48, 0.35);
-    font-size: 18px;
-    font-weight: 700;
-    color: #a07c30;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 4px 8px;
-}
-
-.picklistTable td {
-    text-align: center;
-    background: #ffffff;
-    box-shadow: 0 2px 6px rgba(13, 31, 53, 0.08);
-    padding: 8px;
-    border-radius: 6px;
-    font-weight: 500;
-    font-size: 16px;
-    color: #0d1f35;
-    border: 1px solid rgba(160, 124, 48, 0.12);
-}
-
-.picklistTable td:first-child, .picklistTable td:nth-child(2) {
-    box-shadow: none;
-    background: transparent;
-    border: none;
-}
-
-.picklistTable td:nth-child(2) {
-    background: rgba(160, 124, 48, 0.12);
-    color: #a07c30;
-    font-weight: 800;
-    border-radius: 6px;
-    width: 30px;
-    height: 30px;
-    border: 1.5px solid rgba(160, 124, 48, 0.35);
-}
-
-.picklistTable td:nth-child(3) {
-    background: rgba(160, 124, 48, 0.1);
-    border: 1.5px solid rgba(160, 124, 48, 0.3);
-    font-weight: 700;
-    color: #0d1f35;
-}
-
-.arrows {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-}
-
-.picklistRank {
-    align-items: center;
-    width: 50px;
-    height: 50px;
-    justify-content: space-between;
-}
-
-/* ── Scatter plot ─────────────────────────────── */
-.scatterPlotContainer {
-    margin: 20px 0 40px 0;
-    background: #ffffff;
-    border: 1.5px solid rgba(160, 124, 48, 0.25);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.07);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-.scatterPlotContainer h1 {
-    font-size: 22px;
-    font-weight: 800;
-    margin-bottom: 10px;
-    text-align: center;
-    color: #0d1f35;
-}
-
-.teamFilterContainer {
-    margin: 0 auto 15px auto;
-    width: 90%;
-    display: flex;
-    justify-content: center;
-}
-
-.teamFilterInput {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1.5px solid rgba(160, 124, 48, 0.35);
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    font-family: 'Montserrat', sans-serif;
-    color: #0d1f35;
-    background: #ffffff;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.teamFilterInput:focus {
-    border-color: rgba(160, 124, 48, 0.75);
-}
-
-.teamFilterInput::placeholder {
-    color: rgba(13, 31, 53, 0.4);
-    font-style: italic;
-}
-
-.loadingGraph {
-    height: 400px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: rgba(13, 31, 53, 0.4);
-    font-style: italic;
-}
-
-/* ── Custom tooltip ───────────────────────────── */
-.customTooltip {
-    background: #0d1f35;
-    border: 1px solid rgba(189, 151, 72, 0.6);
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
-    color: #e8d5a3;
-    font-size: 13px;
-}
-
-.tooltipTeam {
-    font-weight: 700;
-    margin-bottom: 4px;
-    color: #e8d5a3;
-}
-
-/* ── TBA fetch ────────────────────────────────── */
-.tbaFetchContainer {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    margin: 10px 0;
-    width: 100%;
-    gap: 10px;
-}
-
-.eventCodeInput {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
-}
-
-.eventCodeInput input {
-    height: 38px;
-    width: 120px;
-    border: 1.5px solid rgba(160, 124, 48, 0.4);
-    border-radius: 6px;
-    text-align: center;
-    font-size: 15px;
-    font-family: 'Montserrat', sans-serif;
-    color: #0d1f35;
-    background: #ffffff;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.eventCodeInput input:focus {
-    border-color: rgba(160, 124, 48, 0.8);
-}
-
-.eventCodeInput label {
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(13, 31, 53, 0.75);
-}
-
-.tbaFetchButton {
-    padding: 8px 14px;
-    background: #a07c30;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'Montserrat', sans-serif;
-    transition: background 0.15s ease, transform 0.1s ease;
-}
-
-.tbaFetchButton:hover {
-    background: #8a6a28;
-    transform: translateY(-1px);
-}
-
-.tbaFetchButton:active {
-    transform: scale(0.97);
-}
-
-.tbaFetchButton:disabled {
-    background: rgba(13, 31, 53, 0.15);
-    color: rgba(13, 31, 53, 0.4);
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* ── Misc ─────────────────────────────────────── */
-.authWarning {
-    background: rgba(192, 57, 43, 0.08);
-    color: #c0392b;
-    border: 1px solid rgba(192, 57, 43, 0.35);
-    border-radius: 8px;
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    text-align: center;
-}
-
-.commentBox {
-    height: 50px;
-    width: 200px;
-    resize: none;
-    border: 1.5px solid rgba(160, 124, 48, 0.35);
-    border-radius: 6px;
-    font-family: 'Montserrat', sans-serif;
-    color: #0d1f35;
-    padding: 6px 8px;
-    outline: none;
-}
-
-/* ── Scatter axis dropdowns ───────────────────── */
-.scatterAxisSelectors {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    flex-wrap: wrap;
-    padding: 8px 0 4px;
+.scatterAxisRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .scatterAxisLabel {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(13, 31, 53, 0.65);
-    flex: 1;
-    min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(13, 31, 53, 0.65);
+  flex: 1;
+  min-width: 140px;
 }
 
 .scatterAxisSelect {
-    padding: 5px 8px;
-    border: 1.5px solid rgba(160, 124, 48, 0.35);
-    border-radius: 8px;
-    background: #faf8f3;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 13px;
-    color: #0d1f35;
-    cursor: pointer;
-    outline: none;
-    width: 100%;
+  padding: 5px 8px;
+  border: 1.5px solid rgba(160, 124, 48, 0.35);
+  border-radius: 8px;
+  background: #faf8f4;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  color: #0d1f35;
+  cursor: pointer;
+  width: 100%;
 }
 
-.scatterAxisSelect:focus {
-    border-color: rgba(160, 124, 48, 0.7);
+.scatterAxisSelect:focus-visible {
+  border-color: rgba(160, 124, 48, 0.8);
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
 }
 
-.configSection {
-    display: flex;
+/* ── Toolbar ─────────────────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbarBtn {
+  padding: 8px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  background: transparent;
+  color: #a07c30;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.toolbarBtn:hover {
+  background: rgba(160, 124, 48, 0.1);
+  border-color: rgba(160, 124, 48, 0.8);
+}
+
+.toolbarBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.toolbarBtnActive {
+  background: #a07c30;
+  color: #ffffff;
+  border-color: #8a6a28;
+}
+
+.toolbarBtnActive:hover {
+  background: #8a6a28;
+}
+
+.refreshBtn {
+  padding: 8px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  background: #a07c30;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.refreshBtn:hover {
+  background: #8a6a28;
+}
+
+.refreshBtn:active {
+  transform: scale(0.97);
+}
+
+.refreshBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.refreshBtn:disabled {
+  background: rgba(13, 31, 53, 0.15);
+  color: rgba(13, 31, 53, 0.4);
+  cursor: not-allowed;
+}
+
+.lastUpdated {
+  font-size: 12px;
+  color: rgba(13, 31, 53, 0.45);
+  font-style: italic;
+  margin-left: auto;
+}
+
+/* ── Column toggle dropdown ──────────────────── */
+.columnToggleWrapper {
+  position: relative;
+}
+
+.columnDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: #ffffff;
+  border: 1.5px solid rgba(160, 124, 48, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(13, 31, 53, 0.13);
+  padding: 12px 14px;
+  z-index: 50;
+  min-width: 220px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.columnGroupLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a07c30;
+  margin: 10px 0 4px 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(160, 124, 48, 0.15);
+}
+
+.columnGroupLabel:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.columnCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.85);
+  cursor: pointer;
+}
+
+.columnCheckRow input[type="checkbox"] {
+  accent-color: #a07c30;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ── Main content: keep/swap + rank table ────── */
+.mainContent {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* ── Keep/Swap Panel ─────────────────────────── */
+.ksPanel {
+  width: 320px;
+  min-width: 320px;
+  background: #ffffff;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.ksHeader {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.15);
+}
+
+.ksHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.ksControls {
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.15);
+  position: sticky;
+  top: 45px;
+  z-index: 5;
+}
+
+.ksPairLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(13, 31, 53, 0.65);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.ksPairTeams {
+  color: #0d1f35;
+  font-weight: 800;
+}
+
+.ksButtonRow {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ksBtn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  border: 1.5px solid transparent;
+}
+
+.ksBtn:active {
+  transform: scale(0.96);
+}
+
+.ksBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ksBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.ksBtnKeep {
+  background: rgba(26, 127, 60, 0.12);
+  color: #1a7f3c;
+  border-color: rgba(26, 127, 60, 0.4);
+}
+
+.ksBtnKeep:hover:not(:disabled) {
+  background: rgba(26, 127, 60, 0.2);
+}
+
+.ksBtnSwap {
+  background: rgba(192, 57, 43, 0.1);
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.4);
+}
+
+.ksBtnSwap:hover:not(:disabled) {
+  background: rgba(192, 57, 43, 0.18);
+}
+
+.ksBtnUndo, .ksBtnRedo {
+  background: rgba(160, 124, 48, 0.08);
+  color: #a07c30;
+  border-color: rgba(160, 124, 48, 0.35);
+}
+
+.ksBtnUndo:hover:not(:disabled), .ksBtnRedo:hover:not(:disabled) {
+  background: rgba(160, 124, 48, 0.16);
+}
+
+.ksBtnFocus {
+  background: transparent;
+  color: rgba(13, 31, 53, 0.55);
+  border-color: rgba(160, 124, 48, 0.3);
+  font-size: 16px;
+  padding: 6px 10px;
+}
+
+.ksBtnFocusActive {
+  background: rgba(189, 151, 72, 0.15);
+  color: #a07c30;
+  border-color: rgba(160, 124, 48, 0.6);
+}
+
+.ksBeginBtn {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  background: #a07c30;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ksBeginBtn:hover {
+  background: #8a6a28;
+}
+
+.ksBeginBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.ksResetBtn {
+  padding: 6px 10px;
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'Montserrat', sans-serif;
+  background: transparent;
+  color: #a07c30;
+  cursor: pointer;
+}
+
+.ksResetBtn:hover {
+  background: rgba(160, 124, 48, 0.1);
+}
+
+.ksResumeBtn {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0 0 0;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  background: transparent;
+  color: #a07c30;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ksResumeBtn:hover {
+  background: rgba(160, 124, 48, 0.1);
+}
+
+.ksResumeBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+/* ── Keep/Swap list ──────────────────────────── */
+.ksList {
+  padding: 8px 0;
+}
+
+.ksItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d1f35;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.ksItem:hover {
+  background: rgba(189, 151, 72, 0.05);
+}
+
+.ksItemActive {
+  background: rgba(189, 151, 72, 0.15);
+  border-left-color: #a07c30;
+  font-weight: 700;
+}
+
+.ksItemDimmed {
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.ksItemRank {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(13, 31, 53, 0.4);
+  min-width: 24px;
+  text-align: right;
+}
+
+.ksItemTeam {
+  font-weight: 700;
+  font-size: 15px;
+  min-width: 50px;
+}
+
+.ksItemStat {
+  font-size: 12px;
+  color: rgba(13, 31, 53, 0.55);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.ksCompleteLabel {
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a7f3c;
+}
+
+/* ── Manual compare ──────────────────────────── */
+.ksManualRow {
+  padding: 8px 16px;
+  border-top: 1px solid rgba(160, 124, 48, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ksManualRow label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(13, 31, 53, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ksManualInput {
+  width: 60px;
+  height: 30px;
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  color: #0d1f35;
+  background: #ffffff;
+  outline: none;
+}
+
+.ksManualInput:focus-visible {
+  border-color: rgba(160, 124, 48, 0.8);
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.ksManualBtn {
+  padding: 5px 10px;
+  border: 1.5px solid rgba(160, 124, 48, 0.5);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'Montserrat', sans-serif;
+  background: rgba(160, 124, 48, 0.08);
+  color: #a07c30;
+  cursor: pointer;
+}
+
+.ksManualBtn:hover {
+  background: rgba(160, 124, 48, 0.16);
+}
+
+/* ── Rank Table outer container ──────────────── */
+.rankTableOuter {
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  overflow: clip; /* clips to border-radius without breaking sticky */
+}
+
+/* Frozen header — sticks below navbar */
+.rankHeaderSticky {
+  position: sticky;
+  top: 45px;
+  z-index: 8;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #ffffff;
+  scrollbar-width: none;
+}
+
+.rankHeaderSticky::-webkit-scrollbar {
+  display: none;
+}
+
+/* Body scroll area */
+.rankBodyScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rankTable {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+/* ── Rank table header ───────────────────────── */
+/* Header background on th cells for the sticky header table */
+.thFixed {
+  background: rgba(189, 151, 72, 0.1);
+}
+
+.rankTable th {
+  background: rgba(189, 151, 72, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  color: #a07c30;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 2px solid rgba(160, 124, 48, 0.25);
+  transition: background 0.15s ease;
+  text-align: center;
+}
+
+.rankTable th:hover {
+  background: rgba(189, 151, 72, 0.18);
+}
+
+.thActive {
+  background: rgba(189, 151, 72, 0.22);
+}
+
+.thSortArrow {
+  font-size: 10px;
+  margin-left: 3px;
+  opacity: 0.7;
+}
+
+/* Sticky rank + team columns */
+/* Sticky left columns for horizontal scroll */
+.rankTable th:first-child,
+.rankTable td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.rankTable th:nth-child(2),
+.rankTable td:nth-child(2) {
+  position: sticky;
+  left: 44px;
+  z-index: 2;
+}
+
+.rankTable th:first-child,
+.rankTable th:nth-child(2) {
+  z-index: 3;
+}
+
+/* ── Rank table body ─────────────────────────── */
+.rankTable td {
+  padding: 7px 8px;
+  text-align: center;
+  font-weight: 500;
+  color: #0d1f35;
+  border-bottom: 1px solid rgba(160, 124, 48, 0.08);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankTable tbody tr:nth-child(odd) td {
+  background: #ffffff;
+}
+
+.rankTable tbody tr:nth-child(even) td {
+  background: #faf8f4;
+}
+
+.rankTable tbody tr:hover td {
+  background: rgba(189, 151, 72, 0.07);
+}
+
+.rankRowHighlight td {
+  background: rgba(189, 151, 72, 0.15) !important;
+  font-weight: 600;
+}
+
+.rankRowDimmed td {
+  opacity: 0.12;
+}
+
+.rankCol {
+  font-weight: 700;
+  color: rgba(13, 31, 53, 0.5);
+  min-width: 36px;
+  background: inherit;
+}
+
+.teamCol {
+  font-weight: 700;
+  color: #0d1f35;
+  min-width: 56px;
+  background: inherit;
+}
+
+.teamCol a {
+  color: #0d1f35;
+  text-decoration: none;
+}
+
+.teamCol a:hover {
+  color: #a07c30;
+  text-decoration: underline;
+}
+
+.rankColKs {
+  color: #a07c30;
+  font-weight: 800;
+}
+
+.ksVsLabel {
+  color: rgba(13, 31, 53, 0.4);
+}
+
+.metricCell {
+  min-width: 60px;
+  border-radius: 0;
+}
+
+/* ── Group separator in table ────────────────── */
+.groupSep {
+  border-left: 2px solid rgba(160, 124, 48, 0.2);
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 900px) {
+  .mainContent {
     flex-direction: column;
+  }
+
+  .ksPanel {
     width: 100%;
-    max-width: 450px;
-    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .rankTableOuter {
+    width: 100%;
+  }
 }
 
-/* ── Responsive ───────────────────────────────── */
 @media (max-width: 768px) {
-    .MainDiv {
-        padding: 5px;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        margin: 0;
-        gap: 10px;
-        overflow-x: hidden;
-    }
+  .page {
+    padding: 8px;
+  }
 
-    .picklistContainer {
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        overflow-x: hidden;
-        max-width: 100vw;
-    }
+  .scatterCard {
+    padding: 10px;
+  }
 
-    .weightsForm, .weights, .alliances, .scatterPlotContainer {
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        margin-left: 0;
-        margin-right: 0;
-    }
+  .toolbar {
+    gap: 6px;
+  }
 
-    .scatterPlotContainer {
-        margin: 10px 0 20px 0;
-        padding: 10px;
-        max-width: 100vw;
-        overflow-x: hidden;
-    }
+  .toolbarBtn, .refreshBtn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
 
-    .picklistContainer h1,
-    .scatterPlotContainer h1,
-    .weights h1,
-    .alliances h1 {
-        font-size: 22px;
-        margin-bottom: 10px;
-    }
+  .ksPanel {
+    width: 100%;
+  }
 
-    .configSection {
-        max-width: 100%;
-        width: 100%;
-        overflow-x: hidden;
-    }
+  .ksButtonRow {
+    gap: 4px;
+  }
 
-    .weightsTable {
-        width: 100%;
-        font-size: 14px;
-        padding: 5px;
-        table-layout: fixed;
-        border-spacing: 0;
-    }
+  .ksBtn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
 
-    .weightsTable td {
-        padding: 1px;
-        font-size: 13px;
-    }
+  .rankTable th {
+    font-size: 11px;
+    padding: 8px 5px;
+  }
 
-    .weightsTable input {
-        width: 40px;
-        height: 30px;
-        font-size: 13px;
-        padding: 0;
-    }
-
-    .allianceTable input {
-        width: 100%;
-        max-width: 60px;
-    }
-
-    .wholeAlliance {
-        width: 100%;
-    }
-
-    .picklistTable th {
-        font-size: 15px;
-        padding: 4px 3px;
-        white-space: nowrap;
-    }
-
-    .picklistTable td {
-        font-size: 14px;
-        padding: 4px 3px;
-        white-space: nowrap;
-    }
-
-    .picklistTable {
-        min-width: 800px;
-        border-spacing: 2px 8px;
-    }
-
-    .allianceTable td,
-    .allianceTable th {
-        padding: 3px;
-    }
-
-    .allianceMatchView {
-        flex-direction: row;
-        justify-content: center;
-        align-items: flex-end;
-        gap: 15px;
-        margin-top: 10px;
-        width: 100%;
-    }
-
-    .red, .blue {
-        align-items: center;
-        justify-content: flex-end;
-        margin-bottom: 0;
-        width: auto;
-    }
-
-    .allianceMatchView button {
-        margin-top: 0;
-        height: 35px;
-        align-self: flex-end;
-        width: 50px;
-    }
-
-    .redInput, .blueInput {
-        width: 50px;
-        height: 35px;
-    }
-
-    .weightsForm button {
-        width: 100%;
-        max-width: 300px;
-        margin: 0 auto 20px;
-        display: block;
-        left: auto;
-        transform: none;
-    }
-
-    .allianceTable {
-        min-width: 300px;
-    }
-
-    .tbaFetchContainer {
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .allianceTableContainer {
-        margin-bottom: 15px;
-    }
+  .rankTable td {
+    font-size: 12px;
+    padding: 5px;
+  }
 }

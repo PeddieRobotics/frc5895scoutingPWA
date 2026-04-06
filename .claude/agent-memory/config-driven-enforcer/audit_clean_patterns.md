@@ -24,3 +24,17 @@ The entire photo tagging feature is correctly config-driven:
 ## Config Files (`src/configs/`)
 
 `rebuilt_2026.json` photoTags (`"Featured"`, `"Auto Routes"`) and photoSections are correctly placed in the config file, not in source code.
+
+## Picklist Page Rewrite (audited 2026-04-06)
+
+`src/app/picklist/page.js` is fully config-driven after the rewrite:
+- `tableColumns`, `scatterFields`, `weights`, `defaultSort` all read from `config.display.picklist`
+- K/S panel EPA/PPR label uses `config?.usePPR` dynamically
+- `page.module.css` has no game-specific references
+
+## display-engine.js New Metric Types (audited 2026-04-06)
+
+`maxField`, `minField`, `fieldValueRate`, `booleanRateAll` metric types in `computePicklistMetrics` are fully config-driven:
+- `metric.field` and `metric.value` come from config `computedMetrics` entries
+- `metric.calcFn` is a string key looked up against the `calcFns` object passed in — generic, not hardcoded
+- `normalize: false` flag properly excludes metrics from normalization pass when set in config
