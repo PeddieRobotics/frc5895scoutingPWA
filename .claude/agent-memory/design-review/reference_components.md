@@ -89,6 +89,17 @@ Textbook light mode interactive tile in thumbnail form (changed from horizontal 
 
 `.galleryDropZone` correctly uses dashed gold border and `#faf8f4` alt surface background.
 
+## BettingSection.module.css — dark mode button trio and Primary/Confirm button
+
+As of 2026-04-06, `.redButton` / `.blueButton` / `.abstainButton` and `.placeBetButton` / `.skipButton` are textbook-correct dark mode button implementations:
+- `.redButton` default/hover: exact Destructive button tokens; `.abstainButton`: exact Muted/Cancel tokens
+- `.placeBetButton`: exact Primary/Confirm tokens (fill, border, hover, active scale, focus ring)
+- `.skipButton`: exact Muted/Cancel tokens with correct hover and focus ring
+- All three alliance buttons: `min-height: 44px`, `border-radius: 12px`, `transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease`
+- `.stakeAmount strong`: textbook inline numeric callout pattern — `font-size: 24px; font-weight: 800; color: #bd9748; font-variant-numeric: tabular-nums`
+
+Note: `.winnerPercent`/`.loserPercent` at 20px and balance number inline at 15px are remaining violations as of this review.
+
 ## PrescoutSection.module.css — table row styling
 
 Correct table alternating row pattern:

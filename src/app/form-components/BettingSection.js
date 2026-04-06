@@ -291,13 +291,19 @@ export default function BettingSection({
       )}
 
       {(!authCredentials || authExpired) && !betPlaced && (
-        <p className={styles.hint}>
-          <a href="/?authRequired=true" className={styles.loginLink}>Log in</a> to place bets
-        </p>
+        <div className={styles.stakeInfo}>
+          <button
+            type="button"
+            className={styles.loginButton}
+            onClick={() => { window.location.href = '/?authRequired=true'; }}
+          >
+            Log In to Place Bets
+          </button>
+        </div>
       )}
 
-      {/* Skip button available while loading or on error */}
-      {(loading || (error && !betPlaced)) && !betPlaced && (
+      {/* Skip button — always available when no bet placed yet and no prediction loaded or not logged in */}
+      {!betPlaced && !prediction && (
         <div className={styles.stakeInfo}>
           <button
             type="button"
@@ -371,9 +377,9 @@ export default function BettingSection({
             </div>
           )}
 
-          {!betPlaced && !locked && !authExpired && (
+          {!betPlaced && !locked && (
             <div className={styles.stakeInfo}>
-              {pointsAtStake !== null ? (
+              {pointsAtStake !== null && authCredentials && !authExpired ? (
                 <>
                   <div className={styles.stakeAmount}>
                     You are betting <strong>{pointsAtStake}</strong> points.
@@ -387,18 +393,17 @@ export default function BettingSection({
                     {placing ? 'Placing...' : 'Place Bet'}
                   </button>
                 </>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.skipButton}
-                  onClick={() => {
-                    setBetPlaced(true);
-                    onBetStateChange?.('placed');
-                  }}
-                >
-                  Skip Betting
-                </button>
-              )}
+              ) : null}
+              <button
+                type="button"
+                className={styles.skipButton}
+                onClick={() => {
+                  setBetPlaced(true);
+                  onBetStateChange?.('placed');
+                }}
+              >
+                Skip Betting
+              </button>
             </div>
           )}
 
@@ -411,8 +416,8 @@ export default function BettingSection({
           )}
 
           {balance !== null && (
-            <div className={`${styles.balanceDisplay} ${balance >= 0 ? styles.positiveBalance : styles.negativeBalance}`}>
-              Your balance: {balance >= 0 ? '' : ''}{balance}
+            <div className={styles.balanceDisplay}>
+              Your balance: <strong className={`${styles.balanceNumber} ${balance >= 0 ? styles.positiveBalance : styles.negativeBalance}`}>{balance}</strong>
             </div>
           )}
         </>

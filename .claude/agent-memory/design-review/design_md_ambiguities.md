@@ -27,3 +27,25 @@ DESIGN.md requires gold focus rings everywhere. Interpreted as: this should be i
 ## Icon-only button font-size exception (unresolved)
 
 DESIGN.md button label spec is 13–16px. No exception is made for single-character icon buttons (e.g., ‹ › × for lightbox nav/close). In practice, `font-size: 28px` is used on LightboxModal navBtn chevrons for legibility inside a 48px circle — this appears intentional. Flagging as a warning, not a hard violation, until the spec explicitly adds an icon-button exception. If no exception is added, 18–20px is the suggested compromise range. Discovered 2026-04-02.
+
+---
+
+## Blue alliance button tokens — not in dark mode palette (unresolved)
+
+BettingSection needs visually distinct red/blue alliance buttons but DESIGN.md dark mode has no blue color family. Current implementation borrows from Light Mode Navigation Chip colors (`#1e40af` / `rgba(30, 64, 175, ...)`) which is not an explicit cross-mode reference. Text colors `#93b5ff` / `#bbccff` are entirely invented. Discovered 2026-04-06.
+
+**Ruling:** Flag `.blueButton` text colors as off-palette violations until an explicit blue alliance token entry is added to the dark mode Color Palette table in DESIGN.md. The `rgba(30, 64, 175, ...)` fill/border values are defensible as borrowed from Light Mode chips, but document this exception in DESIGN.md. Recommended spec addition: add a "Blue alliance (betting)" row to the dark mode palette with fill `rgba(30, 64, 175, 0.15)`, border `rgba(30, 64, 175, 0.5)`, text `#e8d5a3` (warm text primary, not invented cool-blue text).
+
+---
+
+## `.predictionLabel` 12px/700/uppercase — no dark mode spec role
+
+BettingSection `.predictionLabel` uses 12px/700/uppercase — this resembles the Light Mode Metric label pattern (12px/700/uppercase/letter-spacing) but is in a dark mode component. Dark mode Typography does not define a 12px non-hint label role. Discovered 2026-04-06.
+
+**Ruling:** Treat as a warning (not violation) — the values are all on-token and legible. Recommend adding a "card sub-label" row to DESIGN.md dark mode Typography (12px/700/uppercase/`rgba(232,213,163,0.6)`) to formally document this pattern.
+
+---
+
+## Section gap vs. compact card margin (unresolved)
+
+DESIGN.md Page Layout says "Section gap: 24px between major sections." BettingSection uses `margin: 8px auto 4px` — far below the 24px gap. This may be intentional as the betting card is visually part of the form flow rather than a separate major section. No explicit exception for compact form-section spacing exists. Flagging as a warning pending design lead input on whether the betting card is classified as a "major section."

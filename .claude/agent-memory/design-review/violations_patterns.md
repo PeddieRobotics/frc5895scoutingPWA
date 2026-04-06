@@ -308,7 +308,7 @@ BettingLeaderboard page.module.css applies `border-radius: 12px; overflow: hidde
 
 ## Warm text dim — opacity floor is 0.6, not 0.5
 
-BettingSection.module.css `.predictionLabel` and `.lockedMessage` use `rgba(232,213,163,0.5)`. DESIGN.md specifies "Warm text dim: `rgba(232,213,163,0.6–0.8)`" — 0.6 is the minimum. Discovered 2026-04-03.
+BettingSection.module.css `.predictionLabel` and `.lockedMessage` originally used `rgba(232,213,163,0.5)`. As of 2026-04-06 review both are corrected to 0.6 (the minimum). DESIGN.md specifies "Warm text dim: `rgba(232,213,163,0.6–0.8)`" — 0.6 is the minimum.
 
 **Why:** Values below 0.6 fail to meet the arena legibility bar the design system is built for.
 
@@ -316,13 +316,53 @@ BettingSection.module.css `.predictionLabel` and `.lockedMessage` use `rgba(232,
 
 ---
 
+## Intermediate font-sizes (13px, 14px) with wrong weight — no matching spec role
+
+DESIGN.md dark mode defines: hints at 12px/500/italic, body/labels at 15px/600, numeric values at 24px+/700. Any size between 12 and 15 (exclusive) with weight ≥ 600 has no matching spec role. Initially discovered in BettingSection; corrected as of 2026-04-06 re-review (all BettingSection text elements now use 12px or 15px roles).
+
+**Why:** These intermediate sizes produce inconsistent visual hierarchy and are harder to read in dim arena environments than the 15px body floor.
+
+**How to apply:** Status messages and user-facing copy → 15px/600. Hints/secondary notes → 12px/500/italic. Numeric callouts → 24px+/700. Reject any 13px or 14px text that doesn't fall into a documented role.
+
+---
+
+## Numeric callout values sized below 24px minimum
+
+DESIGN.md numeric values spec requires `font-size: 24px+`. In BettingSection, `.stakeAmount strong` is now correctly at 24px/800 (fixed as of 2026-04-06). Remaining violation: `.winnerPercent`/`.loserPercent` use `font-size: 20px` (win probability percentages) and `.balanceDisplay` renders the balance number inline at 15px with no wrapping element to escalate it. Discovered in 2026-04-06 re-review.
+
+**Why:** Win probability percentages and current balance are competition-critical numbers that scouts need to read at a glance under arena conditions.
+
+**How to apply:** Any inline numeric value that represents a game or score metric must be at least 24px/700. For inline numbers (sentence context), wrap in a `<strong>` with `font-size: 24px` matching `.stakeAmount strong`. For display-only numbers (win %), raise the class font-size directly to 24px+.
+
+---
+
+## No responsive font-scale breakpoints in dark mode form components
+
+BettingSection.module.css (as of 2026-04-06 re-review) has no `@media` queries at all. DESIGN.md Mobile-First Rules require font sizes to scale down one step at `@media (max-width: 480px)` and again at `@media (max-width: 320px)`. This is a recurring gap — verify presence of breakpoints whenever reviewing a dark-mode form component.
+
+**Why:** The scouting form must work at 320px minimum. Large font sizes (24px numeric, 20px section headers) need to step down at narrow viewports.
+
+**How to apply:** Check all dark-mode form component CSS files for at least two `@media` breakpoints. If absent, flag as a violation. Only padding and font-size need to scale — min-height (touch targets) must not shrink below 44px.
+
+---
+
+## Off-token inline alliance text colors `#ff8888` and `#88aaff`
+
+BettingSection.module.css `.redText` uses `#ff8888` (off-token; should be `#ffaaaa`) and `.blueText` uses `#88aaff` (invented; no dark mode blue text token). Used for the bet-confirmed alliance name display. Discovered 2026-04-06.
+
+**Why:** `#ffaaaa` is the only spec red text token. No blue text token exists in dark mode. Inventing `#88aaff` introduces a cool-blue off-palette color. Warm text primary `#e8d5a3` should be used for blue alliance text until a formal blue token is added to DESIGN.md.
+
+**How to apply:** `.redText` → `color: #ffaaaa`. `.blueText` → `color: #e8d5a3` pending a spec addition for blue alliance text.
+
+---
+
 ## Invented colored glows on selected tiles — not a palette token
 
-BettingSection.module.css `.redButton.selected` and `.blueButton.selected` use `box-shadow: 0 0 8px rgba(255,60,60,0.3)` and `box-shadow: 0 0 8px rgba(60,120,255,0.3)`. The only glow defined in DESIGN.md is the Armed state amber pulse. No red or blue glow tokens exist. Discovered 2026-04-03.
+The only glow defined in DESIGN.md is the Armed state amber pulse. No red or blue glow tokens exist. BettingSection colored glows on `.redButton.selected` / `.blueButton.selected` are resolved as of 2026-04-06 (no box-shadow on selected state). Pattern to watch for in new components.
 
-**Why:** Colored glows outside the amber armed-state are not defined in the design system. They invent a new visual language.
+**Why:** Colored glows outside the amber armed-state invent a new visual language not in the design system.
 
-**How to apply:** Any non-amber `box-shadow` glow on a selected or interactive tile is a violation unless explicitly added to DESIGN.md. Remove or replace with `0 0 8px rgba(189,151,72,0.3)` (gold) as the closest on-palette alternative.
+**How to apply:** Any non-amber `box-shadow` glow on a selected or interactive tile is a violation. Remove or replace with `0 0 8px rgba(189,151,72,0.3)` (gold glow) as the closest on-palette alternative.
 
 ---
 

@@ -16,6 +16,9 @@ npm run lint       # ESLint
 npm run start      # Serve production build
 ```
 
+> [!IMPORTANT]
+> **ALWAYS kill the dev server before building:** `pkill -f "next dev"` then `npm run build`. Running both simultaneously causes flaky build failures.
+
 PWA is disabled in development (`NODE_ENV === 'development'`), so service worker features only work in production/build.
 
 ## Environment Variables
