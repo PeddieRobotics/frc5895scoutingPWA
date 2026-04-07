@@ -100,6 +100,71 @@ As of 2026-04-06, `.redButton` / `.blueButton` / `.abstainButton` and `.placeBet
 
 Note: `.winnerPercent`/`.loserPercent` at 20px and balance number inline at 15px are remaining violations as of this review.
 
+## prescout-form.module.css — `.sectionCard`, `.teamInputCard`, `.photoSection`
+
+Textbook standard Light Mode card implementations (after 2026-04-07 fixes):
+- `background: #fff; border: 1.5px solid rgba(160,124,48,0.25); border-radius: 12px; box-shadow: 0 2px 8px rgba(13,31,53,0.08); padding: 16px`
+- All on-token values; correct shadow token and border opacity
+
+## prescout-form.module.css — `.selectTile` / `.selectTileSelected`
+
+Textbook Light Mode interactive tile:
+- Base: `background: #fff; border: 1.5px solid rgba(160,124,48,0.2); border-radius: 8px; min-height: 44px`
+- Hover: `background: rgba(189,151,72,0.07); box-shadow: 0 2px 6px rgba(13,31,53,0.08)`
+- Selected: `background: rgba(189,151,72,0.12); border-color: rgba(160,124,48,0.6); font-weight: 700`
+- Focus ring: `outline: 2px solid rgba(160,124,48,0.75); outline-offset: 2px`
+- `transition: background 0.15s, border-color 0.15s, box-shadow 0.15s`
+
+## prescout-form.module.css — `.teamInput` / `.commentTextarea` / `.otherInput`
+
+Textbook Light Mode form input styling (`.otherInput` confirmed fully compliant 2026-04-07):
+- `background: #faf8f4` (alt surface), `border: 1.5px solid rgba(160,124,48,0.3)`, `border-radius: 10px`
+- Focus ring via `:focus-visible`: `border-color: #a07c30; outline: 2px solid rgba(160,124,48,0.75); outline-offset: 2px`
+- `font-family: 'Montserrat', sans-serif` explicit on all three inputs
+- `box-sizing: border-box; width: 100%; transition: border-color 0.15s ease`
+
+## prescout-upload.module.css — `.clearBtnArmed`
+
+Textbook Light Mode Armed/Two-tap confirm state:
+- `background: rgba(255,160,0,0.18); border: 1.5px solid rgba(255,180,0,0.7); color: #c07000`
+- Amber pulse animation — matches exact DESIGN.md armed pattern
+- `min-height: 44px`, `font-weight: 700`
+
+## prescout-form.module.css — `.photoCaptureBtn` (camera capture, post 2026-04-07 fixes)
+
+Textbook Light Mode Primary/Action button after camera feature review:
+- `background: #a07c30; color: #fff; border: none; border-radius: 8px`
+- `min-height: 44px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700`
+- Hover: `background: #8a6a28`
+- Active: `transform: scale(0.97)` via `:active:not(:disabled)`
+- Focus ring: `outline: 2px solid rgba(160,124,48,0.75); outline-offset: 2px` via `:focus-visible`
+- Disabled: `opacity: 0.55; cursor: not-allowed`
+
+## prescout-form.module.css — `.stagedRemoveBtn` (hit-area expansion pattern)
+
+Reference for small overlay badge buttons that must meet 44px tap target without visual enlargement:
+- Visual: `width: 24px; height: 24px` (circle) plus `padding: 10px; box-sizing: content-box` — effective tap area 44x44px
+- Background: `rgba(13, 31, 53, 0.65)` — navy overlay token (never raw black)
+- Hover: `rgba(192, 57, 43, 0.85)` — transitions to destructive red on hover
+- Focus ring: `outline: 2px solid rgba(160,124,48,0.75); outline-offset: 2px`
+- `border-radius: 50%` applies to the content box; padding does not deform the visual circle
+- `transition: background 0.15s ease`
+
+## prescout-form.module.css — Prescout Tracker sidebar panel (post 2026-04-07 fixes)
+
+`.trackerPanel` is a textbook Light Mode sticky sidebar card:
+- `background: #fff; border: 1.5px solid rgba(160,124,48,0.25); border-radius: 12px; box-shadow: 0 2px 8px rgba(13,31,53,0.08); padding: 16px`
+- `position: sticky; top: 60px; max-height: calc(100vh - 100px); overflow-y: auto` — correct sticky sidebar pattern
+- Responsive: `width: 100%; position: static; max-height: none` at `max-width: 768px`
+
+`.trackerTitle` (after fix): `font-size: 18px; font-weight: 800; color: #a07c30; text-transform: uppercase; letter-spacing: 0.06em` — textbook Light Mode section header.
+
+`.trackerStatDone` / `.trackerStatTotal`: correct stat value display — `font-size: 22px/16px; font-weight: 800/700; color: #1a7f3c/#0d1f35; font-variant-numeric: tabular-nums`
+
+`.trackerSectionLabel`: correct description/hint role — `font-size: 12px; font-weight: 700; color: rgba(13,31,53,0.55); text-transform: uppercase; letter-spacing: 0.04em`
+
+`.trackerTeamBtn` / `.trackerTeamDone` (after fixes): compact navigation chips. Compliant colors, 1.5px borders, Montserrat, focus rings. min-height: 32px is below 44px spec — acceptable only for compact sidebar navigation chips; document any new use of sub-44px touch targets as explicitly acknowledged.
+
 ## PrescoutSection.module.css — table row styling
 
 Correct table alternating row pattern:

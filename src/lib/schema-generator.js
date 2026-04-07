@@ -319,6 +319,10 @@ function sanitizeBettingTableName(gameName) {
   return sanitizeTableName(gameName, 'betting_');
 }
 
+function sanitizePrescoutFormTableName(gameName) {
+  return sanitizeTableName(gameName, 'prescoutform_');
+}
+
 function generateCreateBettingTableSQL(tableName) {
   return `
     CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -683,6 +687,7 @@ export {
   sanitizePhotosTableName,
   sanitizeFieldImagesTableName,
   sanitizeBettingTableName,
+  sanitizePrescoutFormTableName,
   generateCreateBettingTableSQL,
   getFieldDefaults,
   getNumericFields,

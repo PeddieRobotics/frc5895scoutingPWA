@@ -1,0 +1,249 @@
+.page {
+  min-height: 100vh;
+  background: #f4f1eb;
+  font-family: 'Montserrat', sans-serif;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px;
+  border: 1.5px solid rgba(160, 124, 48, 0.35);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  white-space: nowrap;
+  margin-top: 4px;
+  transition: background 0.15s;
+}
+
+.backBtn:hover {
+  background: rgba(160, 124, 48, 0.08);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0d1f35;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.65);
+  margin: 0;
+}
+
+.subtitle strong {
+  color: #0d1f35;
+}
+
+/* Alert banners */
+.errorBanner {
+  padding: 10px 16px;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1.5px solid rgba(192, 57, 43, 0.25);
+  border-radius: 10px;
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.successBanner {
+  padding: 10px 16px;
+  background: rgba(26, 127, 60, 0.1);
+  border: 1.5px solid rgba(26, 127, 60, 0.2);
+  border-radius: 10px;
+  color: #1a7f3c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Cards */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0d1f35;
+  margin: 0;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.65);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.cardDesc code {
+  font-family: monospace;
+  background: #f4f1eb;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #0d1f35;
+}
+
+/* Upload button */
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  min-height: 44px;
+  background: rgba(160, 124, 48, 0.1);
+  border: 1.5px solid rgba(160, 124, 48, 0.4);
+  border-radius: 10px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  align-self: flex-start;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  background: rgba(160, 124, 48, 0.18);
+  border-color: rgba(160, 124, 48, 0.6);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Clear buttons */
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px;
+  background: transparent;
+  border: 1.5px solid rgba(192, 57, 43, 0.5);
+  border-radius: 8px;
+  color: #c0392b;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.clearBtn:hover {
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.clearBtnArmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px;
+  background: rgba(255, 160, 0, 0.18);
+  border: 1.5px solid rgba(255, 180, 0, 0.7);
+  border-radius: 8px;
+  color: #c07000;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  animation: pulseArmed 0.6s ease-in-out infinite alternate;
+  flex-shrink: 0;
+}
+
+@keyframes pulseArmed {
+  from { box-shadow: 0 0 0px rgba(255, 180, 0, 0); }
+  to   { box-shadow: 0 0 8px rgba(255, 180, 0, 0.45); }
+}
+
+/* Upload result */
+.uploadResult {
+  background: rgba(26, 127, 60, 0.05);
+  border: 1px solid rgba(26, 127, 60, 0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uploadResultText {
+  font-size: 13px;
+  color: #1a7f3c;
+  margin: 0;
+}
+
+/* Team pills */
+.teamPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.teamPill {
+  display: inline-block;
+  padding: 3px 10px;
+  background: rgba(160, 124, 48, 0.1);
+  border: 1px solid rgba(160, 124, 48, 0.25);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a07c30;
+}
+
+/* Text states */
+.loadingText {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.4);
+  text-align: center;
+  margin: 0;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+}

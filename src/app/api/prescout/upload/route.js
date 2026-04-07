@@ -1,25 +1,9 @@
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../lib/auth';
+import { pool, validateAuthToken } from '../../../../lib/auth';
 import { sanitizePrescoutTableName } from '../../../../lib/schema-generator';
-import { cookies } from 'next/headers';
 import * as XLSX from 'xlsx';
 
 export const revalidate = 0;
-
-async function validateAdminAuth() {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) return false;
-  const cookieStore = await cookies();
-  const adminAuth = cookieStore.get('admin_auth');
-  if (!adminAuth?.value) return false;
-  try {
-    const decoded = Buffer.from(adminAuth.value, 'base64').toString('utf-8');
-    const [username, password] = decoded.split(':');
-    return username === 'admin' && password === adminPassword;
-  } catch {
-    return false;
-  }
-}
 
 async function ensurePrescoutTable(client, tableName) {
   await client.query(`
@@ -44,12 +28,12 @@ async function ensurePrescoutTable(client, tableName) {
  *   Row 1+, col 0: field names
  *   Row 1+, cols 1+: values
  *
- * Auth: admin cookie required.
+ * Auth: any authenticated user.
  */
 export async function POST(request) {
-  const isAdmin = await validateAdminAuth();
-  if (!isAdmin) {
-    return NextResponse.json({ message: 'Admin authentication required' }, { status: 401 });
+  const { isValid, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json({ message: error || 'Authentication required' }, { status: 401 });
   }
 
   try {

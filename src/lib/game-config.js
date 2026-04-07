@@ -16,6 +16,7 @@ import {
   sanitizePhotosTableName,
   sanitizeFieldImagesTableName,
   sanitizeBettingTableName,
+  sanitizePrescoutFormTableName,
   generateCreateBettingTableSQL,
 } from './schema-generator.js';
 
@@ -295,6 +296,20 @@ async function createGame({ gameName, displayName, configJson, createdBy }) {
     `);
     console.log(`[GameConfig] Created photos table: ${photosTableName}`);
 
+    // Create prescout form table (for config-driven prescout form submissions)
+    const prescoutFormTableName = sanitizePrescoutFormTableName(gameName);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${prescoutFormTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL UNIQUE,
+        data JSONB NOT NULL,
+        submitted_by VARCHAR(100),
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log(`[GameConfig] Created prescout form table: ${prescoutFormTableName}`);
+
     // Create field images table (for imageSelect background images)
     const fieldImagesTableName = sanitizeFieldImagesTableName(gameName);
     await client.query(`
@@ -441,6 +456,10 @@ async function deleteGame(id, dropTable = false) {
       const fieldImagesTableName = sanitizeFieldImagesTableName(game.game_name);
       await client.query(`DROP TABLE IF EXISTS ${fieldImagesTableName}`);
       console.log(`[GameConfig] Dropped table: ${fieldImagesTableName}`);
+
+      const prescoutFormTableName = sanitizePrescoutFormTableName(game.game_name);
+      await client.query(`DROP TABLE IF EXISTS ${prescoutFormTableName}`);
+      console.log(`[GameConfig] Dropped table: ${prescoutFormTableName}`);
 
       const bettingTableName = sanitizeBettingTableName(game.game_name);
       await client.query(`DROP TABLE IF EXISTS ${bettingTableName}`);

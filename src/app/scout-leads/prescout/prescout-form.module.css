@@ -1,0 +1,957 @@
+.page {
+  min-height: 100vh;
+  background: #f4f1eb;
+  font-family: 'Montserrat', sans-serif;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pageLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Tracker panel — sidebar on desktop, stacked on mobile */
+.trackerPanel {
+  width: 260px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 60px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.trackerTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #a07c30;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.trackerLoading,
+.trackerEmpty {
+  font-size: 12px;
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+}
+
+.trackerStats {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.trackerStatDone {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a7f3c;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackerStatSep {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(13, 31, 53, 0.3);
+}
+
+.trackerStatTotal {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0d1f35;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackerStatLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(13, 31, 53, 0.5);
+  margin-left: 4px;
+}
+
+.trackerProgress {
+  height: 6px;
+  background: rgba(160, 124, 48, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.trackerProgressBar {
+  height: 100%;
+  background: #1a7f3c;
+  border-radius: 3px;
+  transition: width 0.15s ease;
+  min-width: 2px;
+}
+
+.trackerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trackerSectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(13, 31, 53, 0.55);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trackerTeams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.trackerTeamBtn {
+  padding: 4px 10px;
+  min-height: 32px;
+  border: 1.5px solid rgba(192, 57, 43, 0.5);
+  border-radius: 8px;
+  background: rgba(192, 57, 43, 0.05);
+  color: #c0392b;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackerTeamBtn:hover {
+  background: rgba(192, 57, 43, 0.12);
+  border-color: rgba(192, 57, 43, 0.8);
+}
+
+.trackerTeamBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.trackerTeamDone {
+  padding: 4px 10px;
+  min-height: 32px;
+  border: 1.5px solid rgba(26, 127, 60, 0.25);
+  border-radius: 8px;
+  background: rgba(26, 127, 60, 0.06);
+  color: #1a7f3c;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackerTeamDone:hover {
+  background: rgba(26, 127, 60, 0.12);
+  border-color: rgba(26, 127, 60, 0.45);
+}
+
+.trackerTeamDone:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+/* Mobile: stack tracker above form */
+@media (max-width: 768px) {
+  .pageLayout {
+    flex-direction: column;
+  }
+
+  .trackerPanel {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  white-space: nowrap;
+  margin-top: 4px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.backBtn:hover {
+  background: rgba(160, 124, 48, 0.08);
+  border-color: rgba(160, 124, 48, 0.8);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0d1f35;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.65);
+  margin: 0;
+}
+
+.subtitle strong {
+  color: #0d1f35;
+}
+
+/* Emergency upload link */
+.emergencyUploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  min-height: 44px;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  align-self: flex-start;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.emergencyUploadBtn:hover {
+  background: rgba(160, 124, 48, 0.08);
+  border-color: rgba(160, 124, 48, 0.8);
+}
+
+/* Alert banners */
+.errorBanner {
+  padding: 10px 16px;
+  background: rgba(192, 57, 43, 0.08);
+  border: 1.5px solid rgba(192, 57, 43, 0.25);
+  border-radius: 10px;
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.successBanner {
+  padding: 10px 16px;
+  background: rgba(26, 127, 60, 0.1);
+  border: 1.5px solid rgba(26, 127, 60, 0.2);
+  border-radius: 10px;
+  color: #1a7f3c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Team number input card */
+.teamInputCard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teamInputLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0d1f35;
+  margin: 0;
+}
+
+.teamInputRow {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.teamInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0d1f35;
+  background: #faf8f4;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.teamInput:focus-visible {
+  border-color: #a07c30;
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.teamLoadBtn {
+  padding: 0 18px;
+  min-height: 44px;
+  background: #a07c30;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.teamLoadBtn:hover:not(:disabled) {
+  background: #8a6a28;
+}
+
+.teamLoadBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Edit mode indicator */
+.editIndicator {
+  padding: 8px 14px;
+  background: rgba(189, 151, 72, 0.1);
+  border: 1px solid rgba(160, 124, 48, 0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a07c30;
+}
+
+/* Unsaved data warning */
+.unsavedWarning {
+  padding: 8px 14px;
+  background: rgba(255, 160, 0, 0.12);
+  border: 1px solid rgba(255, 160, 0, 0.35);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c07000;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Section card */
+.sectionCard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  font-size: 18px;
+  font-weight: 800;
+  color: #a07c30;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sectionDesc {
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(13, 31, 53, 0.55);
+  margin: -10px 0 0;
+}
+
+/* Field wrapper */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0d1f35;
+  margin: 0;
+}
+
+.fieldDesc {
+  font-size: 12px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(13, 31, 53, 0.55);
+  margin: 0;
+}
+
+/* Comment textarea */
+.commentTextarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d1f35;
+  background: #faf8f4;
+  box-sizing: border-box;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.commentTextarea:focus-visible {
+  border-color: #a07c30;
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.charCount {
+  font-size: 11px;
+  color: rgba(13, 31, 53, 0.4);
+  text-align: right;
+  margin: 0;
+}
+
+/* Single select tiles */
+.selectTiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selectTile {
+  padding: 10px 16px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1.5px solid rgba(160, 124, 48, 0.2);
+  border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(13, 31, 53, 0.85);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  flex: 1;
+  min-width: 80px;
+}
+
+.selectTile:hover {
+  background: rgba(189, 151, 72, 0.07);
+  box-shadow: 0 2px 6px rgba(13, 31, 53, 0.08);
+}
+
+.selectTileSelected {
+  composes: selectTile;
+  background: rgba(189, 151, 72, 0.12);
+  border-color: rgba(160, 124, 48, 0.6);
+  color: #0d1f35;
+  font-weight: 700;
+}
+
+.selectTile:focus-visible,
+.selectTileSelected:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+/* Other input for singleSelect hasOther */
+.otherInput {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(160, 124, 48, 0.3);
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d1f35;
+  background: #faf8f4;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.otherInput:focus-visible {
+  border-color: #a07c30;
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+/* Star rating */
+.starRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.star {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  transition: transform 0.1s ease;
+  color: rgba(160, 124, 48, 0.25);
+}
+
+.star:hover {
+  transform: scale(1.15);
+}
+
+.starFilled {
+  composes: star;
+  color: #a07c30;
+}
+
+.starLabel {
+  font-size: 12px;
+  color: rgba(13, 31, 53, 0.55);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* Photo gallery section */
+.photoSection {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.photoSectionTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #a07c30;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.photoBtnRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.photoUploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  min-height: 44px;
+  background: transparent;
+  border: 1.5px solid rgba(160, 124, 48, 0.55);
+  border-radius: 8px;
+  color: #a07c30;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.photoCaptureBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  min-height: 44px;
+  background: #a07c30;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.photoCaptureBtn:hover:not(:disabled) {
+  background: #8a6a28;
+}
+
+.photoCaptureBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.photoCaptureBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.photoCaptureBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.photoUploadBtn:hover:not(:disabled) {
+  background: rgba(160, 124, 48, 0.08);
+  border-color: rgba(160, 124, 48, 0.8);
+}
+
+.photoUploadBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.photoCard {
+  background: #faf8f4;
+  border: 1px solid rgba(160, 124, 48, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.photoThumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  background: rgba(13, 31, 53, 0.04);
+}
+
+.photoThumbPlaceholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 31, 53, 0.04);
+  color: rgba(13, 31, 53, 0.3);
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.photoMeta {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.photoUploader {
+  font-size: 12px;
+  color: rgba(13, 31, 53, 0.55);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tag pills */
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tagPill {
+  padding: 0 10px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  border: 1.5px solid rgba(160, 124, 48, 0.25);
+  background: transparent;
+  color: rgba(13, 31, 53, 0.6);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.tagPill:hover {
+  background: rgba(160, 124, 48, 0.08);
+}
+
+.tagPillActive {
+  composes: tagPill;
+  border-color: rgba(160, 124, 48, 0.6);
+  background: rgba(189, 151, 72, 0.12);
+  color: #0d1f35;
+  font-weight: 700;
+}
+
+.photoActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.photoDeleteBtn {
+  padding: 0 8px;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(192, 57, 43, 0.5);
+  border-radius: 6px;
+  background: transparent;
+  color: #c0392b;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.photoDeleteBtn:hover {
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.photoDeleteConfirm {
+  composes: photoDeleteBtn;
+  background: rgba(255, 160, 0, 0.18);
+  border-color: rgba(255, 180, 0, 0.7);
+  color: #c07000;
+  animation: pulsePhoto 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes pulsePhoto {
+  from { box-shadow: 0 0 0px rgba(255, 180, 0, 0); }
+  to   { box-shadow: 0 0 6px rgba(255, 180, 0, 0.35); }
+}
+
+.photoEmptyText {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+}
+
+/* Staged photos from camera */
+.stagedSection {
+  background: #faf8f4;
+  border: 1.5px solid rgba(160, 124, 48, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stagedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stagedTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0d1f35;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.stagedUploadBtn {
+  padding: 0 16px;
+  min-height: 44px;
+  background: #1a7f3c;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.stagedUploadBtn:hover:not(:disabled) {
+  background: #15692f;
+}
+
+.stagedUploadBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.stagedUploadBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.stagedUploadBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.stagedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.stagedCard {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(160, 124, 48, 0.2);
+}
+
+.stagedThumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+
+.stagedRemoveBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  /* Visual size stays 24px; hit area expanded to 44px via padding */
+  width: 24px;
+  height: 24px;
+  padding: 10px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  border: none;
+  background: rgba(13, 31, 53, 0.65);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+
+.stagedRemoveBtn:hover {
+  background: rgba(192, 57, 43, 0.85);
+}
+
+.stagedRemoveBtn:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
+.photoError {
+  font-size: 12px;
+  color: #c0392b;
+  margin: 0;
+}
+
+.photoCaptureBtnInline {
+  composes: photoCaptureBtn;
+  align-self: flex-start;
+}
+
+/* Submit button */
+.submitBtn {
+  width: 100%;
+  min-height: 52px;
+  background: #a07c30;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  letter-spacing: 0.02em;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #8a6a28;
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Loading text */
+.loadingText {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.4);
+  text-align: center;
+  margin: 0;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: rgba(13, 31, 53, 0.4);
+  margin: 0;
+  text-align: center;
+}

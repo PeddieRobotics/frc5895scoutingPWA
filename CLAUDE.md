@@ -35,7 +35,7 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
 
 1. **Admin uploads a JSON game config** at `/admin/games` → validated, stored in `game_configs` table, scouting table (`scouting_<gameName>`), scout-leads table (`scoutleads_<gameName>`), and betting table (`betting_<gameName>`) are auto-created.
 2. **Scouts open the app** → form is dynamically rendered from the active game config → submissions write rows to `scouting_<gameName>`. When `enableBetting: true`, a `BettingSection` appears between basics and the dynamic form.
-3. **Scout leads open `/scout-leads`** → enter per-second rates for `holdTimer` fields (individual or grouped) → stored in `scoutleads_<gameName>`. Also access the standalone **Gallery section** to upload/tag/view robot photos for any team.
+3. **Scout leads open `/scout-leads`** → enter per-second rates for `holdTimer` fields (individual or grouped) → stored in `scoutleads_<gameName>`. Also access the standalone **Gallery section** to upload/tag/view robot photos for any team. The **Prescout** button navigates to `/scout-leads/prescout/` — a config-driven form for structured per-team pre-event data entry (requires a `prescout` key in the game config). A bulk spreadsheet upload is available at `/scout-leads/prescout/upload`.
 4. **Display pages** (`/team-view`, `/match-view`, `/picklist`, `/compare`) call API routes which use the display engine to aggregate data from `scouting_<gameName>` using field references from the active config.
 5. **Scouts visit `/betting`** → leaderboard of virtual point balances from match outcome bets (when `enableBetting: true`).
 
@@ -64,11 +64,11 @@ This is a **Next.js 15 PWA** for FRC (FIRST Robotics) match scouting. It uses a 
   - `compute-picklist/` — Picklist computation
   - `scout-leads/` — Scout-lead timer rate CRUD
   - `edit-match-entry/` — PATCH endpoint to update a single scouting row (config-driven field allowlist; auth: own entry or admin password)
-  - `prescout/` — Prescout data CRUD: `GET ?team&gameId` (any auth), `DELETE ?gameName` (admin); `upload/` POST xlsx (admin); `teams/` GET list (admin); `photos/` GET metadata + POST upload (any auth); `photos/[id]/` GET full data + DELETE (any auth)
+  - `prescout/` — Spreadsheet prescout data CRUD: `GET ?team&gameId` (any auth), `DELETE ?gameName` (admin); `upload/` POST xlsx (any auth); `teams/` GET list (any auth); `photos/` GET metadata + POST upload (any auth); `photos/[id]/` GET full data + DELETE (any auth); `form/` GET `?team&gameId` + POST `{teamNumber, gameId, data}` — config-driven prescout form CRUD (any auth); POST uses field-level merge (existing fields not submitted are preserved)
   - `betting/` — Betting system (requires `enableBetting: true` in config + `tbaEventCode`): `prediction/` GET Statbotics win probabilities; `place/` POST place a bet; `my-bet/` GET scout's bet for a match; `balance/` GET scout's point balance; `leaderboard/` GET ranked balance table (also auto-resolves completed bets)
   - `admin/` — Game management, auth, team management
 
-- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/betting`, `/admin`, `/admin/prescout`, `/sudo`
+- `src/app/` — Pages: `/` (scouting form), `/team-view`, `/match-view`, `/picklist`, `/compare`, `/qual`, `/scanner`, `/scout-leads`, `/scout-leads/prescout/` (config-driven prescout form), `/scout-leads/prescout/upload` (spreadsheet upload), `/betting`, `/admin`, `/admin/prescout` (redirects to `/scout-leads/prescout/upload`), `/sudo`
 
 - `src/configs/` — Reference JSON game configs (`reefscape_2025.json`, `rebuilt_2026.json`)
 
@@ -92,6 +92,10 @@ See `README.md` for full reference. Key top-level keys:
 - `basics` — pre-match fields (e.g., "No Show")
 - `sections` — form sections with fields; supports `showWhen` conditional visibility
 - `calculations` — EPA formulas (`auto`, `tele`, `end`) using formula or mapping types
+- `prescout` — optional object; defines the config-driven prescout form at `/scout-leads/prescout/`. Contains `sections[]`, each with `id`, `header`, optional `description`, and `fields[]`. Field types: `singleSelect` (with `options`), `comment`, `starRating` (with `max`), `checkbox`, `multiSelect`. Additional field properties:
+  - `hasOther` (boolean, `singleSelect` only) — appends an "Other" tile; selecting it reveals a free-text input whose typed value is stored as the display string instead of an option label.
+  - `showWhen` (object) — conditional visibility: `{ field: "<name>", equals: N }` or `{ field: "<name>", notEquals: N }`. Referenced field must appear before this field in the config. Hidden fields are excluded from submission and cleared when the controlling field changes. Validated by `config-validator.js` (warns if `field` is missing or not found in preceding fields).
+  Data stored in `prescoutform_<gameName>` as `[{field, value}]` arrays (one row per team, field-level merge on upsert — existing fields not in the submission are preserved). Validated by `config-validator.js`. See `README.md` for full config reference.
 - `photoTags` — optional array of `{ name, emoji, color }` tag definitions. Drives tag pill UI in the `/scout-leads` Gallery section. Referenced by `display.teamView.photoSections`. Validated by `config-validator.js`.
 - `display` — config for all display pages: `teamView`, `matchView`, `picklist`, `compare`, `apiAggregation`
   - `matchView.showEpaOverTime` (bool): when `true`, each team card in match-view shows a per-match EPA/PPR over-time line chart; PPR injection skipped when `false`
@@ -133,29 +137,45 @@ The `/scout-leads` page also renders the full scouting form data below the timer
 
 Per-game DB tables (created alongside scouting tables in `createGame()`, dropped in `deleteGame()`):
 
-- **`prescout_<gameName>`** — `team_number UNIQUE`; `data` JSONB column holds ordered array of `{field, value}` prescout fields; upserted on re-upload. Table name generated by `sanitizePrescoutTableName()` in `schema-generator.js`.
-- **`photos_<gameName>`** — multiple photos per team; `photo_data TEXT` stores base64; `mime_type`, `uploaded_by`, `tag VARCHAR(100)` (nullable), `uploaded_at` metadata columns. `tag` is migrated into existing tables automatically via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. Table name generated by `sanitizePhotosTableName()` in `schema-generator.js`.
+- **`prescout_<gameName>`** — `team_number UNIQUE`; `data` JSONB column holds ordered array of `{field, value}` prescout fields from spreadsheet upload; upserted on re-upload. Table name from `sanitizePrescoutTableName()`.
+- **`prescoutform_<gameName>`** — `team_number UNIQUE`; `data` JSONB; `submitted_by`, `submitted_at`, `updated_at`. Config-driven prescout form data. One row per team; upsert on re-submit. Table name from `sanitizePrescoutFormTableName()`. Created at game-creation time and lazily by the form API route.
+- **`photos_<gameName>`** — multiple photos per team; `photo_data TEXT` stores base64; `mime_type`, `uploaded_by`, `tag VARCHAR(100)` (nullable), `uploaded_at` metadata columns. `tag` is migrated into existing tables automatically via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. Table name from `sanitizePhotosTableName()`.
+
+**Config-driven prescout form (`/scout-leads/prescout/`):**
+- Driven by the `prescout` top-level key in the game config. Any authenticated user can access.
+- Scouts load a team number, fill out the form (sections → fields), and submit via `POST /api/prescout/form`. Existing data is pre-populated for editing.
+- Includes `PhotoGallery` for the loaded team (robot photo upload/view).
+- `/api/prescout/form` — `GET ?team&gameId` returns `{data, submittedBy, submittedAt, updatedAt}`; `POST {teamNumber, gameId, data}` upserts.
+- If the active config has no `prescout` key, the page shows an informational message and still links to the spreadsheet upload.
 
 **Spreadsheet ingestion (`POST /api/prescout/upload`):**
-- Admin-only. Accepts `.xlsx` via `multipart/form-data` (`file` + `gameName`).
+- Auth: any authenticated user (standard session token — admin password no longer required).
+- Accepts `.xlsx` via `multipart/form-data` (`file` + `gameName`).
 - Parses the sheet named `"Prescout"` (case-sensitive) using the `xlsx` (SheetJS) package.
 - Transposed layout: row 0 = team numbers (cols 1+), col 0 = field names (rows 1+). All values stored as strings; nulls filtered in UI.
+- `/api/prescout/teams?gameName=<name>` — any authenticated user (switched from admin-only).
+
+**Display page data fetching:**
+- `/team-view` and `/compare` dual-fetch from both `/api/prescout/form` and `/api/prescout` in parallel. Form data takes priority; spreadsheet data is fallback. Both render via `PrescoutSection` using the same `[{field, value}]` format.
+
+**Upload page (`/scout-leads/prescout/upload`):**
+- Moved from `/admin/prescout` (which now redirects here). Auth: any authenticated user. Same features: upload `.xlsx`, view imported teams, clear all data.
 
 **Photos (`/api/prescout/photos`):**
 - Any authenticated user can upload (`POST`) or delete (`DELETE /api/prescout/photos/[id]?gameId=<id>`).
 - Max 3 MB enforced server-side; client-side check mirrors this.
-- `GET /api/prescout/photos?team&gameId[&tag=<name>]` returns metadata only (no base64); optional `tag` filter returns only photos with that tag. Each item includes `tag` field.
+- `GET /api/prescout/photos?team&gameId[&tag=<name>]` returns metadata only (no base64); optional `tag` filter. Each item includes `tag` field.
 - `POST /api/prescout/photos` accepts optional `tag` in `multipart/form-data`; stored as-is (null if omitted).
 - `GET /api/prescout/photos/[id]?gameId=<id>` returns full record including `photo_data` and `tag`.
 - `photos/[id]` routes require `gameId` query param to resolve which per-game table to query.
 
 **Components:**
 - `src/app/team-view/components/PrescoutSection.js` — collapsible key-value table; shown on `/team-view` (read-only) and `/compare` (per-team).
-- `src/app/team-view/components/PhotoGallery.js` — modal gallery with lightbox; used on `/scout-leads` entry cards only (not on team-view or compare). `readOnly` prop controls delete/upload UI.
+- `src/app/team-view/components/PhotoGallery.js` — modal gallery with lightbox; used on `/scout-leads` entry cards and `/scout-leads/prescout/` form page. `readOnly` prop controls delete/upload UI.
 - `src/app/team-view/components/TaggedPhotoGrid.js` — config-driven horizontally scrollable photo row for one tag; driven by `display.teamView.photoSections`; renders inline on `/team-view` at configured placements. Fetches photo data immediately on mount.
 - `src/app/components/LightboxModal.js` — reusable fullscreen image lightbox; used by both `PhotoGallery` and `TaggedPhotoGrid`.
 
-See `README.md` — "Prescout Data & Photo Gallery" section for full API reference, spreadsheet layout, and page integration table.
+See `README.md` — "Prescout Data & Photo Gallery" section for full API reference, spreadsheet layout, config structure, and page integration table.
 
 ### imageSelect Field Type & Field Images
 

@@ -21,6 +21,209 @@
     "tele": "totalTeleopPoints",
     "end": "endGameTowerPoints"
   },
+  "prescout": {
+    "sections": [
+      {
+        "id": "interview",
+        "header": "Interview Questions",
+        "description": "Ask the team these questions directly",
+        "fields": [
+          {
+            "type": "singleSelect",
+            "name": "drive_type",
+            "label": "Drive Type",
+            "description": "Don't ask, just look",
+            "options": [
+              { "value": 0, "label": "Swerve" },
+              { "value": 1, "label": "Tank" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "swerve_type",
+            "label": "Swerve Type",
+            "description": "If applicable (e.g. Mk5, Mk4i, L3+, WCP, Rev MaxSwerve)"
+          },
+          {
+            "type": "comment",
+            "name": "driver_experience",
+            "label": "Driver Experience",
+            "description": "Number of events driven before"
+          },
+          {
+            "type": "singleSelect",
+            "name": "coding_language",
+            "label": "Coding Language",
+            "hasOther": true,
+            "options": [
+              { "value": 0, "label": "Java" },
+              { "value": 1, "label": "Python" },
+              { "value": 2, "label": "C++" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "shooter_archetype",
+            "label": "Shooter Archetype",
+            "description": "Single/double shooter, turret, wide roller, adjustable hood, etc."
+          },
+          {
+            "type": "comment",
+            "name": "shooting_range",
+            "label": "Can you shoot from different locations?",
+            "description": "Specify range if yes"
+          },
+          {
+            "type": "singleSelect",
+            "name": "shoot_on_move",
+            "label": "Can you shoot on the move?",
+            "options": [
+              { "value": 0, "label": "Yes" },
+              { "value": 1, "label": "No" }
+            ]
+          },
+          {
+            "type": "singleSelect",
+            "name": "can_pass",
+            "label": "Can you pass?",
+            "options": [
+              { "value": 0, "label": "Yes" },
+              { "value": 1, "label": "No" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "fuel_output",
+            "label": "Fuel output per second?",
+            "description": "Approximate pieces per second"
+          },
+          {
+            "type": "comment",
+            "name": "hopper_capacity",
+            "label": "Hopper max capacity?"
+          },
+          {
+            "type": "singleSelect",
+            "name": "move_under_trench",
+            "label": "Can you move under the trench?",
+            "options": [
+              { "value": 0, "label": "Yes" },
+              { "value": 1, "label": "No" }
+            ]
+          },
+          {
+            "type": "singleSelect",
+            "name": "move_over_bump",
+            "label": "Can you move over the bump?",
+            "options": [
+              { "value": 0, "label": "Yes" },
+              { "value": 1, "label": "No" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "auto_strategy",
+            "label": "What are you doing during Auton?",
+            "description": "Approximate pieces and strategy"
+          },
+          {
+            "type": "singleSelect",
+            "name": "when_climb",
+            "label": "When do you climb?",
+            "options": [
+              { "value": 0, "label": "No" },
+              { "value": 1, "label": "Auto" },
+              { "value": 2, "label": "Endgame" },
+              { "value": 3, "label": "Both" }
+            ]
+          },
+          {
+            "type": "singleSelect",
+            "name": "climb_level",
+            "label": "Climb level?",
+            "showWhen": { "field": "when_climb", "notEquals": 0 },
+            "options": [
+              { "value": 0, "label": "None" },
+              { "value": 1, "label": "L1" },
+              { "value": 2, "label": "L2" },
+              { "value": 3, "label": "L3" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "climb_location",
+            "label": "Where do you prefer to climb?",
+            "showWhen": { "field": "when_climb", "notEquals": 0 }
+          },
+          {
+            "type": "comment",
+            "name": "climb_time",
+            "label": "How many seconds to climb?",
+            "description": "Include unclimb time if auton climb",
+            "showWhen": { "field": "when_climb", "notEquals": 0 }
+          },
+          {
+            "type": "singleSelect",
+            "name": "intake_method",
+            "label": "How do you intake?",
+            "options": [
+              { "value": 0, "label": "Ground" },
+              { "value": 1, "label": "HP" },
+              { "value": 2, "label": "Both" }
+            ]
+          },
+          {
+            "type": "comment",
+            "name": "hp_role",
+            "label": "What is your HP going to do?",
+            "description": "Throw, shoot, both, etc."
+          },
+          {
+            "type": "comment",
+            "name": "team_role",
+            "label": "Preferred team role?",
+            "description": "e.g. passing, cleanup, hybrid, defense"
+          },
+          {
+            "type": "comment",
+            "name": "other_comments",
+            "label": "Other comments"
+          }
+        ]
+      },
+      {
+        "id": "observations",
+        "header": "Observations (DO NOT ASK)",
+        "description": "Rate by looking at the robot — do not ask the team",
+        "fields": [
+          {
+            "type": "starRating",
+            "name": "bumper_quality",
+            "label": "Bumper Quality",
+            "max": 5
+          },
+          {
+            "type": "starRating",
+            "name": "build_quality",
+            "label": "Build Quality",
+            "max": 5
+          },
+          {
+            "type": "starRating",
+            "name": "wiring_quality",
+            "label": "Wiring Quality",
+            "max": 5
+          },
+          {
+            "type": "starRating",
+            "name": "intake_quality",
+            "label": "Intake Quality",
+            "max": 5
+          }
+        ]
+      }
+    ]
+  },
   "formTitle": "KUNPENSCOUTER",
   "version": "1.0",
   "basics": {

@@ -164,10 +164,14 @@ function Compare() {
     teams.forEach(team => {
       const params = new URLSearchParams({ team: String(team) });
       if (gameId) params.set('gameId', String(gameId));
-      fetch(`/api/prescout?${params.toString()}`, { headers })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.data) setTeamPrescout(prev => ({ ...prev, [team]: d.data })); })
-        .catch(() => {});
+      // Form data takes priority over xlsx prescout data
+      Promise.all([
+        fetch(`/api/prescout/form?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`/api/prescout?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]).then(([formResult, xlsxResult]) => {
+        const data = formResult?.data || xlsxResult?.data;
+        if (data) setTeamPrescout(prev => ({ ...prev, [team]: data }));
+      });
       fetch(`/api/prescout/photos?${params.toString()}`, { headers })
         .then(r => r.ok ? r.json() : null)
         .then(d => setTeamPhotos(prev => ({ ...prev, [team]: d?.photos || [] })))

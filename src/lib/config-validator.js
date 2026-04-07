@@ -182,6 +182,66 @@ function validateConfig(config) {
     }
   }
 
+  // Validate prescout (optional config-driven prescout form)
+  if (config.prescout !== undefined) {
+    if (typeof config.prescout !== 'object' || config.prescout === null) {
+      result.addWarning('prescout must be an object', 'prescout');
+    } else {
+      if (!Array.isArray(config.prescout.sections)) {
+        result.addWarning('prescout.sections must be an array', 'prescout.sections');
+      } else {
+        const VALID_PRESCOUT_TYPES = ['singleSelect', 'comment', 'starRating', 'checkbox', 'multiSelect'];
+        const prescoutFieldNames = new Set();
+        config.prescout.sections.forEach((section, si) => {
+          const sPath = `prescout.sections[${si}]`;
+          if (!section.id || typeof section.id !== 'string') {
+            result.addWarning(`${sPath}.id is required and must be a string`, sPath);
+          }
+          if (!section.header || typeof section.header !== 'string') {
+            result.addWarning(`${sPath}.header is required and must be a string`, sPath);
+          }
+          if (!Array.isArray(section.fields)) {
+            result.addWarning(`${sPath}.fields must be an array`, sPath);
+          } else {
+            section.fields.forEach((field, fi) => {
+              const fPath = `${sPath}.fields[${fi}]`;
+              if (!field.name || typeof field.name !== 'string') {
+                result.addWarning(`${fPath}.name is required and must be a string`, fPath);
+              }
+              if (!field.type || !VALID_PRESCOUT_TYPES.includes(field.type)) {
+                result.addWarning(`${fPath}.type must be one of: ${VALID_PRESCOUT_TYPES.join(', ')}`, fPath);
+              }
+              if (field.type === 'singleSelect' && !Array.isArray(field.options)) {
+                result.addWarning(`${fPath}.options is required for singleSelect fields`, fPath);
+              }
+              if (field.type === 'singleSelect' && field.hasOther !== undefined && typeof field.hasOther !== 'boolean') {
+                result.addWarning(`${fPath}.hasOther should be a boolean`, fPath);
+              }
+              if (field.type === 'starRating' && field.max !== undefined && (typeof field.max !== 'number' || field.max < 2)) {
+                result.addWarning(`${fPath}.max must be a number >= 2`, fPath);
+              }
+              if (field.showWhen) {
+                if (typeof field.showWhen !== 'object') {
+                  result.addWarning(`${fPath}.showWhen must be an object`, fPath);
+                } else if (!field.showWhen.field || typeof field.showWhen.field !== 'string') {
+                  result.addWarning(`${fPath}.showWhen.field is required and must be a string`, fPath);
+                } else if (!prescoutFieldNames.has(field.showWhen.field)) {
+                  result.addWarning(`${fPath}.showWhen.field "${field.showWhen.field}" not found in preceding fields`, fPath);
+                } else if (field.showWhen.equals === undefined && field.showWhen.notEquals === undefined) {
+                  result.addWarning(`${fPath}.showWhen must include either "equals" or "notEquals"`, fPath);
+                }
+              }
+              if (field.name && prescoutFieldNames.has(field.name)) {
+                result.addWarning(`Duplicate prescout field name: "${field.name}"`, fPath);
+              }
+              if (field.name) prescoutFieldNames.add(field.name);
+            });
+          }
+        });
+      }
+    }
+  }
+
   // Validate photoTags (optional array of tag definitions for photo uploads)
   if (config.photoTags !== undefined) {
     if (!Array.isArray(config.photoTags)) {

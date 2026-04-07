@@ -1,24 +1,8 @@
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../lib/auth';
+import { pool, validateAuthToken } from '../../../../lib/auth';
 import { sanitizePrescoutTableName } from '../../../../lib/schema-generator';
-import { cookies } from 'next/headers';
 
 export const revalidate = 0;
-
-async function validateAdminAuth() {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) return false;
-  const cookieStore = await cookies();
-  const adminAuth = cookieStore.get('admin_auth');
-  if (!adminAuth?.value) return false;
-  try {
-    const decoded = Buffer.from(adminAuth.value, 'base64').toString('utf-8');
-    const [username, password] = decoded.split(':');
-    return username === 'admin' && password === adminPassword;
-  } catch {
-    return false;
-  }
-}
 
 async function ensurePrescoutTable(client, tableName) {
   await client.query(`
@@ -34,12 +18,12 @@ async function ensurePrescoutTable(client, tableName) {
 /**
  * GET /api/prescout/teams?gameName=<name>
  * Returns sorted list of team numbers that have prescout data for a game.
- * Auth: admin only.
+ * Auth: any authenticated user.
  */
 export async function GET(request) {
-  const isAdmin = await validateAdminAuth();
-  if (!isAdmin) {
-    return NextResponse.json({ message: 'Admin authentication required' }, { status: 401 });
+  const { isValid, error } = await validateAuthToken(request);
+  if (!isValid) {
+    return NextResponse.json({ message: error || 'Authentication required' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);

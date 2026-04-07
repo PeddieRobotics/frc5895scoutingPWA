@@ -209,10 +209,13 @@ function TeamView() {
         const headers = creds ? { Authorization: `Basic ${creds}` } : {};
         const params = new URLSearchParams({ team: String(team) });
         if (gameId) params.set('gameId', String(gameId));
-        fetch(`/api/prescout?${params.toString()}`, { headers })
-            .then(r => r.ok ? r.json() : null)
-            .then(d => setPrescoutData(d?.data || null))
-            .catch(() => {});
+        // Form data takes priority over xlsx prescout data
+        Promise.all([
+            fetch(`/api/prescout/form?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/prescout?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]).then(([formResult, xlsxResult]) => {
+            setPrescoutData(formResult?.data || xlsxResult?.data || null);
+        });
         fetch(`/api/prescout/photos?${params.toString()}`, { headers })
             .then(r => r.ok ? r.json() : null)
             .then(d => setTeamPhotos(d?.photos || []))

@@ -366,6 +366,66 @@ The only glow defined in DESIGN.md is the Armed state amber pulse. No red or blu
 
 ---
 
+## Light mode button `border-radius` — 8px, not 10px or 12px
+
+prescout-form.module.css `.teamLoadBtn` (10px) and `.submitBtn` (12px) used off-spec radii for Light Mode buttons. DESIGN.md Light Mode Buttons section defines `border-radius: 8px` for all three button types (Primary, Secondary, Destructive). Discovered 2026-04-07.
+
+**Why:** Light mode buttons use 8px; dark mode buttons use 10–18px. These are deliberately different to signal mode context.
+
+**How to apply:** Any Light Mode button with `border-radius` above 8px is a violation unless it is explicitly a pill/chip variant.
+
+---
+
+## Secondary/outline button missing `border-color` hover transition
+
+`.backBtn` and `.emergencyUploadBtn` in prescout-form.module.css used `transition: background 0.15s` only — the border-color change on hover was not animated. DESIGN.md Secondary button hover spec includes `border-color: rgba(160,124,48,0.8)` and all transitions should be `0.15s ease`. Discovered 2026-04-07.
+
+**Why:** The border animation reinforces that the element is interactive. A flat border transition looks broken at hover onset.
+
+**How to apply:** All Secondary/Outline buttons must declare `transition: background 0.15s ease, border-color 0.15s ease` and a `:hover` rule that both changes `background` AND `border-color`.
+
+---
+
+## Star/icon button touch target — 36px instead of 44px
+
+Star rating buttons (`.star`) in prescout-form.module.css were `width: 36px; height: 36px` — below the 44px minimum. Small interactive icons (stars, checkmarks, close buttons) are consistently under-sized. Discovered 2026-04-07.
+
+**Why:** DESIGN.md Mobile-First — 44px minimum touch target applies to all interactive elements including decorative icon buttons used for rating input.
+
+**How to apply:** Any `<button>` or interactive icon with a dimension below 44px violates the spec. Always use `width: 44px; height: 44px` even when the visible glyph is smaller.
+
+---
+
+## `font-family` missing on `<button>` elements — inherits browser default
+
+Star buttons (`.star`) in prescout-form.module.css omitted `font-family: 'Montserrat', sans-serif`. Browsers do not inherit font-family on `<button>` elements from their parent — without an explicit declaration, buttons render in the browser's default UI font. Discovered 2026-04-07.
+
+**Why:** DESIGN.md Typography — "Montserrat everywhere, no exceptions." `<button>` elements require explicit declaration.
+
+**How to apply:** Every `<button>` CSS class must include `font-family: 'Montserrat', sans-serif`. This is especially easy to miss on icon/emoji buttons where the glyph renders visually correct regardless.
+
+---
+
+## Off-token arbitrary gold hex `#6b5320` for text
+
+`.teamPill` in prescout-upload.module.css used `color: #6b5320` — a darker arbitrary gold not in the Light Mode palette. The spec defines only `#a07c30` (gold accent) and `#bd9748` (gold accent bright) as gold text tokens. Discovered 2026-04-07.
+
+**Why:** Inventing intermediate gold shades breaks palette coherence and fails the contrast-legibility intent the `#a07c30` token was tuned for.
+
+**How to apply:** Replace any arbitrary darkened/lightened gold hex with `#a07c30`. Pill or chip text on a light tinted background should use `#a07c30`.
+
+---
+
+## `.card` border-radius 14px — spec is 12px for standard cards
+
+prescout-upload.module.css `.card` used `border-radius: 14px`. The Light Mode standard card spec says `border-radius: 12px`. Discovered 2026-04-07.
+
+**Why:** Inflating the radius slightly produces a subtly different appearance from all other light mode cards on data pages, breaking visual consistency.
+
+**How to apply:** Standard Light Mode cards must use `border-radius: 12px`. Only pill/chip elements can use larger radii.
+
+---
+
 ## Solid gold table header (`background: #a07c30; color: #fff`) vs. spec tinted header
 
 BettingLeaderboard page.module.css uses `background: #a07c30; color: #ffffff` for thead. DESIGN.md Data Tables spec documents `background: rgba(189,151,72,0.1); color: #a07c30`. Discovered 2026-04-03.
@@ -373,3 +433,103 @@ BettingLeaderboard page.module.css uses `background: #a07c30; color: #ffffff` fo
 **Why:** The solid-gold inverted header is not explicitly prohibited — it stays within the palette — but it deviates from the documented pattern.
 
 **How to apply:** Flag as a Warning, not a hard violation. Ask the design lead to confirm and, if approved, add the solid-gold header as a documented Data Table variant to DESIGN.md.
+
+---
+
+## Destructive button 1px border / 0.3 opacity — must be 1.5px / 0.5
+
+Small delete buttons (`.photoDeleteBtn` in prescout-form.module.css, 2026-04-07) use `border: 1px solid rgba(192,57,43,0.3)` instead of the spec `border: 1.5px solid rgba(192,57,43,0.5)`. Pairs with the systemic 1px border pattern already noted for other button types.
+
+**Why:** DESIGN.md Light Mode Destructive button spec: `border: 1.5px solid rgba(192, 57, 43, 0.5)`. Both border width and opacity are under-spec, making the delete button visually recessive.
+
+**How to apply:** Any light mode destructive button must use `1.5px` and `0.5` opacity on the border. Also check that small thumbnail-card delete buttons have `min-height: 44px`.
+
+---
+
+## Hybrid tinted-fill button style — not a defined Light Mode button type
+
+`.photoUploadBtn` in prescout-form.module.css uses `background: rgba(160,124,48,0.1)` with a visible border — a translucent-fill variant not matching Primary (`#a07c30` solid fill) or Secondary/Outline (`transparent` fill). Discovered 2026-04-07.
+
+**Why:** DESIGN.md Light Mode Buttons defines exactly three types: Primary (solid fill), Secondary/Outline (transparent fill), and Destructive. No translucent-fill tertiary type exists.
+
+**How to apply:** Any light mode button with a semi-transparent fill that is not amber-armed or selected-state is a violation. Resolve to Secondary/Outline (transparent + border) or Primary (solid fill) depending on CTA importance.
+
+---
+
+## Missing `:active` transform on Light Mode Primary buttons
+
+`.photoCaptureBtn` and `.stagedUploadBtn` in prescout-form.module.css (camera capture feature) had no `:active` transform. DESIGN.md Light Mode Buttons: "`:active { transform: scale(0.97); }`". Discovered 2026-04-07.
+
+**Why:** The press feedback is part of the button contract. It is easy to omit when a button is added as an afterthought alongside existing buttons that already have it.
+
+**How to apply:** Any new Primary/Action button in a Light Mode file must include `:active:not(:disabled) { transform: scale(0.97); }`. Check this whenever a button class is added without composing an existing button class.
+
+---
+
+## Raw black `rgba(0,0,0,...)` in overlay/badge backgrounds — recurs in light mode too
+
+`.stagedRemoveBtn` in prescout-form.module.css used `background: rgba(0, 0, 0, 0.55)` for a circular remove badge overlaid on a thumbnail. Discovered 2026-04-07.
+
+**Why:** DESIGN.md "What NOT to do" forbids `#000000` backgrounds on interactive elements. The naval overlay token `rgba(13, 31, 53, 0.65)` is the correct dark overlay in light mode contexts. Pure black does not belong to either palette.
+
+**How to apply:** Any `rgba(0, 0, 0, ...)` value — whether backdrop, badge, or overlay — must be replaced with the navy token. This applies in both dark and light mode files. The PhotoGallery backdrop (discovered 2026-03-31) was the first instance; `.stagedRemoveBtn` is the second.
+
+---
+
+## Absolute-positioned small overlay button — hit area must be expanded via padding
+
+`.stagedRemoveBtn` (24x24px circular X badge) is too small to meet the 44px touch target but removing it from the overlay context is not practical. The correct fix is `padding: 10px; box-sizing: content-box` to expand the tappable area to 44x44px while keeping the visible circle at 24x24px. Discovered 2026-04-07.
+
+**Why:** DESIGN.md Mobile-First — 44px minimum applies to all interactive elements, including small overlay badges. The visual need to remain compact does not override the tap target requirement.
+
+**How to apply:** Any absolutely-positioned small icon button (X, trash, close) that cannot be visually enlarged should use `padding` expansion: `padding: 10px; box-sizing: content-box` brings a 24px element to a 44px hit area. Ensure the `border-radius: 50%` is on the visual layer, not distorted by the padding.
+
+---
+
+## Sub-12px font-size on interactive or visible text elements
+
+`.photoUploader` (11px) and `.tagPill` (11px) in prescout-form.module.css fall below the 12px hint/description floor defined in DESIGN.md Light Mode Typography. Discovered 2026-04-07.
+
+**Why:** DESIGN.md Light Mode defines 12–13px as the minimum for description/hint text. 11px has no corresponding role.
+
+**How to apply:** Flag any Light Mode text element with `font-size` below 12px as a violation. Replace with 12px (description/hint role) unless it is a CSS-only decorative element (no spec role).
+
+---
+
+## Section header font-size undersized — 14px should be 18–22px
+
+`.trackerTitle` in prescout-form.module.css (Prescout Tracker sidebar, 2026-04-07) used `font-size: 14px` with `font-weight: 800`, `text-transform: uppercase`, `letter-spacing: 0.06em` — a full section-header treatment. DESIGN.md Light Mode Typography specifies `font-size: 18–22px` for section headers (700–800 weight + uppercase). Card title/label (14–16px) is the rule for plain labels without uppercase treatment.
+
+**Why:** A heading with uppercase + 800 weight is semantically a section header and must meet the 18–22px size range.
+
+**How to apply:** If a heading is uppercase AND font-weight: 700–800, it is a section header and must be 18–22px. Only non-uppercase 14–16px labels can stay at card-title size.
+
+---
+
+## Progress bar `transition: width` — violates no-layout-animation rule
+
+`.trackerProgressBar` in prescout-form.module.css (Prescout Tracker, 2026-04-07) used `transition: width 0.3s ease`. DESIGN.md Mobile-First Rules state "Do not animate layout properties (height, width) on mobile." Fixed to `0.15s ease` at minimum but the width animation itself is borderline.
+
+**Why:** Animating `width` triggers layout recalculation on mobile and is explicitly prohibited. A `transform: scaleX()` approach is the compliant alternative if animation is needed, but the simpler fix is to remove the transition or use the minimum 0.15s.
+
+**How to apply:** Any `transition` on `width`, `height`, `max-height`, or `max-width` in a mobile component is a violation. Use `transform: scale/translateX` for animated size changes, or remove the transition entirely.
+
+---
+
+## Missing `:focus-visible` on navigation chip / tracker team buttons
+
+`.trackerTeamBtn` and `.trackerTeamDone` in prescout-form.module.css (Prescout Tracker, 2026-04-07) had no `:focus-visible` rule. These are interactive `<button>` elements used for navigation. Fixed in review.
+
+**Why:** DESIGN.md Focus Rings — "Always gold, never the default blue." Any interactive element without an explicit `:focus-visible` will show the browser-default blue ring.
+
+**How to apply:** Navigation chips and compact team-number buttons are still interactive elements — they require `:focus-visible`. This is a recurrence of the pattern noted for `.navCard` (Link-as-card) from 2026-04-01.
+
+---
+
+## Destructive-style border opacity 0.3 — must be 0.5 for Light Mode navigation chips
+
+`.trackerTeamBtn` default border used `rgba(192, 57, 43, 0.3)` — below the spec `0.5` floor for Destructive button borders. Fixed in review (border raised to 0.5; hover to 0.8).
+
+**Why:** DESIGN.md Light Mode Destructive button: `border: 1.5px solid rgba(192, 57, 43, 0.5)`. The 0.3 value makes the border visually recessive, weakening the "needs attention" signal.
+
+**How to apply:** Any light mode element using red tones as a status indicator (unscouted, danger, error) should use the `0.5` border opacity floor regardless of whether it is a traditional "destructive action" button.

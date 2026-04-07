@@ -52,3 +52,14 @@ The new `src/app/picklist/page.js` is fully config-driven:
 - K/S list stat display uses `usePPR` flag correctly for PPR/EPA label toggle
 - No game-specific field names, labels, or thresholds hardcoded anywhere in the file
 - `page.module.css` contains no game-specific references
+
+## Inline Mini-Renderers Risk Pattern (prescout audit 2026-04-07)
+
+When a new page builds its own mini field renderer (like `PrescoutField` in `prescout/page.js`) instead of reusing the existing `DynamicFormRenderer`, it is a HIGH-risk area for inconsistency with established defaults. Specific pitfalls observed:
+- `starRating` default `max` differs: existing codebase uses `field.max || 6` (per CLAUDE.md); the prescout renderer used `field.max || 5` — a MEDIUM violation.
+- `comment` field `maxLength` used as a hardcoded literal (`500`) rather than reading `field.maxLength` from config — MEDIUM violation. The existing `CommentBox.js` uses a named constant `MAX_CHARS = 255`; the prescout form used a raw `500` literal with no config hook.
+- Both issues arise from the renderer being written in isolation from the established form component library.
+
+## Team Number Placeholder Hardcode (prescout audit 2026-04-07)
+
+`src/app/scout-leads/prescout/page.js` line 233: `placeholder="e.g. 5895"` is a hardcoded team number. This is a LOW severity violation — it's just a UX hint, not a functional value — but it still violates the spirit of the no-hardcode rule. Fix: use a generic placeholder like `"e.g. 1234"` or `"Enter team number"`.

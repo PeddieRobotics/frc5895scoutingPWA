@@ -1080,7 +1080,7 @@ export default function ScoutLeadsPage() {
         <div className={styles.container}>
           <div className={styles.headerRow}>
             <h1 className={styles.title}>Scout Leads</h1>
-            <button className={styles.prescoutBtn} onClick={() => router.push("/admin/prescout")}>
+            <button className={styles.prescoutBtn} onClick={() => router.push("/scout-leads/prescout")}>
               📋 Prescout
             </button>
           </div>

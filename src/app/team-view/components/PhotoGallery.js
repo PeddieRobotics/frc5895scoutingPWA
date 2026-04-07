@@ -83,17 +83,17 @@ export default function PhotoGallery({
   }, [lightbox, onDelete, gameId]);
 
   const handleFileChange = useCallback(async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
     e.target.value = '';
     setUploadError('');
-    if (!file.type.startsWith('image/')) {
+    if (!rawFile.type.startsWith('image/')) {
       setUploadError('Only image files are allowed.');
       return;
     }
     setUploading(true);
     try {
-      file = await compressImage(file);
+      const file = await compressImage(rawFile);
       if (file.size > 3 * 1024 * 1024) {
         setUploadError('Photo still exceeds 3 MB after compression.');
         setUploading(false);

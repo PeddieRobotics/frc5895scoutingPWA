@@ -1,3 +1,3 @@
-- [Prescout Data & Photo Gallery Feature](project_prescout_feature.md) — non-config-driven prescout/photo feature added March 2026; DB tables, API routes, SheetJS dependency
+- [Prescout Data & Photo Gallery Feature](project_prescout_feature.md) — prescout system: config-driven form at /scout-leads/prescout/ (prescout key), spreadsheet upload (any auth now), dual-fetch display, prescoutform_<gameName> table
 - [Admin API route auth pattern](feedback_admin_api_auth.md) — /api/admin/* routes use session auth only; admin password gate is page-level, not API-level
 - [Betting System Feature](project_betting_feature.md) — enableBetting config flag, betting_<gameName> table, Statbotics predictions, BettingSection form component, /betting leaderboard — added April 2026
