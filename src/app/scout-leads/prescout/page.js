@@ -66,6 +66,7 @@ export default function PrescoutFormPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedTag, setSelectedTag] = useState(null);
   const [stagedPhotos, setStagedPhotos] = useState([]); // [{file, preview}]
   const [batchUploading, setBatchUploading] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
@@ -358,6 +359,7 @@ export default function PrescoutFormPage() {
       fd.append('file', file);
       fd.append('team', String(activeTeam));
       fd.append('gameName', gameName);
+      if (selectedTag) fd.append('tag', selectedTag);
       await fetch('/api/prescout/photos', { method: 'POST', body: fd, credentials: 'include' });
       fetchPhotos(activeTeam);
     } catch {
@@ -365,7 +367,7 @@ export default function PrescoutFormPage() {
     } finally {
       setUploading(false);
     }
-  }, [activeTeam, gameName, fetchPhotos]);
+  }, [activeTeam, gameName, fetchPhotos, selectedTag]);
 
   // Camera capture: stage photos for batch upload
   const handleCameraCapture = useCallback((e) => {
@@ -402,6 +404,7 @@ export default function PrescoutFormPage() {
         fd.append('file', file);
         fd.append('team', String(activeTeam));
         fd.append('gameName', gameName);
+        if (selectedTag) fd.append('tag', selectedTag);
         await fetch('/api/prescout/photos', { method: 'POST', body: fd, credentials: 'include' });
         uploaded++;
         setBatchProgress(uploaded);
@@ -414,7 +417,7 @@ export default function PrescoutFormPage() {
     setBatchUploading(false);
     setBatchProgress(0);
     fetchPhotos(activeTeam);
-  }, [stagedPhotos, activeTeam, gameName, fetchPhotos]);
+  }, [stagedPhotos, activeTeam, gameName, fetchPhotos, selectedTag]);
 
   const handleTagPhoto = useCallback(async (photoId, tagName) => {
     if (!gameId) return;
@@ -617,6 +620,26 @@ export default function PrescoutFormPage() {
             <div className={styles.photoSection}>
               <h2 className={styles.photoSectionTitle}>Robot Photos</h2>
 
+              {/* Tag selector — required before upload */}
+              {photoTags.length > 0 && (
+                <div className={styles.fieldGroup}>
+                  <p className={styles.fieldLabel}>Select tag before uploading</p>
+                  <div className={styles.selectTiles}>
+                    {photoTags.map(tag => (
+                      <button
+                        key={tag.name}
+                        type="button"
+                        className={selectedTag === tag.name ? styles.selectTileSelected : styles.selectTile}
+                        onClick={() => setSelectedTag(selectedTag === tag.name ? null : tag.name)}
+                      >
+                        {tag.emoji} {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                  {!selectedTag && <p className={styles.tagRequiredHint}>A tag is required to upload photos.</p>}
+                </div>
+              )}
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -637,14 +660,14 @@ export default function PrescoutFormPage() {
                 <button
                   className={styles.photoUploadBtn}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || batchUploading}
+                  disabled={uploading || batchUploading || (photoTags.length > 0 && !selectedTag)}
                 >
                   <UploadIcon /> {uploading ? 'Uploading...' : 'Upload Photo'}
                 </button>
                 <button
                   className={styles.photoCaptureBtn}
                   onClick={() => cameraInputRef.current?.click()}
-                  disabled={uploading || batchUploading}
+                  disabled={uploading || batchUploading || (photoTags.length > 0 && !selectedTag)}
                 >
                   <CameraIcon /> Take Photos
                 </button>

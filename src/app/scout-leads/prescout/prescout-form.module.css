@@ -901,6 +901,14 @@
   outline-offset: 2px;
 }
 
+.tagRequiredHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c07000;
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
 .photoError {
   font-size: 12px;
   color: #c0392b;
