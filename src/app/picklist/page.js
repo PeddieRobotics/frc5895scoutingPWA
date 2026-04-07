@@ -38,6 +38,7 @@ export default function Picklist() {
   const [ksComplete, setKsComplete] = useState(false);
   const [manualTeamA, setManualTeamA] = useState('');
   const [manualTeamB, setManualTeamB] = useState('');
+  const [manualPair, setManualPair] = useState(null); // [teamA, teamB] or null for manual compare
 
   const columnToggleRef = useRef(null);
   const headerScrollRef = useRef(null);
@@ -282,9 +283,10 @@ export default function Picklist() {
   );
 
   // ── Keep/Swap actions ──
-  const ksCurrentPair = ksActive && ksList.length >= 2 && ksPairIdx < ksList.length - 1
+  const ksSequentialPair = ksActive && ksList.length >= 2 && ksPairIdx < ksList.length - 1
     ? [ksList[ksPairIdx], ksList[ksPairIdx + 1]]
     : null;
+  const ksCurrentPair = manualPair || ksSequentialPair;
 
   function ksBegin() {
     const order = sortedTeamData.map(t => t.team);
@@ -394,19 +396,29 @@ export default function Picklist() {
     const a = parseInt(manualTeamA);
     const b = parseInt(manualTeamB);
     if (!a || !b || a === b) return;
+    if (!ksList.includes(a) || !ksList.includes(b)) return;
+    ksPushSnapshot();
+    setManualPair([a, b]);
+  }
+
+  function ksManualKeep() {
+    if (!manualPair) return;
+    // Keep = do nothing to the list, just exit manual compare
+    setManualPair(null);
+  }
+
+  function ksManualSwap() {
+    if (!manualPair) return;
+    const [a, b] = manualPair;
     const idxA = ksList.indexOf(a);
     const idxB = ksList.indexOf(b);
     if (idxA === -1 || idxB === -1) return;
-    // Put them adjacent: move the lower-ranked one next to the higher-ranked one
-    ksPushSnapshot();
+    // Swap their positions in the list
     const newList = [...ksList];
-    const topIdx = Math.min(idxA, idxB);
-    const botIdx = Math.max(idxA, idxB);
-    // Remove the bottom one and insert it right after the top one
-    const [removed] = newList.splice(botIdx, 1);
-    newList.splice(topIdx + 1, 0, removed);
+    newList[idxA] = b;
+    newList[idxB] = a;
     setKsList(newList);
-    setKsPairIdx(topIdx);
+    setManualPair(null);
   }
 
   // ── K/S rank lookup ──
@@ -644,18 +656,22 @@ export default function Picklist() {
           ) : (
             <>
               <div className={styles.ksControls}>
-                {ksComplete ? (
+                {ksComplete && !manualPair ? (
                   <div className={styles.ksCompleteLabel}>Keep/Swap Complete</div>
                 ) : ksCurrentPair ? (
                   <div className={styles.ksPairLabel}>
-                    Comparing: <span className={styles.ksPairTeams}>{ksCurrentPair[0]}</span> vs <span className={styles.ksPairTeams}>{ksCurrentPair[1]}</span>
+                    {manualPair ? 'Manual: ' : 'Comparing: '}
+                    <span className={styles.ksPairTeams}>{ksCurrentPair[0]}</span> vs <span className={styles.ksPairTeams}>{ksCurrentPair[1]}</span>
                   </div>
                 ) : null}
                 <div className={styles.ksButtonRow}>
-                  <button className={`${styles.ksBtn} ${styles.ksBtnKeep}`} onClick={ksKeep} disabled={!ksCurrentPair || ksComplete}>Keep</button>
-                  <button className={`${styles.ksBtn} ${styles.ksBtnSwap}`} onClick={ksSwap} disabled={!ksCurrentPair || ksComplete}>Swap</button>
-                  <button className={`${styles.ksBtn} ${styles.ksBtnUndo}`} onClick={ksUndo} disabled={!ksHistory.length}>Undo</button>
-                  <button className={`${styles.ksBtn} ${styles.ksBtnRedo}`} onClick={ksRedo} disabled={!ksRedoStack.length}>Redo</button>
+                  <button className={`${styles.ksBtn} ${styles.ksBtnKeep}`} onClick={manualPair ? ksManualKeep : ksKeep} disabled={!ksCurrentPair || ksComplete}>Keep</button>
+                  <button className={`${styles.ksBtn} ${styles.ksBtnSwap}`} onClick={manualPair ? ksManualSwap : ksSwap} disabled={!ksCurrentPair || ksComplete}>Swap</button>
+                  {manualPair && (
+                    <button className={`${styles.ksBtn} ${styles.ksBtnUndo}`} onClick={() => { ksUndo(); setManualPair(null); }}>Cancel</button>
+                  )}
+                  {!manualPair && <button className={`${styles.ksBtn} ${styles.ksBtnUndo}`} onClick={ksUndo} disabled={!ksHistory.length}>Undo</button>}
+                  {!manualPair && <button className={`${styles.ksBtn} ${styles.ksBtnRedo}`} onClick={ksRedo} disabled={!ksRedoStack.length}>Redo</button>}
                   <button
                     className={`${styles.ksBtn} ${styles.ksBtnFocus} ${ksFocusMode ? styles.ksBtnFocusActive : ''}`}
                     onClick={() => setKsFocusMode(p => !p)}
@@ -714,22 +730,29 @@ export default function Picklist() {
             <>
               {/* Frozen header */}
               <div className={styles.rankHeaderSticky} ref={headerScrollRef}>
-                <table className={styles.rankTable}>
+                <table className={styles.rankTable} style={{ tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '44px' }} />
+                    <col style={{ width: '44px' }} />
+                    <col style={{ width: '60px' }} />
+                    {visibleColumns.map(col => (
+                      <col key={col.key} style={{ width: '100px' }} />
+                    ))}
+                  </colgroup>
                   <thead>
                     <tr>
-                      <th className={styles.thFixed} style={{ minWidth: '36px', cursor: 'default' }}>#</th>
+                      <th className={`${styles.thFixed} ${styles.frozenCol1}`} style={{ cursor: 'default' }}>#</th>
                       <th
-                        className={`${styles.thFixed} ${effectiveSortKey === '__ksRank' ? styles.thActive : ''}`}
+                        className={`${styles.thFixed} ${styles.frozenCol2} ${effectiveSortKey === '__ksRank' ? styles.thActive : ''}`}
                         onClick={() => handleSort('__ksRank')}
                         title="Sort by Keep/Swap rank"
-                        style={{ minWidth: '42px' }}
                       >
                         K/S
                         {effectiveSortKey === '__ksRank' && (
                           <span className={styles.thSortArrow}>{effectiveSortDir === 'desc' ? '\u25BC' : '\u25B2'}</span>
                         )}
                       </th>
-                      <th className={styles.thFixed} style={{ minWidth: '56px', cursor: 'default' }}>Team</th>
+                      <th className={`${styles.thFixed} ${styles.frozenCol3}`} style={{ cursor: 'default' }}>Team</th>
                       {visibleColumns.map(col => (
                         <th
                           key={col.key}
@@ -748,7 +771,15 @@ export default function Picklist() {
               </div>
               {/* Scrollable body */}
               <div className={styles.rankBodyScroll} ref={bodyScrollRef}>
-                <table className={styles.rankTable}>
+                <table className={styles.rankTable} style={{ tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '44px' }} />
+                    <col style={{ width: '44px' }} />
+                    <col style={{ width: '60px' }} />
+                    {visibleColumns.map(col => (
+                      <col key={col.key} style={{ width: '100px' }} />
+                    ))}
+                  </colgroup>
                   <tbody>
                     {sortedTeamData.map((teamRow, idx) => {
                       const isInPair = ksActive && ksCurrentPair && (teamRow.team === ksCurrentPair[0] || teamRow.team === ksCurrentPair[1]);
@@ -758,11 +789,11 @@ export default function Picklist() {
                           key={teamRow.team}
                           className={`${isInPair ? styles.rankRowHighlight : ''} ${isDimmed ? styles.rankRowDimmed : ''}`}
                         >
-                          <td className={styles.rankCol}>{idx + 1}</td>
-                          <td className={`${styles.rankCol} ${styles.rankColKs}`}>
+                          <td className={`${styles.rankCol} ${styles.frozenCol1}`}>{idx + 1}</td>
+                          <td className={`${styles.rankCol} ${styles.rankColKs} ${styles.frozenCol2}`}>
                             {ksRankMap.get(teamRow.team) ?? '\u2014'}
                           </td>
-                          <td className={styles.teamCol}>
+                          <td className={`${styles.teamCol} ${styles.frozenCol3}`}>
                             <a href={`/team-view?team=${teamRow.team}`} target="_blank" rel="noopener noreferrer">{teamRow.team}</a>
                           </td>
                           {visibleColumns.map(col => (
