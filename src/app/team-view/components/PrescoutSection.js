@@ -18,10 +18,36 @@ function normalizeEntries(data) {
   return Object.entries(data).filter(([, v]) => v != null && String(v).trim() !== '');
 }
 
-export default function PrescoutSection({ prescoutData }) {
+/**
+ * Build a label → order index map from the prescout config sections.
+ * Used to sort display entries to match the config-defined field order.
+ */
+function buildFieldOrder(prescoutConfig) {
+  if (!prescoutConfig?.sections) return null;
+  const order = new Map();
+  let idx = 0;
+  for (const section of prescoutConfig.sections) {
+    for (const field of section.fields || []) {
+      if (field.label) order.set(field.label, idx++);
+    }
+  }
+  return order.size > 0 ? order : null;
+}
+
+export default function PrescoutSection({ prescoutData, prescoutConfig }) {
   const [open, setOpen] = useState(true);
 
-  const entries = normalizeEntries(prescoutData);
+  let entries = normalizeEntries(prescoutData);
+
+  // Sort entries by config field order when available
+  const fieldOrder = buildFieldOrder(prescoutConfig);
+  if (fieldOrder) {
+    entries = [...entries].sort((a, b) => {
+      const aIdx = fieldOrder.has(a[0]) ? fieldOrder.get(a[0]) : Infinity;
+      const bIdx = fieldOrder.has(b[0]) ? fieldOrder.get(b[0]) : Infinity;
+      return aIdx - bIdx;
+    });
+  }
 
   return (
     <div className={styles.section}>

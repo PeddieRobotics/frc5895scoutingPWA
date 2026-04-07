@@ -305,7 +305,7 @@ function Compare() {
               <div key={team}>
                 <div style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, color: COLORS[index], fontSize: '13px', marginBottom: '6px' }}>Team {team}</div>
                 {teamPrescout[team] && (Array.isArray(teamPrescout[team]) ? teamPrescout[team].length > 0 : Object.keys(teamPrescout[team]).length > 0)
-                  ? <PrescoutSection prescoutData={teamPrescout[team]} />
+                  ? <PrescoutSection prescoutData={teamPrescout[team]} prescoutConfig={config?.prescout} />
                   : <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '12px', color: '#8a9aaa', margin: 0 }}>No prescout data.</p>
                 }
               </div>

@@ -1071,7 +1071,7 @@ function TeamView() {
                             </section>
                         )}
                         {prescoutData && (Array.isArray(prescoutData) ? prescoutData.length > 0 : Object.keys(prescoutData).length > 0) && (
-                            <PrescoutSection prescoutData={prescoutData} />
+                            <PrescoutSection prescoutData={prescoutData} prescoutConfig={config?.prescout} />
                         )}
                     </div>
                     <div className={styles.rightColumn}>
