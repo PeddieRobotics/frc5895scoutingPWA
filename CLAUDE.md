@@ -229,9 +229,9 @@ Setting `usePPR: true` in the top-level game config JSON activates OPR-based sco
 
 Setting `enableBetting: true` in the top-level game config JSON activates the match outcome betting system. `tbaEventCode` must also be set.
 
-**Per-game DB table:** `betting_<gameName>` — created in `createGame()`, dropped in `deleteGame()`. Schema: `scoutname`, `scoutteam`, `match`, `matchtype`, `alliance` (`'red'`/`'blue'`), `red_win_prob`, `blue_win_prob`, `points_wagered`, `status` (`'pending'`/`'won'`/`'lost'`), `points_earned`, `placed_at`, `resolved_at`. UNIQUE on `(scoutname, scoutteam, match, matchtype)`. `ensureBettingTable()` in `betting.js` creates it lazily on first bet if missing.
+**Per-game DB table:** `betting_<gameName>` — created in `createGame()`, dropped in `deleteGame()`. Schema: `scoutname`, `scoutteam`, `match`, `matchtype`, `alliance` (`'red'`/`'blue'`), `red_win_prob`, `blue_win_prob`, `points_wagered` (win reward), `points_if_loss` (default 25), `status` (`'pending'`/`'won'`/`'lost'`), `points_earned`, `placed_at`, `resolved_at`. UNIQUE on `(scoutname, scoutteam, match, matchtype)`. `ensureBettingTable()` in `betting.js` creates it lazily on first bet if missing.
 
-**Points formula:** `points_wagered = round((1 - chosenAllianceWinProb) * 100)`. Win → `+points_wagered`, loss → `-points_wagered`. Balance = `SUM(points_earned)` (derived, not stored).
+**Points formula (asymmetric):** Win reward = `max(1, round(1000 * e^(-5.3 * chosenAllianceWinProb)))` — exponential curve: ~948 at 1%, ~266 at 25%, ~71 at 50%, ~19 at 75%, ~5 at 99%. Loss penalty = flat **25 points**. Win → `+pointsIfWin`, loss → `-25`. Balance = `SUM(points_earned)` (derived, not stored). Both values stored per bet (`points_wagered` = win reward, `points_if_loss` = loss penalty).
 
 **Statbotics:** predictions fetched from `https://api.statbotics.io/v3/match/{eventCode}_qm{matchNumber}` — no API key. 60 s in-memory cache per match key. Bets can only be placed when `matchStatus === 'Upcoming'`; attempting to bet on an in-progress or completed match returns 409. Bet resolution is triggered automatically on `GET /api/betting/leaderboard` via `resolveCompletedBets()`.
 

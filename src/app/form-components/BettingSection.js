@@ -266,8 +266,9 @@ export default function BettingSection({
 
   const redPercent = prediction ? Math.round(prediction.redWinProb * 100) : null;
   const bluePercent = prediction ? Math.round(prediction.blueWinProb * 100) : null;
-  const pointsAtStake = prediction && selectedAlliance
-    ? Math.round((1 - (selectedAlliance === 'red' ? prediction.redWinProb : prediction.blueWinProb)) * 100)
+  const LOSS_PENALTY = 25;
+  const pointsIfWin = prediction && selectedAlliance
+    ? Math.max(1, Math.round(1000 * Math.exp(-5.3 * (selectedAlliance === 'red' ? prediction.redWinProb : prediction.blueWinProb))))
     : null;
 
   const isRedFavored = prediction && prediction.redWinProb > prediction.blueWinProb;
@@ -376,10 +377,10 @@ export default function BettingSection({
             </div>
           )}
 
-          {!betPlaced && !locked && pointsAtStake !== null && authCredentials && !authExpired && (
+          {!betPlaced && !locked && pointsIfWin !== null && authCredentials && !authExpired && (
             <div className={styles.stakeInfo}>
               <div className={styles.stakeAmount}>
-                You are betting <strong>{pointsAtStake}</strong> points.
+                Win: <strong>+{pointsIfWin}</strong> · Loss: <strong>-{LOSS_PENALTY}</strong>
               </div>
               <button
                 type="button"
@@ -392,7 +393,7 @@ export default function BettingSection({
             </div>
           )}
 
-          {!betPlaced && !locked && !(pointsAtStake !== null && authCredentials && !authExpired) && (
+          {!betPlaced && !locked && !(pointsIfWin !== null && authCredentials && !authExpired) && (
             <div className={styles.stakeInfo}>
               <button
                 type="button"
@@ -410,7 +411,7 @@ export default function BettingSection({
           {betPlaced && placedBet && (
             <div className={styles.stakeInfo}>
               <div className={styles.stakeAmount}>
-                Wagered: <strong>{placedBet.points_wagered}</strong> points
+                Win: <strong>+{placedBet.points_wagered}</strong> · Loss: <strong>-{placedBet.points_if_loss || LOSS_PENALTY}</strong>
               </div>
             </div>
           )}

@@ -60,7 +60,7 @@ export async function POST(request) {
     }, { status: 409 });
   }
 
-  const pointsWagered = calculatePointsWagered(
+  const { pointsIfWin, pointsIfLoss } = calculatePointsWagered(
     prediction.redWinProb,
     prediction.blueWinProb,
     alliance
@@ -89,12 +89,14 @@ export async function POST(request) {
       alliance,
       redWinProb: prediction.redWinProb,
       blueWinProb: prediction.blueWinProb,
-      pointsWagered,
+      pointsWagered: pointsIfWin,
+      pointsIfLoss,
     }, client);
 
     return NextResponse.json({
       bet,
-      pointsWagered,
+      pointsIfWin,
+      pointsIfLoss,
       prediction,
     });
   } catch (err) {

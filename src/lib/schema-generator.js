@@ -335,6 +335,7 @@ function generateCreateBettingTableSQL(tableName) {
       red_win_prob NUMERIC(6,4) NOT NULL,
       blue_win_prob NUMERIC(6,4) NOT NULL,
       points_wagered INTEGER NOT NULL,
+      points_if_loss INTEGER NOT NULL DEFAULT 25,
       status VARCHAR(10) NOT NULL DEFAULT 'pending',
       points_earned INTEGER DEFAULT 0,
       placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

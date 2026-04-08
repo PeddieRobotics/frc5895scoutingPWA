@@ -2787,13 +2787,15 @@ A UNIQUE constraint on `(scoutname, scoutteam, match, matchtype)` prevents dupli
 
 ### Points System
 
-Points wagered for a given alliance pick = `round((1 - chosenAllianceWinProb) * 100)`.
+Asymmetric payout system that rewards underdog bets:
 
-- Betting the underdog earns more points on a win.
-- Win: balance increases by `points_wagered`.
-- Loss: balance decreases by `points_wagered`.
+- **Win reward** = `max(1, round(1000 * e^(-5.3 * chosenAllianceWinProb)))` — exponential curve: ~948 pts at 1% chance, ~266 at 25%, ~71 at 50%, ~19 at 75%, ~5 at 99%.
+- **Loss penalty** = flat **25 points** regardless of alliance.
+- Win: balance increases by win reward. Loss: balance decreases by 25.
+- Both values stored per bet: `points_wagered` (win reward), `points_if_loss` (loss penalty).
 - Balance starts at `0` and can go negative.
 - There is no wallet cap — the balance is the sum of all `points_earned` rows.
+- Expected value is positive for all bets, but dramatically higher for underdogs, encouraging riskier picks.
 
 ### Statbotics Integration
 

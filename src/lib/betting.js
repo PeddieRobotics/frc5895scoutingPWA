@@ -15,6 +15,8 @@ const CACHE_TTL = 60_000;
 async function ensureBettingTable(gameName, client) {
   const tableName = sanitizeBettingTableName(gameName);
   await client.query(generateCreateBettingTableSQL(tableName));
+  // Migrate: add points_if_loss column if missing (for tables created before asymmetric payouts)
+  await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS points_if_loss INTEGER NOT NULL DEFAULT 25`);
   return tableName;
 }
 
@@ -73,12 +75,18 @@ async function isMatchStarted(tbaEventCode, matchNumber) {
 }
 
 /**
- * Calculate points wagered for a given alliance choice.
- * Points = round((1 - chosenAllianceProb) * 100)
+ * Calculate points for a bet using asymmetric payouts.
+ * Win reward: exponential curve max(1, round(1000 * e^(-5.3 * chosenProb)))
+ *   ~948 at 1%, ~266 at 25%, ~71 at 50%, ~19 at 75%, ~5 at 99%
+ * Loss penalty: flat -25 points regardless of alliance.
+ * Returns { pointsIfWin, pointsIfLoss }.
  */
+const LOSS_PENALTY = 25;
+
 function calculatePointsWagered(redWinProb, blueWinProb, alliance) {
   const chosenProb = alliance === 'red' ? redWinProb : blueWinProb;
-  return Math.round((1 - chosenProb) * 100);
+  const pointsIfWin = Math.max(1, Math.round(1000 * Math.exp(-5.3 * chosenProb)));
+  return { pointsIfWin, pointsIfLoss: LOSS_PENALTY };
 }
 
 /**
@@ -98,7 +106,7 @@ async function resolveCompletedBets(gameName, tbaEventCode, client) {
 
   // Get all pending bets
   const pending = await client.query(
-    `SELECT id, match, matchtype, alliance, points_wagered FROM ${tableName} WHERE status = 'pending'`
+    `SELECT id, match, matchtype, alliance, points_wagered, points_if_loss FROM ${tableName} WHERE status = 'pending'`
   );
 
   if (pending.rows.length === 0) return 0;
@@ -110,13 +118,13 @@ async function resolveCompletedBets(gameName, tbaEventCode, client) {
     if (!prediction || prediction.matchStatus !== 'Completed') continue;
 
     const won = bet.alliance === prediction.resultWinner;
-    const wagered = bet.points_wagered || 0;
+    const earned = won ? (bet.points_wagered || 0) : -(bet.points_if_loss || LOSS_PENALTY);
 
     await client.query(
       `UPDATE ${tableName}
        SET status = $1, points_earned = $2, resolved_at = NOW()
        WHERE id = $3`,
-      [won ? 'won' : 'lost', won ? wagered : -wagered, bet.id]
+      [won ? 'won' : 'lost', earned, bet.id]
     );
     resolved++;
   }
@@ -218,15 +226,15 @@ async function getUserBet(gameName, scoutname, scoutteam, matchNumber, matchtype
 /**
  * Place a bet. Returns the inserted row or throws on duplicate/validation error.
  */
-async function placeBet(gameName, { scoutname, scoutteam, match, matchtype, alliance, redWinProb, blueWinProb, pointsWagered }, client) {
+async function placeBet(gameName, { scoutname, scoutteam, match, matchtype, alliance, redWinProb, blueWinProb, pointsWagered, pointsIfLoss }, client) {
   const tableName = await ensureBettingTable(gameName, client);
 
   const result = await client.query(
     `INSERT INTO ${tableName}
-       (scoutname, scoutteam, match, matchtype, alliance, red_win_prob, blue_win_prob, points_wagered)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (scoutname, scoutteam, match, matchtype, alliance, red_win_prob, blue_win_prob, points_wagered, points_if_loss)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [scoutname, scoutteam, match, matchtype, alliance, redWinProb, blueWinProb, pointsWagered]
+    [scoutname, scoutteam, match, matchtype, alliance, redWinProb, blueWinProb, pointsWagered, pointsIfLoss || LOSS_PENALTY]
   );
 
   return result.rows[0];
