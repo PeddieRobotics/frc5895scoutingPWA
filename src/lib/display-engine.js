@@ -934,6 +934,13 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
           [m.key, d => maxes[m.key] ? d[m.key] / maxes[m.key] : 0],
         ];
       }).flat()),
+    // Unnormalized computed metrics: create real* aliases so tableColumns can reference them
+    ...Object.fromEntries(computedMetrics
+      .filter(m => m.normalize === false)
+      .map(m => {
+        const realKey = `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`;
+        return [realKey, d => d[m.key]];
+      })),
     score: d => weightEntries.reduce((sum, [key, weight]) => {
       const value = d[key] ?? 0;
       if (key === 'breakdown') return sum + ((1 - value) * parseFloat(weight));
@@ -949,6 +956,9 @@ export function computePicklistMetrics(rows, config, calcFns, weightEntries) {
     breakdown: 'breakdown',
     ...Object.fromEntries(computedMetrics
       .filter(m => !unnormalizedMetricKeys.includes(m.key))
+      .map(m => [m.key, `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`])),
+    ...Object.fromEntries(computedMetrics
+      .filter(m => m.normalize === false)
       .map(m => [m.key, `real${m.key.charAt(0).toUpperCase() + m.key.slice(1)}`])),
   };
   teamTable = tidy(teamTable, mutate({
