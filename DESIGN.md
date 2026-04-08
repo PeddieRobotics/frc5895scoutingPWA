@@ -286,8 +286,8 @@ Light mode should feel like a **premium scouting dashboard** — clean, readable
 | **Navy text (dim)** | `rgba(13, 31, 53, 0.4)` | Placeholders, disabled states |
 | **Green (success)** | `#1a7f3c` | Positive stats, good ratings |
 | **Green fill** | `rgba(26, 127, 60, 0.1)` | Success card backgrounds |
-| **Red (danger/low)** | `#c0392b` | Negative stats, destructive actions |
-| **Red fill** | `rgba(192, 57, 43, 0.08)` | Danger card backgrounds |
+| **Red (danger/low)** | `#c0392b` | Negative stats, destructive actions, alert/warning banners |
+| **Red fill** | `rgba(192, 57, 43, 0.08)` | Danger card backgrounds, alert banners |
 | **Amber (warning)** | `#c07000` | Warning states, armed buttons |
 | **Divider** | `rgba(160, 124, 48, 0.2)` | Horizontal rules, table lines |
 | **Shadow** | `0 2px 8px rgba(13, 31, 53, 0.08)` | Card elevation |

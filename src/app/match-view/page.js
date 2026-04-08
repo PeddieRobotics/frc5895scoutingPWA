@@ -9,6 +9,7 @@ import Endgame from "./components/Endgame";
 import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
 import TeamEPALineChart from "../team-view/components/EPALineChart";
+import UnscoredMatchesDropdown from "../components/UnscoredMatchesDropdown";
 import useGameConfig from "../../lib/useGameConfig";
 import { getMatchViewConfigIssues } from "../../lib/display-config-validation";
 
@@ -864,18 +865,11 @@ function MatchView() {
 
   return (
     <div>
-      {visibleUnscoredMatches.length > 0 && (
-        <div style={{ margin: "12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
-          <strong>Unscored matches were skipped.</strong>
-          <ul style={{ margin: "8px 0 0 18px" }}>
-            {visibleUnscoredMatches.map((issue, index) => (
-              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
-                {formatUnscoredMatch(issue)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <UnscoredMatchesDropdown
+        matches={visibleUnscoredMatches}
+        formatMatch={formatUnscoredMatch}
+        className={styles.unscoredWrapper}
+      />
       <div className={styles.dataRangeContainer}>
         <span className={styles.dataRangeLabel}>Data Range:</span>
         <div className={styles.dataRangeToggle}>

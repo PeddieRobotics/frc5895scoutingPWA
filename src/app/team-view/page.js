@@ -16,6 +16,7 @@ import Qualitative from "./components/Qualitative";
 import PrescoutSection from "./components/PrescoutSection";
 import TaggedPhotoGrid from "./components/TaggedPhotoGrid";
 import ImageSelectDistribution from "./components/ImageSelectDistribution";
+import UnscoredMatchesDropdown from "../components/UnscoredMatchesDropdown";
 import useGameConfig from "../../lib/useGameConfig";
 import { getTeamViewConfigIssues } from "../../lib/display-config-validation";
 import { LineChart, Line, RadarChart, PolarRadiusAxis, PolarAngleAxis, PolarGrid, Radar } from 'recharts';
@@ -904,18 +905,10 @@ function TeamView() {
     return (
         <div className={styles.container}>
             <title>{team ? `${team} - Team View` : 'Team View'}</title>
-            {unscoredMatches.length > 0 && (
-                <div style={{ margin: "12px 0", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
-                    <strong>Unscored matches were skipped.</strong>
-                    <ul style={{ margin: "8px 0 0 18px" }}>
-                        {unscoredMatches.map((issue, index) => (
-                            <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
-                                {formatUnscoredMatch(issue)}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            <UnscoredMatchesDropdown
+                matches={unscoredMatches}
+                formatMatch={formatUnscoredMatch}
+            />
             <TopBar stuck={navStuck} navRef={matchNavRef} />
             <CompareTopBar stuck={navStuck} navRef={matchNavRef} />
             <div className={styles.header}>

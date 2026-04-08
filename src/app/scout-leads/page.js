@@ -8,6 +8,7 @@ import { computeOPR } from "../../lib/opr-calculator";
 import styles from "./page.module.css";
 import TeamScatterPlot from "../components/TeamScatterPlot";
 import LightboxModal from "../components/LightboxModal";
+import UnscoredMatchesDropdown from "../components/UnscoredMatchesDropdown";
 import { compressImage } from "../../lib/compressImage";
 
 function getAuthHeaders() {
@@ -922,18 +923,11 @@ export default function ScoutLeadsPage() {
 
   return (
     <div className={styles.page}>
-      {unscoredMatches.length > 0 && (
-        <div style={{ marginBottom: "12px", padding: "12px 14px", background: "#ffebe9", border: "1px solid #ff8182", borderRadius: "10px", color: "#7d1f1f" }}>
-          <strong>Matches missing scout-lead rates:</strong>
-          <ul style={{ margin: "8px 0 0 18px" }}>
-            {unscoredMatches.map((issue, index) => (
-              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
-                {formatUnscoredMatch(issue)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <UnscoredMatchesDropdown
+        matches={unscoredMatches}
+        label="Matches missing scout-lead rates"
+        formatMatch={formatUnscoredMatch}
+      />
       {/* ── Full-width scatter chart ──────────────────────── */}
       {picklistWeightsConfig.length > 0 && (
         <div className={styles.scatterSection}>

@@ -4,6 +4,7 @@ import styles from "./page.module.css";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import useGameConfig from "../../lib/useGameConfig";
 import TeamScatterPlot from "../components/TeamScatterPlot";
+import UnscoredMatchesDropdown from "../components/UnscoredMatchesDropdown";
 import * as XLSX from 'xlsx';
 
 export default function Picklist() {
@@ -546,18 +547,10 @@ export default function Picklist() {
   return (
     <div className={styles.page}>
       {/* ── Unscored matches banner ── */}
-      {unscoredMatches.length > 0 && (
-        <div className={styles.unscoredBanner}>
-          <strong>Unscored matches were skipped.</strong>
-          <ul>
-            {unscoredMatches.map((issue, index) => (
-              <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
-                {formatUnscoredMatch(issue)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <UnscoredMatchesDropdown
+        matches={unscoredMatches}
+        formatMatch={formatUnscoredMatch}
+      />
 
       {/* ── Scatter Plot ── */}
       {axisOptions.length > 0 && (

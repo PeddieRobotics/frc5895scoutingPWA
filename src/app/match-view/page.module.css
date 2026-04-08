@@ -1,5 +1,10 @@
 /* Match View — light mode design system */
 
+.unscoredWrapper {
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
 .teamForm {
     margin: 20px;
     padding: 24px 20px;

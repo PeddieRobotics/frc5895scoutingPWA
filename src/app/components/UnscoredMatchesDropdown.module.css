@@ -1,0 +1,66 @@
+/* Shared collapsible dropdown for unscored/missing-rate match warnings — light mode */
+
+.dropdown {
+    margin: 12px 0;
+    background: #ffffff;
+    border: 1.5px solid rgba(192, 57, 43, 0.35);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(13, 31, 53, 0.08);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+    background: rgba(192, 57, 43, 0.06);
+    border: none;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #c0392b;
+    transition: background 0.15s ease;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.header:hover {
+    background: rgba(192, 57, 43, 0.1);
+}
+
+.header:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
+}
+
+.chevron {
+    font-size: 12px;
+    transition: transform 0.1s ease;
+    color: rgba(192, 57, 43, 0.6);
+}
+
+.chevronOpen {
+    transform: rotate(180deg);
+}
+
+.body {
+    padding: 4px 14px 12px 32px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(13, 31, 53, 0.8);
+}
+
+.body ul {
+    margin: 4px 0 0 0;
+    padding-left: 18px;
+    list-style-type: disc;
+}
+
+.body li {
+    margin-bottom: 2px;
+}
