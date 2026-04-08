@@ -40,6 +40,8 @@ export default function Picklist() {
   const [manualTeamA, setManualTeamA] = useState('');
   const [manualTeamB, setManualTeamB] = useState('');
   const [manualPair, setManualPair] = useState(null); // [teamA, teamB] or null for manual compare
+  const [dragIdx, setDragIdx] = useState(null); // index being dragged
+  const [dragOverIdx, setDragOverIdx] = useState(null); // index being hovered over
 
   const columnToggleRef = useRef(null);
   const headerScrollRef = useRef(null);
@@ -393,6 +395,35 @@ export default function Picklist() {
     setKsSequentialFrontier(next.frontier);
   }
 
+  function ksDragStart(idx) {
+    ksPushSnapshot();
+    setDragIdx(idx);
+  }
+
+  function ksDragOver(idx) {
+    if (dragIdx === null || idx === dragIdx) return;
+    setDragOverIdx(idx);
+  }
+
+  function ksDragDrop(idx) {
+    if (dragIdx === null || idx === dragIdx) {
+      setDragIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const newList = [...ksList];
+    const [removed] = newList.splice(dragIdx, 1);
+    newList.splice(idx, 0, removed);
+    setKsList(newList);
+    setDragIdx(null);
+    setDragOverIdx(null);
+  }
+
+  function ksDragEnd() {
+    setDragIdx(null);
+    setDragOverIdx(null);
+  }
+
   function ksManualCompare() {
     const a = parseInt(manualTeamA);
     const b = parseInt(manualTeamB);
@@ -689,11 +720,19 @@ export default function Picklist() {
                   const td = teamDataMap.get(team);
                   const pprLabel = usePPR ? 'PPR' : 'EPA';
                   const pprVal = td?.realEpa != null ? (Math.round(td.realEpa * 10) / 10) : '?';
+                  const isDragging = dragIdx === i;
+                  const isDragOver = dragOverIdx === i && dragIdx !== i;
                   return (
                     <div
                       key={team}
-                      className={`${styles.ksItem} ${isInPair ? styles.ksItemActive : ''} ${isDimmed ? styles.ksItemDimmed : ''}`}
+                      draggable
+                      onDragStart={() => ksDragStart(i)}
+                      onDragOver={(e) => { e.preventDefault(); ksDragOver(i); }}
+                      onDrop={() => ksDragDrop(i)}
+                      onDragEnd={ksDragEnd}
+                      className={`${styles.ksItem} ${isInPair ? styles.ksItemActive : ''} ${isDimmed ? styles.ksItemDimmed : ''} ${isDragging ? styles.ksItemDragging : ''} ${isDragOver ? styles.ksItemDragOver : ''}`}
                     >
+                      <span className={styles.ksDragHandle} onMouseDown={e => e.stopPropagation()}>&#x2630;</span>
                       <span className={styles.ksItemRank}>{i + 1}</span>
                       <span className={styles.ksItemTeam}>{team}</span>
                       <span className={styles.ksItemStat}>{pprLabel}: {pprVal}</span>

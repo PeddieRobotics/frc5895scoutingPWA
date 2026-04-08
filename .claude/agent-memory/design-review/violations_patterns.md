@@ -462,6 +462,46 @@ Small delete buttons (`.photoDeleteBtn` in prescout-form.module.css, 2026-04-07)
 
 **Why:** The press feedback is part of the button contract. It is easy to omit when a button is added as an afterthought alongside existing buttons that already have it.
 
+---
+
+## Table header `font-size` — 13px spec, not 11px
+
+DESIGN.md Light Mode Data Tables spec: "Header row: font-size: 13px." The 11–12px size is reserved for chart axis labels only. Picklist `page.module.css` `.rankTable th` uses 11px. Discovered 2026-04-08.
+
+**Why:** 11px is a chart annotation size, not a table header size. At 13px/700 the header is still compact but legible and on-spec. Use column width or `overflow: hidden` as the density lever, not font-size reduction.
+
+**How to apply:** Any `.rankTable th` or equivalent table header class with `font-size` below 13px is a violation. Flag it and correct to 13px.
+
+---
+
+## Inline `style` for layout properties — `tableLayout`, `col widths`, spacing
+
+picklist `page.js` uses inline `style={{ tableLayout: 'fixed' }}` on `<table>` elements, inline `style={{ width: '44px' }}` / `style={{ width: '100px' }}` on `<col>` elements, and `style={{ marginTop: '6px' }}` / `style={{ padding: '12px 16px' }}` / `style={{ cursor: 'default' }}` for layout/spacing values. Discovered 2026-04-08.
+
+**Why:** DESIGN.md "What NOT to do" — "No inline `style={{ backgroundColor: ... }}` for theme colors — all colors belong in CSS modules." The spirit of this rule extends to all non-trivial layout values. CSS modules are the canonical styling mechanism; inline styles bypass media-query overrides and make responsive fixes impossible.
+
+**How to apply:** Any inline `style` prop on a JSX element containing non-trivial layout values (width, height, padding, margin, table-layout, cursor) should be extracted to a CSS module class or modifier class. One-off dynamic values that depend on JS runtime state (e.g., `style={{ left: computedOffset + 'px' }}`) are the only acceptable exception.
+
+---
+
+## Gold accent color `#a07c30` fails WCAG AA at 14px non-bold
+
+`.ksDragHandle:hover` in picklist `page.module.css` uses `color: #a07c30` at 14px regular weight. `#a07c30` on `#ffffff` achieves ~3.4:1 — WCAG AA for normal text requires 4.5:1 at this size. Discovered 2026-04-08.
+
+**Why:** DESIGN.md Light Mode says "`#a07c30` Darker gold for legibility on light" — but does not explicitly state a minimum size. The contrast math fails WCAG AA for regular-weight text under 18px. The `#bd9748` warning in DESIGN.md is the acknowledged case; `#a07c30` at small sizes has the same problem.
+
+**How to apply:** Use `#a07c30` for text at 16px+ bold, or as a border/decorative color freely. For 14px or smaller non-bold interactive affordance labels, use `rgba(13, 31, 53, 0.7)` or `#0d1f35` instead. Add this caveat to DESIGN.md when the spec is next updated.
+
+---
+
+## Frozen column opaque background values are inaccurate composites
+
+picklist `page.module.css` uses `#f5f0e4` (header), `#efe8d3` (highlight), `#f3eddf` (hover) as "opaque equivalents" of the corresponding rgba table row colors. The true composites are `~#f4f9ee`, `~#f1f7e6`, and `~#fefdf9` respectively — the authored values are significantly warmer and more saturated, causing frozen cells to visually mismatch their non-frozen neighbors on hovered/highlighted rows. Discovered 2026-04-08.
+
+**Why:** When a frozen column cell must be opaque (to cover scrolling content behind it), the opaque value must be the exact rgb result of compositing the rgba value over the actual background (`#fff` or `#faf8f4`). Visually estimated warm-cream values diverge noticeably from the rgba gold-tint palette.
+
+**How to apply:** Compute true opaque composites: `rgba(R,G,B,A)` over `#ffffff` → `rgb(255-(255-R)*A, 255-(255-G)*A, 255-(255-B)*A)`. For `rgba(189,151,72,0.1)` over `#fff`: `rgb(244,240,233)` = `#f4f0e9`. Recalculate all three frozen backgrounds against their actual row base color.
+
 **How to apply:** Any new Primary/Action button in a Light Mode file must include `:active:not(:disabled) { transform: scale(0.97); }`. Check this whenever a button class is added without composing an existing button class.
 
 ---

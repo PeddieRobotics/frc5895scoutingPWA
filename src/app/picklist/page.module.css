@@ -441,6 +441,34 @@
   pointer-events: none;
 }
 
+.ksDragHandle {
+  cursor: grab;
+  color: rgba(13, 31, 53, 0.25);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 0;
+  user-select: none;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ksDragHandle:hover {
+  color: #a07c30;
+}
+
+.ksDragHandle:active {
+  cursor: grabbing;
+}
+
+.ksItemDragging {
+  opacity: 0.4;
+}
+
+.ksItemDragOver {
+  border-top: 2px solid #a07c30;
+  padding-top: 6px;
+}
+
 .ksItemRank {
   font-size: 12px;
   font-weight: 700;
@@ -648,11 +676,6 @@ thead .frozenCol3 {
   background: #f3eddf;
 }
 
-.rankRowHighlight .frozenCol1,
-.rankRowHighlight .frozenCol2,
-.rankRowHighlight .frozenCol3 {
-  background: #efe8d3 !important;
-}
 
 /* ── Rank table body ─────────────────────────── */
 .rankTable td {
@@ -677,9 +700,16 @@ thead .frozenCol3 {
   background: rgba(189, 151, 72, 0.07);
 }
 
+/* Highlighted pair — bold text + gold accents on frozen cols only */
 .rankRowHighlight td {
-  background: rgba(189, 151, 72, 0.15) !important;
-  font-weight: 600;
+  font-weight: 700;
+  border-bottom: 2px solid #a07c30;
+}
+
+.rankRowHighlight .frozenCol1,
+.rankRowHighlight .frozenCol2,
+.rankRowHighlight .frozenCol3 {
+  background: rgba(189, 151, 72, 0.12);
 }
 
 .rankRowDimmed td {

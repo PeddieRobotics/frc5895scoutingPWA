@@ -165,6 +165,25 @@ Reference for small overlay badge buttons that must meet 44px tap target without
 
 `.trackerTeamBtn` / `.trackerTeamDone` (after fixes): compact navigation chips. Compliant colors, 1.5px borders, Montserrat, focus rings. min-height: 32px is below 44px spec — acceptable only for compact sidebar navigation chips; document any new use of sub-44px touch targets as explicitly acknowledged.
 
+## picklist page.module.css — frozen column table pattern
+
+Reviewed 2026-04-08. The scroll-sync and frozen-column architecture is sound:
+- `.rankTableOuter`: wrapper div holds `border-radius: 12px; overflow: clip; box-shadow: 0 2px 8px rgba(13,31,53,0.08)` — correct placement per spec (border-radius on wrapper, not table)
+- `.rankHeaderSticky`: `position: sticky; top: 45px; z-index: 8` — correct sticky-below-navbar pattern
+- `.frozenCol3`: `box-shadow: 2px 0 4px rgba(13,31,53,0.08)` — correct navy shadow token for separation line
+- Alternating rows: odd `#ffffff`, even `#faf8f4`; hover `rgba(189,151,72,0.07)` — all exact spec values
+- All buttons (`.refreshBtn`, `.ksBeginBtn`, `.toolbarBtn`, `.toolbarBtnActive`) are textbook Light Mode Primary/Secondary implementations
+
+Violations to fix in this file: `th` font-size (11px→13px), frozen opaque background values (recalculate), inline styles (move to module), `.ksDragHandle:hover` color (contrast).
+
+## picklist page.module.css — .ksDragHandle / .ksItemDragging / .ksItemDragOver
+
+Drag handle structural pattern is compliant:
+- `.ksDragHandle`: `transition: color 0.15s ease` — correct timing; `cursor: grab/grabbing` pattern; `user-select: none`
+- `.ksItemDragging`: `opacity: 0.4` — correct approach (DESIGN.md prefers opacity over layout animations)
+- `.ksItemDragOver`: `border-top: 2px solid #a07c30` — on-token gold accent for drop target indicator
+Note: hover color (`#a07c30` at 14px) fails WCAG AA — replace with `rgba(13,31,53,0.7)`.
+
 ## PrescoutSection.module.css — table row styling
 
 Correct table alternating row pattern:

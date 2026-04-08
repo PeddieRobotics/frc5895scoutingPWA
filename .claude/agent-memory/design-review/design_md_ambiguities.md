@@ -46,6 +46,22 @@ BettingSection `.predictionLabel` uses 12px/700/uppercase — this resembles the
 
 ---
 
+## `#a07c30` gold accent — contrast floor for small text (unresolved)
+
+DESIGN.md says to use `#a07c30` instead of `#bd9748` for legibility on light, but does not state a minimum font-size/weight floor for `#a07c30` itself. `#a07c30` on `#ffffff` is ~3.4:1 — WCAG AA for normal (non-bold, under-18px) text requires 4.5:1, so `#a07c30` also fails at 14px regular weight. Discovered 2026-04-08 in picklist `.ksDragHandle:hover`.
+
+**Ruling:** Use `#a07c30` for text freely at 16px bold+ (passes 3:1 large-text threshold). For 14px or smaller non-bold text, use `rgba(13,31,53,0.7)` (~7:1) or `#0d1f35` (~12:1). Recommend adding a footnote to DESIGN.md Light Mode Typography: "`#a07c30` passes WCAG AA only at 16px bold or larger; for smaller text use navy tokens."
+
+---
+
+## Table header font-size exception for dense multi-column tables (unresolved)
+
+DESIGN.md Light Mode Data Tables spec: "Header row: font-size: 13px." Picklist uses 11px for column density reasons. The 11–12px range is only documented for chart axis labels. No exception for dense-column tables exists.
+
+**Ruling:** 11px is a violation until an exception is added to DESIGN.md. If the design lead approves 11px for dense data tables, add a note: "Dense multi-column tables may use 11–12px if column count exceeds N." Until then, flag 11px th as a violation and suggest 13px + column-width management as the solution.
+
+---
+
 ## Section gap vs. compact card margin (unresolved)
 
 DESIGN.md Page Layout says "Section gap: 24px between major sections." BettingSection uses `margin: 8px auto 4px` — far below the 24px gap. This may be intentional as the betting card is visually part of the form flow rather than a separate major section. No explicit exception for compact form-section spacing exists. Flagging as a warning pending design lead input on whether the betting card is classified as a "major section."
