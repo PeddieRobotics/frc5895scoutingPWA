@@ -9,6 +9,10 @@
     color: #0d1f35;
 }
 
+/* ── Unscored dropdown override ─── */
+.unscoredDropdown {
+}
+
 /* ── Scatter chart (full-width, above layout) ─── */
 .scatterSection {
     margin-bottom: 16px;

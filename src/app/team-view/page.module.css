@@ -14,7 +14,7 @@
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 12px 1rem 0;
     background: #f4f1eb;
     min-height: calc(100vh - 45px);
 }

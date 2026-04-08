@@ -550,6 +550,7 @@ export default function Picklist() {
       <UnscoredMatchesDropdown
         matches={unscoredMatches}
         formatMatch={formatUnscoredMatch}
+        className={styles.unscoredDropdown}
       />
 
       {/* ── Scatter Plot ── */}

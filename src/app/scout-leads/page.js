@@ -404,6 +404,7 @@ export default function ScoutLeadsPage() {
   const [expandedTeam, setExpandedTeam] = useState(null);
   const [allComments, setAllComments] = useState([]);
   const sidebarWeightsRef = useRef();
+  const entriesSectionRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -571,17 +572,21 @@ export default function ScoutLeadsPage() {
     }
   };
 
-  const fetchTimerData = async ({ showLoadedMessage = true } = {}) => {
+  const fetchTimerData = async ({ showLoadedMessage = true, overrideTeam, overrideMatch, overrideMatchType } = {}) => {
     setError("");
     if (showLoadedMessage) {
       setSuccess("");
     }
 
-    if (!team) {
+    const effectiveTeam = overrideTeam ?? team;
+    const effectiveMatch = overrideMatch ?? match;
+    const effectiveMatchType = overrideMatchType ?? matchType;
+
+    if (!effectiveTeam) {
       setError("Team is required.");
       return;
     }
-    if (!match) {
+    if (!effectiveMatch) {
       setError("Match is required.");
       return;
     }
@@ -589,9 +594,9 @@ export default function ScoutLeadsPage() {
     setLoadingData(true);
     try {
       const params = new URLSearchParams({
-        team: String(team),
-        match: String(match),
-        matchType: String(matchType),
+        team: String(effectiveTeam),
+        match: String(effectiveMatch),
+        matchType: String(effectiveMatchType),
       });
       if (gameId) params.set("gameId", String(gameId));
 
@@ -813,6 +818,19 @@ export default function ScoutLeadsPage() {
     }
   };
 
+  const handleUnscoredEdit = async (issue) => {
+    const t = String(issue.team);
+    const m = String(issue.match);
+    const mt = String(issue.matchType);
+    setTeam(t);
+    setMatch(m);
+    setMatchType(mt);
+    await fetchTimerData({ showLoadedMessage: true, overrideTeam: t, overrideMatch: m, overrideMatchType: mt });
+    setTimeout(() => {
+      entriesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
   const startEdit = (entry) => {
     setEditingEntryId(entry.id);
     setEditValues({ ...entry });
@@ -927,6 +945,8 @@ export default function ScoutLeadsPage() {
         matches={unscoredMatches}
         label="Matches missing scout-lead rates"
         formatMatch={formatUnscoredMatch}
+        onEdit={handleUnscoredEdit}
+        className={styles.unscoredDropdown}
       />
       {/* ── Full-width scatter chart ──────────────────────── */}
       {picklistWeightsConfig.length > 0 && (
@@ -1452,6 +1472,7 @@ export default function ScoutLeadsPage() {
           {/* Scouting entries section */}
           {allScoutingRows.length > 0 && (
             <section
+              ref={entriesSectionRef}
               className={styles.entriesSection}
               style={{ background: sectionBackground, transition: "background 0.4s" }}
             >

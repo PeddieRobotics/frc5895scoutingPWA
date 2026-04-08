@@ -27,6 +27,9 @@
   font-size: 15px;
 }
 
+/* ── Unscored dropdown override ─────────────── */
+.unscoredDropdown {
+}
 
 /* ── Scatter section ─────────────────────────── */
 .scatterCard {

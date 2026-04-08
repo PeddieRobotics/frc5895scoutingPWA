@@ -1,7 +1,7 @@
 /* Shared collapsible dropdown for unscored/missing-rate match warnings — light mode */
 
 .dropdown {
-    margin: 12px 0;
+    margin: 0 0 12px 0;
     background: #ffffff;
     border: 1.5px solid rgba(192, 57, 43, 0.35);
     border-radius: 12px;
@@ -48,7 +48,7 @@
 }
 
 .body {
-    padding: 4px 14px 12px 32px;
+    padding: 4px 8px 12px 8px;
     font-family: 'Montserrat', sans-serif;
     font-size: 13px;
     font-weight: 500;
@@ -57,10 +57,53 @@
 
 .body ul {
     margin: 4px 0 0 0;
-    padding-left: 18px;
-    list-style-type: disc;
+    padding-left: 0;
+    list-style-type: none;
 }
 
 .body li {
-    margin-bottom: 2px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.body li:nth-child(even) {
+    background: #faf8f4;
+}
+
+.matchText {
+    flex: 1;
+    min-width: 0;
+}
+
+.editButton {
+    flex-shrink: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #a07c30;
+    background: transparent;
+    border: 1.5px solid rgba(160, 124, 48, 0.55);
+    border-radius: 8px;
+    padding: 2px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.editButton:hover {
+    background: rgba(160, 124, 48, 0.08);
+    border-color: rgba(160, 124, 48, 0.8);
+}
+
+.editButton:focus-visible {
+    outline: 2px solid rgba(160, 124, 48, 0.75);
+    outline-offset: 2px;
+}
+
+.editButton:active {
+    transform: scale(0.97);
 }

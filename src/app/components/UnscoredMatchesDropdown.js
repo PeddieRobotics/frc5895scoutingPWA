@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styles from "./UnscoredMatchesDropdown.module.css";
 
-export default function UnscoredMatchesDropdown({ matches, label = "Unscored matches were skipped.", formatMatch, className }) {
+export default function UnscoredMatchesDropdown({ matches, label = "Unscored matches were skipped.", formatMatch, onEdit, className }) {
   const [open, setOpen] = useState(false);
 
   if (!matches || matches.length === 0) return null;
@@ -23,7 +23,16 @@ export default function UnscoredMatchesDropdown({ matches, label = "Unscored mat
           <ul>
             {matches.map((issue, index) => (
               <li key={`${issue.team}-${issue.match}-${issue.matchType}-${index}`}>
-                {formatMatch(issue)}
+                <span className={styles.matchText}>{formatMatch(issue)}</span>
+                {onEdit && (
+                  <button
+                    type="button"
+                    className={styles.editButton}
+                    onClick={() => onEdit(issue)}
+                  >
+                    Edit
+                  </button>
+                )}
               </li>
             ))}
           </ul>
