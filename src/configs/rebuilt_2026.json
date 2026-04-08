@@ -34,8 +34,14 @@
             "label": "Drive Type",
             "description": "Don't ask, just look",
             "options": [
-              { "value": 0, "label": "Swerve" },
-              { "value": 1, "label": "Tank" }
+              {
+                "value": 0,
+                "label": "Swerve"
+              },
+              {
+                "value": 1,
+                "label": "Tank"
+              }
             ]
           },
           {
@@ -61,8 +67,14 @@
             "name": "shoot_on_move",
             "label": "Can you shoot on the move?",
             "options": [
-              { "value": 0, "label": "Yes" },
-              { "value": 1, "label": "No" }
+              {
+                "value": 0,
+                "label": "Yes"
+              },
+              {
+                "value": 1,
+                "label": "No"
+              }
             ]
           },
           {
@@ -70,8 +82,14 @@
             "name": "can_pass",
             "label": "Can you pass?",
             "options": [
-              { "value": 0, "label": "Yes" },
-              { "value": 1, "label": "No" }
+              {
+                "value": 0,
+                "label": "Yes"
+              },
+              {
+                "value": 1,
+                "label": "No"
+              }
             ]
           },
           {
@@ -90,8 +108,14 @@
             "name": "move_under_trench",
             "label": "Can you move under the trench?",
             "options": [
-              { "value": 0, "label": "Yes" },
-              { "value": 1, "label": "No" }
+              {
+                "value": 0,
+                "label": "Yes"
+              },
+              {
+                "value": 1,
+                "label": "No"
+              }
             ]
           },
           {
@@ -99,8 +123,14 @@
             "name": "move_over_bump",
             "label": "Can you move over the bump?",
             "options": [
-              { "value": 0, "label": "Yes" },
-              { "value": 1, "label": "No" }
+              {
+                "value": 0,
+                "label": "Yes"
+              },
+              {
+                "value": 1,
+                "label": "No"
+              }
             ]
           },
           {
@@ -114,45 +144,87 @@
             "name": "when_climb",
             "label": "When do you climb?",
             "options": [
-              { "value": 0, "label": "No" },
-              { "value": 1, "label": "Auto" },
-              { "value": 2, "label": "Endgame" },
-              { "value": 3, "label": "Both" }
+              {
+                "value": 0,
+                "label": "No"
+              },
+              {
+                "value": 1,
+                "label": "Auto"
+              },
+              {
+                "value": 2,
+                "label": "Endgame"
+              },
+              {
+                "value": 3,
+                "label": "Both"
+              }
             ]
           },
           {
             "type": "singleSelect",
             "name": "climb_level",
             "label": "Climb level?",
-            "showWhen": { "field": "when_climb", "notEquals": 0 },
+            "showWhen": {
+              "field": "when_climb",
+              "notEquals": 0
+            },
             "options": [
-              { "value": 0, "label": "None" },
-              { "value": 1, "label": "L1" },
-              { "value": 2, "label": "L2" },
-              { "value": 3, "label": "L3" }
+              {
+                "value": 0,
+                "label": "None"
+              },
+              {
+                "value": 1,
+                "label": "L1"
+              },
+              {
+                "value": 2,
+                "label": "L2"
+              },
+              {
+                "value": 3,
+                "label": "L3"
+              }
             ]
           },
           {
             "type": "comment",
             "name": "climb_location",
             "label": "Where do you prefer to climb?",
-            "showWhen": { "field": "when_climb", "notEquals": 0 }
+            "showWhen": {
+              "field": "when_climb",
+              "notEquals": 0
+            }
           },
           {
             "type": "comment",
             "name": "climb_time",
             "label": "How many seconds to climb?",
             "description": "Include unclimb time if auton climb",
-            "showWhen": { "field": "when_climb", "notEquals": 0 }
+            "showWhen": {
+              "field": "when_climb",
+              "notEquals": 0
+            }
           },
           {
             "type": "singleSelect",
             "name": "intake_method",
             "label": "How do you intake?",
             "options": [
-              { "value": 0, "label": "Ground" },
-              { "value": 1, "label": "HP" },
-              { "value": 2, "label": "Both" }
+              {
+                "value": 0,
+                "label": "Ground"
+              },
+              {
+                "value": 1,
+                "label": "HP"
+              },
+              {
+                "value": 2,
+                "label": "Both"
+              }
             ]
           },
           {
@@ -513,15 +585,6 @@
           },
           "content": [
             {
-              "type": "comment",
-              "name": "defensecomments",
-              "label": "Defense Elaboration",
-              "dbColumn": {
-                "type": "TEXT",
-                "default": null
-              }
-            },
-            {
               "type": "starRating",
               "name": "defenseplayed",
               "label": "Defense Played",
@@ -537,6 +600,15 @@
               "minWhenVisible": 1,
               "dbColumn": {
                 "type": "INTEGER",
+                "default": null
+              }
+            },
+            {
+              "type": "comment",
+              "name": "defensecomments",
+              "label": "Defense Elaboration",
+              "dbColumn": {
+                "type": "TEXT",
                 "default": null
               }
             }
@@ -1103,81 +1175,416 @@
       "teamStats": []
     },
     "picklist": {
-      "defaultSort": { "key": "realEpa", "direction": "desc" },
+      "defaultSort": {
+        "key": "realEpa",
+        "direction": "desc"
+      },
       "weights": [
-        { "key": "epa", "label": "PPR", "default": 1.2 },
-        { "key": "auto", "label": "Auto", "default": 0.8 },
-        { "key": "tele", "label": "Tele", "default": 0.9 },
-        { "key": "end", "label": "End", "default": 0.7 },
-        { "key": "consistency", "label": "Consistency", "default": 0.8 },
-        { "key": "defense", "label": "Defense", "default": 0.4 },
-        { "key": "breakdown", "label": "Break %", "default": 0.6, "inverted": true }
+        {
+          "key": "epa",
+          "label": "PPR",
+          "default": 1.2
+        },
+        {
+          "key": "auto",
+          "label": "Auto",
+          "default": 0.8
+        },
+        {
+          "key": "tele",
+          "label": "Tele",
+          "default": 0.9
+        },
+        {
+          "key": "end",
+          "label": "End",
+          "default": 0.7
+        },
+        {
+          "key": "consistency",
+          "label": "Consistency",
+          "default": 0.8
+        },
+        {
+          "key": "defense",
+          "label": "Defense",
+          "default": 0.4
+        },
+        {
+          "key": "breakdown",
+          "label": "Break %",
+          "default": 0.6,
+          "inverted": true
+        }
       ],
       "tableColumns": [
-        { "key": "realEpa", "label": "PPR", "colorScale": "epa", "format": "one", "group": "overall" },
-        { "key": "realMaxEpa", "label": "Max PPR", "colorScale": "maxEpa", "format": "one", "group": "overall" },
-        { "key": "realMinEpa", "label": "Min PPR", "colorScale": "minEpa", "format": "one", "group": "overall" },
-        { "key": "realBumpRate", "label": "Bump Mobility", "colorScale": "bumpRate", "format": "percent", "group": "mobility" },
-        { "key": "realTrenchRate", "label": "Trench Mobility", "colorScale": "trenchRate", "format": "percent", "group": "mobility" },
-        { "key": "passingPlayedRate", "label": "% Passing Played", "colorScale": "normal", "format": "percent", "group": "roles" },
-        { "key": "defensePlayedRate", "label": "% Defense Played", "colorScale": "normal", "format": "percent", "group": "roles" },
-        { "key": "realDefense", "label": "Defense Rating", "colorScale": "defense", "format": "one", "group": "roles" },
-        { "key": "realAuto", "label": "Auto PPR", "colorScale": "auto", "format": "one", "group": "auto" },
-        { "key": "realMaxAuto", "label": "Max Auto PPR", "colorScale": "maxAuto", "format": "one", "group": "auto" },
-        { "key": "realMinAuto", "label": "Min Auto PPR", "colorScale": "minAuto", "format": "one", "group": "auto" },
-        { "key": "autoClimbRate", "label": "Auto Climb", "colorScale": "normal", "format": "percent", "group": "auto" },
-        { "key": "realTele", "label": "Teleop PPR", "colorScale": "tele", "format": "one", "group": "tele" },
-        { "key": "realMaxTele", "label": "Max Tele PPR", "colorScale": "maxTele", "format": "one", "group": "tele" },
-        { "key": "realMinTele", "label": "Min Tele PPR", "colorScale": "minTele", "format": "one", "group": "tele" },
-        { "key": "endNone", "label": "% No Climb", "colorScale": "inverse", "format": "percent", "group": "endgame" },
-        { "key": "endFailed", "label": "% Failed Climb", "colorScale": "inverse", "format": "percent", "group": "endgame" },
-        { "key": "endL1", "label": "% L1 Climb", "colorScale": "normal", "format": "percent", "group": "endgame" },
-        { "key": "endL2", "label": "% L2 Climb", "colorScale": "normal", "format": "percent", "group": "endgame" },
-        { "key": "endL3", "label": "% L3 Climb", "colorScale": "normal", "format": "percent", "group": "endgame" },
-        { "key": "groundIntakeRate", "label": "% Ground Intake", "colorScale": "normal", "format": "percent", "group": "intake" },
-        { "key": "depotIntakeRate", "label": "% Depot Intake", "colorScale": "normal", "format": "percent", "group": "intake" },
-        { "key": "outpostIntakeRate", "label": "% Outpost Intake", "colorScale": "normal", "format": "percent", "group": "intake" },
-        { "key": "noshowRate", "label": "% No Show", "colorScale": "inverse", "format": "percent", "group": "reliability" },
-        { "key": "breakdown", "label": "% Broke Down", "colorScale": "inverse", "format": "percent", "group": "reliability" }
+        {
+          "key": "realEpa",
+          "label": "PPR",
+          "colorScale": "epa",
+          "format": "one",
+          "group": "overall"
+        },
+        {
+          "key": "realMaxEpa",
+          "label": "Max PPR",
+          "colorScale": "maxEpa",
+          "format": "one",
+          "group": "overall"
+        },
+        {
+          "key": "realMinEpa",
+          "label": "Min PPR",
+          "colorScale": "minEpa",
+          "format": "one",
+          "group": "overall"
+        },
+        {
+          "key": "realBumpRate",
+          "label": "Bump Mobility",
+          "colorScale": "bumpRate",
+          "format": "percent",
+          "group": "mobility"
+        },
+        {
+          "key": "realTrenchRate",
+          "label": "Trench Mobility",
+          "colorScale": "trenchRate",
+          "format": "percent",
+          "group": "mobility"
+        },
+        {
+          "key": "passingPlayedRate",
+          "label": "% Passing Played",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "roles"
+        },
+        {
+          "key": "defensePlayedRate",
+          "label": "% Defense Played",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "roles"
+        },
+        {
+          "key": "realDefense",
+          "label": "Defense Rating",
+          "colorScale": "defense",
+          "format": "one",
+          "group": "roles"
+        },
+        {
+          "key": "realAuto",
+          "label": "Auto PPR",
+          "colorScale": "auto",
+          "format": "one",
+          "group": "auto"
+        },
+        {
+          "key": "realMaxAuto",
+          "label": "Max Auto PPR",
+          "colorScale": "maxAuto",
+          "format": "one",
+          "group": "auto"
+        },
+        {
+          "key": "realMinAuto",
+          "label": "Min Auto PPR",
+          "colorScale": "minAuto",
+          "format": "one",
+          "group": "auto"
+        },
+        {
+          "key": "autoClimbRate",
+          "label": "Auto Climb",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "auto"
+        },
+        {
+          "key": "realTele",
+          "label": "Teleop PPR",
+          "colorScale": "tele",
+          "format": "one",
+          "group": "tele"
+        },
+        {
+          "key": "realMaxTele",
+          "label": "Max Tele PPR",
+          "colorScale": "maxTele",
+          "format": "one",
+          "group": "tele"
+        },
+        {
+          "key": "realMinTele",
+          "label": "Min Tele PPR",
+          "colorScale": "minTele",
+          "format": "one",
+          "group": "tele"
+        },
+        {
+          "key": "endNone",
+          "label": "% No Climb",
+          "colorScale": "inverse",
+          "format": "percent",
+          "group": "endgame"
+        },
+        {
+          "key": "endFailed",
+          "label": "% Failed Climb",
+          "colorScale": "inverse",
+          "format": "percent",
+          "group": "endgame"
+        },
+        {
+          "key": "endL1",
+          "label": "% L1 Climb",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "endgame"
+        },
+        {
+          "key": "endL2",
+          "label": "% L2 Climb",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "endgame"
+        },
+        {
+          "key": "endL3",
+          "label": "% L3 Climb",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "endgame"
+        },
+        {
+          "key": "groundIntakeRate",
+          "label": "% Ground Intake",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "intake"
+        },
+        {
+          "key": "depotIntakeRate",
+          "label": "% Depot Intake",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "intake"
+        },
+        {
+          "key": "outpostIntakeRate",
+          "label": "% Outpost Intake",
+          "colorScale": "normal",
+          "format": "percent",
+          "group": "intake"
+        },
+        {
+          "key": "noshowRate",
+          "label": "% No Show",
+          "colorScale": "inverse",
+          "format": "percent",
+          "group": "reliability"
+        },
+        {
+          "key": "breakdown",
+          "label": "% Broke Down",
+          "colorScale": "inverse",
+          "format": "percent",
+          "group": "reliability"
+        }
       ],
       "computedMetrics": [
-        { "key": "trenchRate", "type": "booleanRate", "field": "usestrench", "normalize": false },
-        { "key": "bumpRate", "type": "booleanRate", "field": "usesbump", "normalize": false },
-        { "key": "avgShootOnMove", "type": "averageFields", "fields": ["autoshootonthemoverating", "teleshootonthemoverating"] },
-        { "key": "avgShootingRate", "type": "averageFields", "fields": ["autoshootingrate", "teleshootingrate"] },
-        { "key": "maxEpa", "type": "maxField", "calcFn": "calcEPA" },
-        { "key": "minEpa", "type": "minField", "calcFn": "calcEPA" },
-        { "key": "maxAuto", "type": "maxField", "calcFn": "calcAuto" },
-        { "key": "minAuto", "type": "minField", "calcFn": "calcAuto" },
-        { "key": "maxTele", "type": "maxField", "calcFn": "calcTele" },
-        { "key": "minTele", "type": "minField", "calcFn": "calcTele" },
-        { "key": "endNone", "type": "fieldValueRate", "field": "endlocation", "value": 0, "normalize": false },
-        { "key": "endFailed", "type": "fieldValueRate", "field": "endlocation", "value": 4, "normalize": false },
-        { "key": "endL1", "type": "fieldValueRate", "field": "endlocation", "value": 1, "normalize": false },
-        { "key": "endL2", "type": "fieldValueRate", "field": "endlocation", "value": 2, "normalize": false },
-        { "key": "endL3", "type": "fieldValueRate", "field": "endlocation", "value": 3, "normalize": false },
-        { "key": "autoClimbRate", "type": "fieldValueRate", "field": "autoclimb", "value": 1, "normalize": false },
-        { "key": "noshowRate", "type": "booleanRateAll", "field": "noshow", "normalize": false },
-        { "key": "defensePlayedRate", "type": "booleanRate", "field": "defense", "normalize": false },
-        { "key": "passingPlayedRate", "type": "booleanRate", "field": "passing", "normalize": false },
-        { "key": "groundIntakeRate", "type": "booleanRate", "field": "fuelgrndintake", "normalize": false },
-        { "key": "depotIntakeRate", "type": "booleanRate", "field": "fueldepotintake", "normalize": false },
-        { "key": "outpostIntakeRate", "type": "booleanRate", "field": "fueloutpostintake", "normalize": false }
+        {
+          "key": "trenchRate",
+          "type": "booleanRate",
+          "field": "usestrench",
+          "normalize": false
+        },
+        {
+          "key": "bumpRate",
+          "type": "booleanRate",
+          "field": "usesbump",
+          "normalize": false
+        },
+        {
+          "key": "avgShootOnMove",
+          "type": "averageFields",
+          "fields": [
+            "autoshootonthemoverating",
+            "teleshootonthemoverating"
+          ]
+        },
+        {
+          "key": "avgShootingRate",
+          "type": "averageFields",
+          "fields": [
+            "autoshootingrate",
+            "teleshootingrate"
+          ]
+        },
+        {
+          "key": "maxEpa",
+          "type": "maxField",
+          "calcFn": "calcEPA"
+        },
+        {
+          "key": "minEpa",
+          "type": "minField",
+          "calcFn": "calcEPA"
+        },
+        {
+          "key": "maxAuto",
+          "type": "maxField",
+          "calcFn": "calcAuto"
+        },
+        {
+          "key": "minAuto",
+          "type": "minField",
+          "calcFn": "calcAuto"
+        },
+        {
+          "key": "maxTele",
+          "type": "maxField",
+          "calcFn": "calcTele"
+        },
+        {
+          "key": "minTele",
+          "type": "minField",
+          "calcFn": "calcTele"
+        },
+        {
+          "key": "endNone",
+          "type": "fieldValueRate",
+          "field": "endlocation",
+          "value": 0,
+          "normalize": false
+        },
+        {
+          "key": "endFailed",
+          "type": "fieldValueRate",
+          "field": "endlocation",
+          "value": 4,
+          "normalize": false
+        },
+        {
+          "key": "endL1",
+          "type": "fieldValueRate",
+          "field": "endlocation",
+          "value": 1,
+          "normalize": false
+        },
+        {
+          "key": "endL2",
+          "type": "fieldValueRate",
+          "field": "endlocation",
+          "value": 2,
+          "normalize": false
+        },
+        {
+          "key": "endL3",
+          "type": "fieldValueRate",
+          "field": "endlocation",
+          "value": 3,
+          "normalize": false
+        },
+        {
+          "key": "autoClimbRate",
+          "type": "fieldValueRate",
+          "field": "autoclimb",
+          "value": 1,
+          "normalize": false
+        },
+        {
+          "key": "noshowRate",
+          "type": "booleanRateAll",
+          "field": "noshow",
+          "normalize": false
+        },
+        {
+          "key": "defensePlayedRate",
+          "type": "booleanRate",
+          "field": "defense",
+          "normalize": false
+        },
+        {
+          "key": "passingPlayedRate",
+          "type": "booleanRate",
+          "field": "passing",
+          "normalize": false
+        },
+        {
+          "key": "groundIntakeRate",
+          "type": "booleanRate",
+          "field": "fuelgrndintake",
+          "normalize": false
+        },
+        {
+          "key": "depotIntakeRate",
+          "type": "booleanRate",
+          "field": "fueldepotintake",
+          "normalize": false
+        },
+        {
+          "key": "outpostIntakeRate",
+          "type": "booleanRate",
+          "field": "fueloutpostintake",
+          "normalize": false
+        }
       ],
       "scatterFields": [
-        { "key": "realEpa", "label": "PPR" },
-        { "key": "realAuto", "label": "Auto PPR" },
-        { "key": "realTele", "label": "Teleop PPR" },
-        { "key": "realTrenchRate", "label": "Trench Mobility" },
-        { "key": "realBumpRate", "label": "Bump Mobility" },
-        { "key": "realDefense", "label": "Defense" },
-        { "key": "driving", "label": "Driving" },
-        { "key": "passingrating", "label": "Passing" },
-        { "key": "shootingcapacity", "label": "Fuel Capacity" },
-        { "key": "shootingrange", "label": "Shooting Range" },
-        { "key": "shootingaccuracy", "label": "Shooting Accuracy" },
-        { "key": "realAvgShootOnMove", "label": "Shoot on the Move" },
-        { "key": "realAvgShootingRate", "label": "Shooting Rate" }
+        {
+          "key": "realEpa",
+          "label": "PPR"
+        },
+        {
+          "key": "realAuto",
+          "label": "Auto PPR"
+        },
+        {
+          "key": "realTele",
+          "label": "Teleop PPR"
+        },
+        {
+          "key": "realTrenchRate",
+          "label": "Trench Mobility"
+        },
+        {
+          "key": "realBumpRate",
+          "label": "Bump Mobility"
+        },
+        {
+          "key": "realDefense",
+          "label": "Defense"
+        },
+        {
+          "key": "driving",
+          "label": "Driving"
+        },
+        {
+          "key": "passingrating",
+          "label": "Passing"
+        },
+        {
+          "key": "shootingcapacity",
+          "label": "Fuel Capacity"
+        },
+        {
+          "key": "shootingrange",
+          "label": "Shooting Range"
+        },
+        {
+          "key": "shootingaccuracy",
+          "label": "Shooting Accuracy"
+        },
+        {
+          "key": "realAvgShootOnMove",
+          "label": "Shoot on the Move"
+        },
+        {
+          "key": "realAvgShootingRate",
+          "label": "Shooting Rate"
+        }
       ],
       "defenseField": "defenseplayed"
     },
