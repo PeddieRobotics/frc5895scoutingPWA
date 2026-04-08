@@ -163,7 +163,7 @@
             ]
           },
           {
-            "type": "singleSelect",
+            "type": "multiSelect",
             "name": "climb_level",
             "label": "Climb level?",
             "showWhen": {
@@ -171,22 +171,9 @@
               "notEquals": 0
             },
             "options": [
-              {
-                "value": 0,
-                "label": "None"
-              },
-              {
-                "value": 1,
-                "label": "L1"
-              },
-              {
-                "value": 2,
-                "label": "L2"
-              },
-              {
-                "value": 3,
-                "label": "L3"
-              }
+              { "label": "L1" },
+              { "label": "L2" },
+              { "label": "L3" }
             ]
           },
           {
@@ -1226,20 +1213,6 @@
           "group": "overall"
         },
         {
-          "key": "realMaxEpa",
-          "label": "Max PPR",
-          "colorScale": "maxEpa",
-          "format": "one",
-          "group": "overall"
-        },
-        {
-          "key": "realMinEpa",
-          "label": "Min PPR",
-          "colorScale": "minEpa",
-          "format": "one",
-          "group": "overall"
-        },
-        {
           "key": "realBumpRate",
           "label": "Bump Mobility",
           "colorScale": "bumpRate",
@@ -1282,20 +1255,6 @@
           "group": "auto"
         },
         {
-          "key": "realMaxAuto",
-          "label": "Max Auto PPR",
-          "colorScale": "maxAuto",
-          "format": "one",
-          "group": "auto"
-        },
-        {
-          "key": "realMinAuto",
-          "label": "Min Auto PPR",
-          "colorScale": "minAuto",
-          "format": "one",
-          "group": "auto"
-        },
-        {
           "key": "autoClimbRate",
           "label": "Auto Climb",
           "colorScale": "normal",
@@ -1306,20 +1265,6 @@
           "key": "realTele",
           "label": "Teleop PPR",
           "colorScale": "tele",
-          "format": "one",
-          "group": "tele"
-        },
-        {
-          "key": "realMaxTele",
-          "label": "Max Tele PPR",
-          "colorScale": "maxTele",
-          "format": "one",
-          "group": "tele"
-        },
-        {
-          "key": "realMinTele",
-          "label": "Min Tele PPR",
-          "colorScale": "minTele",
           "format": "one",
           "group": "tele"
         },

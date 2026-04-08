@@ -651,7 +651,7 @@ thead .frozenCol3 {
 .rankRowHighlight .frozenCol1,
 .rankRowHighlight .frozenCol2,
 .rankRowHighlight .frozenCol3 {
-  background: #efe8d3;
+  background: #efe8d3 !important;
 }
 
 /* ── Rank table body ─────────────────────────── */

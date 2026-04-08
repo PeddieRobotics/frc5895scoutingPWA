@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pool, validateAuthToken } from '../../../../lib/auth';
-import { sanitizePrescoutFormTableName } from '../../../../lib/schema-generator';
+import { sanitizePrescoutFormTableName, sanitizePhotosTableName } from '../../../../lib/schema-generator';
 
 export const revalidate = 0;
 
@@ -88,10 +88,28 @@ export async function GET(request) {
     const scoutedRes = await client.query(`SELECT team_number FROM ${tableName}`);
     const scoutedSet = new Set(scoutedRes.rows.map(r => r.team_number));
 
-    const scouted = eventTeams.filter(t => scoutedSet.has(t));
-    const unscouted = eventTeams.filter(t => !scoutedSet.has(t));
+    // Get teams that have photos
+    const photosTableName = sanitizePhotosTableName(gameRow.game_name);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${photosTableName} (
+        id SERIAL PRIMARY KEY,
+        team_number INTEGER NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        photo_data TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        uploaded_by VARCHAR(100),
+        tag VARCHAR(100),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    const photosRes = await client.query(`SELECT DISTINCT team_number FROM ${photosTableName}`);
+    const photosSet = new Set(photosRes.rows.map(r => r.team_number));
 
-    return NextResponse.json({ eventTeams, scouted, unscouted });
+    const unscouted = eventTeams.filter(t => !scoutedSet.has(t));
+    const scoutedNoPhotos = eventTeams.filter(t => scoutedSet.has(t) && !photosSet.has(t));
+    const scoutedWithPhotos = eventTeams.filter(t => scoutedSet.has(t) && photosSet.has(t));
+
+    return NextResponse.json({ eventTeams, unscouted, scoutedNoPhotos, scoutedWithPhotos });
   } finally {
     client.release();
   }

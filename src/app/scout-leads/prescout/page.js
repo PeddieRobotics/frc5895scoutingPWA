@@ -185,8 +185,11 @@ export default function PrescoutFormPage() {
             // Find the field config to determine the internal name
             const fieldConfig = findFieldByLabel(field);
             if (fieldConfig) {
+              // For multiSelect: split comma-separated string back to array
+              if (fieldConfig.type === 'multiSelect' && value) {
+                map[fieldConfig.name] = String(value).split(',').map(s => s.trim()).filter(Boolean);
               // For singleSelect: reverse-map label back to value
-              if (fieldConfig.type === 'singleSelect' && value) {
+              } else if (fieldConfig.type === 'singleSelect' && value) {
                 const matchingOpt = fieldConfig.options?.find(o => o.label === value);
                 if (matchingOpt) {
                   map[fieldConfig.name] = matchingOpt.value;
@@ -298,6 +301,11 @@ export default function PrescoutFormPage() {
             displayValue = String(rawValue);
           }
 
+          // Convert multiSelect array to comma-separated string
+          if (field.type === 'multiSelect' && Array.isArray(rawValue)) {
+            displayValue = rawValue.join(', ');
+          }
+
           if (displayValue !== undefined && displayValue !== null && displayValue !== '') {
             data.push({ field: field.label, value: String(displayValue) });
           }
@@ -316,6 +324,7 @@ export default function PrescoutFormPage() {
         setSuccess(isEditMode ? `Updated prescout data for team ${activeTeam}.` : `Submitted prescout data for team ${activeTeam}.`);
         setIsEditMode(true);
         fetchTracker();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         const d = await res.json();
         setError(d.message || 'Failed to submit.');
@@ -505,7 +514,7 @@ export default function PrescoutFormPage() {
           ) : (
             <>
               <div className={styles.trackerStats}>
-                <span className={styles.trackerStatDone}>{trackerData.scouted.length}</span>
+                <span className={styles.trackerStatDone}>{trackerData.scoutedWithPhotos.length + trackerData.scoutedNoPhotos.length}</span>
                 <span className={styles.trackerStatSep}>/</span>
                 <span className={styles.trackerStatTotal}>{trackerData.eventTeams.length}</span>
                 <span className={styles.trackerStatLabel}>scouted</span>
@@ -513,7 +522,7 @@ export default function PrescoutFormPage() {
               <div className={styles.trackerProgress}>
                 <div
                   className={styles.trackerProgressBar}
-                  style={{ width: `${(trackerData.scouted.length / trackerData.eventTeams.length) * 100}%` }}
+                  style={{ width: `${((trackerData.scoutedWithPhotos.length + trackerData.scoutedNoPhotos.length) / trackerData.eventTeams.length) * 100}%` }}
                 />
               </div>
               {trackerData.unscouted.length > 0 && (
@@ -532,11 +541,27 @@ export default function PrescoutFormPage() {
                   </div>
                 </div>
               )}
-              {trackerData.scouted.length > 0 && (
+              {trackerData.scoutedNoPhotos.length > 0 && (
                 <div className={styles.trackerSection}>
-                  <p className={styles.trackerSectionLabel}>Scouted ({trackerData.scouted.length})</p>
+                  <p className={styles.trackerSectionLabel}>No Photos ({trackerData.scoutedNoPhotos.length})</p>
                   <div className={styles.trackerTeams}>
-                    {trackerData.scouted.map(t => (
+                    {trackerData.scoutedNoPhotos.map(t => (
+                      <button
+                        key={t}
+                        className={styles.trackerTeamNoPhotos}
+                        onClick={() => handleTrackerTeamClick(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {trackerData.scoutedWithPhotos.length > 0 && (
+                <div className={styles.trackerSection}>
+                  <p className={styles.trackerSectionLabel}>Complete ({trackerData.scoutedWithPhotos.length})</p>
+                  <div className={styles.trackerTeams}>
+                    {trackerData.scoutedWithPhotos.map(t => (
                       <button
                         key={t}
                         className={styles.trackerTeamDone}
@@ -853,6 +878,38 @@ function PrescoutField({ field, value, otherValue, onChange, onOtherChange }) {
               autoFocus
             />
           )}
+        </div>
+      );
+    }
+
+    case 'multiSelect': {
+      // value is a comma-separated string of selected labels, or an array
+      const selected = Array.isArray(value) ? value : (value ? String(value).split(',').map(s => s.trim()).filter(Boolean) : []);
+      const toggle = (label) => {
+        const next = selected.includes(label)
+          ? selected.filter(s => s !== label)
+          : [...selected, label];
+        onChange(next.length > 0 ? next : null);
+      };
+      return (
+        <div className={styles.fieldGroup}>
+          <p className={styles.fieldLabel}>{field.label}</p>
+          {field.description && <p className={styles.fieldDesc}>{field.description}</p>}
+          <div className={styles.selectTiles}>
+            {field.options?.map((opt) => {
+              const isSelected = selected.includes(opt.label);
+              return (
+                <button
+                  key={opt.label}
+                  type="button"
+                  className={isSelected ? styles.selectTileSelected : styles.selectTile}
+                  onClick={() => toggle(opt.label)}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       );
     }
