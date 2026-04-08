@@ -46,23 +46,6 @@
           },
           {
             "type": "comment",
-            "name": "driver_experience",
-            "label": "Driver Experience",
-            "description": "Number of events driven before"
-          },
-          {
-            "type": "singleSelect",
-            "name": "coding_language",
-            "label": "Coding Language",
-            "hasOther": true,
-            "options": [
-              { "value": 0, "label": "Java" },
-              { "value": 1, "label": "Python" },
-              { "value": 2, "label": "C++" }
-            ]
-          },
-          {
-            "type": "comment",
             "name": "shooter_archetype",
             "label": "Shooter Archetype",
             "description": "Single/double shooter, turret, wide roller, adjustable hood, etc."
