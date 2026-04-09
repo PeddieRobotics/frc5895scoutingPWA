@@ -115,16 +115,28 @@ export async function POST(request) {
           [teamNumber]
         );
 
-        let mergedData = data;
+        let mergedData = data.filter(e => e.value !== '');
         if (existing.rows.length > 0 && Array.isArray(existing.rows[0].data)) {
           const existingMap = new Map();
           for (const entry of existing.rows[0].data) {
             existingMap.set(entry.field, entry.value);
           }
+          // Submitted fields override existing: empty string = delete, non-empty = update
           for (const entry of data) {
-            existingMap.set(entry.field, entry.value);
+            if (entry.value === '') {
+              existingMap.delete(entry.field);
+            } else {
+              existingMap.set(entry.field, entry.value);
+            }
           }
           mergedData = Array.from(existingMap, ([field, value]) => ({ field, value }));
+        }
+
+        // If merged data is empty, delete the row instead of storing an empty array
+        if (mergedData.length === 0) {
+          await client.query(`DELETE FROM ${tableName} WHERE team_number = $1`, [teamNumber]);
+          await client.query('COMMIT');
+          return NextResponse.json({ success: true, teamNumber, deleted: true });
         }
 
         await client.query(

@@ -284,32 +284,39 @@ export default function PrescoutFormPage() {
           if (!isFieldVisible(field, formData)) continue;
 
           const rawValue = formData[field.name];
-          let displayValue = rawValue;
 
-          // Handle singleSelect with hasOther: if "Other" is selected, use the _other text
-          if (field.type === 'singleSelect' && field.hasOther && rawValue === '_other') {
-            displayValue = formData[`${field.name}_other`] || '';
-          } else if (field.type === 'singleSelect' && rawValue !== undefined && rawValue !== null && rawValue !== '') {
-            // Convert singleSelect numeric values to their label
-            const numVal = parseInt(rawValue);
-            const option = field.options?.find(o => o.value === numVal);
-            displayValue = option ? option.label : String(rawValue);
+          // Determine if the field is empty/cleared
+          const isEmpty = rawValue === undefined || rawValue === null || rawValue === '' || rawValue === 0
+            || (Array.isArray(rawValue) && rawValue.length === 0);
+
+          let displayValue = '';
+          if (!isEmpty) {
+            // Handle singleSelect with hasOther: if "Other" is selected, use the _other text
+            if (field.type === 'singleSelect' && field.hasOther && rawValue === '_other') {
+              displayValue = formData[`${field.name}_other`] || '';
+            } else if (field.type === 'singleSelect') {
+              // Convert singleSelect numeric values to their label
+              const numVal = parseInt(rawValue);
+              const option = field.options?.find(o => o.value === numVal);
+              displayValue = option ? option.label : String(rawValue);
+            } else if (field.type === 'multiSelect' && Array.isArray(rawValue)) {
+              displayValue = rawValue.join(', ');
+            } else {
+              displayValue = String(rawValue);
+            }
           }
 
-          // Convert starRating to string
-          if (field.type === 'starRating' && rawValue !== undefined && rawValue !== null) {
-            displayValue = String(rawValue);
-          }
-
-          // Convert multiSelect array to comma-separated string
-          if (field.type === 'multiSelect' && Array.isArray(rawValue)) {
-            displayValue = rawValue.join(', ');
-          }
-
-          if (displayValue !== undefined && displayValue !== null && displayValue !== '') {
-            data.push({ field: field.label, value: String(displayValue) });
-          }
+          // Send all visible fields — empty string signals removal during merge
+          data.push({ field: field.label, value: displayValue });
         }
+      }
+
+      // Don't create a row if no fields were actually filled in
+      const hasAnyData = data.some(d => d.value !== '');
+      if (!hasAnyData && !isEditMode) {
+        setError('Please fill in at least one field before submitting.');
+        setSubmitting(false);
+        return;
       }
 
       const res = await fetch('/api/prescout/form', {
@@ -533,6 +540,22 @@ export default function PrescoutFormPage() {
                       <button
                         key={t}
                         className={styles.trackerTeamBtn}
+                        onClick={() => handleTrackerTeamClick(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {trackerData.photosOnly?.length > 0 && (
+                <div className={styles.trackerSection}>
+                  <p className={styles.trackerSectionLabel}>Photos Only ({trackerData.photosOnly.length})</p>
+                  <div className={styles.trackerTeams}>
+                    {trackerData.photosOnly.map(t => (
+                      <button
+                        key={t}
+                        className={styles.trackerTeamPhotosOnly}
                         onClick={() => handleTrackerTeamClick(t)}
                       >
                         {t}

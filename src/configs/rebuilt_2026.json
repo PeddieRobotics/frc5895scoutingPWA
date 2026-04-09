@@ -1,7 +1,7 @@
 {
   "gameName": "rebuilt_2026",
   "displayName": "REBUILT 2026",
-  "tbaEventCode": "2026njwas",
+  "tbaEventCode": "2026njski",
   "usePPR": true,
   "enableBetting": true,
   "photoTags": [
@@ -171,9 +171,15 @@
               "notEquals": 0
             },
             "options": [
-              { "label": "L1" },
-              { "label": "L2" },
-              { "label": "L3" }
+              {
+                "label": "L1"
+              },
+              {
+                "label": "L2"
+              },
+              {
+                "label": "L3"
+              }
             ]
           },
           {

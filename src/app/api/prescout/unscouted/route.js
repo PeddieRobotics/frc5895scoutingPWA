@@ -85,7 +85,8 @@ export async function GET(request) {
       )
     `);
 
-    const scoutedRes = await client.query(`SELECT team_number FROM ${tableName}`);
+    // Only count teams with non-empty data as scouted
+    const scoutedRes = await client.query(`SELECT team_number FROM ${tableName} WHERE data IS NOT NULL AND data != '[]'::jsonb`);
     const scoutedSet = new Set(scoutedRes.rows.map(r => r.team_number));
 
     // Get teams that have photos
@@ -105,11 +106,12 @@ export async function GET(request) {
     const photosRes = await client.query(`SELECT DISTINCT team_number FROM ${photosTableName}`);
     const photosSet = new Set(photosRes.rows.map(r => r.team_number));
 
-    const unscouted = eventTeams.filter(t => !scoutedSet.has(t));
+    const unscouted = eventTeams.filter(t => !scoutedSet.has(t) && !photosSet.has(t));
+    const photosOnly = eventTeams.filter(t => !scoutedSet.has(t) && photosSet.has(t));
     const scoutedNoPhotos = eventTeams.filter(t => scoutedSet.has(t) && !photosSet.has(t));
     const scoutedWithPhotos = eventTeams.filter(t => scoutedSet.has(t) && photosSet.has(t));
 
-    return NextResponse.json({ eventTeams, unscouted, scoutedNoPhotos, scoutedWithPhotos });
+    return NextResponse.json({ eventTeams, unscouted, photosOnly, scoutedNoPhotos, scoutedWithPhotos });
   } finally {
     client.release();
   }

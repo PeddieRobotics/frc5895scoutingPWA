@@ -157,6 +157,31 @@
   outline-offset: 2px;
 }
 
+.trackerTeamPhotosOnly {
+  padding: 4px 10px;
+  min-height: 32px;
+  border: 1.5px solid rgba(200, 100, 40, 0.4);
+  border-radius: 8px;
+  background: rgba(200, 100, 40, 0.08);
+  color: #b05a1a;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.trackerTeamPhotosOnly:hover {
+  background: rgba(200, 100, 40, 0.15);
+  border-color: rgba(200, 100, 40, 0.6);
+}
+
+.trackerTeamPhotosOnly:focus-visible {
+  outline: 2px solid rgba(160, 124, 48, 0.75);
+  outline-offset: 2px;
+}
+
 .trackerTeamNoPhotos {
   padding: 4px 10px;
   min-height: 32px;
