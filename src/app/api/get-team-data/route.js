@@ -76,18 +76,6 @@ export async function GET(request) {
     client.release();
   }
 
-  if (rows.length === 0) {
-    return NextResponse.json({
-      message: `ERROR: No data for team ${team} in game "${activeGame.display_name || activeGame.game_name}" (${tableName}).`,
-      error: "TEAM_NOT_FOUND_IN_ACTIVE_GAME",
-      team: Number(team),
-      gameId: activeGame.id,
-      gameName: activeGame.game_name,
-      displayName: activeGame.display_name,
-      tableName,
-    }, { status: 404 });
-  }
-
   // Use config-driven aggregation
   const returnObject = scoredRows.length > 0
     ? aggregateTeamData(scoredRows, gameConfig, calculationFunctions)
