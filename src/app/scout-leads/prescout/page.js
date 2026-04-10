@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import useGameConfig from '../../../lib/useGameConfig';
 import LightboxModal from '../../components/LightboxModal';
 import { compressImage } from '../../../lib/compressImage';
@@ -51,13 +51,13 @@ export default function PrescoutFormPage() {
   const [teamNumber, setTeamNumber] = useState('');
   const [activeTeam, setActiveTeam] = useState(null);
   const [formData, setFormData] = useState({});
-  const [loadedFormData, setLoadedFormData] = useState({});
+  const loadedFormData = useRef({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [unsavedWarning, setUnsavedWarning] = useState(false);
+  const [pendingTeamSwitch, setPendingTeamSwitch] = useState(false);
   const draftRestored = useRef(false);
 
   // Photo state
@@ -90,6 +90,7 @@ export default function PrescoutFormPage() {
       setActiveTeam(draft.activeTeam);
       setTeamNumber(String(draft.activeTeam));
       setFormData(draft.formData);
+      // Draft is potentially unsaved — loadedFormData stays {} so comparison detects changes
       setIsEditMode(true);
     }
   }, []);
@@ -151,17 +152,37 @@ export default function PrescoutFormPage() {
     });
   }, [photos, gameId]);
 
-  // Check for unsaved data when team number input changes
-  const hasUnsavedData = activeTeam && JSON.stringify(formData) !== JSON.stringify(loadedFormData);
+  // Compare current form state against loaded snapshot to detect real changes
+  const hasUnsavedData = useMemo(() => {
+    if (!activeTeam) return false;
+    const loaded = loadedFormData.current;
+    const allKeys = new Set([...Object.keys(formData), ...Object.keys(loaded)]);
+    for (const k of allKeys) {
+      const a = formData[k];
+      const b = loaded[k];
+      // Treat null, undefined, '', and empty array as equivalent "empty"
+      const aEmpty = a === null || a === undefined || a === ''
+        || (Array.isArray(a) && a.length === 0);
+      const bEmpty = b === null || b === undefined || b === ''
+        || (Array.isArray(b) && b.length === 0);
+      if (aEmpty && bEmpty) continue;
+      if (aEmpty !== bEmpty) return true;
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length || a.some((v, i) => v !== b[i])) return true;
+      } else if (a !== b) {
+        return true;
+      }
+    }
+    return false;
+  }, [activeTeam, formData]);
+
+  // Warning is derived: unsaved changes exist AND user is trying to switch teams
+  const unsavedWarning = hasUnsavedData && pendingTeamSwitch;
 
   const handleTeamNumberChange = useCallback((val) => {
     setTeamNumber(val);
-    if (hasUnsavedData && val !== String(activeTeam)) {
-      setUnsavedWarning(true);
-    } else {
-      setUnsavedWarning(false);
-    }
-  }, [hasUnsavedData, activeTeam]);
+    setPendingTeamSwitch(val !== '' && val !== String(activeTeam));
+  }, [activeTeam]);
 
   const handleLoadTeam = useCallback(async () => {
     const num = parseInt(teamNumber);
@@ -169,7 +190,7 @@ export default function PrescoutFormPage() {
 
     // Clear previous draft when loading a new team
     clearDraft();
-    setUnsavedWarning(false);
+    setPendingTeamSwitch(false);
     setLoadingTeam(true);
     setError('');
     setSuccess('');
@@ -210,15 +231,15 @@ export default function PrescoutFormPage() {
             }
           });
           setFormData(map);
-          setLoadedFormData(map);
+          loadedFormData.current = map;
           setIsEditMode(true);
         } else {
           setFormData({});
-          setLoadedFormData({});
+          loadedFormData.current = {};
         }
       } else {
         setFormData({});
-        setLoadedFormData({});
+        loadedFormData.current = {};
       }
       setActiveTeam(num);
       fetchPhotos(num);
@@ -337,6 +358,7 @@ export default function PrescoutFormPage() {
       if (res.ok) {
         clearDraft();
         setSuccess(isEditMode ? `Updated prescout data for team ${activeTeam}.` : `Submitted prescout data for team ${activeTeam}.`);
+        loadedFormData.current = { ...formData };
         setIsEditMode(true);
         fetchTracker();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -475,7 +497,7 @@ export default function PrescoutFormPage() {
         if (el) el.click();
       }, 0);
     } else {
-      setUnsavedWarning(true);
+      setPendingTeamSwitch(true);
     }
   }, [hasUnsavedData]);
 
