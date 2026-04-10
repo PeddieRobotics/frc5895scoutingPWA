@@ -52,6 +52,7 @@ export default function PrescoutFormPage() {
   const [activeTeam, setActiveTeam] = useState(null);
   const [formData, setFormData] = useState({});
   const loadedFormData = useRef({});
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -73,6 +74,7 @@ export default function PrescoutFormPage() {
   const [batchProgress, setBatchProgress] = useState(0);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const pageTopRef = useRef(null);
 
   // Unscouted tracker state
   const [trackerData, setTrackerData] = useState(null); // { eventTeams, scouted, unscouted }
@@ -174,7 +176,8 @@ export default function PrescoutFormPage() {
       }
     }
     return false;
-  }, [activeTeam, formData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTeam, formData, snapshotVersion]);
 
   // Warning is derived: unsaved changes exist AND user is trying to switch teams
   const unsavedWarning = hasUnsavedData && pendingTeamSwitch;
@@ -232,14 +235,17 @@ export default function PrescoutFormPage() {
           });
           setFormData(map);
           loadedFormData.current = map;
+          setSnapshotVersion(v => v + 1);
           setIsEditMode(true);
         } else {
           setFormData({});
           loadedFormData.current = {};
+          setSnapshotVersion(v => v + 1);
         }
       } else {
         setFormData({});
         loadedFormData.current = {};
+        setSnapshotVersion(v => v + 1);
       }
       setActiveTeam(num);
       fetchPhotos(num);
@@ -359,9 +365,10 @@ export default function PrescoutFormPage() {
         clearDraft();
         setSuccess(isEditMode ? `Updated prescout data for team ${activeTeam}.` : `Submitted prescout data for team ${activeTeam}.`);
         loadedFormData.current = { ...formData };
+        setSnapshotVersion(v => v + 1);
         setIsEditMode(true);
         fetchTracker();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
         const d = await res.json();
         setError(d.message || 'Failed to submit.');
@@ -523,7 +530,7 @@ export default function PrescoutFormPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={pageTopRef}>
       {/* Header — full width above layout */}
       <div className={styles.pageHeader}>
         <div className={styles.header}>
