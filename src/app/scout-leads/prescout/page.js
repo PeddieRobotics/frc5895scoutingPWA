@@ -51,6 +51,7 @@ export default function PrescoutFormPage() {
   const [teamNumber, setTeamNumber] = useState('');
   const [activeTeam, setActiveTeam] = useState(null);
   const [formData, setFormData] = useState({});
+  const [loadedFormData, setLoadedFormData] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -151,7 +152,7 @@ export default function PrescoutFormPage() {
   }, [photos, gameId]);
 
   // Check for unsaved data when team number input changes
-  const hasUnsavedData = activeTeam && Object.keys(formData).length > 0;
+  const hasUnsavedData = activeTeam && JSON.stringify(formData) !== JSON.stringify(loadedFormData);
 
   const handleTeamNumberChange = useCallback((val) => {
     setTeamNumber(val);
@@ -209,12 +210,15 @@ export default function PrescoutFormPage() {
             }
           });
           setFormData(map);
+          setLoadedFormData(map);
           setIsEditMode(true);
         } else {
           setFormData({});
+          setLoadedFormData({});
         }
       } else {
         setFormData({});
+        setLoadedFormData({});
       }
       setActiveTeam(num);
       fetchPhotos(num);
@@ -286,7 +290,11 @@ export default function PrescoutFormPage() {
           const rawValue = formData[field.name];
 
           // Determine if the field is empty/cleared
-          const isEmpty = rawValue === undefined || rawValue === null || rawValue === '' || rawValue === 0
+          // For singleSelect, 0 is a valid option value (not empty)
+          // For starRating/checkbox, 0 means unset/unchecked (empty)
+          const zeroIsEmpty = field.type !== 'singleSelect';
+          const isEmpty = rawValue === undefined || rawValue === null || rawValue === ''
+            || (zeroIsEmpty && rawValue === 0)
             || (Array.isArray(rawValue) && rawValue.length === 0);
 
           let displayValue = '';
