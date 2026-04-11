@@ -848,7 +848,7 @@ export default function Home() {
       setBreakdown(false);
       setDefense(false);
       setBetState(null);
-      setLiveMatchNumber("");
+      setLiveMatchNumber(String(Number(submissionData.match || 0) + 1));
 
       // Clear saved team scouted
       setSavedTeam("");
