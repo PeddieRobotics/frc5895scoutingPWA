@@ -1532,6 +1532,12 @@ export default function Home() {
                   setBreakdown(false);
                   setDefense(false);
                   setBetState(null);
+                  setLiveMatchNumber("");
+                  setScoutProfile(prev => {
+                    const updated = { ...(prev || {}), match: "" };
+                    localStorage.setItem("ScoutProfile", JSON.stringify(updated));
+                    return updated;
+                  });
                   setSavedTeam("");
                   localStorage.removeItem("ScoutTeamScouted");
                   window.dispatchEvent(new CustomEvent('reset_form_components'));
