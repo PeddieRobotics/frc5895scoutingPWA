@@ -41,6 +41,7 @@ export default function Home() {
   // Betting state
   const [betState, setBetState] = useState(null); // null | 'placed' | 'locked'
   const [liveMatchNumber, setLiveMatchNumber] = useState("");
+  const [liveScoutName, setLiveScoutName] = useState("");
 
   // Active game configuration state
   const [activeGameConfig, setActiveGameConfig] = useState(null);
@@ -992,6 +993,11 @@ export default function Home() {
     initializeForm();
   }, [scoutProfile, initializeForm]);
 
+  // Sync liveScoutName from scoutProfile (populated from localStorage on mount / after submission)
+  useEffect(() => {
+    if (scoutProfile?.scoutname) setLiveScoutName(scoutProfile.scoutname);
+  }, [scoutProfile]);
+
   // Make the button click handlers completely safe
   const handleOnlineSubmitClick = (e) => {
     if (e) {
@@ -1293,6 +1299,12 @@ export default function Home() {
               internalName={"scoutname"}
               defaultValue={scoutProfile?.scoutname || ""}
               className="preMatchInput"
+              onChange={(e) => {
+                setLiveScoutName(e.target.value);
+                const currentProfile = JSON.parse(localStorage.getItem("ScoutProfile") || "{}");
+                currentProfile.scoutname = e.target.value;
+                localStorage.setItem("ScoutProfile", JSON.stringify(currentProfile));
+              }}
             />
             <TextInput
               visibleName={"Match #:"}
@@ -1351,7 +1363,7 @@ export default function Home() {
                 enabled={!!activeGameConfig?.config?.enableBetting}
                 onBetStateChange={(state) => setBetState(state)}
                 authCredentials={authCredentials}
-                scoutName={scoutProfile?.scoutname || ""}
+                scoutName={liveScoutName}
               />
             ) : null
           }
