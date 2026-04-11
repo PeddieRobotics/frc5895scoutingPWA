@@ -849,6 +849,10 @@ export default function Home() {
       setBreakdown(false);
       setDefense(false);
       setBetState(null);
+      // Suppress DB bet restore on remount so the form stays locked for the next match
+      if (activeGameConfig?.gameId) {
+        sessionStorage.setItem(`betting_skip_restore_${activeGameConfig.gameId}`, '1');
+      }
       setLiveMatchNumber(String(Number(submissionData.match || 0) + 1));
 
       // Clear saved team scouted

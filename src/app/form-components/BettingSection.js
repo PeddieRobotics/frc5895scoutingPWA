@@ -119,6 +119,15 @@ export default function BettingSection({
     if (!match || match < 1) return;
 
     const checkExistingBet = async () => {
+      // Skip DB restore if the form was just submitted or cleared
+      if (gameId && typeof sessionStorage !== 'undefined') {
+        const skipKey = `betting_skip_restore_${gameId}`;
+        if (sessionStorage.getItem(skipKey)) {
+          sessionStorage.removeItem(skipKey);
+          return;
+        }
+      }
+
       try {
         const headers = {};
         if (authCredentials) headers['Authorization'] = `Basic ${authCredentials}`;
