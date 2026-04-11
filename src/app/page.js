@@ -1536,6 +1536,9 @@ export default function Home() {
                   setBreakdown(false);
                   setDefense(false);
                   setBetState(null);
+                  if (activeGameConfig?.gameId) {
+                    sessionStorage.setItem(`betting_skip_restore_${activeGameConfig.gameId}`, '1');
+                  }
                   setLiveMatchNumber("");
                   setScoutProfile(prev => {
                     const updated = { ...(prev || {}), match: "" };
