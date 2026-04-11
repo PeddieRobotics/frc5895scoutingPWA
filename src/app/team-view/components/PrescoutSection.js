@@ -34,8 +34,8 @@ function buildFieldOrder(prescoutConfig) {
   return order.size > 0 ? order : null;
 }
 
-export default function PrescoutSection({ prescoutData, prescoutConfig }) {
-  const [open, setOpen] = useState(true);
+export default function PrescoutSection({ prescoutData, prescoutConfig, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   let entries = normalizeEntries(prescoutData);
 

@@ -10,6 +10,7 @@ import DefenseBarChart from "./components/DefenseBarChart";
 import EPALineChart from "./components/EPALineChart";
 import TeamEPALineChart from "../team-view/components/EPALineChart";
 import UnscoredMatchesDropdown from "../components/UnscoredMatchesDropdown";
+import PrescoutSection from "../team-view/components/PrescoutSection";
 import useGameConfig from "../../lib/useGameConfig";
 import { getMatchViewConfigIssues } from "../../lib/display-config-validation";
 
@@ -34,6 +35,7 @@ function MatchView() {
   const [unscoredMatches, setUnscoredMatches] = useState([]);
   const [useRecent, setUseRecent] = useState(false);
   const [navStuck, setNavStuck] = useState(false);
+  const [prescoutByTeam, setPrescoutByTeam] = useState({});
   const matchNavRef = useRef(null);
   const teamFormRef = useRef(null);
 
@@ -201,14 +203,11 @@ function MatchView() {
           urlParams.team5,
           urlParams.team6
         ];
-        const requestedTeams = [team1, team2, team3, team4, team5, team6].filter(Boolean);
-        const missingTeams = requestedTeams.filter(t => !allData[t]);
-        if (missingTeams.length > 0) {
-          setError(`No data found for team${missingTeams.length > 1 ? 's' : ''}: ${missingTeams.join(', ')}`);
-          setLoading(false);
-          return;
-        }
-        setData({ team1: allData[team1], team2: allData[team2], team3: allData[team3], team4: allData[team4], team5: allData[team5], team6: allData[team6] });
+        const toTeamData = (num) => {
+          if (!num) return undefined;
+          return allData[num] || { team: num, teamName: "No Scouting Data", auto: null, tele: null, end: null, avgPieces: {}, leave: null, customSums: {}, endgame: {}, qualitative: {} };
+        };
+        setData({ team1: toTeamData(team1), team2: toTeamData(team2), team3: toTeamData(team3), team4: toTeamData(team4), team5: toTeamData(team5), team6: toTeamData(team6) });
         setLoading(false);
       } else {
         // Get the current user's team
@@ -295,13 +294,14 @@ function MatchView() {
               setUrlParams(updatedParams);
 
               // Also swap the data assignment
+              const matchTeamData = (num) => allData[num] || { team: num, teamName: "No Scouting Data", auto: null, tele: null, end: null, avgPieces: {}, leave: null, customSums: {}, endgame: {}, qualitative: {} };
               setData({
-                team1: allData[data.team4],
-                team2: allData[data.team5],
-                team3: allData[data.team6],
-                team4: allData[data.team1],
-                team5: allData[data.team2],
-                team6: allData[data.team3]
+                team1: matchTeamData(data.team4),
+                team2: matchTeamData(data.team5),
+                team3: matchTeamData(data.team6),
+                team4: matchTeamData(data.team1),
+                team5: matchTeamData(data.team2),
+                team6: matchTeamData(data.team3)
               });
               setLoading(false);
             }
@@ -316,6 +316,37 @@ function MatchView() {
       }
     }
   }, [urlParams, allData, configLoading, configIssues.length, gameId]);
+
+  // Fetch prescout data for all visible teams
+  useEffect(() => {
+    if (!data || typeof data !== 'object') return;
+    const teamNumbers = [
+      data.team1?.team, data.team2?.team, data.team3?.team,
+      data.team4?.team, data.team5?.team, data.team6?.team,
+      urlParams.team1, urlParams.team2, urlParams.team3,
+      urlParams.team4, urlParams.team5, urlParams.team6,
+    ].filter(Boolean).map(String);
+    const unique = [...new Set(teamNumbers)];
+    if (unique.length === 0) return;
+
+    const headers = {};
+    try {
+      const creds = sessionStorage.getItem('auth_credentials') || localStorage.getItem('auth_credentials');
+      if (creds) headers.Authorization = `Basic ${creds}`;
+    } catch (_) {}
+
+    unique.forEach(team => {
+      const params = new URLSearchParams({ team });
+      if (gameId) params.set('gameId', String(gameId));
+      Promise.all([
+        fetch(`/api/prescout/form?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`/api/prescout?${params.toString()}`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]).then(([formResult, xlsxResult]) => {
+        const pd = formResult?.data || xlsxResult?.data || null;
+        setPrescoutByTeam(prev => ({ ...prev, [team]: pd }));
+      });
+    });
+  }, [data, urlParams, gameId]);
 
   if (configLoading) {
     return (
@@ -399,34 +430,34 @@ function MatchView() {
               <div>
                 <label htmlFor="team1">Red 1:</label>
                 <br />
-                <input id="team1" name="team1" defaultValue={urlParams.team1}></input>
+                <input id="team1" name="team1" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team1}></input>
               </div>
               <div>
                 <label htmlFor="team2">Red 2:</label>
                 <br />
-                <input id="team2" name="team2" defaultValue={urlParams.team2}></input>
+                <input id="team2" name="team2" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team2}></input>
               </div>
               <div>
                 <label htmlFor="team3">Red 3:</label>
                 <br />
-                <input id="team3" name="team3" defaultValue={urlParams.team3}></input>
+                <input id="team3" name="team3" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team3}></input>
               </div>
             </div>
             <div className={styles.BlueInputs}>
               <div>
                 <label htmlFor="team4">Blue 1:</label>
                 <br />
-                <input id="team4" name="team4" defaultValue={urlParams.team4}></input>
+                <input id="team4" name="team4" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team4}></input>
               </div>
               <div>
                 <label htmlFor="team5">Blue 2:</label>
                 <br />
-                <input id="team5" name="team5" defaultValue={urlParams.team5}></input>
+                <input id="team5" name="team5" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team5}></input>
               </div>
               <div>
                 <label htmlFor="team6">Blue 3:</label>
                 <br />
-                <input id="team6" name="team6" defaultValue={urlParams.team6}></input>
+                <input id="team6" name="team6" inputMode="numeric" pattern="[0-9]*" defaultValue={urlParams.team6}></input>
               </div>
             </div>
             <input type="hidden" name="go" value="go"></input>
@@ -656,7 +687,7 @@ function MatchView() {
 
   }
 
-  function TeamDisplay({ teamData, colors, matchMax }) {
+  function TeamDisplay({ teamData, colors, matchMax, prescoutData, prescoutConfig }) {
     const [selectedVar, setSelectedVar] = useState(null);
     function resolveVar(sel, td) {
       if (!sel) return { data: td.epaOverTime || [], label: 'epa', displayLabel: config?.usePPR ? 'PPR' : 'EPA' };
@@ -777,6 +808,9 @@ function MatchView() {
           </div>
         );
       })()}
+      {prescoutData && (Array.isArray(prescoutData) ? prescoutData.length > 0 : Object.keys(prescoutData).length > 0) && (
+        <PrescoutSection prescoutData={prescoutData} prescoutConfig={prescoutConfig} defaultOpen={false} />
+      )}
     </div>
   }
   let get = (alliance, thing) => {
@@ -934,14 +968,14 @@ function MatchView() {
         </div>
       </div>
       <div className={styles.matches}>
-        <TeamDisplay teamData={data.team1 || defaultTeam} colors={COLORS[3]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team2 || defaultTeam} colors={COLORS[4]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team3 || defaultTeam} colors={COLORS[5]} matchMax={matchMax}></TeamDisplay>
+        <TeamDisplay teamData={data.team1 || defaultTeam} colors={COLORS[3]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team1 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
+        <TeamDisplay teamData={data.team2 || defaultTeam} colors={COLORS[4]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team2 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
+        <TeamDisplay teamData={data.team3 || defaultTeam} colors={COLORS[5]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team3 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
       </div>
       <div className={styles.matches}>
-        <TeamDisplay teamData={data.team4 || defaultTeam} colors={COLORS[0]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team5 || defaultTeam} colors={COLORS[1]} matchMax={matchMax}></TeamDisplay>
-        <TeamDisplay teamData={data.team6 || defaultTeam} colors={COLORS[2]} matchMax={matchMax}></TeamDisplay>
+        <TeamDisplay teamData={data.team4 || defaultTeam} colors={COLORS[0]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team4 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
+        <TeamDisplay teamData={data.team5 || defaultTeam} colors={COLORS[1]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team5 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
+        <TeamDisplay teamData={data.team6 || defaultTeam} colors={COLORS[2]} matchMax={matchMax} prescoutData={prescoutByTeam[String((data.team6 || defaultTeam).team)]} prescoutConfig={config?.prescout}></TeamDisplay>
       </div>
     </div>
   )
