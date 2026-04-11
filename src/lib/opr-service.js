@@ -14,6 +14,10 @@ import { sanitizeOprSettingsTableName } from './schema-generator.js';
 import { ensureOprSettingsTableForGame } from './game-config.js';
 import { computeOPR } from './opr-calculator.js';
 
+// Tikhonov regularization parameter — stabilises the OPR solve when not all
+// teams have played enough matches for a fully determined system (early events).
+const OPR_LAMBDA = 1.0;
+
 // ─── TBA match cache ──────────────────────────────────────────────────────────
 // Keyed by event code; entries expire after CACHE_TTL_MS.
 const tbaMatchCache = new Map();
@@ -175,7 +179,7 @@ async function getTeamOPRMap(activeGame) {
   const enabledMatches = await getEnabledMatches(activeGame);
   if (!enabledMatches) return null;
 
-  const results = computeOPR(enabledMatches);
+  const results = computeOPR(enabledMatches, OPR_LAMBDA);
   if (!results) return null;
 
   return new Map(results.map(r => [r.team, r.opr]));
@@ -201,7 +205,7 @@ async function getLast3OPRMap(activeGame) {
   if (!enabledMatches) return null;
 
   // One full-event OPR solve
-  const fullOPR = computeOPR(enabledMatches);
+  const fullOPR = computeOPR(enabledMatches, OPR_LAMBDA);
   if (!fullOPR) return null;
   const oprMap = new Map(fullOPR.map(r => [r.team, r.opr]));
 
@@ -265,7 +269,7 @@ async function getPPROverTime(activeGame, teamNumber) {
   if (!enabledMatches) return [];
 
   // One full-event OPR solve
-  const fullOPR = computeOPR(enabledMatches);
+  const fullOPR = computeOPR(enabledMatches, OPR_LAMBDA);
   if (!fullOPR) return [];
   const oprMap = new Map(fullOPR.map(r => [r.team, r.opr]));
 
@@ -317,9 +321,9 @@ async function getPerPeriodTeamData(activeGame, teamNumber) {
   if (autoMatches.length === 0 && teleMatches.length === 0 && endMatches.length === 0) return null;
 
   const toMap = (results) => results ? new Map(results.map(r => [r.team, r.opr])) : new Map();
-  const autoOPRMap = toMap(autoMatches.length > 0 ? computeOPR(autoMatches) : null);
-  const teleOPRMap = toMap(teleMatches.length > 0 ? computeOPR(teleMatches) : null);
-  const endOPRMap  = toMap(endMatches.length  > 0 ? computeOPR(endMatches)  : null);
+  const autoOPRMap = toMap(autoMatches.length > 0 ? computeOPR(autoMatches, OPR_LAMBDA) : null);
+  const teleOPRMap = toMap(teleMatches.length > 0 ? computeOPR(teleMatches, OPR_LAMBDA) : null);
+  const endOPRMap  = toMap(endMatches.length  > 0 ? computeOPR(endMatches, OPR_LAMBDA)  : null);
 
   const levelOrder = { Q: 0, SF: 1, F: 2 };
   const matchOrder = m => (levelOrder[m.type] ?? 99) * 10000 + m.number;
@@ -390,9 +394,9 @@ async function getPerPeriodOPRMaps(activeGame) {
   const teleMatches = buildPeriodMatches(breakdownFields.tele);
   const endMatches  = buildPeriodMatches(breakdownFields.end);
 
-  const auto = toMap(autoMatches.length > 0 ? computeOPR(autoMatches) : null);
-  const tele = toMap(teleMatches.length > 0 ? computeOPR(teleMatches) : null);
-  const end  = toMap(endMatches.length  > 0 ? computeOPR(endMatches)  : null);
+  const auto = toMap(autoMatches.length > 0 ? computeOPR(autoMatches, OPR_LAMBDA) : null);
+  const tele = toMap(teleMatches.length > 0 ? computeOPR(teleMatches, OPR_LAMBDA) : null);
+  const end  = toMap(endMatches.length  > 0 ? computeOPR(endMatches, OPR_LAMBDA)  : null);
 
   if (!auto && !tele && !end) return null;
   return { auto, tele, end };
@@ -426,9 +430,9 @@ async function getLast3PerPeriodOPRMaps(activeGame) {
   const endMatches  = buildPeriodMatches(breakdownFields.end);
 
   const toOPRMap = (results) => results ? new Map(results.map(r => [r.team, r.opr])) : new Map();
-  const autoOPRMap = toOPRMap(autoMatches.length > 0 ? computeOPR(autoMatches) : null);
-  const teleOPRMap = toOPRMap(teleMatches.length > 0 ? computeOPR(teleMatches) : null);
-  const endOPRMap  = toOPRMap(endMatches.length  > 0 ? computeOPR(endMatches)  : null);
+  const autoOPRMap = toOPRMap(autoMatches.length > 0 ? computeOPR(autoMatches, OPR_LAMBDA) : null);
+  const teleOPRMap = toOPRMap(teleMatches.length > 0 ? computeOPR(teleMatches, OPR_LAMBDA) : null);
+  const endOPRMap  = toOPRMap(endMatches.length  > 0 ? computeOPR(endMatches, OPR_LAMBDA)  : null);
 
   const allTeams = new Set();
   enabledMatches.forEach(m => {
