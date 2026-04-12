@@ -385,6 +385,22 @@
   background: rgba(160, 124, 48, 0.1);
 }
 
+.ksResetBtn.ksResetConfirm {
+  border-color: #d9534f;
+  color: #d9534f;
+  background: rgba(217, 83, 79, 0.1);
+  animation: ksResetPulse 0.6s ease-in-out infinite alternate;
+}
+
+.ksResetBtn.ksResetConfirm:hover {
+  background: rgba(217, 83, 79, 0.2);
+}
+
+@keyframes ksResetPulse {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
+}
+
 .ksResumeBtn {
   width: 100%;
   padding: 10px;

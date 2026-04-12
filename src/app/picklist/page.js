@@ -42,6 +42,8 @@ export default function Picklist() {
   const [manualPair, setManualPair] = useState(null); // [teamA, teamB] or null for manual compare
   const [dragIdx, setDragIdx] = useState(null); // index being dragged
   const [dragOverIdx, setDragOverIdx] = useState(null); // index being hovered over
+  const [confirmKsReset, setConfirmKsReset] = useState(false);
+  const confirmKsResetTimerRef = useRef(null);
 
   const columnToggleRef = useRef(null);
   const headerScrollRef = useRef(null);
@@ -303,6 +305,13 @@ export default function Picklist() {
   }
 
   function ksReset() {
+    if (!confirmKsReset) {
+      setConfirmKsReset(true);
+      confirmKsResetTimerRef.current = setTimeout(() => setConfirmKsReset(false), 3000);
+      return;
+    }
+    clearTimeout(confirmKsResetTimerRef.current);
+    setConfirmKsReset(false);
     setKsList([]);
     setKsActive(false);
     setKsPairIdx(0);
@@ -311,16 +320,6 @@ export default function Picklist() {
     setKsSequentialFrontier(1);
     setKsComplete(false);
     if (gameId) localStorage.removeItem(`picklist_ks_${gameId}`);
-  }
-
-  function ksSyncToRankOrder() {
-    const order = sortedTeamData.map(t => t.team);
-    setKsList(order);
-    setKsPairIdx(0);
-    setKsHistory([]);
-    setKsRedoStack([]);
-    setKsSequentialFrontier(1);
-    setKsComplete(false);
   }
 
   function ksPushSnapshot() {
@@ -664,7 +663,14 @@ export default function Picklist() {
         <div className={styles.ksPanel}>
           <div className={styles.ksHeader}>
             <h2>Keep / Swap</h2>
-            {ksActive && <button className={styles.ksResetBtn} onClick={ksReset}>Reset</button>}
+            {ksActive && (
+              <button
+                className={`${styles.ksResetBtn} ${confirmKsReset ? styles.ksResetConfirm : ''}`}
+                onClick={ksReset}
+              >
+                {confirmKsReset ? '⚠ Tap again to reset' : 'Reset'}
+              </button>
+            )}
           </div>
 
           {!ksActive ? (
@@ -703,11 +709,6 @@ export default function Picklist() {
                     title="Focus mode: dim other teams"
                   >
                     {ksFocusMode ? '\u25C9' : '\u25CE'}
-                  </button>
-                </div>
-                <div className={styles.ksButtonRow} style={{ marginTop: '6px' }}>
-                  <button className={`${styles.ksBtn} ${styles.ksBtnUndo}`} onClick={ksSyncToRankOrder} title="Reset list to current rank table order">
-                    Sync to Rank
                   </button>
                 </div>
               </div>
