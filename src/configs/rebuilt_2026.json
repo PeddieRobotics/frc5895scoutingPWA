@@ -433,6 +433,15 @@
               "label": "Failed Climb"
             }
           ]
+        },
+        {
+          "type": "checkbox",
+          "name": "autobeached",
+          "label": "Beached",
+          "dbColumn": {
+            "type": "BOOLEAN",
+            "default": false
+          }
         }
       ]
     },
@@ -522,6 +531,15 @@
           }
         },
         {
+          "type": "checkbox",
+          "name": "telebeached",
+          "label": "Beached",
+          "dbColumn": {
+            "type": "BOOLEAN",
+            "default": false
+          }
+        },
+        {
           "type": "collapsible",
           "id": "passingSection",
           "trigger": {
@@ -558,6 +576,32 @@
               "label": "Passing Comments",
               "dbColumn": {
                 "type": "TEXT",
+                "default": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "collapsible",
+          "id": "pushingSection",
+          "trigger": {
+            "type": "checkbox",
+            "name": "pushing",
+            "label": "Did the Robot Push?",
+            "dbColumn": {
+              "type": "BOOLEAN",
+              "default": false
+            }
+          },
+          "content": [
+            {
+              "type": "starRating",
+              "name": "pushingrating",
+              "label": "Pushing",
+              "max": 4,
+              "minWhenVisible": 1,
+              "dbColumn": {
+                "type": "INTEGER",
                 "default": null
               }
             }
