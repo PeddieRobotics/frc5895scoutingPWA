@@ -60,6 +60,14 @@ When a new page builds its own mini field renderer (like `PrescoutField` in `pre
 - `comment` field `maxLength` used as a hardcoded literal (`500`) rather than reading `field.maxLength` from config — MEDIUM violation. The existing `CommentBox.js` uses a named constant `MAX_CHARS = 255`; the prescout form used a raw `500` literal with no config hook.
 - Both issues arise from the renderer being written in isolation from the established form component library.
 
+## MatchPrediction `_qm` Match Key Format Hardcoded (betting removal audit 2026-04-13)
+
+`src/app/form-components/MatchPrediction.js` line 19 builds the Statbotics key as `${tbaEventCode}_qm${match}` — the `_qm` suffix assumes qualification matches only. This is a LOW-to-MEDIUM concern: the form currently only shows the prediction box with a single match number input (no matchtype selector exposed in this component), and qual matches are the primary use case for live predictions. However, if the form ever exposes playoff match prediction, `_qm` would be wrong. The matchtype could theoretically be passed as a prop from `page.js` (which already tracks `matchtype: 2` as a default) and used to construct `_qm`/`_sf`/`_f` prefixes. Not a config-driven violation — `_qm` is a TBA API structural constant, not game data — but it is a match-type assumption.
+
+## NavBar `/betting` Link Removal Confirmed Clean (betting removal audit 2026-04-13)
+
+The `/betting` link was successfully removed from `NavBar.js`. The `SITE_PAGES` array and rendered `<AuthLink>` block both confirmed clean — no betting reference remains. The NavBar now fetches `activeConfig` and uses a `configFlag` filter pattern, which is the correct approach for future conditional nav items.
+
 ## Team Number Placeholder Hardcode (prescout audit 2026-04-07)
 
 `src/app/scout-leads/prescout/page.js` line 233: `placeholder="e.g. 5895"` is a hardcoded team number. This is a LOW severity violation — it's just a UX hint, not a functional value — but it still violates the spirit of the no-hardcode rule. Fix: use a generic placeholder like `"e.g. 1234"` or `"Enter team number"`.

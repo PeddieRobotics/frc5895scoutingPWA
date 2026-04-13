@@ -12,7 +12,6 @@ const SITE_PAGES = [
     { href: '/match-view', label: 'Match View' },
     { href: '/compare', label: 'Compare' },
     { href: '/picklist', label: 'Picklist' },
-    { href: '/betting', label: 'Betting', configFlag: 'enableBetting' },
     { href: '/admin', label: 'Admin', sudoOnly: true },
     { href: '/admin/games', label: 'Game Config', sudoOnly: true },
     { href: '/sudo', label: 'Sudo', sudoOnly: true },

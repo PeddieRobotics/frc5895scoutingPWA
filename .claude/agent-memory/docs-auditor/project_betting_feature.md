@@ -1,22 +1,18 @@
 ---
-name: Betting System Feature
-description: enableBetting config flag, betting_<gameName> DB table, Statbotics integration, BettingSection form component, /betting leaderboard — added April 2026
+name: Betting System Removed / MatchPrediction Added
+description: Betting system fully removed April 2026; replaced by read-only MatchPrediction Statbotics card on scouting form
 type: project
 ---
 
-`enableBetting: true` in game config JSON activates the match betting system. Requires `tbaEventCode`.
+The betting system (`enableBetting`, `BettingSection`, `src/lib/betting.js`, `src/app/betting/`, `src/app/api/betting/`, `betting_<gameName>` table, `/betting` NavBar link) was fully removed in April 2026.
 
-**DB table:** `betting_<gameName>` — created in `createGame()`, dropped in `deleteGame()`. Also lazily created via `ensureBettingTable()` in `betting.js` on first bet placement. Key columns: `scoutname`, `scoutteam`, `match`, `matchtype`, `alliance`, `red_win_prob`, `blue_win_prob`, `points_wagered`, `status` (pending/won/lost), `points_earned`, timestamps. UNIQUE on `(scoutname, scoutteam, match, matchtype)`.
+Replaced with `MatchPrediction` — a passive read-only card:
+- Component: `src/app/form-components/MatchPrediction.js` + `MatchPrediction.module.css`
+- Activates when `tbaEventCode` is set in the game config (no new config flag needed).
+- Fetches directly from Statbotics API client-side: `https://api.statbotics.io/v3/match/{tbaEventCode}_qm{matchNumber}`
+- No buttons, no DB writes, no form locking, no NavBar link.
+- Appears between basics and the dynamic form sections.
 
-**Points formula:** `round((1 - chosenAllianceWinProb) * 100)`. Balance = SUM(points_earned) — not a stored column.
+**Why:** Betting added friction to scouting; MatchPrediction preserves the Statbotics integration without the UX overhead.
 
-**Statbotics:** `https://api.statbotics.io/v3/match/{eventCode}_qm{matchNumber}` — no auth. 60 s in-memory cache. Bets blocked unless `matchStatus === 'Upcoming'`. Resolution triggered on leaderboard fetch.
-
-**Form locking:** dynamic form dimmed until bet placed or abstained (X). Interacting with form first calls `window.__lockBetting()` which locks betting and unlocks the form.
-
-**NavBar:** `/betting` link always present; page shows "not enabled" message when flag absent.
-
-**Key files:** `src/lib/betting.js`, `src/app/form-components/BettingSection.js`, `src/app/betting/page.js`, `src/lib/schema-generator.js` (`sanitizeBettingTableName`).
-
-**Why:** Added April 2026 as a scout engagement/gamification feature.
-**How to apply:** When editing schema-generator.js, game-config.js, or page.js, keep betting table lifecycle in sync with other per-game tables. config-validator.js does NOT yet validate `enableBetting` — it is read directly by the frontend and API routes.
+**How to apply:** `enableBetting` is gone entirely — do not reference it in config-validator.js, schema-generator.js, or page.js. The `betting_<gameName>` table no longer exists in the schema lifecycle. `tbaEventCode` now drives: TBA rank, OPR/PPR, and MatchPrediction (three uses, no betting).

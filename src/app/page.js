@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import Header from "./form-components/Header";
 import TextInput from "./form-components/TextInput";
 import DynamicFormRenderer from "./form-components/DynamicFormRenderer";
-import BettingSection from "./form-components/BettingSection";
+import MatchPrediction from "./form-components/MatchPrediction";
 import styles from "./page.module.css";
 import compactStyles from "./compact.module.css";
 import AuthDialog from "./form-components/AuthDialog";
@@ -38,10 +38,8 @@ export default function Home() {
   const [showClearFormDialog, setShowClearFormDialog] = useState(false);
   const [showValidationError, setShowValidationError] = useState(false);
 
-  // Betting state
-  const [betState, setBetState] = useState(null); // null | 'placed' | 'locked'
+  // Live match number for Statbotics prediction box
   const [liveMatchNumber, setLiveMatchNumber] = useState("");
-  const [liveScoutName, setLiveScoutName] = useState("");
 
   // Active game configuration state
   const [activeGameConfig, setActiveGameConfig] = useState(null);
@@ -848,11 +846,6 @@ export default function Home() {
       setNoShow(false);
       setBreakdown(false);
       setDefense(false);
-      setBetState(null);
-      // Suppress DB bet restore on remount so the form stays locked for the next match
-      if (activeGameConfig?.gameId) {
-        sessionStorage.setItem(`betting_skip_restore_${activeGameConfig.gameId}`, '1');
-      }
       setLiveMatchNumber(String(Number(submissionData.match || 0) + 1));
 
       // Clear saved team scouted
@@ -996,11 +989,6 @@ export default function Home() {
   useEffect(() => {
     initializeForm();
   }, [scoutProfile, initializeForm]);
-
-  // Sync liveScoutName from scoutProfile (populated from localStorage on mount / after submission)
-  useEffect(() => {
-    if (scoutProfile?.scoutname) setLiveScoutName(scoutProfile.scoutname);
-  }, [scoutProfile]);
 
   // Make the button click handlers completely safe
   const handleOnlineSubmitClick = (e) => {
@@ -1317,7 +1305,6 @@ export default function Home() {
               type={"tel"}
               pattern="[0-9]*"
               className="preMatchInput"
-              disabled={activeGameConfig?.config?.enableBetting && betState === 'placed'}
               onChange={(e) => {
                 setLiveMatchNumber(e.target.value);
                 // Persist match number so it survives reload
@@ -1357,17 +1344,11 @@ export default function Home() {
           defense={defense}
           setDefense={setDefense}
           gameId={activeGameConfig?.gameId}
-          sectionsLocked={activeGameConfig?.config?.enableBetting && betState !== 'placed'}
           afterBasicsSlot={
-            activeGameConfig?.config?.enableBetting ? (
-              <BettingSection
+            activeGameConfig?.config?.tbaEventCode ? (
+              <MatchPrediction
                 matchNumber={liveMatchNumber}
-                gameId={activeGameConfig?.gameId}
                 tbaEventCode={activeGameConfig?.config?.tbaEventCode}
-                enabled={!!activeGameConfig?.config?.enableBetting}
-                onBetStateChange={(state) => setBetState(state)}
-                authCredentials={authCredentials}
-                scoutName={liveScoutName}
               />
             ) : null
           }
@@ -1521,12 +1502,7 @@ export default function Home() {
             <p style={{ color: 'white', textAlign: 'center', marginBottom: '8px', fontSize: '18px' }}>
               Are you sure you want to clear all form data?
             </p>
-            {betState === 'placed' && activeGameConfig?.config?.enableBetting && (
-              <p style={{ color: '#ffaaaa', textAlign: 'center', marginBottom: '24px', fontSize: '15px', fontWeight: 600 }}>
-                Your bet is locked — you cannot re-bet on this match.
-              </p>
-            )}
-            {!(betState === 'placed' && activeGameConfig?.config?.enableBetting) && <div style={{ marginBottom: '16px' }} />}
+            <div style={{ marginBottom: '16px' }} />
             <div className={styles.SubmitButtons}>
               <button
                 className={styles.SubmitButton}
@@ -1535,10 +1511,6 @@ export default function Home() {
                   setNoShow(false);
                   setBreakdown(false);
                   setDefense(false);
-                  setBetState(null);
-                  if (activeGameConfig?.gameId) {
-                    sessionStorage.setItem(`betting_skip_restore_${activeGameConfig.gameId}`, '1');
-                  }
                   setLiveMatchNumber("");
                   setScoutProfile(prev => {
                     const updated = { ...(prev || {}), match: "" };
