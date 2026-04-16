@@ -1144,6 +1144,20 @@ function TeamView() {
                                         <Endgame data={autoPieData} color={autoPieColors} />
                                     </div>
                                 )}
+                                {(autoSectionConfig.booleanPercentStats || []).length > 0 && (
+                                    <div className={styles.booleanPercentGrid}>
+                                        {autoSectionConfig.booleanPercentStats.map((stat, i) => (
+                                            <VBox
+                                                key={stat.field || i}
+                                                color1={Colors[1][2]}
+                                                color2={Colors[1][0]}
+                                                titleColor="#ffffff"
+                                                title={stat.label}
+                                                value={formatStatValue(safeData.booleanPercents?.[stat.field], 'percent')}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                                 {hasMetricGroups && (
                                     <div className={styles.graphContainer}>
                                         <h4 className={styles.graphTitle}>Auto {metricGroupName ? metricGroupName.charAt(0).toUpperCase() + metricGroupName.slice(1) : 'Data'}</h4>
@@ -1372,6 +1386,20 @@ function TeamView() {
                                         )}
                                     </div>
                                 </div>
+                                {(teleSectionConfig.booleanPercentStats || []).length > 0 && (
+                                    <div className={styles.booleanPercentGrid}>
+                                        {teleSectionConfig.booleanPercentStats.map((stat, i) => (
+                                            <VBox
+                                                key={stat.field || i}
+                                                color1={Colors[2][2]}
+                                                color2={Colors[2][0]}
+                                                titleColor="#ffffff"
+                                                title={stat.label}
+                                                value={formatStatValue(safeData.booleanPercents?.[stat.field], 'percent')}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                                 {(() => {
                                     const teleQuals = safeData.qualitative.filter(q => q.section === 'tele');
                                     if (teleQuals.length === 0) return null;

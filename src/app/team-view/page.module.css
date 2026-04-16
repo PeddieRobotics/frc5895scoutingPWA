@@ -691,6 +691,16 @@
     font-family: 'Montserrat', sans-serif;
 }
 
+.booleanPercentGrid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0 16px;
+    font-family: 'Montserrat', sans-serif;
+}
+
 .graphContainer > :last-child {
     margin-left: -50px;
 }

@@ -1051,6 +1051,12 @@
               }
             }
           ],
+          "booleanPercentStats": [
+            {
+              "field": "autobeached",
+              "label": "Beached %"
+            }
+          ],
           "statTables": []
         },
         "tele": {
@@ -1059,6 +1065,12 @@
               "type": "epaLine",
               "label": "Tele Over Time",
               "dataKey": "teleOverTime"
+            }
+          ],
+          "booleanPercentStats": [
+            {
+              "field": "telebeached",
+              "label": "Beached %"
             }
           ],
           "statTables": []
@@ -1131,6 +1143,10 @@
         {
           "name": "passingrating",
           "label": "Passing"
+        },
+        {
+          "name": "pushingrating",
+          "label": "Pushing"
         },
         {
           "name": "defenseplayed",

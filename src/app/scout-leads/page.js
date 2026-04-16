@@ -79,6 +79,12 @@ function formatUnscoredMatch(issue) {
   return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "Missing scout-leads rate."}`;
 }
 
+function formatUnscoutedMatch(issue) {
+  const matchTypeLabel = ["Practice", "Test", "Qualification", "Playoff"][issue?.matchType] || `Type ${issue?.matchType}`;
+  const matchLabel = issue?.displayMatch ?? issue?.match ?? "Unknown";
+  return `Team ${issue?.team} - ${matchTypeLabel} Match ${matchLabel}: ${issue?.reason || "No scouting record submitted."}`;
+}
+
 /**
  * Render a single config field value — read-only or editable.
  * For multiSelect, fieldDef.options is an array of { name, label }.
@@ -364,6 +370,8 @@ export default function ScoutLeadsPage() {
 
   // Unscored matches (all teams, for the informational popup)
   const [unscoredMatches, setUnscoredMatches] = useState([]);
+  // Unscouted matches: finished TBA qualifier matches with zero scouting records
+  const [unscoutedMatches, setUnscoutedMatches] = useState([]);
 
   // Admin unlock state
   const [adminPassword, setAdminPassword] = useState("");
@@ -438,6 +446,7 @@ export default function ScoutLeadsPage() {
         if (!response.ok) return;
         const data = await response.json();
         setUnscoredMatches(Array.isArray(data.unscoredMatches) ? data.unscoredMatches : []);
+        setUnscoutedMatches(Array.isArray(data.unscoutedMatches) ? data.unscoutedMatches : []);
       } catch (_e) {
         // Non-fatal
       }
@@ -945,6 +954,13 @@ export default function ScoutLeadsPage() {
         matches={unscoredMatches}
         label="Matches missing scout-lead rates"
         formatMatch={formatUnscoredMatch}
+        onEdit={handleUnscoredEdit}
+        className={styles.unscoredDropdown}
+      />
+      <UnscoredMatchesDropdown
+        matches={unscoutedMatches}
+        label="Finished matches missing scouting records"
+        formatMatch={formatUnscoutedMatch}
         onEdit={handleUnscoredEdit}
         className={styles.unscoredDropdown}
       />

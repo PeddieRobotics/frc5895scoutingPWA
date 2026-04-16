@@ -494,6 +494,16 @@ export function aggregateTeamData(rows, config, calcFns) {
     });
   });
 
+  // Config-driven boolean percent stats per section (e.g. "Beached %")
+  const booleanPercents = {};
+  Object.values(teamViewConfig.sections || {}).forEach(sectionConfig => {
+    (sectionConfig.booleanPercentStats || []).forEach(stat => {
+      if (stat && stat.field) {
+        booleanPercents[stat.field] = computePercentage(rows, stat.field, true) * 100;
+      }
+    });
+  });
+
   return {
     team,
     avgEpa, avgAuto, avgTele, avgEnd,
@@ -513,6 +523,7 @@ export function aggregateTeamData(rows, config, calcFns) {
     qualitative,
     ...intakeData,
     imageSelectResults,
+    booleanPercents,
   };
 }
 

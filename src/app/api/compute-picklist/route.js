@@ -4,7 +4,7 @@ import { createCalculationFunctions } from "../../../lib/calculation-engine";
 import { getGameByIdOrActive, parseRequestedGameId } from "../../../lib/game-config";
 import { computePicklistMetrics } from "../../../lib/display-engine";
 import { applyScoutLeadRatesToRows } from "../../../lib/timer-rate-processing";
-import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps } from "../../../lib/opr-service";
+import { getTeamOPRMap, getLast3OPRMap, getPerPeriodOPRMaps, getTBAMatches } from "../../../lib/opr-service";
 
 export async function POST(request) {
   // First validate the auth token
@@ -68,6 +68,43 @@ export async function POST(request) {
     unscoredMatches = timerProcessing.unscoredMatches;
   } finally {
     client.release();
+  }
+
+  // Compute TBA-based unscouted matches: finished qualifier matches with zero scouting rows
+  // for one or more alliance members. Any existing row (including noshow=true) counts as submitted.
+  let unscoutedMatches = [];
+  try {
+    const tbaEventCode = activeGame?.tba_event_code || gameConfig?.tbaEventCode;
+    if (tbaEventCode) {
+      const tbaMatches = await getTBAMatches(tbaEventCode);
+      const submittedKeys = new Set(
+        rows
+          .filter((r) => Number(r.matchtype) === 2)
+          .map((r) => `${Number(r.team)}_${Number(r.match)}`)
+      );
+      for (const m of tbaMatches) {
+        if (m.type !== "Q") continue;
+        const pairs = [
+          ...m.redTeams.map((t) => ({ team: t, alliance: "red" })),
+          ...m.blueTeams.map((t) => ({ team: t, alliance: "blue" })),
+        ];
+        for (const { team, alliance } of pairs) {
+          if (!submittedKeys.has(`${team}_${m.number}`)) {
+            unscoutedMatches.push({
+              team,
+              match: m.number,
+              matchType: 2,
+              displayMatch: m.number,
+              alliance,
+              reason: "No scouting record submitted.",
+            });
+          }
+        }
+      }
+    }
+  } catch (tbaError) {
+    console.error("[compute-picklist] Error computing unscouted matches from TBA:", tbaError);
+    unscoutedMatches = [];
   }
 
   // Use config-driven picklist computation
@@ -179,6 +216,7 @@ export async function POST(request) {
   return NextResponse.json({
     teamTable,
     unscoredMatches,
+    unscoutedMatches,
     skippedScoringRows: rows.length - scoredRows.length,
   }, { status: 200 });
 }
