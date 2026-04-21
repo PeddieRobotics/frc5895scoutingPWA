@@ -51,7 +51,7 @@ export async function DELETE(request, { params }) {
   }
 
   // Get session ID from URL params
-  const { sessionId } = params;
+  const { sessionId } = await params;
   if (!sessionId) {
     console.log(`[Revoke] Missing session ID in params`);
     return NextResponse.json({ 

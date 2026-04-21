@@ -48,7 +48,7 @@ export async function DELETE(request, { params }) {
   }
 
   // Get team name from URL params
-  const { teamName } = params;
+  const { teamName } = await params;
   if (!teamName) {
     return NextResponse.json({ 
       error: 'Team name is required' 
